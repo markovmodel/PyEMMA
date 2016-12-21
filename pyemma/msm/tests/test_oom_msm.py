@@ -30,10 +30,12 @@ import scipy.linalg as scl
 import warnings
 import pkg_resources
 
-from pyemma.msm.estimators import OOMReweightedMSM
+from pyemma.msm import estimate_markov_model
 from pyemma.msm import markov_model
 from pyemma.util.linalg import _sort_by_norm
+from pyemma.util.discrete_trajectories import count_states
 import msmtools.estimation as msmest
+import msmtools.analysis as ma
 from six.moves import range
 
 def oom_transformations(Ct, C2t, rank):
@@ -97,16 +99,12 @@ class TestMSMFiveState(unittest.TestCase):
         # Rank:
         cls.rank = 3
         # Build models:
-        cls.msmrev = OOMReweightedMSM(lag=cls.tau)
-        cls.msmrev.fit(cls.dtrajs)
-        cls.msm = OOMReweightedMSM(lag=cls.tau, reversible=False)
-        cls.msm.fit(cls.dtrajs)
+        cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom')
+        cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom')
 
         """Sparse"""
-        cls.msmrev_sparse = OOMReweightedMSM(lag=cls.tau, sparse=True)
-        cls.msmrev_sparse.fit(cls.dtrajs)
-        cls.msm_sparse = OOMReweightedMSM(lag=cls.tau, reversible=False, sparse=True)
-        cls.msm_sparse.fit(cls.dtrajs)
+        cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom')
+        cls.msm_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, sparse=True, weights='oom')
 
         # Reference count matrices at lag time tau and 2*tau:
         cls.C2t = data['C2t']
@@ -121,6 +119,42 @@ class TestMSMFiveState(unittest.TestCase):
         # Build reference models:
         cls.rmsmrev = markov_model(Tt_rev)
         cls.rmsm = markov_model(Tt)
+
+        " Compute further reference quantities:"
+        # Commitor and MFPT:
+        a = np.array([0, 1])
+        b = np.array([4])
+        cls.comm_forward = cls.rmsm.committor_forward(a, b)
+        cls.comm_forward_rev = cls.rmsmrev.committor_forward(a, b)
+        cls.comm_backward = cls.rmsm.committor_backward(a, b)
+        cls.comm_backward_rev = cls.rmsmrev.committor_backward(a, b)
+        cls.mfpt = cls.tau * cls.rmsm.mfpt(a, b)
+        cls.mfpt_rev = cls.tau * cls.rmsmrev.mfpt(a, b)
+        # PCCA:
+        cls.rmsmrev.pcca(3)
+        cls.pcca_ass = cls.rmsmrev.metastable_assignments
+        cls.pcca_dist = cls.rmsmrev.metastable_distributions
+        cls.pcca_mem = cls.rmsmrev.metastable_memberships
+        cls.pcca_sets = cls.rmsmrev.metastable_sets
+        # Experimental quantities:
+        a = np.array([1, 2, 3, 4, 5])
+        b = np.array([1, -1, 0, -2, 4])
+        p0 = np.array([0.5, 0.2, 0.2, 0.1, 0.0])
+        pi = cls.rmsm.stationary_distribution
+        pi_rev = cls.rmsmrev.stationary_distribution
+        _, _, L_rev = ma.rdl_decomposition(Tt_rev)
+        cls.exp = np.dot(cls.rmsm.stationary_distribution, a)
+        cls.exp_rev = np.dot(cls.rmsmrev.stationary_distribution, a)
+        cls.corr_rev = np.zeros(10)
+        cls.rel = np.zeros(10)
+        cls.rel_rev = np.zeros(10)
+        for k in range(10):
+            Ck_rev = np.dot(np.diag(pi_rev), np.linalg.matrix_power(Tt_rev, k))
+            cls.corr_rev[k] = np.dot(a.T, np.dot(Ck_rev, b))
+            cls.rel[k] = np.dot(p0.T, np.dot(np.linalg.matrix_power(Tt, k), a))
+            cls.rel_rev[k] = np.dot(p0.T, np.dot(np.linalg.matrix_power(Tt_rev, k), a))
+        cls.fing_cor = np.dot(a.T, L_rev.T) * np.dot(b.T, L_rev.T)
+        cls.fing_rel = np.dot(a.T, L_rev.T) * np.dot((p0 / pi_rev).T, L_rev.T)
 
     # ---------------------------------
     # BASIC PROPERTIES
@@ -243,6 +277,16 @@ class TestMSMFiveState(unittest.TestCase):
         self._discrete_trajectories_active(self.msmrev_sparse)
         self._discrete_trajectories_active(self.msm_sparse)
 
+    def _timestep(self, msm):
+        assert (msm.timestep_model.startswith('5'))
+        assert (msm.timestep_model.endswith('step'))
+
+    def test_timestep(self):
+        self._timestep(self.msmrev)
+        self._timestep(self.msm)
+        self._timestep(self.msmrev_sparse)
+        self._timestep(self.msm_sparse)
+
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
         # should be ndarray by default
@@ -286,6 +330,18 @@ class TestMSMFiveState(unittest.TestCase):
         self._active_state_fraction(self.msm)
         self._active_state_fraction(self.msmrev_sparse)
         self._active_state_fraction(self.msm_sparse)
+
+    def _active_count_fraction(self, msm):
+        # should always be a fraction
+        assert (0.0 <= msm.active_count_fraction <= 1.0)
+        # special case for this data set:
+        assert (msm.active_count_fraction == 1.0)
+
+    def test_active_count_fraction(self):
+        self._active_count_fraction(self.msmrev)
+        self._active_count_fraction(self.msm)
+        self._active_count_fraction(self.msmrev_sparse)
+        self._active_count_fraction(self.msm_sparse)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
@@ -437,6 +493,327 @@ class TestMSMFiveState(unittest.TestCase):
         self._oom_components(self.msmrev_sparse)
         self._oom_components(self.msm_sparse)
 
+    # ---------------------------------
+    # FIRST PASSAGE PROBLEMS
+    # ---------------------------------
+
+    def _committor(self, msm):
+        a = np.array([0, 1])
+        b = np.array([4])
+        q_forward = msm.committor_forward(a, b)
+        if msm.is_reversible:
+            assert np.allclose(q_forward, self.comm_forward_rev)
+        else:
+            assert np.allclose(q_forward, self.comm_forward)
+        q_backward = msm.committor_backward(a, b)
+        if msm.is_reversible:
+            assert np.allclose(q_backward, self.comm_backward_rev)
+        else:
+            assert np.allclose(q_backward, self.comm_backward)
+        # REVERSIBLE:
+        if msm.is_reversible:
+            assert (np.allclose(q_forward + q_backward, np.ones(msm.nstates)))
+
+    def test_committor(self):
+        self._committor(self.msmrev)
+        self._committor(self.msm)
+        self._committor(self.msmrev_sparse)
+        self._committor(self.msm_sparse)
+
+    def _mfpt(self, msm):
+        a = np.array([0, 1])
+        b = np.array([4])
+        t = msm.mfpt(a, b)
+        assert (t > 0)
+        # HERE:
+        if msm.is_reversible:
+            np.testing.assert_allclose(t, self.mfpt_rev, rtol=1e-3, atol=1e-6)
+        else:
+            np.testing.assert_allclose(t, self.mfpt, rtol=1e-3, atol=1e-6)
+
+    def test_mfpt(self):
+        self._mfpt(self.msmrev)
+        self._mfpt(self.msm)
+        self._mfpt(self.msmrev_sparse)
+        self._mfpt(self.msm_sparse)
+
+    # ---------------------------------
+    # PCCA
+    # ---------------------------------
+
+    def _pcca_assignment(self, msm):
+        if msm.is_reversible:
+            msm.pcca(3)
+            ass = msm.metastable_assignments
+            # test: number of states
+            assert (len(ass) == msm.nstates)
+            # should be equal (zero variance) within metastable sets
+            assert np.all(ass == self.pcca_ass)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(3)
+
+    def test_pcca_assignment(self):
+        self._pcca_assignment(self.msmrev)
+        self._pcca_assignment(self.msm)
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msm_sparse)
+
+
+    def _pcca_distributions(self, msm):
+        if msm.is_reversible:
+            msm.pcca(3)
+            pccadist = msm.metastable_distributions
+            # should be right size
+            assert (np.all(pccadist.shape == (3, msm.nstates)))
+            # should be nonnegative
+            assert (np.all(pccadist >= 0))
+            # check equality:
+            assert np.allclose(pccadist, self.pcca_dist)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(3)
+
+    def test_pcca_distributions(self):
+        self._pcca_distributions(self.msmrev)
+        self._pcca_distributions(self.msm)
+        self._pcca_distributions(self.msmrev_sparse)
+        self._pcca_distributions(self.msm_sparse)
+
+
+    def _pcca_memberships(self, msm):
+        if msm.is_reversible:
+            msm.pcca(3)
+            M = msm.metastable_memberships
+            # should be right size
+            assert (np.all(M.shape == (msm.nstates, 3)))
+            # should be nonnegative
+            assert (np.all(M >= 0))
+            # should add up to one:
+            assert (np.allclose(np.sum(M, axis=1), np.ones(msm.nstates)))
+            # check equality:
+            assert np.allclose(M, self.pcca_mem)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(3)
+
+    def test_pcca_memberships(self):
+        self._pcca_memberships(self.msmrev)
+        self._pcca_memberships(self.msm)
+        self._pcca_memberships(self.msmrev_sparse)
+        self._pcca_memberships(self.msm_sparse)
+
+    def _pcca_sets(self, msm):
+        if msm.is_reversible:
+            msm.pcca(3)
+            S = msm.metastable_sets
+            assignment = msm.metastable_assignments
+            # should coincide with assignment
+            for i, s in enumerate(S):
+                for j in range(len(s)):
+                    assert (assignment[s[j]] == i)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(3)
+
+    def test_pcca_sets(self):
+        self._pcca_sets(self.msmrev)
+        self._pcca_sets(self.msm)
+        self._pcca_sets(self.msmrev_sparse)
+        self._pcca_sets(self.msm_sparse)
+
+    # ---------------------------------
+    # EXPERIMENTAL STUFF
+    # ---------------------------------
+
+    def _expectation(self, msm):
+        a = np.array([1, 2, 3, 4, 5])
+        e = msm.expectation(a)
+        # approximately equal for both
+        if msm.is_reversible:
+            assert np.allclose(e, self.exp_rev)
+        else:
+            assert np.allclose(e, self.exp)
+
+    def test_expectation(self):
+        self._expectation(self.msmrev)
+        self._expectation(self.msm)
+        self._expectation(self.msmrev_sparse)
+        self._expectation(self.msm_sparse)
+
+    def _correlation(self, msm):
+        a = [1, 2, 3, 4, 5]
+        b = [1, -1, 0, -2, 4]
+        with self.assertRaises(AssertionError):
+            msm.correlation(a, 1)
+        # test equality:
+        _, cor = msm.correlation(a, b, maxtime=50)
+        if msm.is_reversible:
+            assert np.allclose(cor, self.corr_rev)
+
+    def test_correlation(self):
+        self._correlation(self.msmrev)
+
+    def _relaxation(self, msm):
+        a = [1, 2, 3, 4, 5]
+        p0 = [0.5, 0.2, 0.2, 0.1, 0.0]
+        times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime=50, k=5)
+        # should be constant because we are in equilibrium
+        assert (np.allclose(rel1 - rel1[0], np.zeros((np.shape(rel1)[0]))))
+        times, rel2 = msm.relaxation(p0, a, maxtime=50, k=5)
+        # check equality:
+        if msm.is_reversible:
+            assert np.allclose(rel2, self.rel_rev)
+        else:
+            assert np.allclose(rel2, self.rel)
+
+    def test_relaxation(self):
+        self._relaxation(self.msmrev)
+        self._relaxation(self.msm)
+        self._relaxation(self.msmrev_sparse)
+        self._relaxation(self.msm_sparse)
+
+    def _fingerprint_correlation(self, msm):
+        a = [1, 2, 3, 4, 5]
+        b = np.array([1, -1, 0, -2, 4])
+        if msm.is_reversible:
+            fp1 = msm.fingerprint_correlation(a, k=5)
+            # first timescale is infinite
+            assert (fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp1[0][1:], msm.timescales(4)))
+            # all amplitudes nonnegative (for autocorrelation)
+            assert (np.all(fp1[1][:] >= 0))
+            fp2 = msm.fingerprint_correlation(a, b)
+            assert np.allclose(fp2[1], self.fing_cor)
+        else:  # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                msm.fingerprint_correlation(a, k=5)
+            with self.assertRaises(ValueError):
+                msm.fingerprint_correlation(a, b, k=5)
+
+    def test_fingerprint_correlation(self):
+        self._fingerprint_correlation(self.msmrev)
+        self._fingerprint_correlation(self.msm)
+        self._fingerprint_correlation(self.msmrev_sparse)
+        self._fingerprint_correlation(self.msm_sparse)
+
+    def _fingerprint_relaxation(self, msm):
+        a = [1, 2, 3, 4, 5]
+        p0 = [0.5, 0.2, 0.2, 0.1, 0.0]
+        if msm.is_reversible:
+            # raise assertion error because size is wrong:
+            with self.assertRaises(AssertionError):
+                msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=5)
+            # equilibrium relaxation should be constant
+            fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=5)
+            # first timescale is infinite
+            assert (fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp1[0][1:], msm.timescales(4)))
+            # dynamical amplitudes should be near 0 because we are in equilibrium
+            assert (np.max(np.abs(fp1[1][1:])) < 1e-10)
+            # off-equilibrium relaxation
+            fp2 = msm.fingerprint_relaxation(p0, a, k=5)
+            # first timescale is infinite
+            assert (fp2[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp2[0][1:], msm.timescales(4)))
+            # check equality
+            assert np.allclose(fp2[1], self.fing_rel)
+        else:  # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                msm.fingerprint_relaxation(msm.stationary_distribution, a, k=5)
+            with self.assertRaises(ValueError):
+                msm.fingerprint_relaxation(p0, a)
+
+    def test_fingerprint_relaxation(self):
+        self._fingerprint_relaxation(self.msmrev)
+        self._fingerprint_relaxation(self.msm)
+        self._fingerprint_relaxation(self.msmrev_sparse)
+        self._fingerprint_relaxation(self.msm_sparse)
+
+    # ---------------------------------
+    # STATISTICS, SAMPLING
+    # ---------------------------------
+
+    def _active_state_indexes(self, msm):
+        I = msm.active_state_indexes
+        assert (len(I) == msm.nstates)
+        # compare to histogram
+        import pyemma.util.discrete_trajectories as dt
+        hist = dt.count_states(msm.discrete_trajectories_full)
+        # number of frames should match on active subset
+        A = msm.active_set
+        for i in range(A.shape[0]):
+            assert (I[i].shape[0] == hist[A[i]])
+            assert (I[i].shape[1] == 2)
+
+    def test_active_state_indexes(self):
+        self._active_state_indexes(self.msmrev)
+        self._active_state_indexes(self.msm)
+        self._active_state_indexes(self.msmrev_sparse)
+        self._active_state_indexes(self.msm_sparse)
+
+    def _generate_traj(self, msm):
+        T = 10
+        gt = msm.generate_traj(T)
+        # Test: should have the right dimension
+        assert (np.all(gt.shape == (T, 2)))
+
+    def test_generate_traj(self):
+        self._generate_traj(self.msmrev)
+        self._generate_traj(self.msm)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msm_sparse)
+
+    def _sample_by_state(self, msm):
+        nsample = 100
+        ss = msm.sample_by_state(nsample)
+        # must have the right size
+        assert (len(ss) == msm.nstates)
+        # must be correctly assigned
+        dtrajs_active = msm.discrete_trajectories_active
+        for i, samples in enumerate(ss):
+            # right shape
+            assert (np.all(samples.shape == (nsample, 2)))
+            for row in samples:
+                assert (dtrajs_active[row[0]][row[1]] == i)
+
+    def test_sample_by_state(self):
+        self._sample_by_state(self.msmrev)
+        self._sample_by_state(self.msm)
+        self._sample_by_state(self.msmrev_sparse)
+        self._sample_by_state(self.msm_sparse)
+
+    def _trajectory_weights(self, msm):
+        W = msm.trajectory_weights()
+        # should sum to 1
+        wsum = 0
+        for w in W:
+            wsum += np.sum(w)
+        assert (np.abs(wsum - 1.0) < 1e-6)
+
+    def test_trajectory_weights(self):
+        self._trajectory_weights(self.msmrev)
+        self._trajectory_weights(self.msm)
+        self._trajectory_weights(self.msmrev_sparse)
+        self._trajectory_weights(self.msm_sparse)
+
+    def test_simulate_MSM(self):
+        msm = self.msm
+        N=100
+        start=1
+        traj = msm.simulate(N=N, start=start)
+        assert (len(traj) <= N)
+        assert (len(np.unique(traj)) <= len(msm.transition_matrix))
+        assert (start == traj[0])
+
+
 
 class TestMSM_Incomplete(unittest.TestCase):
 
@@ -460,16 +837,12 @@ class TestMSM_Incomplete(unittest.TestCase):
         # Rank:
         cls.rank = 2
         # Build models:
-        cls.msmrev = OOMReweightedMSM(lag=cls.tau)
-        cls.msmrev.fit(cls.dtrajs)
-        cls.msm = OOMReweightedMSM(lag=cls.tau, reversible=False)
-        cls.msm.fit(cls.dtrajs)
+        cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom')
+        cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom')
 
         """Sparse"""
-        cls.msmrev_sparse = OOMReweightedMSM(lag=cls.tau, sparse=True)
-        cls.msmrev_sparse.fit(cls.dtrajs)
-        cls.msm_sparse = OOMReweightedMSM(lag=cls.tau, reversible=False, sparse=True)
-        cls.msm_sparse.fit(cls.dtrajs)
+        cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom')
+        cls.msm_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, sparse=True, weights='oom')
 
         # Reference count matrices at lag time tau and 2*tau:
         cls.C2t = data['C2t_s']
@@ -490,9 +863,56 @@ class TestMSM_Incomplete(unittest.TestCase):
         cls.rmsmrev = markov_model(Tt_rev)
         cls.rmsm = markov_model(Tt)
 
+        "Compute further referenc quantities:"
+        # Active count fraction:
+        cls.hist = 1.0*count_states(cls.dtrajs)
+        cls.active_count_frac = np.sum(cls.hist[:4]) / np.sum(cls.hist)
+
+        # Commitor and MFPT:
+        a = np.array([0, 1])
+        b = np.array([3])
+        cls.comm_forward = cls.rmsm.committor_forward(a, b)
+        cls.comm_forward_rev = cls.rmsmrev.committor_forward(a, b)
+        cls.comm_backward = cls.rmsm.committor_backward(a, b)
+        cls.comm_backward_rev = cls.rmsmrev.committor_backward(a, b)
+        cls.mfpt = cls.tau * cls.rmsm.mfpt(a, b)
+        cls.mfpt_rev = cls.tau * cls.rmsmrev.mfpt(a, b)
+        # PCCA:
+        cls.rmsmrev.pcca(2)
+        cls.pcca_ass = cls.rmsmrev.metastable_assignments
+        cls.pcca_dist = cls.rmsmrev.metastable_distributions
+        cls.pcca_mem = cls.rmsmrev.metastable_memberships
+        cls.pcca_sets = cls.rmsmrev.metastable_sets
+        # Experimental quantities:
+        a = np.array([1, 2, 3, 4])
+        b = np.array([1, -1, 0, -2])
+        p0 = np.array([0.5, 0.2, 0.2, 0.1])
+        pi = cls.rmsm.stationary_distribution
+        pi_rev = cls.rmsmrev.stationary_distribution
+        _, _, L_rev = ma.rdl_decomposition(Tt_rev)
+        cls.exp = np.dot(pi, a)
+        cls.exp_rev = np.dot(pi_rev, a)
+        cls.corr_rev = np.zeros(10)
+        cls.rel = np.zeros(10)
+        cls.rel_rev = np.zeros(10)
+        for k in range(10):
+            Ck_rev = np.dot(np.diag(pi_rev), np.linalg.matrix_power(Tt_rev, k))
+            cls.corr_rev[k] = np.dot(a.T, np.dot(Ck_rev, b))
+            cls.rel[k] = np.dot(p0.T, np.dot(np.linalg.matrix_power(Tt, k), a))
+            cls.rel_rev[k] = np.dot(p0.T, np.dot(np.linalg.matrix_power(Tt_rev, k), a))
+        cls.fing_cor = np.dot(a.T, L_rev.T) * np.dot(b.T, L_rev.T)
+        cls.fing_rel = np.dot(a.T, L_rev.T) * np.dot((p0 / pi_rev).T, L_rev.T)
+
+
     # ---------------------------------
     # BASIC PROPERTIES
     # ---------------------------------
+
+    def test_invalid_inputs(self):
+        with self.assertRaises(ValueError):
+            estimate_markov_model(self.dtrajs, lag=self.tau, weights=2)
+        with self.assertRaises(ValueError):
+            estimate_markov_model(self.dtrajs, lag=self.tau, weights='koopman')
 
     def test_reversible(self):
         # Reversible
@@ -602,7 +1022,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._discrete_trajectories_full(self.msm_sparse)
 
     def _discrete_trajectories_active(self, msm):
-        dtraj = self.dtrajs[15]
+        dtraj = self.dtrajs[15].copy()
         dtraj[dtraj==4] = -1
         assert (np.all(dtraj == msm.discrete_trajectories_active[15]))
         assert len(self.dtrajs) == len(msm.discrete_trajectories_active)
@@ -612,6 +1032,16 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._discrete_trajectories_active(self.msm)
         self._discrete_trajectories_active(self.msmrev_sparse)
         self._discrete_trajectories_active(self.msm_sparse)
+
+    def _timestep(self, msm):
+        assert (msm.timestep_model.startswith('5'))
+        assert (msm.timestep_model.endswith('step'))
+
+    def test_timestep(self):
+        self._timestep(self.msmrev)
+        self._timestep(self.msm)
+        self._timestep(self.msmrev_sparse)
+        self._timestep(self.msm_sparse)
 
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
@@ -656,6 +1086,18 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._active_state_fraction(self.msm)
         self._active_state_fraction(self.msmrev_sparse)
         self._active_state_fraction(self.msm_sparse)
+
+    def _active_count_fraction(self, msm):
+        # should always be a fraction
+        assert (0.0 <= msm.active_count_fraction <= 1.0)
+        # special case for this data set:
+        assert (msm.active_count_fraction == self.active_count_frac)
+
+    def test_active_count_fraction(self):
+        self._active_count_fraction(self.msmrev)
+        self._active_count_fraction(self.msm)
+        self._active_count_fraction(self.msmrev_sparse)
+        self._active_count_fraction(self.msm_sparse)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
@@ -806,6 +1248,327 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._oom_components(self.msm)
         self._oom_components(self.msmrev_sparse)
         self._oom_components(self.msm_sparse)
+
+    # ---------------------------------
+    # FIRST PASSAGE PROBLEMS
+    # ---------------------------------
+
+    def _committor(self, msm):
+        a = np.array([0, 1])
+        b = np.array([3])
+        q_forward = msm.committor_forward(a, b)
+        if msm.is_reversible:
+            assert np.allclose(q_forward, self.comm_forward_rev)
+        else:
+            assert np.allclose(q_forward, self.comm_forward)
+        q_backward = msm.committor_backward(a, b)
+        if msm.is_reversible:
+            assert np.allclose(q_backward, self.comm_backward_rev)
+        else:
+            assert np.allclose(q_backward, self.comm_backward)
+        # REVERSIBLE:
+        if msm.is_reversible:
+            assert (np.allclose(q_forward + q_backward, np.ones(msm.nstates)))
+
+    def test_committor(self):
+        self._committor(self.msmrev)
+        self._committor(self.msm)
+        self._committor(self.msmrev_sparse)
+        self._committor(self.msm_sparse)
+
+    def _mfpt(self, msm):
+        a = np.array([0, 1])
+        b = np.array([3])
+        t = msm.mfpt(a, b)
+        assert (t > 0)
+        # HERE:
+        if msm.is_reversible:
+            np.testing.assert_allclose(t, self.mfpt_rev, rtol=1e-3, atol=1e-6)
+        else:
+            np.testing.assert_allclose(t, self.mfpt, rtol=1e-3, atol=1e-6)
+
+    def test_mfpt(self):
+        self._mfpt(self.msmrev)
+        self._mfpt(self.msm)
+        self._mfpt(self.msmrev_sparse)
+        self._mfpt(self.msm_sparse)
+
+    # ---------------------------------
+    # PCCA
+    # ---------------------------------
+
+    def _pcca_assignment(self, msm):
+        if msm.is_reversible:
+            msm.pcca(2)
+            ass = msm.metastable_assignments
+            # test: number of states
+            assert (len(ass) == msm.nstates)
+            # should be equal (zero variance) within metastable sets
+            assert np.all(ass == self.pcca_ass)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(2)
+
+    def test_pcca_assignment(self):
+        self._pcca_assignment(self.msmrev)
+        self._pcca_assignment(self.msm)
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msm_sparse)
+
+
+    def _pcca_distributions(self, msm):
+        if msm.is_reversible:
+            msm.pcca(2)
+            pccadist = msm.metastable_distributions
+            # should be right size
+            assert (np.all(pccadist.shape == (2, msm.nstates)))
+            # should be nonnegative
+            assert (np.all(pccadist >= 0))
+            # check equality:
+            assert np.allclose(pccadist, self.pcca_dist)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(2)
+
+    def test_pcca_distributions(self):
+        self._pcca_distributions(self.msmrev)
+        self._pcca_distributions(self.msm)
+        self._pcca_distributions(self.msmrev_sparse)
+        self._pcca_distributions(self.msm_sparse)
+
+
+    def _pcca_memberships(self, msm):
+        if msm.is_reversible:
+            msm.pcca(2)
+            M = msm.metastable_memberships
+            # should be right size
+            assert (np.all(M.shape == (msm.nstates, 2)))
+            # should be nonnegative
+            assert (np.all(M >= 0))
+            # should add up to one:
+            assert (np.allclose(np.sum(M, axis=1), np.ones(msm.nstates)))
+            # check equality:
+            assert np.allclose(M, self.pcca_mem)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(2)
+
+    def test_pcca_memberships(self):
+        self._pcca_memberships(self.msmrev)
+        self._pcca_memberships(self.msm)
+        self._pcca_memberships(self.msmrev_sparse)
+        self._pcca_memberships(self.msm_sparse)
+
+    def _pcca_sets(self, msm):
+        if msm.is_reversible:
+            msm.pcca(2)
+            S = msm.metastable_sets
+            assignment = msm.metastable_assignments
+            # should coincide with assignment
+            for i, s in enumerate(S):
+                for j in range(len(s)):
+                    assert (assignment[s[j]] == i)
+        else:
+            with self.assertRaises(ValueError):
+                msm.pcca(2)
+
+    def test_pcca_sets(self):
+        self._pcca_sets(self.msmrev)
+        self._pcca_sets(self.msm)
+        self._pcca_sets(self.msmrev_sparse)
+        self._pcca_sets(self.msm_sparse)
+
+    # ---------------------------------
+    # EXPERIMENTAL STUFF
+    # ---------------------------------
+
+    def _expectation(self, msm):
+        a = np.array([1, 2, 3, 4])
+        e = msm.expectation(a)
+        # approximately equal for both
+        if msm.is_reversible:
+            assert np.allclose(e, self.exp_rev)
+        else:
+            assert np.allclose(e, self.exp)
+
+    def test_expectation(self):
+        self._expectation(self.msmrev)
+        self._expectation(self.msm)
+        self._expectation(self.msmrev_sparse)
+        self._expectation(self.msm_sparse)
+
+    def _correlation(self, msm):
+        a = [1, 2, 3, 4]
+        b = [1, -1, 0, -2]
+        with self.assertRaises(AssertionError):
+            msm.correlation(a, 1)
+        # test equality:
+        _, cor = msm.correlation(a, b, maxtime=50)
+        if msm.is_reversible:
+            assert np.allclose(cor, self.corr_rev)
+
+    def test_correlation(self):
+        self._correlation(self.msmrev)
+
+    def _relaxation(self, msm):
+        a = [1, 2, 3, 4]
+        p0 = [0.5, 0.2, 0.2, 0.1]
+        times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime=50, k=4)
+        # should be constant because we are in equilibrium
+        assert (np.allclose(rel1 - rel1[0], np.zeros((np.shape(rel1)[0]))))
+        times, rel2 = msm.relaxation(p0, a, maxtime=50, k=4)
+        # check equality:
+        if msm.is_reversible:
+            assert np.allclose(rel2, self.rel_rev)
+        else:
+            assert np.allclose(rel2, self.rel)
+
+    def test_relaxation(self):
+        self._relaxation(self.msmrev)
+        self._relaxation(self.msm)
+        self._relaxation(self.msmrev_sparse)
+        self._relaxation(self.msm_sparse)
+
+    def _fingerprint_correlation(self, msm):
+        a = [1, 2, 3, 4]
+        b = np.array([1, -1, 0, -2])
+        if msm.is_reversible:
+            fp1 = msm.fingerprint_correlation(a, k=4)
+            # first timescale is infinite
+            assert (fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp1[0][1:], msm.timescales(3)))
+            # all amplitudes nonnegative (for autocorrelation)
+            assert (np.all(fp1[1][:] >= 0))
+            fp2 = msm.fingerprint_correlation(a, b)
+            assert np.allclose(fp2[1], self.fing_cor)
+        else:  # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                msm.fingerprint_correlation(a, k=4)
+            with self.assertRaises(ValueError):
+                msm.fingerprint_correlation(a, b, k=4)
+
+    def test_fingerprint_correlation(self):
+        self._fingerprint_correlation(self.msmrev)
+        self._fingerprint_correlation(self.msm)
+        self._fingerprint_correlation(self.msmrev_sparse)
+        self._fingerprint_correlation(self.msm_sparse)
+
+    def _fingerprint_relaxation(self, msm):
+        a = [1, 2, 3, 4]
+        p0 = [0.5, 0.2, 0.2, 0.1]
+        if msm.is_reversible:
+            # raise assertion error because size is wrong:
+            with self.assertRaises(AssertionError):
+                msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=4)
+            # equilibrium relaxation should be constant
+            fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=4)
+            # first timescale is infinite
+            assert (fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp1[0][1:], msm.timescales(3)))
+            # dynamical amplitudes should be near 0 because we are in equilibrium
+            assert (np.max(np.abs(fp1[1][1:])) < 1e-10)
+            # off-equilibrium relaxation
+            fp2 = msm.fingerprint_relaxation(p0, a, k=4)
+            # first timescale is infinite
+            assert (fp2[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert (np.allclose(fp2[0][1:], msm.timescales(3)))
+            # check equality
+            assert np.allclose(fp2[1], self.fing_rel)
+        else:  # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                msm.fingerprint_relaxation(msm.stationary_distribution, a, k=4)
+            with self.assertRaises(ValueError):
+                msm.fingerprint_relaxation(p0, a)
+
+    def test_fingerprint_relaxation(self):
+        self._fingerprint_relaxation(self.msmrev)
+        self._fingerprint_relaxation(self.msm)
+        self._fingerprint_relaxation(self.msmrev_sparse)
+        self._fingerprint_relaxation(self.msm_sparse)
+
+        # ---------------------------------
+    # STATISTICS, SAMPLING
+    # ---------------------------------
+
+    def _active_state_indexes(self, msm):
+        I = msm.active_state_indexes
+        assert (len(I) == msm.nstates)
+        # compare to histogram
+        import pyemma.util.discrete_trajectories as dt
+        hist = dt.count_states(msm.discrete_trajectories_full)
+        # number of frames should match on active subset
+        A = msm.active_set
+        for i in range(A.shape[0]):
+            assert (I[i].shape[0] == hist[A[i]])
+            assert (I[i].shape[1] == 2)
+
+    def test_active_state_indexes(self):
+        self._active_state_indexes(self.msmrev)
+        self._active_state_indexes(self.msm)
+        self._active_state_indexes(self.msmrev_sparse)
+        self._active_state_indexes(self.msm_sparse)
+
+    def _generate_traj(self, msm):
+        T = 10
+        gt = msm.generate_traj(T)
+        # Test: should have the right dimension
+        assert (np.all(gt.shape == (T, 2)))
+
+    def test_generate_traj(self):
+        self._generate_traj(self.msmrev)
+        self._generate_traj(self.msm)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msm_sparse)
+
+    def _sample_by_state(self, msm):
+        nsample = 100
+        ss = msm.sample_by_state(nsample)
+        # must have the right size
+        assert (len(ss) == msm.nstates)
+        # must be correctly assigned
+        dtrajs_active = msm.discrete_trajectories_active
+        for i, samples in enumerate(ss):
+            # right shape
+            assert (np.all(samples.shape == (nsample, 2)))
+            for row in samples:
+                assert (dtrajs_active[row[0]][row[1]] == i)
+
+    def test_sample_by_state(self):
+        self._sample_by_state(self.msmrev)
+        self._sample_by_state(self.msm)
+        self._sample_by_state(self.msmrev_sparse)
+        self._sample_by_state(self.msm_sparse)
+
+    def _trajectory_weights(self, msm):
+        dtr = msm.discrete_trajectories_full
+        W = msm.trajectory_weights()
+        # should sum to 1
+        wsum = 0
+        for w in W:
+            wsum += np.sum(w)
+        assert (np.abs(wsum - 1.0) < 1e-6)
+
+    def test_trajectory_weights(self):
+        self._trajectory_weights(self.msmrev)
+        self._trajectory_weights(self.msm)
+        self._trajectory_weights(self.msmrev_sparse)
+        self._trajectory_weights(self.msm_sparse)
+
+    def test_simulate_MSM(self):
+        msm = self.msm
+        N=100
+        start=1
+        traj = msm.simulate(N=N, start=start)
+        assert (len(traj) <= N)
+        assert (len(np.unique(traj)) <= len(msm.transition_matrix))
+        assert (start == traj[0])
 
 if __name__ == "__main__":
     unittest.main()

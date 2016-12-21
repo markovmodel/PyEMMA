@@ -25,6 +25,7 @@ from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from .estimators import BayesianMSM as _Bayes_MSM
 from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
+from .estimators import OOMReweightedMSM as _OOM_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
 
 from .models import MSM
@@ -52,9 +53,9 @@ __all__ = ['markov_model',
 # MARKOV STATE MODELS - flat Markov chains on discrete observation space
 # =============================================================================
 
-
+#TODO: show_progress is not documented
 @shortcut('its')
-def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True,
+def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
                    errors=None, nsamples=50, n_jobs=1, show_progress=True):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
@@ -72,12 +73,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         if the number of states are smaller. If None, the number of timescales
         will be automatically determined.
 
+    reversible : boolean, optional
+        Estimate transition matrix reversibly (True) or nonreversibly (False)
+
     connected : boolean, optional
         If true compute the connected set before transition matrix estimation
         at each lag separately
-
-    reversible : boolean, optional
-        Estimate transition matrix reversibly (True) or nonreversibly (False)
 
     errors : None | 'bayes', optional
         Specifies whether to compute statistical uncertainties (by default
@@ -268,7 +269,7 @@ def markov_model(P, dt_model='1 step'):
 
 
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
-                          count_mode='sliding',
+                          count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
     r""" Estimates a Markov model from discrete trajectories
@@ -311,6 +312,17 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
               .. math::
 
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+    weights : str, optional
+        can be used to re-weight non-equilibrium data to equilibrium.
+        Must be one of the following:
+
+        * 'empirical': Each trajectory frame counts as one. (default)
+
+        ' 'oom': Each trajectory frame counts as c_{ij}/p_{ij}. Here, c_ij is an estimate of the absolute
+                probability of a transition from state i to j, obtained from a discrete OOM, while p_{ij} is
+                the number of i-j transitions in the data. Note that values of statdist, maxiter
+                and maxerr are ignored in this case.
+
     sparse : bool, optional
         If true compute count matrix, transition matrix and all
         derived quantities using sparse matrix algebra.  In this case
@@ -496,14 +508,31 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     9.929...
 
     """
+    import six
+    # Catch invalid inputs for weights:
+    if isinstance(weights, six.string_types):
+        if weights not in ['empirical', 'oom']:
+            raise ValueError("Weights must be either \'empirical\' or \'oom\'")
+    else:
+        raise ValueError("Weights must be either \'empirical\' or \'oom\'")
+
     # transition matrix estimator
-    mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
-                    count_mode=count_mode,
-                    sparse=sparse, connectivity=connectivity,
-                    dt_traj=dt_traj, maxiter=maxiter,
-                    maxerr=maxerr)
-    # estimate and return
-    return mlmsm.estimate(dtrajs)
+    if weights == 'empirical':
+        mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
+                        count_mode=count_mode,
+                        sparse=sparse, connectivity=connectivity,
+                        dt_traj=dt_traj, maxiter=maxiter,
+                        maxerr=maxerr)
+        # estimate and return
+        return mlmsm.estimate(dtrajs)
+    elif weights == 'oom':
+        if (statdist is not None) or (maxiter != 1000000) or (maxerr != 1e-8):
+            import warnings
+            warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
+        oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
+                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+        # estimate and return
+        return oom_msm.estimate(dtrajs)
 
 
 def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
