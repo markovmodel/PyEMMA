@@ -8,7 +8,7 @@ __all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix', 'rank_decision'
            'oom_components', 'equilibrium_transition_matrix']
 
 
-def bootstrapping_count_matrix(Ct, nbs=500):
+def bootstrapping_count_matrix(Ct, nbs=10000):
     """
     Perform bootstrapping on trajectories to estimate uncertainties for singular values of count matrices.
 
@@ -17,7 +17,7 @@ def bootstrapping_count_matrix(Ct, nbs=500):
     Ct : csr-matrix
         count matrix of the data.
 
-    nbs : int, optional, default=1000
+    nbs : int, optional
         the number of re-samplings to be drawn from dtrajs
 
     Returns

@@ -35,7 +35,7 @@ import warnings
 
 @fix_docs
 @aliased
-class _EstimateMSM(_Estimator, _MSM):
+class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
@@ -155,7 +155,7 @@ class _EstimateMSM(_Estimator, _MSM):
         MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
-        return super(_EstimateMSM, self).estimate(dtrajs, **parms)
+        return super(_MSMEstimator, self).estimate(dtrajs, **parms)
 
     def _check_is_estimated(self):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
@@ -437,6 +437,76 @@ class _EstimateMSM(_Estimator, _MSM):
 
         return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
 
+            ################################################################################
+    # For general statistics
+    ################################################################################
+
+    def trajectory_weights(self):
+        r"""Uses the MSM to assign a probability weight to each trajectory frame.
+
+        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
+        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
+        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
+        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
+        returns corresponding weights:
+
+        .. math::
+
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        that are normalized to one:
+
+        .. math::
+
+            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
+        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
+        are your input configurations. Use this function to compute the weights of all input configurations and
+        obtain the estimated expectation by:
+
+        .. math::
+
+            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
+        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
+        :math:`b(x)` you could do:
+
+        .. math::
+
+            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
+
+
+        Returns
+        -------
+        weights : list of ndarray
+            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+            returns the corresponding weights:
+
+            .. math::
+
+                (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        """
+        self._check_is_estimated()
+        # compute stationary distribution, expanded to full set
+        statdist_full = _np.zeros([self._nstates_full])
+        statdist_full[self.active_set] = self.stationary_distribution
+        # histogram observed states
+        import msmtools.dtraj as msmtraj
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
+        # simply read off stationary distribution and accumulate total weight
+        W = []
+        wtot = 0.0
+        for dtraj in self.discrete_trajectories_full:
+            w = statdist_full[dtraj] / hist[dtraj]
+            W.append(w)
+            wtot += _np.sum(w)
+        # normalize
+        for w in W:
+            w /= wtot
+        # done
+        return W
+
     ################################################################################
     # HMM-based coarse graining
     ################################################################################
@@ -568,7 +638,7 @@ class _EstimateMSM(_Estimator, _MSM):
 
 @fix_docs
 @aliased
-class MaximumLikelihoodMSM(_EstimateMSM):
+class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
@@ -820,80 +890,10 @@ class MaximumLikelihoodMSM(_EstimateMSM):
         return Ceff
         # return self._C_active / float(self.lag)
 
-        ################################################################################
-    # For general statistics
-    ################################################################################
-
-    def trajectory_weights(self):
-        r"""Uses the MSM to assign a probability weight to each trajectory frame.
-
-        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
-        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
-        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
-        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
-        returns corresponding weights:
-
-        .. math::
-
-            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
-
-        that are normalized to one:
-
-        .. math::
-
-            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
-
-        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
-        are your input configurations. Use this function to compute the weights of all input configurations and
-        obtain the estimated expectation by:
-
-        .. math::
-
-            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
-
-        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
-        :math:`b(x)` you could do:
-
-        .. math::
-
-            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
-
-
-        Returns
-        -------
-        weights : list of ndarray
-            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
-            returns the corresponding weights:
-
-            .. math::
-
-                (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
-
-        """
-        self._check_is_estimated()
-        # compute stationary distribution, expanded to full set
-        statdist_full = _np.zeros([self._nstates_full])
-        statdist_full[self.active_set] = self.stationary_distribution
-        # histogram observed states
-        import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
-        # simply read off stationary distribution and accumulate total weight
-        W = []
-        wtot = 0.0
-        for dtraj in self.discrete_trajectories_full:
-            w = statdist_full[dtraj] / hist[dtraj]
-            W.append(w)
-            wtot += _np.sum(w)
-        # normalize
-        for w in W:
-            w /= wtot
-        # done
-        return W
-
 
 @fix_docs
 @aliased
-class OOM_based_MSM(_EstimateMSM):
+class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
@@ -977,8 +977,8 @@ class OOM_based_MSM(_EstimateMSM):
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
 
-        super(OOM_based_MSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
-                                            connectivity=connectivity, dt_traj=dt_traj)
+        super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
+                                               connectivity=connectivity, dt_traj=dt_traj)
         self.nbs = nbs
         self.tol_rank = tol_rank
 

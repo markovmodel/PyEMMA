@@ -30,7 +30,7 @@ import scipy.linalg as scl
 import warnings
 import pkg_resources
 
-from pyemma.msm.estimators import OOM_based_MSM
+from pyemma.msm.estimators import OOMReweightedMSM
 from pyemma.msm import markov_model
 from pyemma.util.linalg import _sort_by_norm
 import msmtools.estimation as msmest
@@ -97,15 +97,15 @@ class TestMSMFiveState(unittest.TestCase):
         # Rank:
         cls.rank = 3
         # Build models:
-        cls.msmrev = OOM_based_MSM(lag=cls.tau)
+        cls.msmrev = OOMReweightedMSM(lag=cls.tau)
         cls.msmrev.fit(cls.dtrajs)
-        cls.msm = OOM_based_MSM(lag=cls.tau, reversible=False)
+        cls.msm = OOMReweightedMSM(lag=cls.tau, reversible=False)
         cls.msm.fit(cls.dtrajs)
 
         """Sparse"""
-        cls.msmrev_sparse = OOM_based_MSM(lag=cls.tau, sparse=True)
+        cls.msmrev_sparse = OOMReweightedMSM(lag=cls.tau, sparse=True)
         cls.msmrev_sparse.fit(cls.dtrajs)
-        cls.msm_sparse = OOM_based_MSM(lag=cls.tau, reversible=False, sparse=True)
+        cls.msm_sparse = OOMReweightedMSM(lag=cls.tau, reversible=False, sparse=True)
         cls.msm_sparse.fit(cls.dtrajs)
 
         # Reference count matrices at lag time tau and 2*tau:
@@ -460,15 +460,15 @@ class TestMSM_Incomplete(unittest.TestCase):
         # Rank:
         cls.rank = 2
         # Build models:
-        cls.msmrev = OOM_based_MSM(lag=cls.tau)
+        cls.msmrev = OOMReweightedMSM(lag=cls.tau)
         cls.msmrev.fit(cls.dtrajs)
-        cls.msm = OOM_based_MSM(lag=cls.tau, reversible=False)
+        cls.msm = OOMReweightedMSM(lag=cls.tau, reversible=False)
         cls.msm.fit(cls.dtrajs)
 
         """Sparse"""
-        cls.msmrev_sparse = OOM_based_MSM(lag=cls.tau, sparse=True)
+        cls.msmrev_sparse = OOMReweightedMSM(lag=cls.tau, sparse=True)
         cls.msmrev_sparse.fit(cls.dtrajs)
-        cls.msm_sparse = OOM_based_MSM(lag=cls.tau, reversible=False, sparse=True)
+        cls.msm_sparse = OOMReweightedMSM(lag=cls.tau, reversible=False, sparse=True)
         cls.msm_sparse.fit(cls.dtrajs)
 
         # Reference count matrices at lag time tau and 2*tau:

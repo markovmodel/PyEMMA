@@ -20,7 +20,7 @@ from __future__ import absolute_import
 __author__ = 'noe'
 
 from .maximum_likelihood_msm import MaximumLikelihoodMSM
-from .maximum_likelihood_msm import OOM_based_MSM
+from .maximum_likelihood_msm import OOMReweightedMSM
 from .bayesian_msm import BayesianMSM
 from .maximum_likelihood_hmsm import MaximumLikelihoodHMSM
 from .bayesian_hmsm import BayesianHMSM
