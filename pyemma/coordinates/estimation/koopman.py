@@ -70,14 +70,14 @@ class _KoopmanEstimator(StreamingEstimator):
        The user-accessible way for computing K is TICA()
     '''
 
-    def __init__(self, lag, epsilon=1e-6, stride=1, skip=0, chunksize=None):
+    def __init__(self, lag, epsilon=1e-6, stride=1, skip=0, chunksize=None, max_nsave=float('inf')):
 
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
         self._covar = LaggedCovariance(c00=True, c0t=True, remove_data_mean=True, reversible=False,
-                                       lag=lag, bessel=False, stride=stride, skip=skip)
+                                       lag=lag, bessel=False, stride=stride, skip=skip, max_nsave=max_nsave)
 
-        self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
+        self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip, max_nsave=max_nsave)
         self._estimation_finished = False
 
     def partial_fit(self, X):

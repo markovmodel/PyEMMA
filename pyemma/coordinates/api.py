@@ -994,7 +994,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
-         stride=1, remove_mean=True, skip=0, reversible=True):
+         stride=1, remove_mean=True, skip=0, reversible=True, max_nsave=float('inf')):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1180,7 +1180,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         if weights == "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
-            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, max_nsave=max_nsave)
             _param_stage(data, koop, stride=stride)
             weights = koop.weights
         elif weights == "empirical":
@@ -1203,7 +1203,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             category=PyEMMA_DeprecationWarning)
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip,
-               weights=weights, reversible=reversible)
+               weights=weights, reversible=reversible, max_nsave=max_nsave)
     return _param_stage(data, res, stride=stride)
 
 
