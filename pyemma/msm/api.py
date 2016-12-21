@@ -80,6 +80,17 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         If true compute the connected set before transition matrix estimation
         at each lag separately
 
+    weights : str, optional
+        can be used to re-weight non-equilibrium data to equilibrium.
+        Must be one of the following:
+
+        * 'empirical': Each trajectory frame counts as one. (default)
+
+        ' 'oom': Each trajectory frame counts as c_{ij}/p_{ij}. Here, c_ij is an estimate of the absolute
+                probability of a transition from state i to j, obtained from a discrete OOM, while p_{ij} is
+                the number of i-j transitions in the data. Note that errors will be set to None and nsamples
+                is not used in this case.
+
     errors : None | 'bayes', optional
         Specifies whether to compute statistical uncertainties (by default
         not), an which algorithm to use if yes. Currently the only option is:
@@ -161,6 +172,17 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         http://arxiv.org/abs/1507.05990
 
     """
+    import six
+    # Catch invalid inputs for weights:
+    if isinstance(weights, six.string_types):
+        if weights not in ['empirical', 'oom']:
+            raise ValueError("Weights must be either \'empirical\' or \'oom\'")
+    else:
+        raise ValueError("Weights must be either \'empirical\' or \'oom\'")
+    # Set errors to None if weights==oom:
+    if weights=='oom' and (errors is not None):
+        errors = None
+
     # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
@@ -169,9 +191,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     else:
         connectivity = 'none'
 
-    # MLE or error estimation?
+    # Choose estimator:
     if errors is None:
-        estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+        if weights=='empirical':
+            estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+        else:
+            estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity)
     elif errors == 'bayes':
         estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity,
                                nsamples=nsamples, show_progress=show_progress)
