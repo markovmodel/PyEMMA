@@ -185,6 +185,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         # INIT HMM
         from bhmm import init_discrete_hmm
         from pyemma.msm.estimators import MaximumLikelihoodMSM
+        from pyemma.msm.estimators import OOMReweightedMSM
         if self.msm_init=='largest-strong':
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
@@ -193,7 +194,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
                                          method='spectral', separate=self.separate)
-        elif issubclass(self.msm_init.__class__, MaximumLikelihoodMSM):  # initial MSM given.
+        elif issubclass(self.msm_init.__class__, MaximumLikelihoodMSM) or \
+                issubclass(self.msm_init.__class__, OOMReweightedMSM):  # initial MSM given.
             from bhmm.init.discrete import init_discrete_hmm_spectral
             p0, P0, pobs0 = init_discrete_hmm_spectral(self.msm_init.count_matrix_full, self.nstates,
                                                        reversible=self.reversible, stationary=True,
