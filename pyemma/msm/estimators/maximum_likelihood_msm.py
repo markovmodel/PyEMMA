@@ -897,7 +897,7 @@ class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
-                 dt_traj='1 step', nbs=10000, tol_rank=10.0):
+                 dt_traj='1 step', nbs=10000, trajectory_bootstrap=True, tol_rank=10.0):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -968,6 +968,10 @@ class OOMReweightedMSM(_MSMEstimator):
         nbs : int, optional, default=10000
             number of re-samplings for rank decision in OOM estimation.
 
+        trajectory_bootstrap : bool, optional
+            use trajectory re-sampling for model rank selection. Otherwise, re-sampling
+            is performed based on the effective count matrix.
+
         tol_rank: float, optional, default = 10.0
             signal-to-noise threshold for rank decision.
 
@@ -981,6 +985,7 @@ class OOMReweightedMSM(_MSMEstimator):
                                                connectivity=connectivity, dt_traj=dt_traj)
         self.nbs = nbs
         self.tol_rank = tol_rank
+        self.trajectory_bootstrap = trajectory_bootstrap
 
     def _estimate(self, dtrajs):
         # ensure right format
@@ -1028,7 +1033,14 @@ class OOMReweightedMSM(_MSMEstimator):
         # Estimate transition matrix
         if self.connectivity == 'largest':
             # Re-sampling:
-            smean, sdev = bootstrapping_count_matrix(self._C_active, nbs=self.nbs)
+            if self.trajectory_bootstrap:
+                smean, sdev = bootstrapping_dtrajs(dtrajs_lag, self.lag, self._nstates_full, nbs=self.nbs,
+                                                   active_set=self._active_set)
+            else:
+                Ceff_full = msmest.effective_count_matrix(dtrajs_lag, self.lag)
+                from pyemma.util.linalg import submatrix
+                Ceff = submatrix(Ceff_full, self.active_set)
+                smean, sdev = bootstrapping_count_matrix(Ceff, nbs=self.nbs)
             # Estimate two step count matrices:
             C2t = twostep_count_matrix(dtrajs, self.lag, self._nstates_full)
             # Rank decision:

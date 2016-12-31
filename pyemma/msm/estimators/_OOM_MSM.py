@@ -4,9 +4,77 @@ import scipy.sparse
 from pyemma.util.linalg import _sort_by_norm
 import msmtools.estimation as me
 
-__all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix', 'rank_decision',
+__all__ = ['bootstrapping_count_matrix', 'bootstrapping_dtrajs', 'twostep_count_matrix', 'rank_decision',
            'oom_components', 'equilibrium_transition_matrix']
 
+
+def bootstrapping_dtrajs(dtrajs, lag, N_full, nbs=10000, active_set=None):
+    """
+    Perform trajectory based re-sampling.
+
+    Parameters
+    ----------
+    dtrajs : list of discrete trajectories
+
+    lag : int
+        lag time
+
+    N_full : int
+        Number of states in discrete trajectories.
+    nbs : int, optional
+        Number of bootstrapping samples
+    active_set : ndarray
+        Indices of active set, all count matrices will be restricted
+        to active set.
+
+    Returns
+    -------
+    smean : ndarray(N,)
+        mean values of singular values
+    sdev : ndarray(N,)
+        standard deviations of singular values
+    """
+
+    # Get the number of simulations:
+    Q = len(dtrajs)
+    # Get the number of states in the active set:
+    if active_set is not None:
+        N = active_set.size
+    else:
+        N = N_full
+    # Build up a matrix of count matrices for each simulation. Size is Q*N^2:
+    traj_ind = []
+    state1 = []
+    state2 = []
+    q = 0
+    for traj in dtrajs:
+        traj_ind.append(q*np.ones(traj[:-lag].size))
+        state1.append(traj[:-lag])
+        state2.append(traj[lag:])
+        q += 1
+    traj_inds = np.concatenate(traj_ind)
+    pairs = N_full * np.concatenate(state1) + np.concatenate(state2)
+    data = np.ones(pairs.size)
+    Ct_traj = scipy.sparse.coo_matrix((data, (traj_inds, pairs)), shape=(Q, N_full*N_full))
+    Ct_traj = Ct_traj.tocsr()
+
+    # Perform re-sampling:
+    svals = np.zeros((nbs, N))
+    for s in range(nbs):
+        # Choose selection:
+        sel = np.random.choice(Q, Q, replace=True)
+        # Compute count matrix for selection:
+        Ct_sel = Ct_traj[sel, :].sum(axis=0)
+        Ct_sel = np.asarray(Ct_sel).reshape((N_full, N_full))
+        if active_set is not None:
+            from pyemma.util.linalg import submatrix
+            Ct_sel = submatrix(Ct_sel, active_set)
+        svals[s, :] = scl.svdvals(Ct_sel)
+    # Compute mean and uncertainties:
+    smean = np.mean(svals, axis=0)
+    sdev = np.std(svals, axis=0)
+
+    return smean, sdev
 
 def bootstrapping_count_matrix(Ct, nbs=10000):
     """

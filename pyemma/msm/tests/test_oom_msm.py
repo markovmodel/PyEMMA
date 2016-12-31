@@ -60,6 +60,10 @@ def oom_transformations(Ct, C2t, rank):
     sigma = np.dot(F1.T, c)
     # Compute information state:
     l, R = scl.eig(Xi_full.T)
+    # Restrict eigenvalues to reasonable range:
+    ind = np.where(np.logical_and(np.abs(l) <= (1+1e-2), np.real(l) >= 0.0))[0]
+    l = l[ind]
+    R = R[:, ind]
     l, R = _sort_by_norm(l, R)
     omega = np.real(R[:, 0])
     omega = omega / np.dot(omega, sigma)
@@ -99,12 +103,15 @@ class TestMSMFiveState(unittest.TestCase):
         # Rank:
         cls.rank = 3
         # Build models:
-        cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom')
-        cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom')
+        cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom', trajectory_bootstrap=True)
+        cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom',
+                                        trajectory_bootstrap=True)
 
         """Sparse"""
-        cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom')
-        cls.msm_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, sparse=True, weights='oom')
+        cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom',
+                                                  trajectory_bootstrap=True)
+        cls.msm_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, sparse=True, weights='oom',
+                                               trajectory_bootstrap=True)
 
         # Reference count matrices at lag time tau and 2*tau:
         cls.C2t = data['C2t']
