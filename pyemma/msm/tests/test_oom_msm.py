@@ -32,6 +32,7 @@ import pkg_resources
 
 from pyemma.msm import estimate_markov_model
 from pyemma.msm import markov_model
+from pyemma.msm.estimators.maximum_likelihood_msm import OOMReweightedMSM
 from pyemma.util.linalg import _sort_by_norm
 from pyemma.util.discrete_trajectories import count_states
 import msmtools.estimation as msmest
@@ -103,16 +104,17 @@ class TestMSMFiveState(unittest.TestCase):
         # Rank:
         cls.rank = 3
         # Build models:
-        cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom', trajectory_bootstrap=True)
-        cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom',
-                                        trajectory_bootstrap=True)
-        cls.msmrev_eff = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom', trajectory_bootstrap=False)
+        cls.msmrev = OOMReweightedMSM(lag=cls.tau, rank_Ct='bootstrap_trajs')
+        cls.msmrev.fit(cls.dtrajs)
+        cls.msm = OOMReweightedMSM(lag=cls.tau, reversible=False, rank_Ct='bootstrap_trajs')
+        cls.msm.fit(cls.dtrajs)
+        cls.msmrev_eff = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom')
 
         """Sparse"""
-        cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom',
-                                                  trajectory_bootstrap=True)
-        cls.msm_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, sparse=True, weights='oom',
-                                               trajectory_bootstrap=True)
+        cls.msmrev_sparse = OOMReweightedMSM(lag=cls.tau, sparse=True, rank_Ct='bootstrap_trajs')
+        cls.msmrev_sparse.fit(cls.dtrajs)
+        cls.msm_sparse = OOMReweightedMSM(lag=cls.tau, reversible=False, sparse=True, rank_Ct='bootstrap_trajs')
+        cls.msm_sparse.fit(cls.dtrajs)
 
         # Reference count matrices at lag time tau and 2*tau:
         cls.C2t = data['C2t']

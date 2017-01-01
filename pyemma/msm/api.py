@@ -296,8 +296,7 @@ def markov_model(P, dt_model='1 step'):
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
-                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
-                          trajectory_bootstrap=True):
+                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
     r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodMSM` that
@@ -405,10 +404,6 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         order to track changes in small probabilities. The Euclidean
         norm of the change vector, :math:`|e_i|_2`, is compared to
         maxerr.
-
-    trajectory_bootstrap : bool, optional
-        (only for weights=='oom') use trajectory re-sampling for model rank selection.
-        Otherwise, re-sampling is performed based on the effective count matrix.
 
     Returns
     -------
@@ -560,8 +555,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
             import warnings
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
-                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
-                           trajectory_bootstrap=trajectory_bootstrap)
+                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 
