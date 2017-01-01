@@ -106,6 +106,7 @@ class TestMSMFiveState(unittest.TestCase):
         cls.msmrev = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom', trajectory_bootstrap=True)
         cls.msm = estimate_markov_model(cls.dtrajs, lag=cls.tau, reversible=False, weights='oom',
                                         trajectory_bootstrap=True)
+        cls.msmrev_eff = estimate_markov_model(cls.dtrajs, lag=cls.tau, weights='oom', trajectory_bootstrap=False)
 
         """Sparse"""
         cls.msmrev_sparse = estimate_markov_model(cls.dtrajs, lag=cls.tau, sparse=True, weights='oom',
@@ -171,6 +172,7 @@ class TestMSMFiveState(unittest.TestCase):
         # Reversible
         assert self.msmrev.is_reversible
         assert self.msmrev_sparse.is_reversible
+        assert self.msmrev_eff.is_reversible
         # Non-reversible
         assert not self.msm.is_reversible
         assert not self.msm_sparse.is_reversible
@@ -190,6 +192,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._lagtime(self.msm)
         self._lagtime(self.msmrev_sparse)
         self._lagtime(self.msm_sparse)
+        self._lagtime(self.msmrev_eff)
 
     def test_active_set(self):
 
@@ -197,12 +200,14 @@ class TestMSMFiveState(unittest.TestCase):
         assert np.all(self.msmrev_sparse.active_set == np.arange(self.N, dtype=int))
         assert np.all(self.msm.active_set == np.arange(self.N, dtype=int))
         assert np.all(self.msm_sparse.active_set == np.arange(self.N, dtype=int))
+        assert np.all(self.msmrev_eff.active_set == np.arange(self.N, dtype=int))
 
     def test_largest_connected_set(self):
         assert np.all(self.msmrev.largest_connected_set == np.arange(self.N, dtype=int))
         assert np.all(self.msmrev_sparse.largest_connected_set == np.arange(self.N, dtype=int))
         assert np.all(self.msm.largest_connected_set == np.arange(self.N, dtype=int))
         assert np.all(self.msm_sparse.largest_connected_set == np.arange(self.N, dtype=int))
+        assert np.all(self.msmrev_eff.largest_connected_set == np.arange(self.N, dtype=int))
 
     def _nstates(self, msm):
         # should always be <= full
@@ -215,6 +220,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._nstates(self.msm)
         self._nstates(self.msmrev_sparse)
         self._nstates(self.msm_sparse)
+        self._nstates(self.msmrev_eff)
 
     def _connected_sets(self, msm):
         cs = msm.connected_sets
@@ -227,6 +233,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._connected_sets(self.msm)
         self._connected_sets(self.msmrev_sparse)
         self._connected_sets(self.msm_sparse)
+        self._connected_sets(self.msmrev_eff)
 
     def _connectivity(self, msm):
         # HERE:
@@ -237,6 +244,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._connectivity(self.msm)
         self._connectivity(self.msmrev_sparse)
         self._connectivity(self.msm_sparse)
+        self._connectivity(self.msmrev_eff)
 
     def _count_matrix_active(self, msm, sparse=False):
         if sparse:
@@ -250,6 +258,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._count_matrix_active(self.msm)
         self._count_matrix_active(self.msmrev_sparse, sparse=True)
         self._count_matrix_active(self.msm_sparse, sparse=True)
+        self._count_matrix_active(self.msmrev_eff)
 
     def _count_matrix_full(self, msm, sparse=False):
         if sparse:
@@ -263,6 +272,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._count_matrix_full(self.msm)
         self._count_matrix_full(self.msmrev_sparse, sparse=True)
         self._count_matrix_full(self.msm_sparse, sparse=True)
+        self._count_matrix_full(self.msmrev_eff)
 
     def _discrete_trajectories_full(self, msm):
         assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
@@ -273,6 +283,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._discrete_trajectories_full(self.msm)
         self._discrete_trajectories_full(self.msmrev_sparse)
         self._discrete_trajectories_full(self.msm_sparse)
+        self._discrete_trajectories_full(self.msmrev_eff)
 
     def _discrete_trajectories_active(self, msm):
         assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_active[0]))
@@ -283,6 +294,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._discrete_trajectories_active(self.msm)
         self._discrete_trajectories_active(self.msmrev_sparse)
         self._discrete_trajectories_active(self.msm_sparse)
+        self._discrete_trajectories_active(self.msmrev_eff)
 
     def _timestep(self, msm):
         assert (msm.timestep_model.startswith('5'))
@@ -293,6 +305,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._timestep(self.msm)
         self._timestep(self.msmrev_sparse)
         self._timestep(self.msm_sparse)
+        self._timestep(self.msmrev_eff)
 
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
@@ -320,6 +333,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._transition_matrix(self.msm)
         self._transition_matrix(self.msmrev_sparse)
         self._transition_matrix(self.msm_sparse)
+        self._transition_matrix(self.msmrev_eff)
 
     # ---------------------------------
     # SIMPLE STATISTICS
@@ -337,6 +351,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._active_state_fraction(self.msm)
         self._active_state_fraction(self.msmrev_sparse)
         self._active_state_fraction(self.msm_sparse)
+        self._active_state_fraction(self.msmrev_eff)
 
     def _active_count_fraction(self, msm):
         # should always be a fraction
@@ -349,6 +364,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._active_count_fraction(self.msm)
         self._active_count_fraction(self.msmrev_sparse)
         self._active_count_fraction(self.msm_sparse)
+        self._active_count_fraction(self.msmrev_eff)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
@@ -372,6 +388,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._statdist(self.msm)
         self._statdist(self.msmrev_sparse)
         self._statdist(self.msm_sparse)
+        self._statdist(self.msmrev_eff)
 
     def _eigenvalues(self, msm):
         ev = msm.eigenvalues()
@@ -392,6 +409,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._eigenvalues(self.msm)
         self._eigenvalues(self.msmrev_sparse)
         self._eigenvalues(self.msm_sparse)
+        self._eigenvalues(self.msmrev_eff)
 
     def _eigenvectors_left(self, msm):
         L = msm.eigenvectors_left()
@@ -413,6 +431,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._eigenvectors_left(self.msm)
         self._eigenvectors_left(self.msmrev_sparse)
         self._eigenvectors_left(self.msm_sparse)
+        self._eigenvectors_left(self.msmrev_eff)
 
     def _eigenvectors_right(self, msm):
         R = msm.eigenvectors_right()
@@ -431,6 +450,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._eigenvectors_right(self.msm)
         self._eigenvectors_right(self.msmrev_sparse)
         self._eigenvectors_right(self.msm_sparse)
+        self._eigenvectors_right(self.msmrev_eff)
 
     def _eigenvectors_RDL(self, msm):
         R = msm.eigenvectors_right()
@@ -450,6 +470,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._eigenvectors_RDL(self.msm)
         self._eigenvectors_RDL(self.msmrev_sparse)
         self._eigenvectors_RDL(self.msm_sparse)
+        self._eigenvectors_RDL(self.msmrev_eff)
 
     def _timescales(self, msm):
         if not msm.is_reversible:
@@ -476,6 +497,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._timescales(self.msm)
         self._timescales(self.msmrev_sparse)
         self._timescales(self.msm_sparse)
+        self._timescales(self.msmrev_eff)
 
     def _eigenvalues_OOM(self, msm):
         assert np.allclose(msm.eigenvalues_OOM, self.l)
@@ -485,6 +507,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._eigenvalues_OOM(self.msm)
         self._eigenvalues_OOM(self.msmrev_sparse)
         self._eigenvalues_OOM(self.msm_sparse)
+        self._eigenvalues_OOM(self.msmrev_eff)
 
     def _oom_components(self, msm):
         Xi = msm.OOM_components
@@ -499,6 +522,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._oom_components(self.msm)
         self._oom_components(self.msmrev_sparse)
         self._oom_components(self.msm_sparse)
+        self._oom_components(self.msmrev_eff)
 
     # ---------------------------------
     # FIRST PASSAGE PROBLEMS
@@ -526,6 +550,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._committor(self.msm)
         self._committor(self.msmrev_sparse)
         self._committor(self.msm_sparse)
+        self._committor(self.msmrev_eff)
 
     def _mfpt(self, msm):
         a = np.array([0, 1])
@@ -543,6 +568,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._mfpt(self.msm)
         self._mfpt(self.msmrev_sparse)
         self._mfpt(self.msm_sparse)
+        self._mfpt(self.msmrev_eff)
 
     # ---------------------------------
     # PCCA
@@ -567,6 +593,7 @@ class TestMSMFiveState(unittest.TestCase):
             self._pcca_assignment(self.msmrev_sparse)
         with warnings.catch_warnings(record=True) as w:
             self._pcca_assignment(self.msm_sparse)
+        self._pcca_assignment(self.msmrev_eff)
 
 
     def _pcca_distributions(self, msm):
@@ -588,6 +615,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._pcca_distributions(self.msm)
         self._pcca_distributions(self.msmrev_sparse)
         self._pcca_distributions(self.msm_sparse)
+        self._pcca_distributions(self.msmrev_eff)
 
 
     def _pcca_memberships(self, msm):
@@ -611,6 +639,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._pcca_memberships(self.msm)
         self._pcca_memberships(self.msmrev_sparse)
         self._pcca_memberships(self.msm_sparse)
+        self._pcca_memberships(self.msmrev_eff)
 
     def _pcca_sets(self, msm):
         if msm.is_reversible:
@@ -630,6 +659,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._pcca_sets(self.msm)
         self._pcca_sets(self.msmrev_sparse)
         self._pcca_sets(self.msm_sparse)
+        self._pcca_sets(self.msmrev_eff)
 
     # ---------------------------------
     # EXPERIMENTAL STUFF
@@ -649,6 +679,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._expectation(self.msm)
         self._expectation(self.msmrev_sparse)
         self._expectation(self.msm_sparse)
+        self._expectation(self.msmrev_eff)
 
     def _correlation(self, msm):
         a = [1, 2, 3, 4, 5]
@@ -662,6 +693,7 @@ class TestMSMFiveState(unittest.TestCase):
 
     def test_correlation(self):
         self._correlation(self.msmrev)
+        self._correlation(self.msmrev_eff)
 
     def _relaxation(self, msm):
         a = [1, 2, 3, 4, 5]
@@ -681,6 +713,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._relaxation(self.msm)
         self._relaxation(self.msmrev_sparse)
         self._relaxation(self.msm_sparse)
+        self._relaxation(self.msmrev_eff)
 
     def _fingerprint_correlation(self, msm):
         a = [1, 2, 3, 4, 5]
@@ -706,6 +739,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._fingerprint_correlation(self.msm)
         self._fingerprint_correlation(self.msmrev_sparse)
         self._fingerprint_correlation(self.msm_sparse)
+        self._fingerprint_correlation(self.msmrev_eff)
 
     def _fingerprint_relaxation(self, msm):
         a = [1, 2, 3, 4, 5]
@@ -741,6 +775,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._fingerprint_relaxation(self.msm)
         self._fingerprint_relaxation(self.msmrev_sparse)
         self._fingerprint_relaxation(self.msm_sparse)
+        self._fingerprint_relaxation(self.msmrev_eff)
 
     # ---------------------------------
     # STATISTICS, SAMPLING
@@ -763,6 +798,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._active_state_indexes(self.msm)
         self._active_state_indexes(self.msmrev_sparse)
         self._active_state_indexes(self.msm_sparse)
+        self._active_state_indexes(self.msmrev_eff)
 
     def _generate_traj(self, msm):
         T = 10
@@ -777,6 +813,7 @@ class TestMSMFiveState(unittest.TestCase):
             self._generate_traj(self.msmrev_sparse)
         with warnings.catch_warnings(record=True) as w:
             self._generate_traj(self.msm_sparse)
+        self._generate_traj(self.msmrev_eff)
 
     def _sample_by_state(self, msm):
         nsample = 100
@@ -796,6 +833,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._sample_by_state(self.msm)
         self._sample_by_state(self.msmrev_sparse)
         self._sample_by_state(self.msm_sparse)
+        self._sample_by_state(self.msmrev_eff)
 
     def _trajectory_weights(self, msm):
         W = msm.trajectory_weights()
@@ -810,6 +848,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._trajectory_weights(self.msm)
         self._trajectory_weights(self.msmrev_sparse)
         self._trajectory_weights(self.msm_sparse)
+        self._trajectory_weights(self.msmrev_eff)
 
     def test_simulate_MSM(self):
         msm = self.msm
