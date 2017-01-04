@@ -86,10 +86,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
         * 'empirical': Each trajectory frame counts as one. (default)
 
-        ' 'oom': Each trajectory frame counts as c_{ij}/p_{ij}. Here, c_ij is an estimate of the absolute
-                probability of a transition from state i to j, obtained from a discrete OOM, while p_{ij} is
-                the number of i-j transitions in the data. Note that errors will be set to None and nsamples
-                is not used in this case.
+        * 'oom': Each transition is re-weighted using OOM theory, see [5]_.
 
     errors : None | 'bayes', optional
         Specifies whether to compute statistical uncertainties (by default
@@ -170,6 +167,9 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     .. [4] Trendelkamp-Schroer, B, H. Wu, F. Paul and F. Noe:
         Estimation and uncertainty of reversible Markov models.
         http://arxiv.org/abs/1507.05990
+    .. [5] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C. and Noe, F.:
+        Markov State Models from short non-Equilibrium Simulations - Analysis and
+         Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
 
     """
     import six
@@ -343,10 +343,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
         * 'empirical': Each trajectory frame counts as one. (default)
 
-        ' 'oom': Each trajectory frame counts as c_{ij}/p_{ij}. Here, c_ij is an estimate of the absolute
-                probability of a transition from state i to j, obtained from a discrete OOM, while p_{ij} is
-                the number of i-j transitions in the data. Note that values of statdist, maxiter
-                and maxerr are ignored in this case.
+        * 'oom': Each transition is re-weighted using OOM theory, see [11]_.
 
     sparse : bool, optional
         If true compute count matrix, transition matrix and all
@@ -483,6 +480,10 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         An Introduction to Markov State Models and Their Application to Long
         Timescale Molecular Simulation. Advances in Experimental Medicine and
         Biology 797, Springer, Heidelberg (2014)
+
+    .. [11] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C. and Noe, F.:
+        Markov State Models from short non-Equilibrium Simulations - Analysis and
+         Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
 
     Example
     -------
