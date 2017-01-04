@@ -60,7 +60,7 @@ class TICA(StreamingEstimationTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
-                 stride=1, skip=0, reversible=True, weights=None):
+                 stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -151,12 +151,12 @@ class TICA(StreamingEstimationTransformer):
             var_cutoff = 1.0
 
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
-                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=weights)
+                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-                        epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights)
+                        epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
     @property
     def lag(self):
