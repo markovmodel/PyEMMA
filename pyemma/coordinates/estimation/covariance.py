@@ -35,7 +35,7 @@ __author__ = 'paul, nueske'
 class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
-                 chunksize=None, max_nsave=float('inf')):
+                 chunksize=None, ncov_max=float('inf')):
         """
         Compute lagged covariances between time series.
 
@@ -94,7 +94,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                         bessel=bessel,
-                        weights=weights, stride=stride, skip=skip, max_nsave=max_nsave)
+                        weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
 
         self._rc = None
         self._used_data = 0
@@ -108,7 +108,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
             return self.weights.weights(X)
 
     def _init_covar(self, partial_fit, n_chunks):
-        nsave = min(int(max(log(n_chunks, 2), 2)), self.max_nsave)
+        nsave = min(int(max(log(n_chunks, 2), 2)), self.ncov_max)
         if self._rc is not None and partial_fit:
             # check storage size vs. n_chunks of the new iterator
             old_nsave = self.nsave
