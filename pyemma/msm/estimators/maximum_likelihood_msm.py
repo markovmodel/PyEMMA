@@ -897,7 +897,7 @@ class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
-                 dt_traj='1 step', nbs=10000, tol_rank=10.0):
+                 dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -968,6 +968,12 @@ class OOMReweightedMSM(_MSMEstimator):
         nbs : int, optional, default=10000
             number of re-samplings for rank decision in OOM estimation.
 
+        rank_Ct : str, optional
+            Re-sampling method for model rank selection. Can be
+            * 'bootstrap_counts': Directly re-sample transitions based on effective count matrix.
+
+            * 'bootstrap_trajs': Re-draw complete trajectories with replacement.
+
         tol_rank: float, optional, default = 10.0
             signal-to-noise threshold for rank decision.
 
@@ -976,11 +982,14 @@ class OOMReweightedMSM(_MSMEstimator):
         self.count_mode = str(count_mode).lower()
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
+        if rank_Ct not in ('bootstrap_counts', 'bootstrap_trajs'):
+            raise ValueError('rank_Ct must be either \'bootstrap_counts\' or \'bootstrap_trajs\'')
 
         super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                                                connectivity=connectivity, dt_traj=dt_traj)
         self.nbs = nbs
         self.tol_rank = tol_rank
+        self.rank_Ct = rank_Ct
 
     def _estimate(self, dtrajs):
         # ensure right format
@@ -1028,7 +1037,14 @@ class OOMReweightedMSM(_MSMEstimator):
         # Estimate transition matrix
         if self.connectivity == 'largest':
             # Re-sampling:
-            smean, sdev = bootstrapping_count_matrix(self._C_active, nbs=self.nbs)
+            if self.rank_Ct=='bootstrap_counts':
+                Ceff_full = msmest.effective_count_matrix(dtrajs_lag, self.lag)
+                from pyemma.util.linalg import submatrix
+                Ceff = submatrix(Ceff_full, self.active_set)
+                smean, sdev = bootstrapping_count_matrix(Ceff, nbs=self.nbs)
+            else:
+                smean, sdev = bootstrapping_dtrajs(dtrajs_lag, self.lag, self._nstates_full, nbs=self.nbs,
+                                                   active_set=self._active_set)
             # Estimate two step count matrices:
             C2t = twostep_count_matrix(dtrajs, self.lag, self._nstates_full)
             # Rank decision:
