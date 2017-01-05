@@ -1,6 +1,22 @@
 Changelog
 =========
 
+2.3 (tba)
+---------
+
+**New features**:
+- coordinates:
+  - ...
+  - ...
+
+
+**Fixes**:
+
+- coordinates:
+  - ...
+  - ...
+  - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
+
 2.2.7 (10-21-16)
 ----------------
 
