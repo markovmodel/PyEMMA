@@ -72,7 +72,9 @@ def _version_check(current, testing=False):
     ...     assert "latest release" in str(cw[0].message), "wrong msg"
     """
     if not config.check_version:
-        return
+        class _dummy:
+            def start(self): pass
+        return _dummy()
     import json
     import platform
     import six
@@ -81,6 +83,7 @@ def _version_check(current, testing=False):
     from distutils.version import LooseVersion as parse
     from contextlib import closing
     import threading
+    import uuid
 
     import sys
     if 'pytest' in sys.modules or os.getenv('CI', False):
@@ -89,9 +92,9 @@ def _version_check(current, testing=False):
     def _impl():
         try:
             r = Request('http://emma-project.org/versions.json',
-                        headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}'
+                        headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
                         .format(emma_version=current, python_version=platform.python_version(),
-                                platform=platform.platform(terse=True))} if not testing else {})
+                                platform=platform.platform(terse=True), addr=uuid.getnode())} if not testing else {})
             encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
             with closing(urlopen(r, timeout=30)) as response:
                 payload = str(response.read(), **encoding_args)
