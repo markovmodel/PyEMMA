@@ -181,7 +181,10 @@ class NetworkPlot(object):
         else:
             figsize = (Dx / Dy * max_height, max_height)
         if self.ax is None:
-            fig, self.ax = _plt.subplots(figsize=figsize)
+            self.ax = _plt.gca()
+            fig = _plt.gcf()
+            fig.set_figwidth(figsize[0])
+            fig.set_figheight(figsize[1])
         else:
             fig = self.ax.figure
             window_extend = self.ax.get_window_extent()
