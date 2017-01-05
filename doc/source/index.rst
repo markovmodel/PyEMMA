@@ -92,6 +92,12 @@ Development
    CHANGELOG
    DEVELOPMENT
 
+Legal Notices
+=============
+.. toctree::
+   :maxdepth: 1
+
+   legal
 
 Indices and tables
 ==================
