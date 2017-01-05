@@ -92,7 +92,7 @@ Find here a documentation how to extract features from them.
 .. autosummary::
    :toctree: generated/
 
-   transform.transformer.StreamingTransformer
+   data._base.transformer.StreamingTransformer
    pipelines.Pipeline
 
 **Discretization**
