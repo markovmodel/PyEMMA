@@ -72,7 +72,9 @@ def _version_check(current, testing=False):
     ...     assert "latest release" in str(cw[0].message), "wrong msg"
     """
     if not config.check_version:
-        return
+        class _dummy:
+            def start(self): pass
+        return _dummy()
     import json
     import platform
     import six
