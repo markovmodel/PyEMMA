@@ -2,3 +2,6 @@
 	path = pyemma-ipython
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
 
+[submodule "kmc2"]
+	path = pyemma/_ext/kmc
+	url = https://github.com/markovmodel/kmc2

@@ -128,6 +128,18 @@ def extensions():
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
 
+    kmeans_kmc = \
+        Extension('pyemma._ext.kmc.kmc2',
+                  sources=['pyemma/_ext/kmc/kmc2.pyx'],
+                  include_dirs=[
+                      mdtraj.capi()['include_dir'],
+                      np_inc,
+                      'pyemma/coordinates/clustering/include',
+                  ],
+                  libraries=[lib_prefix + 'theobald'],
+                  library_dirs=[mdtraj.capi()['lib_dir']],
+                  )
+
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
                   sources=['pyemma/_ext/variational/estimators/covar_c/covartools.pyx',
@@ -151,6 +163,7 @@ def extensions():
 
     exts += [regspatial_module,
              kmeans_module,
+             kmeans_kmc,
              covar_module,
              eig_qr_module,
              orderedset
@@ -183,14 +196,14 @@ def get_cmdclass():
     versioneer_cmds = versioneer.get_cmdclass()
 
     sdist_class = versioneer_cmds['sdist']
-    class sdist(sdist_class):
+    class sdist(sdist_class, object):
         """ensure cython files are compiled to c, when distributing"""
 
         def run(self):
             # only run if .git is present
             if not os.path.exists('.git'):
                 print("Not on git, can not create source distribution")
-                return
+                sys.exit(1)
 
             try:
                 from Cython.Build import cythonize
@@ -198,7 +211,7 @@ def get_cmdclass():
                 cythonize(extensions())
             except ImportError:
                 warnings.warn('sdist cythonize failed')
-            return sdist_class.run(self)
+            return super(sdist, self).run()
 
     versioneer_cmds['sdist'] = sdist
 
@@ -220,8 +233,8 @@ def get_cmdclass():
     versioneer_cmds['test'] = PyTest
 
     from setuptools.command.egg_info import egg_info
-
-    class extensions_json(egg_info):
+    # derive from object too, so we can use super calls instead of old-style explicit invocation.
+    class extensions_json(egg_info, object):
         def run(self):
             f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyemma', '_extensions.json')
             print("Generating {}".format(f))
@@ -231,9 +244,7 @@ def get_cmdclass():
                 import json
                 s = json.dumps(extension_names).encode('ascii')
                 fp.write(s)
-
-            egg_info.run(self)
-
+            super(extensions_json, self).run()
     versioneer_cmds['egg_info'] = extensions_json
 
     return versioneer_cmds
@@ -305,6 +316,13 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
+
+
+    def init_submodules():
+        print("init submodules")
+        import subprocess
+        subprocess.check_call("git submodule update --init --recursive".split(' '))
+    init_submodules()
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)

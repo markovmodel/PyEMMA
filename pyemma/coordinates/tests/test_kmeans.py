@@ -178,5 +178,15 @@ class TestKmeans(unittest.TestCase):
     def test_skip(self):
         cluster_kmeans(np.random.rand(100, 3), skip=42)
 
+    def test_kmc(self):
+        max_iter = 100  # use a high number here, to ensure we converge
+        k = 10
+        data = np.random.rand(500, 3)
+        cl_kmpp = cluster_kmeans(data, k=k, init_strategy='kmeans++', max_iter=max_iter)
+        opt = {'chain_length': 300, 'afkmc2': False}
+        cl_kmc = cluster_kmeans(data, k=k, init_strategy='kmc', max_iter=max_iter, **opt)
+
+        np.testing.assert_equal(cl_kmc.clustercenters, cl_kmc.clustercenters)
+
 if __name__ == "__main__":
     unittest.main()
