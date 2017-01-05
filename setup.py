@@ -290,11 +290,10 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
-                                  'nose',
                                   ]
 
     metadata['package_data'] = {
-                                'pyemma': ['pyemma.cfg', 'logging.yml', '_extensions.json'],
+                                'pyemma': ['pyemma.cfg', 'logging.yml', '_extensions.json', 'setup.cfg'],
                                 'pyemma.coordinates.tests': ['data/*'],
                                 'pyemma.msm.tests': ['data/*'],
                                 'pyemma.datasets': ['*.npz'],
@@ -305,6 +304,10 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
+
+        # copy setup.cfg to the package so we can include it easily later on
+        import shutil
+        shutil.copy('setup.cfg', 'pyemma')
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
