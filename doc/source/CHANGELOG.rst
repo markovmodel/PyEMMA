@@ -21,6 +21,7 @@ Changelog
 - plots:
    - Fix drawing into existing figures for network plots. #1020
 
+
 2.2.7 (10-21-16)
 ----------------
 
