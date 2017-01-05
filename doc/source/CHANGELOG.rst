@@ -5,17 +5,21 @@ Changelog
 ---------
 
 **New features**:
+
 - coordinates:
-  - ...
-  - ...
+   - ...
+   - ...
 
 
 **Fixes**:
 
 - coordinates:
-  - ...
-  - ...
-  - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
+   - ...
+   - ...
+   - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
+
+- plots:
+   - Fix drawing into existing figures for network plots. #1020
 
 2.2.7 (10-21-16)
 ----------------
