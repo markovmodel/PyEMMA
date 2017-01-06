@@ -1,8 +1,8 @@
 Changelog
 =========
 
-2.3 (tba)
----------
+2.3 (6-1-2017)
+--------------
 
 **New features**:
 
@@ -11,19 +11,22 @@ Changelog
      or "koopman", which uses the re-weighting procedure from [1] to compute equi-
      librium covariance matrices. The user can also supply his own re-weighting me-
      thod. This must be an object that possesses a function weights(X), that assigns
-     a weight to every time-step in a trajectory X.
+     a weight to every time-step in a trajectory X. #1007
    - covariance_lagged: This new method can be used to compute covariance matrices
      and time-lagged covariance matrices between time-series. It is also possible
      to use the re-weighting method from [1] to compute covariance matrices in equi-
      librium. This can be triggered by the option "weights", which has the same spe-
-     cifications as in tica.
+     cifications as in tica. #1007
 
 - msm:
    - estimate_markov_model: New option "weights". Can be empirical, which does the
      same as before, or "oom", which triggers a transition matrix estimator based
      on OOM theory to compute an equilibrium transition matrix from possibly non-
-     equilibrium data. See Ref. [2] for details.
-   - timescales_msm: The same change as in estimate_markov_model.
+     equilibrium data. See Ref. [2] for details. #1012, #1016
+   - timescales_msm: The same change as in estimate_markov_model. #1012, #1016
+   - TPT: if user provided sets A and B do not overlap (no need to split), preserve order of user states. #1005
+
+- general: Added an automatic check for new releases upon import. #986
 
 - References:
    [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2017. Bias reduced variational
@@ -34,21 +37,13 @@ Changelog
         (submitted).
 
 
-- msm:
-  - ...
-  - TPT: if user provided sets A and B do not overlap (no need to split), preserve order of user states. #1005
-
-- general: Added an automatic check for new releases upon import. #986
-
 **Fixes**:
 
 - coordinates:
-   - ...
    - kmeans: fixed a rare bug, which led to a segfault, if NaN is contained in input data. #1010
    - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
 
-- plots:
-   - Fix drawing into existing figures for network plots. #1020
+- plots: Fix drawing into existing figures for network plots. #1020
 
 
 2.2.7 (10-21-16)
