@@ -34,12 +34,17 @@ Changelog
         (submitted).
 
 
+- msm:
+  - ...
+  - TPT: if user provided sets A and B do not overlap (no need to split), preserve order of user states. #1005
+
+- general: Added an automatic check for new releases upon import. #986
 
 **Fixes**:
 
 - coordinates:
    - ...
-   - ...
+   - kmeans: fixed a rare bug, which led to a segfault, if NaN is contained in input data. #1010
    - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
 
 - plots:
