@@ -7,8 +7,32 @@ Changelog
 **New features**:
 
 - coordinates:
-   - ...
-   - ...
+   - tica: New option "weights". Can be "empirical", which does the same as before,
+     or "koopman", which uses the re-weighting procedure from [1] to compute equi-
+     librium covariance matrices. The user can also supply his own re-weighting me-
+     thod. This must be an object that possesses a function weights(X), that assigns
+     a weight to every time-step in a trajectory X.
+   - covariance_lagged: This new method can be used to compute covariance matrices
+     and time-lagged covariance matrices between time-series. It is also possible
+     to use the re-weighting method from [1] to compute covariance matrices in equi-
+     librium. This can be triggered by the option "weights", which has the same spe-
+     cifications as in tica.
+
+- msm:
+   - estimate_markov_model: New option "weights". Can be empirical, which does the
+     same as before, or "oom", which triggers a transition matrix estimator based
+     on OOM theory to compute an equilibrium transition matrix from possibly non-
+     equilibrium data. See Ref. [2] for details.
+   - timescales_msm: The same change as in estimate_markov_model.
+
+- References:
+   [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2017. Bias reduced variational
+        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted),
+        https://arxiv.org/abs/1610.06773.
+   [2] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C., and Noe, F. 2017. Markov State Models from
+        short non-Equilibrium Simulations - Analysis and Correction of Estimation Bias. J. Chem. Phys.
+        (submitted).
+
 
 
 **Fixes**:
