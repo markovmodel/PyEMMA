@@ -94,11 +94,15 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
         * 'bayes' for Bayesian sampling of the posterior
 
-        Attention: Computing errors can be *very* slow if the MSM has many
-        states. Moreover there are still unsolved theoretical problems, and
-        therefore the uncertainty interval and the maximum likelihood estimator
-        can be inconsistent. Use this as a rough guess for statistical
-        uncertainties.
+        Attention: 
+        * The Bayes mode will use an estimate for the effective count matrix
+          that may produce somewhat different estimates than the
+          'sliding window' estimate used with ``errors=None`` by default.
+        * Computing errors can be// slow if the MSM has many states.
+        * There are still unsolved theoretical problems in the computation
+          of effective count matrices, and therefore the uncertainty interval
+          and the maximum likelihood estimator can be inconsistent. Use this
+          as a rough guess for statistical uncertainties.
 
     nsamples : int, optional
         The number of approximately independent transition matrix samples
