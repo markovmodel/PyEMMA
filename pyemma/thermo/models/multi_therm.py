@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,49 +20,51 @@ from pyemma.thermo.models.stationary import StationaryModel as _StationaryModel
 from pyemma._base.model import call_member as _call_member
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
-from pyemma.util.annotators import deprecated
+from pyemma.util.annotators import deprecated as _deprecated
 
 __author__ = 'noe'
 
 
 class MultiThermModel(_StationaryModel):
-    r""" Coupled set of models at multiple thermodynamic states
-
-    Parameters
-    ----------
-    models : list of Model objects
-        List of Model objects, e.g. StationaryModel or MSM objects, at the
-        different thermodynamic states. This list may include the ground
-        state, such that self.pi = self.models[0].pi holds. An example for
-        that is data obtained from parallel tempering or replica-exchange,
-        where the lowest simulated temperature is usually identical to the
-        thermodynamic ground state. However, the list does not have to
-        include the thermodynamic ground state. For example, when obtaining
-        data from umbrella sampling, models might be the list of
-        stationary models for n umbrellas (biased ensembles), while the
-        thermodynamic ground state is the unbiased ensemble. In that
-        case, self.pi would be different from any self.models[i].pi
-    f_therm : ndarray(k)
-        free energies at the different thermodynamic states
-    pi : ndarray(n), default=None
-        Stationary distribution of the thermodynamic ground state.
-        If not already normalized, pi will be scaled to fulfill
-        :math:`\sum_i \pi_i = 1`. If None, models[0].pi will be used
-    f : ndarray(n)
-        Discrete-state free energies of the thermodynamic ground state.
-    label : str, default='ground state'
-        Human-readable description for the thermodynamic ground state
-        or reference state of this multiensemble. May contain a temperature
-        description, such as '300 K' or a description of bias energy such
-        as 'unbiased'.
-    """
+    r"""Coupled set of (stationary) models at multiple thermodynamic states"""
 
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
+        r"""Coupled set of (stationary) models at multiple thermodynamic states.
+
+        Parameters
+        ----------
+        models : list of Model objects
+            List of Model objects, e.g. StationaryModel or MSM objects, at the
+            different thermodynamic states. This list may include the ground
+            state, such that self.pi = self.models[0].pi holds. An example for
+            that is data obtained from parallel tempering or replica-exchange,
+            where the lowest simulated temperature is usually identical to the
+            thermodynamic ground state. However, the list does not have to
+            include the thermodynamic ground state. For example, when obtaining
+            data from umbrella sampling, models might be the list of
+            stationary models for n umbrellas (biased ensembles), while the
+            thermodynamic ground state is the unbiased ensemble. In that
+            case, self.pi would be different from any self.models[i].pi
+        f_therm : ndarray(k)
+            free energies at the different thermodynamic states
+        pi : ndarray(n), default=None
+            Stationary distribution of the thermodynamic ground state.
+            If not already normalized, pi will be scaled to fulfill
+            :math:`\sum_i \pi_i = 1`. If None, models[0].pi will be used
+        f : ndarray(n)
+            Discrete-state free energies of the thermodynamic ground state.
+        label : str, default='ground state'
+            Human-readable description for the thermodynamic ground state
+            or reference state of this multiensemble. May contain a temperature
+            description, such as '300 K' or a description of bias energy such
+            as 'unbiased'.
+        """
         self.set_model_params(models=models, f_therm=f_therm, pi=pi, f=f, label=label)
 
     @property
     def unbiased_state(self):
+        r"""Index of the unbiased thermodynamic state."""
         try:
             return self._unbiased_state
         except AttributeError:
@@ -70,11 +72,11 @@ class MultiThermModel(_StationaryModel):
 
     # LEGACY STUFF ====================================================== DELETE WHENEVER CONVENIENT
     @property
-    @deprecated("model_active_set is deprecated as all models now contain their own active_set.")
+    @_deprecated("model_active_set is deprecated as all models now contain their own active_set.")
     def model_active_set(self):
         return [model.active_set for model in self.models]
     @property
-    @deprecated("msm_active_set is deprecated as the msm object now contains its own active_set.")
+    @_deprecated("msm_active_set is deprecated as the msm object now contains its own active_set.")
     def msm_active_set(self):
         try: return self.msm.active_set
         except AttributeError: return None
