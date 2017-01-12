@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,70 +31,72 @@ __author__ = 'wehmeyer, mey'
 
 
 class WHAM(_Estimator, _MultiThermModel, _ProgressReporter):
-    r"""Weighted Histogram Analysis Method
+    r"""Weighted Histogram Analysis Method."""
 
-    Parameters
-    ----------
-    bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
-        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
-        at thermodynamic state j.
-    maxiter : int, optional, default=10000
-        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1.0E-15
-        Convergence criterion based on the maximal free energy change in a self-consistent
-        iteration step.
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis
-        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
-        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
-        units are (* is an arbitrary string):
-
-        |  'fs',   'femtosecond*'
-        |  'ps',   'picosecond*'
-        |  'ns',   'nanosecond*'
-        |  'us',   'microsecond*'
-        |  'ms',   'millisecond*'
-        |  's',    'second*'
-    stride : int, optional, default=1
-        not used
-
-    Example
-    -------
-    >>> from pyemma.thermo import WHAM
-    >>> import numpy as np
-    >>> B = np.array([[0, 0],[0.5, 1.0]])
-    >>> wham = WHAM(B)
-    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
-    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
-    >>> wham = wham.estimate((ttrajs, dtrajs))
-    >>> wham.log_likelihood() # doctest: +ELLIPSIS
-    -6.6...
-    >>> wham.state_counts # doctest: +SKIP
-    array([[7, 3],
-           [5, 5]])
-    >>> wham.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
-    array([ 0.5...,  0.4...])
-    >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
-    [array([ 0.5...,  0.4...]), array([ 0.6...,  0.3...])]
-
-    References
-    ----------
-    
-    .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
-        New Monte Carlo Technique for Studying Phase Transitions.
-        Phys. Rev. Lett. 23, 2635--2638
-
-    .. [2] Kumar, S. et al 1992.
-        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method.
-        J. Comp. Chem. 13, 1011--1021
-
-    """
     def __init__(
         self, bias_energies_full,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', stride=1):
+        r"""Weighted Histogram Analysis Method
+
+        Parameters
+        ----------
+        bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+            bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+            at thermodynamic state j.
+        maxiter : int, optional, default=10000
+            The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+        maxerr : float, optional, default=1.0E-15
+            Convergence criterion based on the maximal free energy change in a self-consistent
+            iteration step.
+        save_convergence_info : int, optional, default=0
+            Every save_convergence_info iteration steps, store the actual increment
+            and the actual loglikelihood; 0 means no storage.
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis
+            algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+            there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+            units are (* is an arbitrary string):
+
+            |  'fs',   'femtosecond*'
+            |  'ps',   'picosecond*'
+            |  'ns',   'nanosecond*'
+            |  'us',   'microsecond*'
+            |  'ms',   'millisecond*'
+            |  's',    'second*'
+        stride : int, optional, default=1
+            not used
+
+        Example
+        -------
+        >>> from pyemma.thermo import WHAM
+        >>> import numpy as np
+        >>> B = np.array([[0, 0],[0.5, 1.0]])
+        >>> wham = WHAM(B)
+        >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
+        >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
+        >>> wham = wham.estimate((ttrajs, dtrajs))
+        >>> wham.log_likelihood() # doctest: +ELLIPSIS
+        -6.6...
+        >>> wham.state_counts # doctest: +SKIP
+        array([[7, 3],
+               [5, 5]])
+        >>> wham.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
+        array([ 0.5...,  0.4...])
+        >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
+        [array([ 0.5...,  0.4...]), array([ 0.6...,  0.3...])]
+
+        References
+        ----------
+        
+        .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
+            New Monte Carlo Technique for Studying Phase Transitions.
+            Phys. Rev. Lett. 23, 2635--2638
+
+        .. [2] Kumar, S. et al 1992.
+            The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method.
+            J. Comp. Chem. 13, 1011--1021
+
+        """
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
