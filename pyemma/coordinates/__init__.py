@@ -36,6 +36,13 @@ User API
    save_traj
    save_trajs
 
+**Covariance estimation**
+
+.. autosummary::
+  :toctree: generated/
+
+   covariance_lagged
+
 **Coordinate and feature transformations**
 
 .. autosummary::
@@ -76,6 +83,13 @@ Find here a documentation how to extract features from them.
 
    transform.PCA
    transform.TICA
+
+**Covariance estimation**
+
+.. autosummary::
+   :toctree: generated/
+
+   estimation.covariance.LaggedCovariance
 
 **Clustering algorithms**
 
