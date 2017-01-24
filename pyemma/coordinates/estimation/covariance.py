@@ -22,64 +22,61 @@ import numbers
 from math import log
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma._base.logging import Loggable
 from pyemma._base.progress import ProgressReporter
 from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
-__all__ = ['EmpiricalCovariance']
+__all__ = ['LaggedCovariance']
 
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
+class LaggedCovariance(StreamingEstimator, ProgressReporter):
+    r"""Compute lagged covariances between time series.
+
+     Parameters
+     ----------
+     c00 : bool, optional, default=True
+         compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+     c0t : bool, optional, default=False
+         compute lagged correlations. Does not work with lag==0.
+     ctt : bool, optional, default=False
+         compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+     remove_constant_mean : ndarray(N,), optional, default=None
+         substract a constant vector of mean values from time series.
+     remove_data_mean : bool, optional, default=False
+         substract the sample mean from the time series (mean-free correlations).
+     reversible : bool, optional, default=False
+         symmetrize correlations.
+     bessel : bool, optional, default=True
+         use Bessel's correction for correlations in order to use an unbiased estimator
+     sparse_mode : str, optional, default='auto'
+         one of:
+             * 'dense' : always use dense mode
+             * 'auto' : automatic
+             * 'sparse' : always use sparse mode if possible
+     modify_data : bool, optional, default=False
+         If remove_data_mean=True, the mean will be removed in the input data, without creating an independent copy.
+         This option is faster but should only be selected if the input data is not used elsewhere.
+     lag : int, optional, default=0
+         lag time. Does not work with c0t=True or ctt=True.
+     weights : trajectory weights.
+         one of:
+             * None :    all frames have weight one.
+             * float :   all frames have the same specified weight.
+             * object:   an object that possesses a .weight(X) function in order to assign weights to every
+                         time step in a trajectory X.
+     stride: int, optional, default = 1
+         Use only every stride-th time step. By default, every time step is used.
+     skip : int, optional, default=0
+         skip the first initial n frames per trajectory.
+     chunksize : int, optional, default=None
+         The chunk size at which the input files are being processed.
+
+     """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
                  chunksize=None, ncov_max=float('inf')):
-        """
-        Compute lagged covariances between time series.
-
-        Parameters
-        ----------
-        c00 : bool, optional, default=True
-            compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
-        c0t : bool, optional, default=False
-            compute lagged correlations. Does not work with lag==0.
-        ctt : bool, optional, default=False
-            compute instantaneous correlations over the second part of the data. Does not work with lag==0.
-        remove_constant_mean : ndarray(N,), optional, default=None
-            substract a constant vector of mean values from time series.
-        remove_data_mean : bool, optional, default=False
-            substract the sample mean from the time series (mean-free correlations).
-        reversible : bool, optional, default=False
-            symmetrize correlations.
-        bessel : bool, optional, default=True
-            use Bessel's correction for correlations in order to use an unbiased estimator
-        sparse_mode : str, optional, default='auto'
-            one of:
-                * 'dense' : always use dense mode
-                * 'auto' : automatic
-                * 'sparse' : always use sparse mode if possible
-        modify_data : bool, optional, default=False
-            If remove_data_mean=True, the mean will be removed in the input data, without creating an independent copy.
-            This option is faster but should only be selected if the input data is not used elsewhere.
-        lag : int, optional, default=0
-            lag time. Does not work with c0t=True or ctt=True.
-        weights : trajectory weights.
-            one of:
-                * None :    all frames have weight one.
-                * float :   all frames have the same specified weight.
-                * object:   an object that possesses a .weight(X) function in order to assign weights to every
-                            time step in a trajectory X.
-        stride: int, optional, default = 1
-            Use only every stride-th time step. By default, every time step is used.
-        skip : int, optional, default=0
-            skip the first initial n frames per trajectory.
-        chunksize : int, optional, default=None
-            The chunk size at which the input files are being processed.
-
-        """
-
         super(LaggedCovariance, self).__init__(chunksize=chunksize)
 
         if (c0t or ctt) and lag == 0:

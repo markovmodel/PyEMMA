@@ -52,6 +52,7 @@ use the API functions above.
    ChapmanKolmogorovValidator
    MaximumLikelihoodMSM
    BayesianMSM
+   OOMReweightedMSM
    MaximumLikelihoodHMSM
    BayesianHMSM
 
@@ -86,6 +87,7 @@ from msmtools.analysis.dense.pcca import PCCA
 # Estimators and models
 from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import OOMReweightedMSM
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 
