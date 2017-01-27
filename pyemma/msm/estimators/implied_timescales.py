@@ -141,7 +141,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
     def _estimate(self, dtrajs):
         ### PREPARE AND CHECK DATA
-        # TODO: Currenlty only discrete trajectories are implemented. For a general class this needs to be changed.
+        # TODO: Currently only discrete trajectories are implemented. For a general class this needs to be changed.
         dtrajs = _types.ensure_dtraj_list(dtrajs)
 
         # check trajectory lengths
@@ -236,6 +236,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
                 self._its[i, :len(ts)] = ts[:self.nits]  # copy into array. Leave NaN if there is no timescale
                 self._successful_lag_indexes.append(i)
 
+        self._successful_lag_indexes = np.array(self._successful_lag_indexes)
         if len(self._successful_lag_indexes) < len(self._lags):
             computed_all = False
         if np.any(np.isnan(self._its)):
@@ -272,6 +273,13 @@ class ImpliedTimescales(Estimator, ProgressReporter):
     def lags(self, lags):
         if hasattr(self, '_lags') and self._lags is not None:
             self._last_lags = frozenset(self._lags)
+            # remove obsolete models and computed data.
+            if self._models and lags is not None:
+                surivors = np.array([i for i in self._successful_lag_indexes if self._models[i].lag in lags])
+                self._successful_lag_indexes = self._successful_lag_indexes[surivors]
+                self._its = self._its[surivors]
+                if self.samples_available:
+                    self._its_samples = self._its_samples[surivors]
         else:
             self._last_lags = set()
 
@@ -285,11 +293,14 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             self._lags.sort()
 
     @property
-    def number_of_timescales(self):
-        r"""Return the number of timescales.
+    @alias('number_of_timescales')
+    def nits(self):
+        """Return the number of timescales."""
+        return self._nits
 
-        """
-        return self.nits
+    @nits.setter
+    def nits(self, value):
+        self._nits = int(value) if value is not None else None
 
     @property
     @estimation_required
@@ -368,8 +379,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         """
         if self._its_samples is None:
-            raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
-                               ' try calling bootstrap() before')
+            raise RuntimeError('Cannot compute sample mean, because no samples were generated. '
+                               'Use an estimator, which provides samples')
         # OK, go:
         if process is None:
             return np.mean(self._its_samples[:, self._successful_lag_indexes, :], axis=0)
@@ -410,8 +421,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         """
         if self._its_samples is None:
-            raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
-                               ' try calling bootstrap() before')
+            raise RuntimeError('Cannot compute sample std, because no samples were generated. '
+                               'Use an estimator, which provides samples')
         # OK, go:
         if process is None:
             return np.std(self._its_samples[:, self._successful_lag_indexes, :], axis=0)
@@ -445,8 +456,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         """
         if self._its_samples is None:
-            raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
-                               ' try calling bootstrap() before')
+            raise RuntimeError('Cannot compute sample conf, because no samples were generated. '
+                               'Use an estimator, which provides samples')
         # OK, go:
         if process is None:
             return confidence_interval(self._its_samples[:, self._successful_lag_indexes, :], conf=conf)

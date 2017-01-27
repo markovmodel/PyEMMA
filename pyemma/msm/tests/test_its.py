@@ -183,10 +183,21 @@ class TestITS_MSM(unittest.TestCase):
         from pyemma.util.testing_tools import MockLoggingHandler
         log_handler = MockLoggingHandler()
         its.logger.addHandler(log_handler)
-        its.estimate(self.dtraj4_2, lags=new_lags.tolist().append(20))
+        extended_new_lags = new_lags.tolist()
+        extended_new_lags.append(20)
+        its.estimate(self.dtraj4_2, lags=extended_new_lags)
 
         np.testing.assert_equal(its.models[0].dtrajs_full[0], self.dtraj4_2)
         self.assertIn("estimating from new data", log_handler.messages['warning'][0])
+
+        # remove a lag time and ensure the corresponding model is removed too
+        new_lags =  new_lags[:-3]
+        new_lags_len = len(new_lags)
+        its.lags = new_lags
+        np.testing.assert_equal(its.lags, new_lags)
+        assert len(its.models) == new_lags_len
+        assert len(its.timescales) ==new_lags_len
+        assert len(its.sample_mean) == new_lags_len
 
 
 class TestITS_AllEstimators(unittest.TestCase):
