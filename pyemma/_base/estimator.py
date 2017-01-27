@@ -268,9 +268,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     estimator = get_estimator(estimator)
     if hasattr(estimator, 'show_progress'):
         estimator.show_progress = show_progress
+
     # if we want to return estimators, make clones. Otherwise just copy references.
     # For parallel processing we always need clones
-    if return_estimators or n_jobs > 1 or n_jobs is None:
+    # Also if the Estimator is its own Model, we have to clone.
+    from pyemma._base.model import Model
+    if return_estimators or n_jobs > 1 or n_jobs is None or isinstance(estimator, Model):
         estimators = [clone_estimator(estimator) for _ in param_sets]
     else:
         estimators = [estimator for _ in param_sets]
