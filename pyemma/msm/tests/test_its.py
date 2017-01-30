@@ -196,8 +196,22 @@ class TestITS_MSM(unittest.TestCase):
         its.lags = new_lags
         np.testing.assert_equal(its.lags, new_lags)
         assert len(its.models) == new_lags_len
-        assert len(its.timescales) ==new_lags_len
+        assert len(its.timescales) == new_lags_len
         assert len(its.sample_mean) == new_lags_len
+
+    def test_insert_remove_lag_time(self):
+        # test insert and removal at the same time
+        lags = [1, 3, 5]
+        its = timescales_msm(self.dtraj4_2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        new_lags = lags + [6, 7, 8]
+        new_lags = new_lags[2:]
+        new_lags += [21, 22]
+        # omit the first lag
+        new_lags = new_lags[1:]
+        its.estimate(self.dtraj4_2, lags=new_lags)
+        its_one_shot = timescales_msm(self.dtraj4_2, lags=new_lags)
+
+        np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
 
 class TestITS_AllEstimators(unittest.TestCase):

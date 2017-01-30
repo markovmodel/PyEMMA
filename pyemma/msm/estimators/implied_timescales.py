@@ -26,6 +26,8 @@ Created on Jul 26, 2014
 from __future__ import absolute_import, print_function
 
 import numpy as np
+
+from pyemma._base.parallel import NJobsMixIn
 from pyemma.util.annotators import estimation_required, alias, aliased
 
 from pyemma.util.statistics import confidence_interval
@@ -76,7 +78,7 @@ def _hash_dtrajs(dtraj_list):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporter):
+class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
     r"""Implied timescales for a series of lag times.
 
     Parameters
@@ -174,7 +176,11 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             # we already had run an estimation, determine which lag times we need to compute
             # TODO: this will re-evaluate problematic lag times, wont it?
             lags = sorted(list(set(self._lags).difference(self._last_lags)))
-            self.logger.info("estimating not yet estimated lags times: %s", lags)
+            if len(lags) == 0:
+                self.logger.info("All lag times already estimated.")
+                return self
+            assert lags
+            self.logger.info("Running estimating for not yet estimated lags times: %s", lags)
         else:
             lags = self._lags
 
@@ -220,10 +226,6 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])
         if self.nits is None:
             self.nits = maxnts
-        # elif self._estimated and maxnts != self.nits:
-        #     self.logger.warning("Previous number of valid timescales changed from %s to %s. Using new value."
-        #                         , (self.nits, maxnts))
-        #     self.nits = maxnts
 
         if maxnts < self.nits:
             self.nits = maxnts
@@ -283,11 +285,18 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             self._last_lags = frozenset(self._lags)
             # remove obsolete models and computed data.
             if self._models and lags is not None:
-                surivors = np.array([i for i in self._successful_lag_indexes if self._models[i].lag in lags])
-                self._successful_lag_indexes = self._successful_lag_indexes[surivors]
-                self._its = self._its[surivors]
-                if self.samples_available:
-                    self._its_samples = self._its_samples[surivors]
+                survivors = np.array([i for i in self._successful_lag_indexes if self._models[i].lag in lags])
+                if survivors.size == 0:
+                    self._models = []
+                    self._its = None
+                    self._its_samples = None
+                    self._successful_lag_indexes = None
+                else:
+                    self._models = np.array(self._models)[survivors].tolist()
+                    self._successful_lag_indexes = np.arange(len(self._models))
+                    self._its = self._its[survivors]
+                    if self.samples_available:
+                        self._its_samples = self._its_samples[survivors]
         else:
             self._last_lags = set()
 
