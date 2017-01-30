@@ -68,22 +68,20 @@ class NJobsMixIn(object):
     @n_jobs.setter
     def n_jobs(self, val):
         """ set number of jobs/threads to use via assignment of data.
+
         Parameters
         ----------
         val: int or None
             a positive int for the number of jobs. Or None to usage all available resources.
 
-        Notes
-        -----
+        If set to None, this will use all available CPUs or respect the environment variable "OMP_NUM_THREADS"
+        to obtain a job number.
 
         """
-        from pyemma.util.reflection import get_default_args
-        def_args = get_default_args(self.__init__)
-
-        # default value from constructor not valid?
-        if val is None or def_args['n_jobs'] is None:
+        if val is None:
             import psutil
             import os
+            # TODO: aint it better to use a distinct variable for this use case eg. PYEMMA_NJOBS in order to avoid multiplying OMP threads with njobs?
             omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
             n_cpus = psutil.cpu_count()
             if omp_threads_from_env:
