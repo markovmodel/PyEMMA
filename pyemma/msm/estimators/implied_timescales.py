@@ -154,7 +154,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         else:
             self._last_dtrajs_input_hash = _hash_dtrajs(dtrajs)
 
-        self._trajlengths = np.array([len(traj) for traj in dtrajs])
+        self._trajlengths = np.fromiter((len(traj) for traj in dtrajs), dtype=int, count=len(dtrajs))
         maxlength = np.max(self._trajlengths)
 
         # set lag times by data if not yet set
@@ -190,9 +190,9 @@ class ImpliedTimescales(Estimator, ProgressReporter):
                                                  progress_reporter=self)
         self._estimators = estimators
 
-        self._postprocess_results(models, lags)
+        self._postprocess_results(models)
 
-    def _postprocess_results(self, models, lags):
+    def _postprocess_results(self, models):
         ### PROCESS RESULTS
         # if some results are None, estimation has failed. Warn and truncate models and lag times
         good = np.array([i for i, m in enumerate(models) if m is not None], dtype=int)
@@ -201,7 +201,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             raise RuntimeError('Estimation has failed at ALL lagtimes. Check for errors.')
         if bad.size > 0:
             self.logger.warning('Estimation has failed at lagtimes: {lags}. '
-                                'Run single-lag estimation at these lags to track down the error.', lags=lags[bad])
+                                'Run single-lag estimation at these lags to track down the error.',
+                                lags=self._lags[bad])
             models = list(np.array(models)[good])
 
         # merge models prior evaluation
@@ -216,11 +217,13 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         timescales = [m.timescales() for m in models]
 
         # how many finite timescales do we really have?
-        maxnts = max((len(ts[np.isfinite(ts)]) for ts in timescales))
-        if self.nits is None:  # never computed before
+        maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])
+        if self.nits is None:
             self.nits = maxnts
-        else:
-            self.nits = max(maxnts, self.nits)
+        # elif self._estimated and maxnts != self.nits:
+        #     self.logger.warning("Previous number of valid timescales changed from %s to %s. Using new value."
+        #                         , (self.nits, maxnts))
+        #     self.nits = maxnts
 
         if maxnts < self.nits:
             self.nits = maxnts
@@ -271,6 +274,11 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
     @lags.setter
     def lags(self, lags):
+        """Sets the lag times at which the models will be estimated.
+        Remembers the last non None value, in order to extend the lag list. If the input data during estimation is unchanged, we will only
+        need to re-estimate new lag times. If a lag time is removed, we clean up the underlying models and
+        derived data (timescales).
+        """
         if hasattr(self, '_lags') and self._lags is not None:
             self._last_lags = frozenset(self._lags)
             # remove obsolete models and computed data.
