@@ -44,3 +44,61 @@ def _register_progress_bar(show_progress, N, description, n_jobs, progress_repor
             joblib.parallel.BatchCompletionCallBack = CallBack
         else:
             joblib.parallel.CallBack = CallBack
+
+
+class NJobsMixIn(object):
+    # mixin for sklearn-like estimators (estimation/ctor parameter has to contain n_jobs).
+
+    @property
+    def n_jobs(self):
+        """ Returns number of jobs/threads to use during assignment of data.
+
+        Returns
+        -------
+        If None it will return number of processors /or cores or the setting of 'OMP_NUM_THREADS' env variable.
+
+        Notes
+        -----
+        By setting the environment variable 'OMP_NUM_THREADS' to an integer,
+        one will override the default argument of n_jobs (currently None).
+        """
+        assert isinstance(self._n_jobs, int)
+        return self._n_jobs
+
+    @n_jobs.setter
+    def n_jobs(self, val):
+        """ set number of jobs/threads to use via assignment of data.
+        Parameters
+        ----------
+        val: int or None
+            a positive int for the number of jobs. Or None to usage all available resources.
+
+        Notes
+        -----
+
+        """
+        from pyemma.util.reflection import get_default_args
+        def_args = get_default_args(self.__init__)
+
+        # default value from constructor not valid?
+        if val is None or def_args['n_jobs'] is None:
+            import psutil
+            import os
+            omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
+            n_cpus = psutil.cpu_count()
+            if omp_threads_from_env:
+                try:
+                    self._n_jobs = int(omp_threads_from_env)
+                    if hasattr(self, 'logger'):
+                        self.logger.info("number of threads obtained from env variable"
+                                         " 'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
+                except ValueError as ve:
+                    if hasattr(self, 'logger'):
+                        self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'."
+                                            " Value='{}'. Error={}. Will use {} jobs."
+                                            .format(omp_threads_from_env, ve, n_cpus))
+                    self._n_jobs = n_cpus
+            else:
+                self._n_jobs = n_cpus
+        else:
+            self._n_jobs = int(val)
