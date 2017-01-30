@@ -129,7 +129,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
                                 failfast):
     """ Method that runs estimation for several parameter settings.
 
-    Defined as a worker for Parallelization
+    Defined as a worker for parallelization
 
     """
     # run estimation
@@ -157,7 +157,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
         values = []  # the function values the model
         for ieval, name in enumerate(evaluate):
             # get method/attribute name and arguments to be evaluated
-            name = evaluate[ieval]
+            #name = evaluate[ieval]
             args = ()
             if evaluate_args is not None:
                 args = evaluate_args[ieval]
@@ -248,7 +248,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     >>> param_sets=param_grid({'lag': [1,2,3]})
     >>>
     >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate='timescales')
-    [array([ 1.24113168,  0.77454377]), array([ 2.48226337,  1.54908754]), array([ 3.72339505,  2.32363131])]
+    [array([ 1.24113168,  0.77454377]), array([ 2.65266698,  1.42909842]), array([ 5.34810405,  1.14784446])]
 
     Now we also want to get samples of the timescales using the BayesianMSM.
     >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, failfast=False,
@@ -270,10 +270,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         estimator.show_progress = show_progress
 
     # if we want to return estimators, make clones. Otherwise just copy references.
-    # For parallel processing we always need clones
+    # For parallel processing we always need clones.
     # Also if the Estimator is its own Model, we have to clone.
     from pyemma._base.model import Model
-    if return_estimators or n_jobs > 1 or n_jobs is None or isinstance(estimator, Model):
+    if (return_estimators or
+        n_jobs > 1 or n_jobs is None or
+        isinstance(estimator, Model)):
         estimators = [clone_estimator(estimator) for _ in param_sets]
     else:
         estimators = [estimator for _ in param_sets]
@@ -300,8 +302,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                                                                  param_set, X,
                                                                  evaluate,
                                                                  evaluate_args,
-                                                                 failfast,
-                                                                 )
+                                                                 failfast)
                      for estimator, param_set in zip(estimators, param_sets))
 
         from .parallel import _init_pool
@@ -313,8 +314,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
         res = []
-        for i, param in enumerate(param_sets):
-            res.append(_estimate_param_scan_worker(estimators[i], param, X,
+        for estimator, param_set in zip(estimators, param_sets):
+            res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast))
             if progress_reporter is not None and show_progress:
                 progress_reporter._progress_update(1, stage=0)
