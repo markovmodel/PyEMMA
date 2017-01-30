@@ -5,7 +5,7 @@ environment:
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
-    CONDA_NPY: "110"
+    CONDA_NPY: "112"
     PYTHONHASHSEED: "0"
 
   matrix:
@@ -29,7 +29,7 @@ install:
   - conda config --set always_yes true 
   - conda config --add channels omnia 
   - conda config --add channels conda-forge
-  - conda install -q conda-build=2.0.1 jinja2
+  - conda install -q conda-build=2.1.2 jinja2
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
