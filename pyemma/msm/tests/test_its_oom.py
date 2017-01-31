@@ -27,19 +27,23 @@ import numpy as np
 import scipy.linalg as scl
 import pkg_resources
 import warnings
+import sys
 
 from pyemma.msm import markov_model
 from pyemma.util.linalg import _sort_by_norm
 from pyemma.msm import timescales_msm as _ts_msm
 from six.moves import range
 
+
 def timescales_msm(*args, **kw):
     # wrap this function to use multi-processing, since these tests are running quite long.
     if 'n_jobs' in kw:
         pass
     else:
-        kw['n_jobs'] = None  # let the environment determine this.
+        # let the environment determine this.
+        kw['n_jobs'] = None if sys.platform != 'win32' else 1
     return _ts_msm(*args, **kw)
+
 
 def oom_transformations(Ct, C2t, rank):
     # Number of states:
