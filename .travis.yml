@@ -11,7 +11,7 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="conda-build=2.0.1"
+    - common_py_deps="conda-build=2.1.2"
     - PACKAGENAME=pyemma
     - ORGNAME=omnia
     - PYTHONHASHSEED=0
