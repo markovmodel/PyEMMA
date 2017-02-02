@@ -33,4 +33,22 @@ def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
     r"""wrapper for numpy.testing.allclose with default tolerances of
     numpy.allclose. Needed since testing method has different values."""
     return assert_allclose_np(actual, desired, rtol=rtol, atol=atol,
-                              err_msg=err_msg, verbose=True)
+                              err_msg=err_msg, verbose=verbose)
+
+
+def _hash_numpy_array(x):
+    import six
+    hash_value = hash(x.shape)
+    hash_value ^= hash(x.strides)
+
+    if six.PY3:  # python 3 does not support the hashing of memoryviews with other types than 'b', 'B'
+        hash_value ^= hash(x.data.tobytes())  # this makes a copy!
+    else:
+        writeable_old = x.flags.writeable
+        try:
+            x.flags.writeable = False
+            hash_value ^= hash(x.data)
+        finally:
+            x.flags.writeable = writeable_old
+
+    return hash_value
