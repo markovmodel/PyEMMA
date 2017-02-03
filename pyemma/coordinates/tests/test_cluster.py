@@ -65,9 +65,6 @@ class TestCluster(unittest.TestCase):
         cls.rt = coor.cluster_uniform_time(data = cls.X, k = 100)
         cls.cl = [cls.km, cls.rs, cls.rt]
 
-    def setUp(self):
-        pass
-
     def test_chunksize(self):
         for c in self.cl:
             assert types.is_int(c.chunksize)
@@ -138,11 +135,6 @@ class TestCluster(unittest.TestCase):
         for c in self.cl:
             assert c.output_type() == np.int32
 
-    def test_parametrize(self):
-        for c in self.cl:
-            # nothing should happen
-            c.parametrize()
-
     def test_save_dtrajs(self):
         extension = ".dtraj"
         outdir = self.dtraj_dir
@@ -168,6 +160,39 @@ class TestCluster(unittest.TestCase):
         for c in self.cl:
             assert len(c.trajectory_lengths()) == 1
             assert c.trajectory_lengths()[0] == c.trajectory_length(0)
+
+
+class TestClusterDirect(TestCluster):
+    # perform all the tests of TestCluster, but use Estimator classes directly without API.
+    @classmethod
+    def setUpClass(cls):
+        from pyemma.coordinates.clustering import KmeansClustering, RegularSpaceClustering, UniformTimeClustering
+        cls.dtraj_dir = tempfile.mkdtemp()
+
+        # generate Gaussian mixture
+        means = [np.array([-3,0]),
+                 np.array([-1,1]),
+                 np.array([0,0]),
+                 np.array([1,-1]),
+                 np.array([4,2])]
+        widths = [np.array([0.3,2]),
+                  np.array([0.3,2]),
+                  np.array([0.3,2]),
+                  np.array([0.3,2]),
+                  np.array([0.3,2])]
+        # continuous trajectory
+        nsample = 1000
+        cls.T = len(means)*nsample
+        cls.X = np.zeros((cls.T, 2))
+        for i in range(len(means)):
+            cls.X[i*nsample:(i+1)*nsample,0] = widths[i][0] * np.random.randn() + means[i][0]
+            cls.X[i*nsample:(i+1)*nsample,1] = widths[i][1] * np.random.randn() + means[i][1]
+        # cluster in different ways
+        cls.km = KmeansClustering(n_clusters=100).estimate(cls.X)
+        cls.rs = RegularSpaceClustering(dmin=0.5).estimate(cls.X)
+        cls.rt = UniformTimeClustering(n_clusters=100).estimate(cls.X)
+        cls.cl = [cls.km, cls.rs, cls.rt]
+        return cls
 
 
 if __name__ == "__main__":

@@ -1,6 +1,22 @@
 Changelog
 =========
 
+2.3.1 (tba)
+-----------
+
+**New features**:
+
+- msm:
+  - ImpliedTimescales: enable insertion/removal of lag times.
+    Avoid recomputing existing models. #1030
+
+**Fixes**:
+
+- coordinates:
+   - If Estimators supporting streaming are used directly, restore previous behaviour. #1034
+     Note that estimators used directly from the API are not affected.
+
+
 2.3 (6-1-2017)
 --------------
 
