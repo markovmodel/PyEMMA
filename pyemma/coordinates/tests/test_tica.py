@@ -178,7 +178,15 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_with_skip(self):
         data = np.random.random((100, 10))
-        tica_obj = api.tica(lag=10, dim=1, skip=1)
+        tica_obj = api.tica(data, lag=10, dim=1, skip=1)
+
+    def test_pipelining_sklearn_compat(self):
+        from pyemma.coordinates.transform import TICA
+        t = TICA(1)
+        x = np.random.random((20, 3))
+        y = t.fit_transform(x)
+        y2 = t.get_output()
+        np.testing.assert_allclose(y2[0], y)
 
 
 class TestTICAExtensive(unittest.TestCase):
