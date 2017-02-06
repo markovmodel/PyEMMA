@@ -1,23 +1,23 @@
 Changelog
 =========
 
-2.3.1 (tba)
------------
+2.3.1 (2-6-2017)
+----------------
 
 **New features**:
 
 - msm:
-  - ImpliedTimescales: enable insertion/removal of lag times.
-    Avoid recomputing existing models. #1030
+   - ImpliedTimescales: enable insertion/removal of lag times.
+     Avoid recomputing existing models. #1030
 
 **Fixes**:
 
 - coordinates:
    - If Estimators supporting streaming are used directly, restore previous behaviour. #1034
-     Note that estimators used directly from the API are not affected.
+     Note that estimators used directly from the API were not affected.
 
 
-2.3 (6-1-2017)
+2.3 (1-6-2017)
 --------------
 
 **New features**:
@@ -229,7 +229,7 @@ Service release. Fixes some
   - Maximum likelihood estimation can deal with disconnected hidden transition
     matrices. The desired connectivity is selected only at the end of the
     estimation (optionally), or a posteriori.
-  - Much more robust estimation of initial Hidden Markov model. 
+  - Much more robust estimation of initial Hidden Markov model.
   - Added option stationary that controls whether input data is assumed to be
     sampled from the stationary distribution (and then the initial HMM
     distribution is taken as the stationary distribution of the hidden
@@ -291,7 +291,7 @@ Patch release to address DeprecationWarning flood in conjunction with Jupyther n
 
 **New features**:
 
-- msm: added keyword "count_mode" to estimate_markov_model, to specify the way 
+- msm: added keyword "count_mode" to estimate_markov_model, to specify the way
   of counting during creation of a count matrix. It defaults to the same behaviour
   like prior versions (sliding window). New options:
 
@@ -320,22 +320,22 @@ Patch release to address DeprecationWarning flood in conjunction with Jupyther n
 **New features**:
 
 - coordinates: added Sparsifier, which detects constant features in data stream
-  and removes them for further processing. 
+  and removes them for further processing.
 - coordinates: cache lengths of NumPy arrays
 - coordinates: clustering.interface new methods index_clusters and sample_indexes_by_cluster
 - coordinates: featurizer.add_contacts has new threshold value of .3 nm
-- coordinates: featurizer.pairs gets opt arg excluded_neighbors (default (=0) is unchanged)  
+- coordinates: featurizer.pairs gets opt arg excluded_neighbors (default (=0) is unchanged)
 - coordinates: featurizer.describe uses resSeq instead of residue.index
 - plots: network plots gets new arg state_labels, arg state_colors extended, textkwargs added
-- plots: timescale plot accepts different units for x,y axes 
-- logging: full-feature access to Python logging system (edit logging.yml in .pyemma dir) 
+- plots: timescale plot accepts different units for x,y axes
+- logging: full-feature access to Python logging system (edit logging.yml in .pyemma dir)
 
 **Fixes**:
 
 - Upon import no deprecation warning (about acf function) is shown.
 - coordinates: chunksize attribute moved to readers (no consequence for user-scripts)
 - coordinates: fixed bug in parallel evaluation of Estimators, when they have active loggers.
-- documentation fixes 
+- documentation fixes
 
 2.0.1 (9-3-2015)
 ----------------
@@ -390,11 +390,11 @@ reorganization of the code.
 1.2.2 (7-27-2015)
 -----------------
 - msm estimation: new fast transition matrix sampler
-- msm estimation: new feature "auto-sparse": automatically decide which datatype 
+- msm estimation: new feature "auto-sparse": automatically decide which datatype
   to use for transition matrix estimation.
 - coordinates package: kinetic map feature for TICA (arXiv:1506.06259 [physics.comp-ph])
 - coordinates package: better examples for API functions.
-- coordinates package: cluster assignment bugfix in parallel environments (OpenMP). 
+- coordinates package: cluster assignment bugfix in parallel environments (OpenMP).
 - coordinates package: added cos/sin transformations for angle based features to
   featurizer. This is recommended for PCA/TICA transformations.
 - coordinates package: added minimum RMSD feature to featurizer.
@@ -418,7 +418,7 @@ reorganization of the code.
 - coordinates package: enable passing chunk size to readers and pipelines in API.
 - coordinates package: assign_to_centers now allows all supported file formats as centers input.
 - coordinates package: save_traj(s) now handles stride parameter.
-- coordinates package: save_traj    now accepts also lists of files as an input 
+- coordinates package: save_traj    now accepts also lists of files as an input
   In this case, an extra parameter topfile has to be parsed as well.
 - plots package: added functions to plot flux and msm models.
 - Bugfixes:
@@ -430,21 +430,21 @@ reorganization of the code.
 1.2 (4-14-2015)
 ---------------
 1.2 is a major new release which offers a load of new and useful functionalities
-for coordinate loading, data processing and Markov model estimation and analysis. 
+for coordinate loading, data processing and Markov model estimation and analysis.
 In a few places we had to change existing API functions, but we encourage
 everyone to update to 1.2.
 
 - coordinate package: featurizer can be constructed separately
 - coordinate package: new functions for loading data and creating file readers
   for large trajectories
-- coordinate package: all clustering functions were renamed 
+- coordinate package: all clustering functions were renamed
   (e.g.: kmeans -> cluster_kmeans). Old function names do still work, but are deprecated
 - coordinate package: new pipeline() function for generic data processing pipelines.
   Using pipelines you can go from data loading, over transformation via TICA or PCA,
-  to clustered data all via stream processing. This avoids having to load large 
+  to clustered data all via stream processing. This avoids having to load large
   datasets into memory.
-- msm package: markov_model() function creates a MSM object that offers a lot 
-  of analysis functions such as spectral analysis, mean first passage times, 
+- msm package: markov_model() function creates a MSM object that offers a lot
+  of analysis functions such as spectral analysis, mean first passage times,
   pcca, calculation of experimental observables, etc.
 - msm package: estimate_markov_model() function creates a EstimatedMSM object
   from data. Offers all functionalities of MSM plus additional functions related
