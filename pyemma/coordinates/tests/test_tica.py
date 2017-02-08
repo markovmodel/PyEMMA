@@ -188,6 +188,9 @@ class TestTICA_Basic(unittest.TestCase):
         y2 = t.get_output()
         np.testing.assert_allclose(y2[0], y)
 
+    def test_commute_map(self):
+        tica(list(range(100)), commute_map=True, kinetic_map=False)
+
 
 class TestTICAExtensive(unittest.TestCase):
     @classmethod

@@ -22,21 +22,15 @@ Created on 19.01.2015
 
 from __future__ import absolute_import
 
-
 import numpy as np
-import scipy.linalg as scl
 from decorator import decorator
-from pyemma._base.model import Model
-from pyemma.coordinates.estimation.covariance import LaggedCovariance
-from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
-from pyemma.util.annotators import fix_docs, deprecated
-from pyemma._ext.variational.solvers.direct import eig_corr
-from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
-from pyemma.util.reflection import get_default_args
-from pyemma.util.exceptions import PyEMMA_DeprecationWarning
-import warnings
 
+from pyemma._base.model import Model
+from pyemma._ext.variational.solvers.direct import eig_corr
+from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
+from pyemma.coordinates.estimation.covariance import LaggedCovariance
+from pyemma.util.annotators import deprecated
+from pyemma.util.reflection import get_default_args
 
 __all__ = ['TICA']
 
@@ -287,15 +281,13 @@ class TICA(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
-
         eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
         if self.kinetic_map and self.commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if self.kinetic_map:  # scale by eigenvalues
             eigenvectors *= eigenvalues[None, :]
         if self.commute_map:  # scale by (regularized) timescales
-            timescales = self.timescales
-
+            timescales = 1-self.lag / np.log(np.abs(eigenvalues))
             # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
             regularized_timescales = 0.5 * timescales * np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1)
 
