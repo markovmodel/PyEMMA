@@ -121,33 +121,35 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         reader = source(self.trajnames, top=self.temppdb)
         reader_output = reader.get_output()
 
-        params = {'lag': 10, 'kinetic_map': False, 'dim': self.dim}
+        for output_params in [{'kinetic_map': False}, {'kinetic_map': True}, {'kinetic_map': False, 'commute_map': True}]:
+            params = {'lag': 10, 'dim': self.dim}
+            params.update(output_params)
 
-        tica_obj = tica(**params)
-        tica_obj.partial_fit(reader_output[0])
-        assert not tica_obj._estimated
-        # acccess eigenvectors to force diagonalization
-        tica_obj.eigenvectors
-        assert tica_obj._estimated
+            tica_obj = tica(**params)
+            tica_obj.partial_fit(reader_output[0])
+            assert not tica_obj._estimated
+            # acccess eigenvectors to force diagonalization
+            tica_obj.eigenvectors
+            assert tica_obj._estimated
 
-        tica_obj.partial_fit(reader_output[1])
-        assert not tica_obj._estimated
+            tica_obj.partial_fit(reader_output[1])
+            assert not tica_obj._estimated
 
-        tica_obj.eigenvalues
-        assert tica_obj._estimated
+            tica_obj.eigenvalues
+            assert tica_obj._estimated
 
-        for traj in reader_output[2:]:
-            tica_obj.partial_fit(traj)
+            for traj in reader_output[2:]:
+                tica_obj.partial_fit(traj)
 
-        # reference
-        ref = tica(reader, **params)
+            # reference
+            ref = tica(reader, **params)
 
-        np.testing.assert_allclose(tica_obj.cov, ref.cov, atol=1e-15)
-        np.testing.assert_allclose(tica_obj.cov_tau, ref.cov_tau, atol=1e-15)
+            np.testing.assert_allclose(tica_obj.cov, ref.cov, atol=1e-15)
+            np.testing.assert_allclose(tica_obj.cov_tau, ref.cov_tau, atol=1e-15)
 
-        np.testing.assert_allclose(tica_obj.eigenvalues, ref.eigenvalues, atol=1e-15)
-        # we do not test eigenvectors here, since the system is very metastable and
-        # we have multiple eigenvalues very close to one.
+            np.testing.assert_allclose(tica_obj.eigenvalues, ref.eigenvalues, atol=1e-15)
+            # we do not test eigenvectors here, since the system is very metastable and
+            # we have multiple eigenvalues very close to one.
 
 if __name__ == "__main__":
     unittest.main()
