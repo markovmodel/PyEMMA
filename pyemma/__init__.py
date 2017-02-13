@@ -108,7 +108,7 @@ def _version_check(current, testing=False):
                               .format(latest=latest, current=current), category=UserWarning)
         except Exception:
             import logging
-            logging.getLogger('pyemma').exception("error during version check")
+            logging.getLogger('pyemma').debug("error during version check", exc_info=True)
     return threading.Thread(target=_impl)
 
 # start check in background
