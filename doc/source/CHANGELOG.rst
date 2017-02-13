@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.3.2 (tba)
+
+**Fixes**:
+
+- coordinates:
+  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+
 2.3.1 (2-6-2017)
 ----------------
 
