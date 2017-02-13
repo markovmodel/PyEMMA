@@ -176,7 +176,7 @@ def deprecated(*optional_message):
                 frame = caller_stack.pop(0)
                 filename = frame[1]
                 # skip callee frames if they are other decorators or this file(func)
-                if 'decorator' in filename or __file__ in filename:
+                if '<decorator' in filename or __file__ in filename:
                     continue
                 else: break
             lineno = frame[2]
