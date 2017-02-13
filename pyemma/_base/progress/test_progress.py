@@ -16,27 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import unittest
 
-def _ProgressReporter_pyemma_config(cls):
-    # monkey patch the getter to respect pyemmas config.
-
-    @cls.show_progress.getter
-    def show_progress(self):
-        """ whether to show the progress of heavy calculations on this object. """
-        from pyemma import config
-        # no value yet, obtain from config
-        if not hasattr(self, "_show_progress"):
-            val = config.show_progress_bars
-            self._show_progress = val
-        # config disabled progress?
-        elif not config.show_progress_bars:
-            return False
-
-        return self._show_progress
-
-    cls.show_progress = show_progress
-    return cls
+from pyemma._base.progress import ProgressReporter
+from pyemma.util.contexts import settings
 
 
-from progress_reporter import ProgressReporter as _impl
-ProgressReporter = _ProgressReporter_pyemma_config(_impl)
+class TestProgress(unittest.TestCase):
+
+    def setUp(self):
+        self.pg = ProgressReporter()
+        self.pg._progress_register(100, "test")
+
+    def test_config_override(self):
+        self.pg.show_progress = True
+        with settings(show_progress_bars=False):
+            assert self.pg.show_progress == False
+
+    def test_config_2(self):
+        self.pg.show_progress = False
+        with settings(show_progress_bars=True):
+            assert not self.pg.show_progress
+
+
+if __name__ == '__main__':
+    unittest.main()
