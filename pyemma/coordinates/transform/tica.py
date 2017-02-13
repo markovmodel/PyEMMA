@@ -289,7 +289,7 @@ class TICA(StreamingEstimationTransformer):
         if self.commute_map:  # scale by (regularized) timescales
             timescales = 1-self.lag / np.log(np.abs(eigenvalues))
             # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
-            regularized_timescales = 0.5 * timescales * np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1)
+            regularized_timescales = 0.5 * timescales * np.maximum(np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1), 0)
 
             eigenvectors *= np.sqrt(regularized_timescales / 2)
         self._logger.debug("finished diagonalisation.")
