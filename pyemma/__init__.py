@@ -38,14 +38,6 @@ from . import plots
 from . import thermo
 
 
-def _setup_testing():
-    # setup function for testing
-    from pyemma.util import config
-    # do not cache trajectory info in user directory (temp traj files)
-    config.use_trajectory_lengths_cache = False
-    config.show_progress_bars = False
-
-
 def _version_check(current, testing=False):
     """ checks latest version online from http://emma-project.org.
 
