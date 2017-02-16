@@ -229,14 +229,14 @@ class MSM(_Model):
 
     @property
     def dt_model(self):
+        """Description of the physical time corresponding to the lag."""
         return self._dt_model
 
     @dt_model.setter
     def dt_model(self, value):
         self._dt_model = value
-
-        # this is only used internally?
         from pyemma.util.units import TimeUnit
+        # this is used internally to scale output times to a physical time unit.
         self._timeunit_model = TimeUnit(self.dt_model)
 
 
@@ -247,11 +247,11 @@ class MSM(_Model):
     @property
     @alias('stationary_distribution')
     def pi(self):
+        """The stationary distribution on the MSM states"""
         return self._pi
 
     @pi.setter
     def pi(self, value):
-        """The stationary distribution on the MSM states"""
         if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)

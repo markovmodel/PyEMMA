@@ -29,7 +29,7 @@ from pyemma._base.model import Model
 from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
-from pyemma.util.annotators import deprecated
+from pyemma.util.annotators import deprecated, fix_docs
 from pyemma.util.reflection import get_default_args
 
 __all__ = ['TICA']
@@ -50,6 +50,7 @@ def _lazy_estimation(func, *args, **kw):
     return func(*args, **kw)
 
 
+@fix_docs
 class TICA(StreamingEstimationTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
