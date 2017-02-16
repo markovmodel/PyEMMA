@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,7 @@ from .util import assign_unbiased_state_label as _assign_unbiased_state_label
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Christoph Wehmeyer"
-__copyright__ = "Copyright 2015, 2016, Computational Molecular Biology Group, FU-Berlin"
+__copyright__ = "Copyright 2015-2017, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Frank Noe", "Christoph Wehmeyer"]
 __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
@@ -45,9 +45,9 @@ def estimate_umbrella_sampling(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     **kwargs):
     r"""
-    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
-    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
-    when the data comes from umbrella sampling and (optional) unbiased simulations.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar``, and ``wham()`` and
+    handles the calculation of bias energies (``bias``) and thermodynamic state trajectories
+    (``ttrajs``) when the data comes from umbrella sampling and (optional) unbiased simulations.
 
     Parameters
     ----------
@@ -118,7 +118,7 @@ def estimate_umbrella_sampling(
 
     Returns
     -------
-    estimator_obj : MEMM or MultiThermModel or list thereof
+    A :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` or :class:`MEMM <pyemma.thermo.models.memm.MEMM>` object or list thereof
         The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
         are given, a list of objects is returned (one MEMM per lag time).
 
@@ -143,6 +143,37 @@ def estimate_umbrella_sampling(
     >>> tram = estimate_us(us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=md_trajs, md_dtrajs=md_dtrajs, estimator='tram', lag=1)
     >>> tram.f # doctest: +ELLIPSIS
     array([ 0.63...,  1.60...,  1.31...])
+
+    See :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>`
+    or :class:`MEMM <pyemma.thermo.models.memm.MEMM>` for a full documentation.
+
+    .. autoclass:: pyemma.thermo.models.multi_therm.MultiThermModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+            :attributes:
+
+    .. autoclass:: pyemma.thermo.models.memm.MEMM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+            :attributes:
 
     """
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
@@ -252,9 +283,9 @@ def estimate_multi_temperature(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
     **kwargs):
     r"""
-    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
-    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
-    when the data comes from multi-temperature simulations.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar``, and ``wham()`` and
+    handles the calculation of bias energies (``bias``) and thermodynamic state trajectories
+    (``ttrajs``) when the data comes from multi-temperature simulations.
 
     Parameters
     ----------
@@ -322,7 +353,7 @@ def estimate_multi_temperature(
 
     Returns
     -------
-    estimator_obj : MEMM or MultiThermModel or list thereof
+    A :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` or :class:`MEMM <pyemma.thermo.models.memm.MEMM>` object or list thereof
         The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
         are given, a list of objects is returned (one MEMM per lag time).
 
@@ -342,6 +373,37 @@ def estimate_multi_temperature(
 
     Note that alhough we only used one temperature per trajectory, ``estimate_multi_temperature()``
     can handle temperature changes as well.
+
+    See :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>`
+    or :class:`MEMM <pyemma.thermo.models.memm.MEMM>` for a full documentation.
+
+    .. autoclass:: pyemma.thermo.models.multi_therm.MultiThermModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+            :attributes:
+
+    .. autoclass:: pyemma.thermo.models.memm.MEMM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+            :attributes:
 
     """
     if estimator not in ['wham', 'mbar', 'dtram', 'tram']:
@@ -478,7 +540,7 @@ def tram(
 
     Returns
     -------
-    tram_estimators : MEMM or list of MEMMs
+    A :class:`MEMM <pyemma.thermo.models.memm.MEMM>` object or list thereof
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -527,6 +589,22 @@ def tram(
             [2 1]]], dtype=int32)
     >>> tram_obj.stationary_distribution # doctest: +ELLIPSIS
     array([ 0.38...  0.61...])
+
+    See :class:`MEMM <pyemma.thermo.models.memm.MEMM>` for a full documentation.
+
+    .. autoclass:: pyemma.thermo.models.memm.MEMM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+            :attributes:
 
     References
     ----------
@@ -642,7 +720,7 @@ def dtram(
 
     Returns
     -------
-    dtram_estimators : MEMM or list of MEMMs
+    A :class:`MEMM <pyemma.thermo.models.memm.MEMM>` object or list thereof
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -695,6 +773,22 @@ def dtram(
             [3, 1]]], dtype=int32)
     >>> dtram_obj.stationary_distribution # doctest: +ELLIPSIS
     array([ 0.38...,  0.61...])
+
+    See :class:`MEMM <pyemma.thermo.models.memm.MEMM>` for a full documentation.
+
+    .. autoclass:: pyemma.thermo.models.memm.MEMM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.memm.MEMM
+            :attributes:
 
     References
     ----------
@@ -773,7 +867,7 @@ def wham(
 
     Returns
     -------
-    wham_estimator : MultiThermModel
+    A :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` object
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
@@ -824,6 +918,24 @@ def wham(
            [5, 5]])
     >>> wham_obj.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
     array([ 0.5...,  0.4...])
+
+    See :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` for a full
+    documentation.
+
+
+    .. autoclass:: pyemma.thermo.models.multi_therm.MultiThermModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+            :attributes:
 
     References
     ----------
@@ -906,7 +1018,7 @@ def mbar(
 
     Returns
     -------
-    mbar_estimator : MultiThermModel
+    A :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` object
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
@@ -948,6 +1060,24 @@ def mbar(
     >>> mbar_obj = mbar(ttrajs, dtrajs, bias, maxiter=1000000, maxerr=1.0E-14)
     >>> mbar_obj.stationary_distribution # doctest: +ELLIPSIS
     array([ 0.5...  0.5...])
+
+    See :class:`MultiThermModel <pyemma.thermo.models.multi_therm.MultiThermModel>` for a full
+    documentation.
+
+
+    .. autoclass:: pyemma.thermo.models.multi_therm.MultiThermModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.thermo.models.multi_therm.MultiThermModel
+            :attributes:
 
     References
     ----------
