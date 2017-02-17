@@ -43,7 +43,7 @@ def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
-    **kwargs):
+    width=None, **kwargs):
     r"""
     This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar``, and ``wham()`` and
     handles the calculation of bias energies (``bias``) and thermodynamic state trajectories
@@ -112,6 +112,10 @@ def estimate_umbrella_sampling(
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    width : array-like of float, optional, default=None
+        Specify periodicity for individual us_traj dimensions. Each positive entry will make the
+        corresponding feature periodic and use the given value as width. None/zero values will be
+        treated as non-periodic.
     **kwargs : dict, optional
         You can use this to pass estimator-specific named parameters to the chosen estimator, which
         are not already coverd by ``estimate_umbrella_sampling()``.
@@ -229,7 +233,7 @@ def estimate_umbrella_sampling(
             i += 1
     # data preparation
     ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
-        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT, width=width)
     estimator_obj = None
     # estimation
     if estimator == 'wham':
