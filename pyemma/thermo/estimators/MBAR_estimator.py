@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -32,44 +32,46 @@ __author__ = 'wehmeyer'
 
 
 class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
-    r"""Multi-state Bennet Acceptance Ratio Method
+    r"""Multi-state Bennet Acceptance Ratio Method."""
 
-    Parameters
-    ----------
-    maxiter : int, optional, default=10000
-        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1.0E-15
-        Convergence criterion based on the maximal free energy change in a self-consistent
-        iteration step.
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis
-        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
-        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
-        units are (* is an arbitrary string):
-
-        |  'fs',   'femtosecond*'
-        |  'ps',   'picosecond*'
-        |  'ns',   'nanosecond*'
-        |  'us',   'microsecond*'
-        |  'ms',   'millisecond*'
-        |  's',    'second*'
-    stride : int, optional, default=1
-        not used
-
-    Example
-    -------
-
-    References
-    ----------
-
-    """
     def __init__(
         self,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
         dt_traj='1 step', direct_space=False):
+        r"""Multi-state Bennet Acceptance Ratio Method
+
+        Parameters
+        ----------
+        maxiter : int, optional, default=10000
+            The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+        maxerr : float, optional, default=1.0E-15
+            Convergence criterion based on the maximal free energy change in a self-consistent
+            iteration step.
+        save_convergence_info : int, optional, default=0
+            Every save_convergence_info iteration steps, store the actual increment
+            and the actual loglikelihood; 0 means no storage.
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis
+            algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+            there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+            units are (* is an arbitrary string):
+
+            |  'fs',   'femtosecond*'
+            |  'ps',   'picosecond*'
+            |  'ns',   'nanosecond*'
+            |  'us',   'microsecond*'
+            |  'ms',   'millisecond*'
+            |  's',    'second*'
+        stride : int, optional, default=1
+            not used
+
+        Example
+        -------
+
+        References
+        ----------
+
+        """
         self.maxiter = maxiter
         self.maxerr = maxerr
         self.save_convergence_info = save_convergence_info

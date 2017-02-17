@@ -19,10 +19,12 @@ import numpy as _np
 
 
 class SubSet(object):
+
     @property
     def active_set(self):
+        r"""The active set of states on which all computations and estimations will be done."""
         if not hasattr(self, "_active_set"):
-            self._active_set = []
+            raise AttributeError("active_set: the list of active states has not been given.")
         return self._active_set
 
     @active_set.setter
@@ -33,8 +35,10 @@ class SubSet(object):
 
     @property
     def nstates_full(self):
+        r"""Size of the full set of states."""
         if not hasattr(self, "_nstates_full"):
-            self._nstates_full = len(self.active_set)
+            raise AttributeError(
+                "nstates_full: the size of the full set of states has not been given.")
         return self._nstates_full
 
     @nstates_full.setter
@@ -71,7 +75,10 @@ def _wrap_to_full_state(name, default_value, axis):
     def alias_to_full_state(self, *args, **kw):
         data = _call_member(self, name, *args, **kw)
         data = _np.asarray(data)
-        return _globalize(data, axis, self.active_set, default_value, self.nstates_full)
+        try:
+            return _globalize(data, axis, self.active_set, default_value, self.nstates_full)
+        except AttributeError:
+            return data
 
     return alias_to_full_state
 

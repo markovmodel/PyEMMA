@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,40 +21,19 @@ from pyemma.msm.util.subset import SubSet as _SubSet
 from pyemma.msm.util.subset import add_full_state_methods as _add_full_state_methods
 from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util import types as _types
+from pyemma.util.annotators import aliased as _aliased, alias as _alias
 from thermotools.util import logsumexp as _logsumexp
 
 __author__ = 'noe'
 
 @_add_full_state_methods
+@_aliased
 class StationaryModel(_Model, _SubSet):
-    r""" StationaryModel combines a stationary vector with discrete-state free energies.
-
-    Parameters
-    ----------
-    pi : ndarray(n)
-        Stationary distribution. If not already normalized, pi will be
-        scaled to fulfill :math:`\sum_i \pi_i = 1`. The free energies f
-        will be computed from pi via :math:`f_i = - \log(\pi_i)`. Only
-        if normalize_f is True, a constant will be added to ensure
-        consistency with :math:`\sum_i \pi_i = 1`.
-    f : ndarray(n)
-        Discrete-state free energies. If normalized_f = True, a constant
-        will be added to normalize the stationary distribution. Otherwise
-        f is left as given.
-    normalize_energy : bool, default=True
-        If parametrized by free energy f, normalize them such that
-        :math:`\sum_i \pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
-    label : str, default='ground state'
-        Human-readable description for the thermodynamic state of this
-        model. May contain a temperature description, such as '300 K' or
-        a description of bias energy such as 'unbiased' or 'Umbrella 1'
-    """
+    r"""StationaryModel combines a stationary vector with discrete-state free energies."""
 
     def __init__(self, pi=None, f=None, normalize_energy=True, label='ground state'):
-        self.set_model_params(pi=pi, f=f, normalize_f=normalize_energy)
+        r"""StationaryModel combines a stationary vector with discrete-state free energies.
 
-    def set_model_params(self, pi=None, f=None, normalize_f=True):
-        r"""
         Parameters
         ----------
         pi : ndarray(n)
@@ -66,8 +45,8 @@ class StationaryModel(_Model, _SubSet):
         f : ndarray(n)
             Discrete-state free energies. If normalized_f = True, a constant
             will be added to normalize the stationary distribution. Otherwise
-            f is left as given.
-        normalize_f : bool, default=True
+            f is left as given. If both (pi and f) are given, f takes precedence.
+        normalize_energy : bool, default=True
             If parametrized by free energy f, normalize them such that
             :math:`\sum_i \pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
         label : str, default='ground state'
@@ -75,57 +54,90 @@ class StationaryModel(_Model, _SubSet):
             model. May contain a temperature description, such as '300 K' or
             a description of bias energy such as 'unbiased' or 'Umbrella 1'
         """
-        # check input
-        if pi is None and f is None:
-            raise ValueError('Trying to initialize model without parameters:'
-                             ' Both pi (stationary distribution)'
-                             'and f (free energy) are None.'
-                             'At least one of them needs to be set.')
-        # use f with preference
+        self.set_model_params(pi=pi, f=f, normalize_f=normalize_energy, label=label)
+
+    def set_model_params(self, pi=None, f=None, normalize_f=None, label=None):
+        r"""Call to set all basic model parameters.
+
+        Parameters
+        ----------
+        pi : ndarray(n)
+            Stationary distribution. If not already normalized, pi will be
+            scaled to fulfill :math:`\sum_i \pi_i = 1`. The free energies f
+            will then be computed from pi via :math:`f_i = - \log(\pi_i)`.
+        f : ndarray(n)
+            Discrete-state free energies. If normalized_f = True, a constant
+            will be added to normalize the stationary distribution. Otherwise
+            f is left as given. Then, pi will be computed from f via :math:`\pi_i = \exp(-f_i)`
+            and, if necessary, scaled to fulfill :math:`\sum_i \pi_i = 1`. If
+            both (pi and f) are given, f takes precedence over pi.
+        normalize_energy : bool, default=True
+            If parametrized by free energy f, normalize them such that
+            :math:`\sum_i \pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
+        label : str, default=None
+            Human-readable description for the thermodynamic state of this
+            model. May contain a temperature description, such as '300 K' or
+            a description of bias energy such as 'unbiased' or 'Umbrella 1'.
+        """
         if f is not None:
             _types.assert_array(f, ndim=1, kind='numeric')
             f = _np.array(f, dtype=float)
             if normalize_f:
                 f += _logsumexp(-f)  # normalize on the level on energies to achieve sum_i pi_i = 1
             pi = _np.exp(-f)
-        else:  # if f is not given, use pi. pi can't be None at this point
+        elif pi is not None:  # if f is not given, use pi. pi can't be None at this point
             _types.assert_array(pi, ndim=1, kind='numeric')
             pi = _np.array(pi, dtype=float)
             f = -_np.log(pi)
-        pi /= pi.sum()  # always normalize pi
-        # set parameters
-        self.update_model_params(pi=pi, f=f, normalize_energy=normalize_f)
-        # set derived quantities
-        self._nstates = len(pi)
+            f += _logsumexp(-f) # always shift f when set by pi
+        else:
+            raise ValueError(
+                "Trying to initialize model without parameters: both pi (stationary distribution)" \
+                " and f (free energy) are None. At least one of them needs to be set.")
+        # set parameters (None does not overwrite)
+        self.update_model_params(pi=pi, f=f, normalize_energy=normalize_f, label=label)
+
+    ################################################################################################
+    #   Derived attributes
+    ################################################################################################
 
     @property
     def nstates(self):
-        """Number of active states on which all computations and estimations are done
-        """
-        return self._nstates
+        r"""Number of active states on which all computations and estimations are done."""
+        return len(self.f)
+
+    @property
+    def label(self):
+        r"""Human-readable description for the thermodynamic state of this model."""
+        return self._label
+    @label.setter
+    def label(self, value):
+        self._label = value
 
     @property
     @_map_to_full_state(default_arg=0.0)
-    def stationary_distribution(self):
-        """The stationary distribution"""
-        return self.pi
-
-    @property
-    def pi_full_state(self):
-        return self.stationary_distribution_full_state
+    @_alias('stationary_distribution')
+    def pi(self):
+        r"""The stationary distribution on the configuration states."""
+        return self._pi
+    @pi.setter
+    def pi(self, value):
+        # always normalize when setting pi!
+        self._pi = value / _np.sum(value)
 
     @property
     @_map_to_full_state(default_arg=_np.inf)
-    def free_energies(self):
-        return self.f
-
-    @property
-    def f_full_state(self):
-        """The free energies of discrete states"""
-        return self.free_energies_full_state
+    @_alias('free_energies')
+    def f(self):
+        r"""The free energies (in units of kT) on the configuration states."""
+        return self._f
+    @f.setter
+    def f(self, value):
+        self._f = value
 
     def expectation(self, a):
         r"""Equilibrium expectation value of a given observable.
+
         Parameters
         ----------
         a : (M,) ndarray
