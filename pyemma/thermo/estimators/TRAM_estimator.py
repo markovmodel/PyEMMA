@@ -358,6 +358,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                         self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations,
                     overcounting_factor=self.overcounting_factor)
+        self._progress_force_finish(stage='TRAM', description='TRAM')
 
         # compute models
         fmsms = [_np.ascontiguousarray((

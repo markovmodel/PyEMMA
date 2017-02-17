@@ -640,7 +640,7 @@ def tram(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
-            callback=callback, init='mbar', init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
