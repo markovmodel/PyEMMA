@@ -17,6 +17,7 @@ def static_var(name, value):
 
 
 def get_extension_names():
+    return []
     import json, pkg_resources
     extensions_file = pkg_resources.resource_filename('pyemma', '_extensions.json')
     with open(extensions_file) as f:
