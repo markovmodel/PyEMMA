@@ -3,6 +3,13 @@ Changelog
 
 2.3.2 (tba)
 
+**New features**:
+
+- thermo:
+   - Allow for periodicity in estimate_umbrella_sampling()
+   - Add *_full_state getter variants to access stationary properties on the full set of states
+     instead of the active set
+
 **Fixes**:
 
 - coordinates:
