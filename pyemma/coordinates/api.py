@@ -505,21 +505,18 @@ def discretizer(reader,
     with a PCA transformation and cluster the principal components
     with uniform time clustering:
 
-    >>> import numpy as np
     >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
     >>> from pyemma.datasets import get_bpti_test_data
+    >>> from pyemma.util.contexts import settings
     >>> reader = source(get_bpti_test_data()['trajs'], top=get_bpti_test_data()['top'])
     >>> transform = pca(dim=2)
     >>> cluster = cluster_regspace(dmin=0.1)
-    >>> disc = discretizer(reader, transform, cluster)
 
-    Finally you want to run the pipeline:
+    Create the discretizer, access the the discrete trajectories and save them to files:
 
-    >>> disc.parametrize()
-
-    Access the the discrete trajectories and saving them to files:
-
-    >>> disc.dtrajs # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     disc = discretizer(reader, transform, cluster)
+    ...     disc.dtrajs # doctest: +ELLIPSIS
     [array([...
 
     This will store the discrete trajectory to "traj01.dtraj":
@@ -1421,10 +1418,12 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     --------
 
     >>> import numpy as np
+    >>> from pyemma.util.contexts import settings
     >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
-    >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
-    >>> cluster_obj.get_output() # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
+    ...     cluster_obj.get_output() # doctest: +ELLIPSIS
     [array([...
 
     .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_

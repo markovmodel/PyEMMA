@@ -21,5 +21,5 @@ dependencies:
 
 test:
   override:
-    - conda build devtools/conda-recipe --numpy=111 
+    - conda build devtools/conda-recipe --numpy=111 --python=3.5
 
