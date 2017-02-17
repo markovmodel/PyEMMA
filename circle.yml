@@ -15,7 +15,7 @@ checkout:
 dependencies:
   override:
     - devtools/ci/circle/install_miniconda.sh
-    - conda config --add channels conda-forge
+    - conda config --add channels omnia 
     - conda config --set always_yes true
     - conda install conda-build
 
