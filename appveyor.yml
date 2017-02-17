@@ -23,6 +23,10 @@ environment:
       CONDA_PY: "34"
       ARCH: "64"
 
+    - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
+      CONDA_PY: "36"
+      ARCH: "64"
+
 install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 

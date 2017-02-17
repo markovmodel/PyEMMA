@@ -262,9 +262,9 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
-                      'mdtraj>=1.7.0',
+                      'mdtraj>=1.8.0',
                       'matplotlib',
-                      'msmtools>=1.1.4',
+                      'msmtools>=1.2',
                       'thermotools>=0.2.3',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
