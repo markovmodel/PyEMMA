@@ -1,6 +1,6 @@
 # This file is part of thermotools.
 #
-# Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # thermotools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -54,6 +54,7 @@ cdef extern from "_util.h":
     # bias calculation tools
     void _get_umbrella_bias(
         double *traj, double *umbrella_centers, double *force_constants,
+        double *width, double *inverse_width,
         int nsamples, int nthermo, int ndim, double *bias)
     # transition matrix renormalization
     void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M)
@@ -380,7 +381,8 @@ def _overlap_post_hoc_RE(
 def get_umbrella_bias(
     _np.ndarray[double, ndim=2, mode="c"] traj not None,
     _np.ndarray[double, ndim=2, mode="c"] umbrella_centers not None,
-    _np.ndarray[double, ndim=3, mode="c"] force_constants not None):
+    _np.ndarray[double, ndim=3, mode="c"] force_constants not None,
+    _np.ndarray[double, ndim=1, mode="c"] width not None):
     r"""
     Restrict full list of samples to a subset and relabel configurational state indices.
 
@@ -402,10 +404,15 @@ def get_umbrella_bias(
     nthermo = umbrella_centers.shape[0]
     ndim = traj.shape[1]
     bias = _np.zeros(shape=(nsamples, nthermo), dtype=_np.float64)
+    inverse_width = _np.zeros(shape=(ndim,), dtype=_np.float64)
+    idx = _np.where(width > 0.0)[0]
+    inverse_width[idx] = 1.0 / width[idx]
     _get_umbrella_bias(
         <double*> _np.PyArray_DATA(traj),
         <double*> _np.PyArray_DATA(umbrella_centers),
         <double*> _np.PyArray_DATA(force_constants),
+        <double*> _np.PyArray_DATA(width),
+        <double*> _np.PyArray_DATA(inverse_width),
         nsamples,
         nthermo,
         ndim,

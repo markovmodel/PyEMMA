@@ -1,7 +1,7 @@
 /*
 * This file is part of thermotools.
 *
-* Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+* Copyright 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 *
 * thermotools is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -77,6 +77,7 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 
 extern void _get_umbrella_bias(
     double *traj, double *umbrella_centers, double *force_constants,
+    double *width, double *inverse_width,
     int nsamples, int nthermo, int ndim, double *bias);
 
 /***************************************************************************************************
