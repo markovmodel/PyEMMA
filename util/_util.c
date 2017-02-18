@@ -19,10 +19,12 @@
 
 #include "_util.h"
 
-inline double wrap(double x, const double width, const double inverse_width) {
+static double wrap(double x, const double width, const double half_width) {
     if(width > 0.0) {
-        return x - nearbyint(x * inverse_width) * width;
-    } else return x;
+        while(x >= half_width) x -= width;
+        while(x < -half_width) x += width;    
+    }
+    return x;
 }
 
 /***************************************************************************************************
@@ -168,7 +170,7 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 
 extern void _get_umbrella_bias(
     double *traj, double *umbrella_centers, double *force_constants,
-    double *width, double *inverse_width,
+    double *width, double *half_width,
     int nsamples, int nthermo, int ndim, double *bias)
 {
     int i, j, s, k;
@@ -191,8 +193,8 @@ extern void _get_umbrella_bias(
                     if(0.0 == fc)
                         continue;
                     isum += fc
-                        * wrap(traj[sdim + i] - umbrella_centers[kdim + i], width[i], inverse_width[i])
-                        * wrap(traj[sdim + j] - umbrella_centers[kdim + j], width[j], inverse_width[j]);
+                        * wrap(traj[sdim + i] - umbrella_centers[kdim + i], width[i], half_width[i])
+                        * wrap(traj[sdim + j] - umbrella_centers[kdim + j], width[j], half_width[j]);
                 }
                 sum += isum;
             }

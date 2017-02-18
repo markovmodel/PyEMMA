@@ -404,15 +404,13 @@ def get_umbrella_bias(
     nthermo = umbrella_centers.shape[0]
     ndim = traj.shape[1]
     bias = _np.zeros(shape=(nsamples, nthermo), dtype=_np.float64)
-    inverse_width = _np.zeros(shape=(ndim,), dtype=_np.float64)
-    idx = _np.where(width > 0.0)[0]
-    inverse_width[idx] = 1.0 / width[idx]
+    half_width = 0.5 * width
     _get_umbrella_bias(
         <double*> _np.PyArray_DATA(traj),
         <double*> _np.PyArray_DATA(umbrella_centers),
         <double*> _np.PyArray_DATA(force_constants),
         <double*> _np.PyArray_DATA(width),
-        <double*> _np.PyArray_DATA(inverse_width),
+        <double*> _np.PyArray_DATA(half_width),
         nsamples,
         nthermo,
         ndim,

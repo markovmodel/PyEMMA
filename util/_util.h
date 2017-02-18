@@ -77,7 +77,7 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 
 extern void _get_umbrella_bias(
     double *traj, double *umbrella_centers, double *force_constants,
-    double *width, double *inverse_width,
+    double *width, double *half_width,
     int nsamples, int nthermo, int ndim, double *bias);
 
 /***************************************************************************************************
