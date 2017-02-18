@@ -25,20 +25,8 @@
 ***************************************************************************************************/
 
 #include <math.h>
-
 #ifdef _MSC_VER
-    /* handle Microsofts C99 incompatibility */
-    #include <float.h>
-    #define INFINITY (DBL_MAX+DBL_MAX)
-    #define NAN (INFINITY-INFINITY)
-#else
-    /* if not available otherwise, define INFINITY/NAN in the GNU style */
-    #ifndef INFINITY
-        #define INFINITY (1.0/0.0)
-    #endif
-    #ifndef NAN
-        #define NAN (INFINITY-INFINITY)
-    #endif
+#include "_msvc_c99_compat.h"
 #endif
 
 /***************************************************************************************************

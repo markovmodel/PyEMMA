@@ -19,7 +19,7 @@
 
 #include "_util.h"
 
-inline double wrap(double x, const double width, const double inverse_width) {
+double wrap(double x, const double width, const double inverse_width) {
     if(width > 0.0) {
         return x - nearbyint(x * inverse_width) * width;
     } else return x;
