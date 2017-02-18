@@ -265,7 +265,7 @@ metadata = dict(
                       'mdtraj>=1.7.0',
                       'matplotlib',
                       'msmtools>=1.1.4',
-                      'thermotools>=0.2.3',
+                      'thermotools>=0.2.5',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
                       'pyyaml',
