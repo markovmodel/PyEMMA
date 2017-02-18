@@ -207,8 +207,8 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
             raise RuntimeError('Estimation has failed at ALL lagtimes. Check for errors.')
         if bad.size > 0:
             self.logger.warning('Estimation has failed at lagtimes: {lags}. '
-                                'Run single-lag estimation at these lags to track down the error.',
-                                lags=self._lags[bad])
+                                'Run single-lag estimation at these lags to track down the '
+                                'error.'.format(lags=self._lags[bad]))
             models = list(np.array(models)[good])
 
         # merge models prior evaluation
