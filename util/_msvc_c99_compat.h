@@ -4,6 +4,12 @@
 #ifndef _msvc_c99_compat_h__
 #define _msvc_c99_compat_h__
 
+#ifdef _MSC_VER
+    #include <float.h>
+    #define INFINITY (DBL_MAX+DBL_MAX)
+    #define NAN (INFINITY-INFINITY)
+#endif
+
 #if _MSC_VER > 1800
 // MSVC 11 or earlier does not define a C99 compliant math.h header.
 // Missing functions are included here for compatibility.
