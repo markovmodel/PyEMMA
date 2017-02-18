@@ -219,23 +219,6 @@ def get_cmdclass():
 
     versioneer_cmds['test'] = PyTest
 
-    from setuptools.command.egg_info import egg_info
-
-    class extensions_json(egg_info):
-        def run(self):
-            f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyemma', '_extensions.json')
-            print("Generating {}".format(f))
-            extension_names = [e.name for e in extensions()]
-
-            with open(f, 'wb') as fp:
-                import json
-                s = json.dumps(extension_names).encode('ascii')
-                fp.write(s)
-
-            egg_info.run(self)
-
-    versioneer_cmds['egg_info'] = extensions_json
-
     return versioneer_cmds
 
 
@@ -262,9 +245,9 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
-                      'mdtraj>=1.7.0',
+                      'mdtraj>=1.8.0',
                       'matplotlib',
-                      'msmtools>=1.1.4',
+                      'msmtools>=1.2',
                       'thermotools>=0.2.5',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
@@ -293,7 +276,7 @@ else:
                                   ]
 
     metadata['package_data'] = {
-                                'pyemma': ['pyemma.cfg', 'logging.yml', '_extensions.json', 'setup.cfg'],
+                                'pyemma': ['pyemma.cfg', 'logging.yml', 'setup.cfg'],
                                 'pyemma.coordinates.tests': ['data/*'],
                                 'pyemma.msm.tests': ['data/*'],
                                 'pyemma.datasets': ['*.npz'],

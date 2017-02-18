@@ -23,13 +23,17 @@ environment:
       CONDA_PY: "34"
       ARCH: "64"
 
+    - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
+      CONDA_PY: "36"
+      ARCH: "64"
+
 install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
   - conda config --set always_yes true 
   - conda config --add channels omnia 
-  - conda config --add channels conda-forge
-  - conda install -q conda-build=2.1.2 jinja2
+#  - conda config --add channels conda-forge
+  - conda install -q conda-build=2.1.4 jinja2
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
@@ -40,7 +44,7 @@ build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - conda build -q devtools/conda-recipe
+  - "%CMD_IN_ENV% conda build -q devtools/conda-recipe"
 
 #on_success:
 #  - devtools/ci/appveyor/after_success.bat  
