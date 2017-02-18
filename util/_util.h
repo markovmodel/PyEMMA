@@ -25,7 +25,6 @@
 ***************************************************************************************************/
 
 #include <math.h>
-
 #ifdef _MSC_VER
     /* handle Microsofts C99 incompatibility */
     #include <float.h>
