@@ -33,7 +33,7 @@ requirements:
     - scipy
     - setuptools
     - six >=1.10
-    - thermotools >=0.2.3
+    - thermotools >=0.2.5
 
 test:
   requires:

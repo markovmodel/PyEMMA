@@ -185,7 +185,7 @@ def _get_umbrella_sampling_parameters(
         force_constants /= kT
     return ttrajs, umbrella_centers, force_constants, unbiased_state
 
-def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
+def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants, width):
     from thermotools.util import get_umbrella_bias as _get_umbrella_bias
     bias_sequences = []
     if not isinstance(umbrella_centers, _np.ndarray):
@@ -215,10 +215,11 @@ def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
             raise ValueError("Trajectory %d has unmatching dimension: %d!=%d" % (
                 i, traj.shape[1], dimension))
         bias_sequences.append(
-            _get_umbrella_bias(traj, umbrella_centers, force_constants))
+            _get_umbrella_bias(traj, umbrella_centers, force_constants, width))
     return bias_sequences
 
-def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
+def get_umbrella_sampling_data(
+    us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None, width=None):
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
 
@@ -239,6 +240,10 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
         Unbiased molecular dynamics simulations. Format like umbrella_trajs.
     kT : float (optinal)
         Use this attribute if the supplied force constants are NOT unit-less.
+    width : array-like of float, optional, default=None
+        Specify periodicity for individual us_traj dimensions. Each positive entry will make the
+        corresponding feature periodic and use the given value as width. None/zero values will be
+        treated as non-periodic.
 
     Returns
     -------
@@ -258,7 +263,16 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_trajs is None:
         md_trajs = []
-    btrajs = _get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
+    if width is None:
+        width = _np.zeros(shape=(umbrella_centers.shape[1],), dtype=_np.float64)
+    else:
+        width = _np.asarray(
+            map(lambda w: w if w is not None and w > 0.0 else 0.0, width),
+            dtype=_np.float64)
+    if width.shape[0] != umbrella_centers.shape[1]:
+        raise ValueError('Unmatching number of width components.')
+    btrajs = _get_umbrella_bias_sequences(
+        us_trajs + md_trajs, umbrella_centers, force_constants, width)
     return ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state
 
 # ==================================================================================================
