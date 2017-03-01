@@ -33,7 +33,6 @@ before_install:
 script:
 - conda build -q devtools/conda-recipe
 
-after_success:
-- pwd; ls -alh
+after_script:
 - bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY,CONDA_NPY
 
