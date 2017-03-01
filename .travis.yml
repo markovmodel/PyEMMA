@@ -35,5 +35,5 @@ script:
 
 after_success:
 - pwd; ls -alh
-- bash <(curl -s https://codecov.io/bash) -s $HOME -e CONDA_PY,CONDA_NPY
+- bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY,CONDA_NPY
 
