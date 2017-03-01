@@ -14,7 +14,8 @@ pytest_cfg = 'setup.cfg'
 print("Using pytest config file: %s" % pytest_cfg)
 assert os.path.exists(pytest_cfg), "pytest cfg not found"
 tmp = tempfile.mkdtemp()
-#os.chdir(tmp)
+shutil.copy(pytest_cfg, tmp)
+os.chdir(tmp)
 print("current cwd:", os.getcwd())
 
 # matplotlib headless backend
