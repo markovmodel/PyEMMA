@@ -2,6 +2,7 @@ import os
 import sys
 import pytest
 import shutil
+import tempfile
 
 test_pkg = 'pyemma'
 cover_pkg = test_pkg
@@ -12,7 +13,8 @@ pytest_cfg = 'setup.cfg'
 
 print("Using pytest config file: %s" % pytest_cfg)
 assert os.path.exists(pytest_cfg), "pytest cfg not found"
-
+tmp = tempfile.mkdtemp()
+os.chdir(tmp)
 print("current cwd:", os.getcwd())
 
 # matplotlib headless backend
@@ -25,7 +27,7 @@ pytest_args = ("-v --pyargs {test_pkg} "
                "--doctest-modules "
                #"-n 2 "# -p no:xdist" # disable xdist in favour of coverage plugin
                "--junit-xml={junit_xml} "
-               "-c {pytest_cfg} "
+               "-c {pytest_cfg}"
                .format(test_pkg=test_pkg, cover_pkg=cover_pkg,
                        junit_xml=junit_xml, pytest_cfg=pytest_cfg)
                .split(' '))
