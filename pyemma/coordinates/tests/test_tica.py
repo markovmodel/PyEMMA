@@ -38,6 +38,7 @@ from pyemma.coordinates.transform import TICA as _internal_tica
 from pyemma.util.contexts import numpy_random_seed
 from pyemma.coordinates.estimation.koopman import _KoopmanWeights
 from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.util import ZeroRankError
 from logging import getLogger
 import pyemma.util.types as types
 from six.moves import range
@@ -573,6 +574,27 @@ class TestKoopman(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             tica(self.data, lag=self.tau, reversible=False, kinetic_map=False)
 
+
+class TestTICAErrors(unittest.TestCase):
+    def test_constant_features(self):
+        z = np.zeros((100,10))
+        o = np.ones((100, 10))
+        tica_obj = _internal_tica(lag=10)
+        tica_obj.partial_fit(z)
+        with self.assertRaises(ZeroRankError):
+            tica_obj.timescales
+        with self.assertRaises(ZeroRankError):
+            tica_obj.transform(z)
+        tica_obj.partial_fit(o)
+        try:
+            tica_obj.timescales
+            tica_obj.transform(z)
+        except ZeroRankError:
+            self.fail('ZeroRankError was raised unexpectedly.')
+
+        tica_obj = _internal_tica(lag=10)
+        with self.assertRaises(ZeroRankError):
+            tica_obj.fit_transform(o)
 
 
 if __name__ == "__main__":

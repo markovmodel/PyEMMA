@@ -27,6 +27,7 @@ from decorator import decorator
 
 from pyemma._base.model import Model
 from pyemma._ext.variational.solvers.direct import eig_corr
+from pyemma._ext.variational.util import ZeroRankError
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.util.annotators import deprecated, fix_docs
@@ -282,7 +283,10 @@ class TICA(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
-        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
+        try:
+            eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
+        except ZeroRankError:
+            raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
         if self.kinetic_map and self.commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if self.kinetic_map:  # scale by eigenvalues
