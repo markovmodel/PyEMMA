@@ -36,6 +36,8 @@ requirements:
     - thermotools >=0.2.5
 
 test:
+  source_files:
+    - setup.cfg
   requires:
     - pytest 
     - pytest-cov
