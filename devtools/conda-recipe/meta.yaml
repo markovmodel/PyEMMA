@@ -39,8 +39,9 @@ requirements:
 
 test:
   source_files:
-    - setup.cfg
+    - conftest.py
     - versioneer.py
+    - setup.cfg
   requires:
     - pytest 
     - pytest-cov
