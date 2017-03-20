@@ -26,11 +26,11 @@ with open('matplotlibrc', 'w') as fh:
 
 pytest_args = ("-v --pyargs {test_pkg} "
                "--cov={cover_pkg} "
-               "--cov-report=html "
+               "--cov-report=xml "
                "--doctest-modules "
                #"-n 2 "# -p no:xdist" # disable xdist in favour of coverage plugin
                "--junit-xml={junit_xml} "
-               "-c {pytest_cfg} --fixtures"
+               "-c {pytest_cfg}"
                .format(test_pkg=test_pkg, cover_pkg=cover_pkg,
                        junit_xml=junit_xml, pytest_cfg=pytest_cfg)
                .split(' '))
