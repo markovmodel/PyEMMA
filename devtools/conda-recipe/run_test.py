@@ -22,7 +22,7 @@ junit_xml = os.path.join(os.getenv('CIRCLE_TEST_REPORTS', '.'), 'junit.xml')
 
 pytest_args = ("-v --pyargs {test_pkg} "
                "--cov={cover_pkg} "
-               "--cov-report=xml:{dest_report}"
+               "--cov-report=html:{dest_report} "
                "--doctest-modules "
                #"-n 2 "# -p no:xdist" # disable xdist in favour of coverage plugin
                "--junit-xml={junit_xml} "
