@@ -40,8 +40,9 @@ requirements:
 test:
   source_files:
     - conftest.py
-   # - versioneer.py
     - setup.cfg
+  files:
+    - matplotlibrc
   requires:
     - pytest 
     - pytest-cov
