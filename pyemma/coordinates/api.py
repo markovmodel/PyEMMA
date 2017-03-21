@@ -1178,8 +1178,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     """
     from pyemma.coordinates.transform.tica import TICA
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-    from pyemma.coordinates.estimation.koopman import _Weights
     import six
+    import types
     if isinstance(weights, six.string_types):
         if weights == "koopman":
             if data is None:
@@ -1190,11 +1190,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
-    elif isinstance(weights, _Weights):
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
     else:
-        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
     if not remove_mean:
         import warnings
@@ -1271,7 +1271,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-    from pyemma.coordinates.estimation.koopman import _Weights
+    import types
     import six
     if isinstance(weights, six.string_types):
         if weights== "koopman":
@@ -1280,14 +1280,14 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
             _param_stage(data, koop, stride=stride)
             weights = koop.weights
-        elif weights== "empirical":
+        elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
-    elif isinstance(weights, _Weights):
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
     else:
-        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
