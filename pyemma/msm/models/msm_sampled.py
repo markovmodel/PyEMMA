@@ -27,32 +27,6 @@ __author__ = 'noe'
 class SampledMSM(MSM, SampledModel):
     r""" Sampled Markov state model """
 
-    def __init__(self, samples, ref=None, conf=0.95):
-        r""" Constructs a sampled MSM
-
-        Parameters
-        ----------
-        samples : list of MSM
-            Sampled MSM objects
-        ref : obj of type :class:`pyemma.msm.MaximumLikelihoodMSM` or :class:`pyemma.msm.BayesianMSM`
-            Single-point estimator, e.g. containing a maximum likelihood or mean MSM
-        conf : float, optional, default=0.95
-            Confidence interval. By default two-sigma (95.4%) is used. Use 95.4% for two sigma or 99.7% for three sigma.
-
-        """
-        # validate input
-        assert is_iterable(samples), 'samples must be a list of MSM objects, but is not.'
-        assert isinstance(samples[0], MSM), 'samples must be a list of MSM objects, but is not.'
-        # construct superclass 1
-        SampledModel.__init__(self, samples, conf=conf)
-        # construct superclass 2
-        if ref is None:
-            Pref = self.sample_mean('P')
-            MSM.__init__(self, Pref, dt_model=samples[0].dt_model, neig=samples[0].neig, ncv=samples[0].ncv)
-        else:
-            MSM.__init__(self, ref.Pref, pi=ref.pi, reversible=ref.reversible, dt_model=ref.dt_model,
-                         neig=ref.neig, ncv=ref.ncv)
-
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95,
                          P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
