@@ -342,7 +342,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     log_lagrangian_mult=self.log_lagrangian_mult,
                     save_convergence_info=self.save_convergence_info,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        self, 'TRAM', self.maxiter, self.maxerr),
+                        self, 'TRAM', self.maxiter, self.maxerr, subcallback=self.callback),
                     N_dtram_accelerations=self.N_dtram_accelerations)
         else: # use trammbar
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
