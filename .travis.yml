@@ -27,7 +27,7 @@ before_install:
 - devtools/ci/travis/install_miniconda.sh
 - conda config --set always_yes true
 - conda config --add channels omnia
-#- conda config --add channels conda-forge
+  #- conda config --add channels conda-forge
 - conda install -q $common_py_deps
 
 script:

@@ -235,10 +235,8 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
             if ext != ".cfg":
                 filename += ".cfg"
 
-        filename = os.path.join(self.cfg_dir, filename)
-
         # if we have no cfg dir, try to create it first. Return if it failed.
-        if not self.cfg_dir:
+        if not self.cfg_dir or not os.path.isdir(self.cfg_dir) or not os.stat(self.cfg_dir) != os.W_OK:
             try:
                 self.cfg_dir = self.DEFAULT_CONFIG_DIR
             except ConfigDirectoryException as cde:
@@ -247,6 +245,8 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
                                           ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
                                           .format(dir=self.cfg_dir, exc=cde)))
                 return
+
+        filename = os.path.join(self.cfg_dir, filename)
 
         try:
             with open(filename, 'w') as fh:
