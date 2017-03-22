@@ -96,7 +96,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         self._rc = None
         self._used_data = 0
 
-    def _compute_weight_series(self, X, it):
+    def _compute_weight_series(self, X):
         if self.weights is None:
             return None
         elif isinstance(self.weights, numbers.Real):
@@ -151,7 +151,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 else:
                     X, Y = data, None
 
-                weight_series = self._compute_weight_series(X, it)
+                weight_series = self._compute_weight_series(X)
 
                 if self.remove_constant_mean is not None:
                     X = X - self.remove_constant_mean[np.newaxis, :]
