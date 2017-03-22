@@ -355,7 +355,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     biased_conf_energies=self.biased_conf_energies,
                     log_lagrangian_mult=self.log_lagrangian_mult,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        self, 'TRAM', self.maxiter, self.maxerr, subcallback=self.callback),
+                        self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations,
                     overcounting_factor=self.overcounting_factor)
         self._progress_force_finish(stage='TRAM', description='TRAM')
