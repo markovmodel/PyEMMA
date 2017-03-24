@@ -35,35 +35,6 @@ from pyemma.util.types import is_iterable
 class SampledHMSM(_HMSM, _SampledModel):
     r""" Sampled Hidden Markov state model """
 
-    def __init__(self, samples, ref=None, conf=0.95):
-        r""" Constructs a sampled HMSM
-
-        Parameters
-        ----------
-        samples : list of HMSM
-            Sampled HMSM objects
-        ref : HMSM
-            Single-point estimator, e.g. containing a maximum likelihood HMSM.
-            If not given, the sample mean will be used.
-        conf : float, optional, default=0.95
-            Confidence interval. By default two-sigma (95.4%) is used.
-            Use 95.4% for two sigma or 99.7% for three sigma.
-
-        """
-        # validate input
-        assert is_iterable(samples), 'samples must be a list of MSM objects, but is not.'
-        assert isinstance(samples[0], _HMSM), 'samples must be a list of MSM objects, but is not.'
-        # construct superclass 1
-        _SampledModel.__init__(self, samples, conf=conf)
-        # construct superclass 2
-        if ref is None:
-            Pref = self.sample_mean('P')
-            pobsref = self.sample_mean('pobs')
-            _HMSM.__init__(self, Pref, pobsref, dt_model=samples[0].dt_model)
-        else:
-            _HMSM.__init__(self, ref.transition_matrix, ref.observation_probabilities, dt_model=ref.dt_model)
-
-
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95,
                          P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
@@ -80,7 +51,6 @@ class SampledHMSM(_HMSM, _SampledModel):
         # set model parameters of superclass
         _SampledModel.set_model_params(self, samples=samples, conf=conf)
         _HMSM.set_model_params(self, P=P, pobs=pobs, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
-
 
     def submodel(self, states=None, obs=None):
         """Returns a HMM with restricted state space

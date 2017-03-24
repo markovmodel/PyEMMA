@@ -22,18 +22,16 @@ Created on 19.01.2015
 
 from __future__ import absolute_import
 
-from math import log
-
 import numpy as np
 from decorator import decorator
 
 from pyemma._base.model import Model
-from pyemma._ext.variational.running_moments import running_covar
-from pyemma.util.annotators import fix_docs, deprecated
-from pyemma.util.linalg import eig_corr
+from pyemma._ext.variational.solvers.direct import eig_corr
+from pyemma._ext.variational.util import ZeroRankError
+from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
+from pyemma.coordinates.estimation.covariance import LaggedCovariance
+from pyemma.util.annotators import deprecated, fix_docs
 from pyemma.util.reflection import get_default_args
-from .transformer import StreamingTransformer
-
 
 __all__ = ['TICA']
 
@@ -48,7 +46,6 @@ class TICAModel(Model):
                                  eigenvalues=eigenvalues,
                                  eigenvectors=eigenvectors)
 
-
 @decorator
 def _lazy_estimation(func, *args, **kw):
     assert isinstance(args[0], TICA)
@@ -59,12 +56,12 @@ def _lazy_estimation(func, *args, **kw):
 
 
 @fix_docs
-class TICA(StreamingTransformer):
+class TICA(StreamingEstimationTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
     _serialize_version = 0
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
-                 mean=None, stride=1, remove_mean=True, skip=0):
+                 stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -89,12 +86,16 @@ class TICA(StreamingTransformer):
             eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
             cut off. The remaining number of eigenvalues define the size
             of the output.
-        mean : ndarray, optional, default None
-            This option is deprecated
-        remove_mean: bool, optional, default True
-            remove mean during covariance estimation. Should not be turned off.
+        stride: int, optional, default = 1
+            Use only every stride-th time step. By default, every time step is used.
         skip : int, default=0
             skip the first initial n frames per trajectory.
+        reversible: bool, default=True
+            symmetrize correlation matrices C_0, C_{\tau}. At the moment, setting reversible=False is not implemented.
+        weights: object, optional, default = None
+            An object that allows to compute re-weighting factors to estimate equilibrium means and correlations from
+            off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
+            trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)).
 
         Notes
         -----
@@ -141,15 +142,22 @@ class TICA(StreamingTransformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         if kinetic_map and commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
+        if not reversible:
+            raise NotImplementedError("Reversible=False is currently not implemented.")
+        # if (kinetic_map or commute_map) and not reversible:
+        #     raise NotImplementedError('kinetic_map and commute_map are not yet implemented for irreversible processes.')
         super(TICA, self).__init__()
 
         if dim > -1:
             var_cutoff = 1.0
 
+        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
+                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
+
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-                        epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean, skip=skip)
+                        epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
     @property
     def lag(self):
@@ -201,27 +209,14 @@ class TICA(StreamingTransformer):
     def mean(self, value):
         self._model.mean = value
 
-    @property
-    def cov(self):
-        """ covariance matrix of input data. """
-        return self._model.cov
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
-    @property
-    def cov_tau(self):
-        """ covariance matrix of time-lagged input data. """
-        return self._model.cov_tau
-
-    @cov_tau.setter
-    def cov_tau(self, value):
-        self._model.cov_tau = value
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
+    def estimate(self, X, **kwargs):
+        r"""
+        Chunk-based parameterization of TICA. Iterates over all data and estimates
+        the mean, covariance and time lagged covariance. Finally, the
+        generalized eigenvalue problem is solved to determine
+        the independent components.
+        """
+        return super(TICA, self).estimate(X, **kwargs)
 
     def partial_fit(self, X):
         """ incrementally update the covariances and mean.
@@ -238,101 +233,39 @@ class TICA(StreamingTransformer):
         from pyemma.coordinates import source
         iterable = source(X)
 
-        self._estimate(iterable, partial=True)
+        indim = iterable.dimension()
+        if not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
+
+        self._covar.partial_fit(iterable)
+        self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+
+        self._used_data = self._covar._used_data
         self._estimated = False
 
         return self
 
-    def _init_covar(self, partial_fit, n_chunks):
-        nsave = int(max(log(n_chunks, 2), 2))
-        # in case we do a one shot estimation, we want to re-initialize running_covar
-        if not hasattr(self, '_covar') or not partial_fit:
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._covar = running_covar(xx=True, xy=True, yy=False,
-                                        remove_mean=self.remove_mean,
-                                        symmetrize=True, nsave=nsave)
-        else:
-            # check storage size vs. n_chunks of the new iterator
-            old_nsave = self._covar.storage_XX.nsave
-            if old_nsave < nsave or old_nsave > nsave:
-                self.logger.info("adopting storage size")
-                self._covar.storage_XX.nsave = nsave
-                self._covar.storage_XY.nsave = nsave
-
-    def estimate(self, X, **kwargs):
-        r"""
-        Chunk-based parameterization of TICA. Iterates over all data and estimates
-        the mean, covariance and time lagged covariance. Finally, the
-        generalized eigenvalue problem is solved to determine
-        the independent components.
-        """
-        return super(TICA, self).estimate(X, **kwargs)
-
     def _estimate(self, iterable, **kw):
-        partial_fit = 'partial' in kw
         indim = iterable.dimension()
-        if not indim:
-            raise ValueError("zero dimension from data source!")
 
         if not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
 
-        if not partial_fit and self._logger_is_active(self._loglevel_DEBUG):
+        if self._logger_is_active(self._loglevel_DEBUG):
             self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
-            if partial_fit:
-                self.logger.warn("Could not use data passed to partial_fit(), "
-                                 "because no single data set [longest=%i] is longer than lag time [%i]"
-                                 % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
-                return self
-            else:
-                raise ValueError("None single dataset [longest=%i] is longer than"
-                                 " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
-
-        self.logger.debug("will use {} total frames for {}".
-                          format(iterable.trajectory_lengths(self.stride, skip=self.skip), self.name))
-
-        it = iterable.iterator(lag=self.lag, return_trajindex=False,
-                               chunk=self.chunksize if not partial_fit else 0, skip=self.skip)
-        with it:
-            self._progress_register(it.n_chunks, "calculate mean+cov", 0)
-            self._init_covar(partial_fit, it.n_chunks)
-            for X, Y in it:
-                self._covar.add(X, Y)
-                # counting chunks and log of eta
-                self._progress_update(1, stage=0)
-
-        self._model.update_model_params(mean=self._covar.mean_X(),
-                                        cov=self._covar.cov_XX(),
-                                        cov_tau=self._covar.cov_XY())
-
-        if not partial_fit:
-            self._diagonalize()
-        else:
-            if not hasattr(self, "_used_data"):
-                self._used_data = 0
-            self._used_data += len(it)
+        self._covar.estimate(iterable, **kw)
+        self._model.update_model_params(mean=self._covar.mean,
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+        self._diagonalize()
 
         return self._model
-
-    def _diagonalize(self):
-        # diagonalize with low rank approximation
-        self._logger.debug("diagonalize Cov and Cov_tau.")
-        eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon)
-        self._logger.debug("finished diagonalisation.")
-
-        # compute cumulative variance
-        cumvar = np.cumsum(eigenvalues ** 2)
-        cumvar /= cumvar[-1]
-
-        self._model.update_model_params(cumvar=cumvar,
-                                        eigenvalues=eigenvalues,
-                                        eigenvectors=eigenvectors)
-
-        self._estimated = True
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
@@ -349,43 +282,40 @@ class TICA(StreamingTransformer):
         """
         X_meanfree = X - self.mean
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+
+        return Y.astype(self.output_type())
+
+    def _diagonalize(self):
+        # diagonalize with low rank approximation
+        self._logger.debug("diagonalize Cov and Cov_tau.")
+        try:
+            eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
+        except ZeroRankError:
+            raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
         if self.kinetic_map and self.commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if self.kinetic_map:  # scale by eigenvalues
-            Y *= self.eigenvalues[0:self.dimension()]
+            eigenvectors *= eigenvalues[None, :]
         if self.commute_map:  # scale by (regularized) timescales
-            timescales = self.timescales[0:self.dimension()]
-
+            timescales = 1-self.lag / np.log(np.abs(eigenvalues))
             # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
-            regularized_timescales = 0.5 * timescales * np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1)
+            regularized_timescales = 0.5 * timescales * np.maximum(np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1), 0)
 
-            Y *= np.sqrt(regularized_timescales / 2)
-        return Y.astype(self.output_type())
+            eigenvectors *= np.sqrt(regularized_timescales / 2)
+        self._logger.debug("finished diagonalisation.")
 
-    @property
-    def feature_TIC_correlation(self):
-        r"""Instantaneous correlation matrix between input features and TICs
+        # compute cumulative variance
+        cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
+        cumvar /= cumvar[-1]
 
-        Denoting the input features as :math:`X_i` and the TICs as :math:`\theta_j`, the instantaneous, linear correlation
-        between them can be written as
+        self._model.update_model_params(cumvar=cumvar,
+                                        eigenvalues=eigenvalues,
+                                        eigenvectors=eigenvectors)
 
-        .. math::
-
-            \mathbf{Corr}(X_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i}}\sum_l \sigma_{X_iX_l} \mathbf{U}_{li}
-
-        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the TICA
-        generalized eigenvalue problem .
-
-        Returns
-        -------
-        feature_TIC_correlation : ndarray(n,m)
-            correlation matrix between input features and TICs. There is a row for each feature and a column
-            for each TIC.
-        """
-        feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+        self._estimated = True
 
     @property
+    @_lazy_estimation
     def timescales(self):
         r"""Implied timescales of the TICA transformation
 
@@ -406,6 +336,48 @@ class TICA(StreamingTransformer):
             were not full rank or :py:obj:`var_cutoff` was parsed
         """
         return -self.lag / np.log(np.abs(self.eigenvalues))
+
+    @property
+    @_lazy_estimation
+    def feature_TIC_correlation(self):
+        r"""Instantaneous correlation matrix between mean-free input features and TICs
+
+        Denoting the input features as :math:`X_i` and the TICs as :math:`\theta_j`, the instantaneous, linear correlation
+        between them can be written as
+
+        .. math::
+
+            \mathbf{Corr}(X_i - \mu_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i - \mu_i}}\sum_l \sigma_{(X_i - \mu_i)(X_l - \mu_l} \mathbf{U}_{li}
+
+        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the TICA
+        generalized eigenvalue problem .
+
+        Returns
+        -------
+        feature_TIC_correlation : ndarray(n,m)
+            correlation matrix between input features and TICs. There is a row for each feature and a column
+            for each TIC.
+        """
+        feature_sigma = np.sqrt(np.diag(self.cov))
+        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+
+    @property
+    def cov(self):
+        """ covariance matrix of input data. """
+        return self._model.cov
+
+    @cov.setter
+    def cov(self, value):
+        self._model.cov = value
+
+    @property
+    def cov_tau(self):
+        """ covariance matrix of time-lagged input data. """
+        return self._model.cov_tau
+
+    @cov_tau.setter
+    def cov_tau(self, value):
+        self._model.cov_tau = value
 
     @property
     @_lazy_estimation
@@ -439,3 +411,11 @@ class TICA(StreamingTransformer):
         cumvar: 1D np.array
         """
         return self._model.cumvar
+
+    def output_type(self):
+        # TODO: handle the case of conjugate pairs
+        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
+                np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
+            return super(TICA, self).output_type()
+        else:
+            return np.complex64

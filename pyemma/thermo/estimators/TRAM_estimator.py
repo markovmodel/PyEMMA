@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -43,93 +43,8 @@ class EmptyState(RuntimeWarning):
 
 
 class TRAM(_Estimator, _MEMM, _ProgressReporter):
-    r"""Transition(-based) Reweighting Analysis Method
+    r"""Transition(-based) Reweighting Analysis Method."""
 
-    Parameters
-    ----------
-    lag : int
-        Integer lag time at which transitions are counted.
-    count_mode : str, optional, default='sliding'
-        mode to obtain count matrices from discrete trajectories. Should be
-        one of:
-        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts at time indexes
-              .. math::
-                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
-        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
-          at time indexes
-              .. math::
-                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
-        Currently only 'sliding' is supported.
-    connectivity : str, optional, default='summed_count_matrix'
-        One of 'summed_count_matrix', 'strong_in_every_ensemble',
-        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
-        Defines what should be considered a connected set in the joint space
-        of conformations and thermodynamic ensembles.
-        For details see thermotools.cset.compute_csets_TRAM.
-    ground_state : int, optional, default=None
-        Index of the unbiased thermodynamic state or None if there is no unbiased data available.
-    nstates_full : int, optional, default=None
-        Number of cluster centers, i.e., the size of the full set of states.
-    equilibrium : list of booleans, optional 
-        For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
-        whether to assume global equilibrium. If true, the triple is not used
-        for computing kinetic quantities (but only thermodynamic quantities).
-        By default, no trajectory is assumed to be in global equilibrium.
-        This is the TRAMMBAR extension.
-    maxiter : int, optional, default=10000
-        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1E-15
-        Convergence criterion based on the maximal free energy change in a self-consistent
-        iteration step.
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis
-        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
-        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
-        units are (* is an arbitrary string):
-
-        |  'fs',   'femtosecond*'
-        |  'ps',   'picosecond*'
-        |  'ns',   'nanosecond*'
-        |  'us',   'microsecond*'
-        |  'ms',   'millisecond*'
-        |  's',    'second*'
-    nn : int, optional, default=None
-        Only needed if connectivity='neighbors'
-        See thermotools.cset.compute_csets_TRAM.
-    connectivity_factor : float, optional, default=1.0
-        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
-        requirement, see thermotools.cset.compute_csets_TRAM.
-    direct_space : bool, optional, default=False
-        Whether to perform the self-consitent iteration with Boltzmann factors
-        (direct space) or free energies (log-space). When analyzing data from
-        multi-temperature simulations, direct-space is not recommended.
-    N_dtram_accelerations : int, optional, default=0
-        Convergence of TRAM can be speeded up by interleaving the updates
-        in the self-consitent iteration with a dTRAM-like update step.
-        N_dtram_accelerations says how many times the dTRAM-like update
-        step should be applied in every iteration of the TRAM equations.
-        Currently this is only effective if direct_space=True.
-    init : str, optional, default=None
-        Use a specific initialization for self-consistent iteration:
-
-        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
-        | 'mbar':  perform a short MBAR estimate to initialize the free energies
-    init_maxiter : int, optional, default=5000
-        The maximum number of self-consistent iterations during the initialization.
-    init_maxerr : float, optional, default=1.0E-8
-        Convergence criterion for the initialization.
-
-    References
-    ----------
-
-    .. [1] Wu, H. et al 2016
-        Multiensemble Markov models of molecular thermodynamics and kinetics
-        Proc. Natl. Acad. Sci. USA 113 E3221--E3230
-
-    """
     def __init__(
         self, lag, count_mode='sliding',
         connectivity='summed_count_matrix',
@@ -137,8 +52,103 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
-        init='mbar', init_maxiter=5000, init_maxerr=1.0E-8):
+        init='mbar', init_maxiter=5000, init_maxerr=1.0E-8,
+        overcounting_factor=1.0):
+        r"""Transition(-based) Reweighting Analysis Method
 
+        Parameters
+        ----------
+        lag : int
+            Integer lag time at which transitions are counted.
+        count_mode : str, optional, default='sliding'
+            mode to obtain count matrices from discrete trajectories. Should be
+            one of:
+            * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts at time indexes
+                  .. math::
+                     (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+            * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
+              at time indexes
+                  .. math::
+                        (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
+            Currently only 'sliding' is supported.
+        connectivity : str, optional, default='summed_count_matrix'
+            One of 'summed_count_matrix', 'strong_in_every_ensemble',
+            'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+            Defines what should be considered a connected set in the joint space
+            of conformations and thermodynamic ensembles.
+            For details see thermotools.cset.compute_csets_TRAM.
+        ground_state : int, optional, default=None
+            Index of the unbiased thermodynamic state or None if there is no unbiased data available.
+        nstates_full : int, optional, default=None
+            Number of cluster centers, i.e., the size of the full set of states.
+        equilibrium : list of booleans, optional 
+            For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
+            whether to assume global equilibrium. If true, the triple is not used
+            for computing kinetic quantities (but only thermodynamic quantities).
+            By default, no trajectory is assumed to be in global equilibrium.
+            This is the TRAMMBAR extension.
+        maxiter : int, optional, default=10000
+            The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+        maxerr : float, optional, default=1E-15
+            Convergence criterion based on the maximal free energy change in a self-consistent
+            iteration step.
+        save_convergence_info : int, optional, default=0
+            Every save_convergence_info iteration steps, store the actual increment
+            and the actual loglikelihood; 0 means no storage.
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis
+            algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+            there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+            units are (* is an arbitrary string):
+
+            |  'fs',   'femtosecond*'
+            |  'ps',   'picosecond*'
+            |  'ns',   'nanosecond*'
+            |  'us',   'microsecond*'
+            |  'ms',   'millisecond*'
+            |  's',    'second*'
+        nn : int, optional, default=None
+            Only needed if connectivity='neighbors'
+            See thermotools.cset.compute_csets_TRAM.
+        connectivity_factor : float, optional, default=1.0
+            Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
+            requirement, see thermotools.cset.compute_csets_TRAM.
+        direct_space : bool, optional, default=False
+            Whether to perform the self-consitent iteration with Boltzmann factors
+            (direct space) or free energies (log-space). When analyzing data from
+            multi-temperature simulations, direct-space is not recommended.
+        N_dtram_accelerations : int, optional, default=0
+            Convergence of TRAM can be speeded up by interleaving the updates
+            in the self-consitent iteration with a dTRAM-like update step.
+            N_dtram_accelerations says how many times the dTRAM-like update
+            step should be applied in every iteration of the TRAM equations.
+            Currently this is only effective if direct_space=True.
+        init : str, optional, default=None
+            Use a specific initialization for self-consistent iteration:
+
+            | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+            | 'mbar':  perform a short MBAR estimate to initialize the free energies
+        init_maxiter : int, optional, default=5000
+            The maximum number of self-consistent iterations during the initialization.
+        init_maxerr : float, optional, default=1.0E-8
+            Convergence criterion for the initialization.
+        overcounting_factor : double, default = 1.0
+            Only needed if equilibrium contains True (TRAMMBAR).
+            Sets the relative statistical weight of equilibrium and non-equilibrium
+            frames. An overcounting_factor of value n means that every
+            non-equilibrium frame is counted n times. Values larger than 1 increase
+            the relative weight of the non-equilibrium data. Values less than 1
+            increase the relative weight of the equilibrium data.
+
+
+        References
+        ----------
+
+        .. [1] Wu, H. et al 2016
+            Multiensemble Markov models of molecular thermodynamics and kinetics
+            Proc. Natl. Acad. Sci. USA 113 E3221--E3230
+
+        """
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
         self.count_mode = count_mode
@@ -160,6 +170,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init = init
         self.init_maxiter = init_maxiter
         self.init_maxerr = init_maxerr
+        self.overcounting_factor = overcounting_factor
         self.active_set = None
         self.biased_conf_energies = None
         self.mbar_therm_energies = None
@@ -331,11 +342,11 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     log_lagrangian_mult=self.log_lagrangian_mult,
                     save_convergence_info=self.save_convergence_info,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        self, 'TRAM', self.maxiter, self.maxerr),
+                        self, 'TRAM', self.maxiter, self.maxerr, subcallback=self.callback),
                     N_dtram_accelerations=self.N_dtram_accelerations)
         else: # use trammbar
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-                self.increments, self.loglikelihoods = trammbar.estimate( # TODO: argument order!
+                self.increments, self.loglikelihoods = trammbar.estimate(
                     self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
                     equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
                     equilibrium_bias_energy_sequences=self.equilibrium_btrajs, equilibrium_state_sequences=self.equilibrium_dtrajs,
@@ -344,9 +355,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     biased_conf_energies=self.biased_conf_energies,
                     log_lagrangian_mult=self.log_lagrangian_mult,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        self, 'TRAM', self.maxiter, self.maxerr),
+                        self, 'TRAM', self.maxiter, self.maxerr, subcallback=self.callback),
                     N_dtram_accelerations=self.N_dtram_accelerations,
-                    overcounting_factor=1.0/self.lag) # naive guess for sliding window)
+                    overcounting_factor=self.overcounting_factor)
+        self._progress_force_finish(stage='TRAM', description='TRAM')
 
         # compute models
         fmsms = [_np.ascontiguousarray((

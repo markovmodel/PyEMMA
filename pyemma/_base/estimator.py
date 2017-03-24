@@ -18,6 +18,8 @@
 
 from __future__ import absolute_import, print_function
 
+import warnings
+
 from six.moves import range
 import inspect, sys
 
@@ -128,7 +130,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
                                 failfast):
     """ Method that runs estimation for several parameter settings.
 
-    Defined as a worker for Parallelization
+    Defined as a worker for parallelization
 
     """
     # run estimation
@@ -156,7 +158,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
         values = []  # the function values the model
         for ieval, name in enumerate(evaluate):
             # get method/attribute name and arguments to be evaluated
-            name = evaluate[ieval]
+            #name = evaluate[ieval]
             args = ()
             if evaluate_args is not None:
                 args = evaluate_args[ieval]
@@ -247,7 +249,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     >>> param_sets=param_grid({'lag': [1,2,3]})
     >>>
     >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate='timescales')
-    [array([ 1.24113168,  0.77454377]), array([ 2.48226337,  1.54908754]), array([ 3.72339505,  2.32363131])]
+    [array([ 1.24113168,  0.77454377]), array([ 2.65266698,  1.42909842]), array([ 5.34810405,  1.14784446])]
 
     Now we also want to get samples of the timescales using the BayesianMSM.
     >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, failfast=False,
@@ -267,9 +269,14 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     estimator = get_estimator(estimator)
     if hasattr(estimator, 'show_progress'):
         estimator.show_progress = show_progress
+
     # if we want to return estimators, make clones. Otherwise just copy references.
-    # For parallel processing we always need clones
-    if return_estimators or n_jobs > 1 or n_jobs is None:
+    # For parallel processing we always need clones.
+    # Also if the Estimator is its own Model, we have to clone.
+    from pyemma._base.model import Model
+    if (return_estimators or
+        n_jobs > 1 or n_jobs is None or
+        isinstance(estimator, Model)):
         estimators = [clone_estimator(estimator) for _ in param_sets]
     else:
         estimators = [estimator for _ in param_sets]
@@ -283,85 +290,33 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    # set call back for joblib
-    if progress_reporter is not None and show_progress:
-        progress_reporter._progress_register(len(estimators), stage=0,
-                                             description="estimating %s" % str(estimator.__class__.__name__))
-
-        if n_jobs > 1:
-            try:
-                from joblib.parallel import BatchCompletionCallBack
-                batch_comp_call_back = True
-            except ImportError:
-                from joblib.parallel import CallBack as BatchCompletionCallBack
-                batch_comp_call_back = False
-
-            class CallBack(BatchCompletionCallBack):
-                def __init__(self, *args, **kw):
-                    self.reporter = progress_reporter
-                    super(CallBack, self).__init__(*args, **kw)
-
-                def __call__(self, *args, **kw):
-                    self.reporter._progress_update(1, stage=0)
-                    super(CallBack, self).__call__(*args, **kw)
-
-            import joblib.parallel
-            if batch_comp_call_back:
-                joblib.parallel.BatchCompletionCallBack = CallBack
-            else:
-                joblib.parallel.CallBack = CallBack
-        else:
-            def _print(msg, msg_args):
-                # NOTE: this is a ugly hack, because if we only use one job,
-                # we do not get the joblib callback interface, as a workaround
-                # we use the Parallel._print function, which is called with
-                # msg_args = (done_jobs, total_jobs)
-                if len(msg_args) == 2:
-                    progress_reporter._progress_update(1, stage=0)
-
-    # iterate over parameter settings
-    from joblib import Parallel
-    import joblib, mock, six
-
-    if six.PY34:
-        from multiprocessing import get_context
-        try:
-            ctx = get_context(method='forkserver')
-        except ValueError:  # forkserver NA
-            try:
-                # this is slower in creation, but will not use as much memory!
-                ctx = get_context(method='spawn')
-            except ValueError:
-                ctx = get_context(None)
-                print("WARNING: using default multiprocessing start method {}. "
-                      "This could potentially lead to memory issues.".format(ctx))
-
-        with mock.patch('joblib.parallel.DEFAULT_MP_CONTEXT', ctx):
-            pool = Parallel(n_jobs=n_jobs)
-    else:
-        pool = Parallel(n_jobs=n_jobs)
-
-    if progress_reporter is not None and n_jobs == 1:
-        pool._print = _print
-        # NOTE: verbose has to be set, otherwise our print hack does not work.
-        pool.verbose = 50
+    if progress_reporter is not None:
+        from .parallel import _register_progress_bar
+        _register_progress_bar(show_progress, N=len(estimators),
+                               description="estimating %s" % str(estimator.__class__.__name__),
+                               progress_reporter=progress_reporter, n_jobs=n_jobs)
 
     if n_jobs > 1:
-        # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
-        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
-                                                                 param_sets[i], X,
+        # iterate over parameter settings
+        import joblib
+        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimator,
+                                                                 param_set, X,
                                                                  evaluate,
                                                                  evaluate_args,
-                                                                 failfast,
-                                                                 )
-                     for i in range(len(param_sets)))
+                                                                 failfast)
+                     for estimator, param_set in zip(estimators, param_sets))
 
-        # container for model or function evaluations
-        res = pool(task_iter)
+        from .parallel import _init_pool
+        pool = _init_pool(n_jobs)
+        assert pool
+        # the ctx manager will close and remove the processes, so we have to start new ones every time...
+        with pool:
+            res = pool(task_iter)
+    # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
         res = []
-        for i, param in enumerate(param_sets):
-            res.append(_estimate_param_scan_worker(estimators[i], param, X,
+        for estimator, param_set in zip(estimators, param_sets):
+            res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast))
             if progress_reporter is not None and show_progress:
                 progress_reporter._progress_update(1, stage=0)
@@ -431,8 +386,7 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
             The estimator (self) with estimated model.
 
         """
-        self.estimate(X)
-        return self
+        return self.estimate(X)
 
     @property
     def model(self):
@@ -442,3 +396,7 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
         except AttributeError:
             raise AttributeError(
                 'Model has not yet been estimated. Call estimate(X) or fit(X) first')
+
+    def _check_estimated(self):
+        if not self._estimated:
+            raise Exception("Estimator is not parametrized.")

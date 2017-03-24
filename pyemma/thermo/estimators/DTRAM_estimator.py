@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -34,91 +34,93 @@ __author__ = 'noe, wehmeyer'
 
 
 class DTRAM(_Estimator, _MEMM, _ProgressReporter):
-    r""" Discrete Transition(-based) Reweighting Analysis Method
+    r""" Discrete Transition(-based) Reweighting Analysis Method."""
 
-    Parameters
-    ----------
-    bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
-        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
-        at thermodynamic state j.
-    lag : int
-        Integer lag time at which transitions are counted.
-    count_mode : str, optional, default='sliding'
-        Mode to obtain count matrices from discrete trajectories. Should be one of:
-        * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
-              .. math::
-                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
-        * 'sample' : a trajectory of length T will have :math:`T/\tau` counts at time indexes
-              .. math::
-                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
-        Currently only 'sliding' is supported.
-    connectivity : str, optional, default='largest'
-        Defines what should be considered a connected set in the joint space of conformations and
-        thermodynamic ensembles. Currently only 'largest' is supported.
-    maxiter : int, optional, default=10000
-        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1.0E-15
-        Convergence criterion based on the maximal free energy change in a self-consistent
-        iteration step.
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis
-        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
-        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
-        units are (* is an arbitrary string):
-
-        |  'fs',   'femtosecond*'
-        |  'ps',   'picosecond*'
-        |  'ns',   'nanosecond*'
-        |  'us',   'microsecond*'
-        |  'ms',   'millisecond*'
-        |  's',    'second*'
-    init : str, optional, default=None
-        Use a specific initialization for self-consistent iteration:
-
-        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
-        | 'wham':  perform a short WHAM estimate to initialize the free energies
-    init_maxiter : int, optional, default=10000
-        The maximum number of self-consistent iterations during the initialization.
-    init_maxerr : float, optional, default=1.0E-8
-        Convergence criterion for the initialization.
-
-    Example
-    -------
-    >>> from pyemma.thermo import DTRAM
-    >>> import numpy as np
-    >>> B = np.array([[0, 0],[0.5, 1.0]])
-    >>> dtram = DTRAM(B, 1)
-    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
-    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
-    >>> dtram = dtram.estimate((ttrajs, dtrajs))
-    >>> dtram.log_likelihood() # doctest: +ELLIPSIS
-    -9.805...
-    >>> dtram.count_matrices # doctest: +SKIP
-    array([[[5, 1],
-            [1, 2]],
-
-           [[1, 4],
-            [3, 1]]], dtype=int32)
-    >>> dtram.stationary_distribution # doctest: +ELLIPSIS
-    array([ 0.38...,  0.61...])
-    >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
-    [array([ 0.38...,  0.61...]), array([ 0.50...,  0.49...])]
-
-    References
-    ----------
-
-    .. [1] Wu, H. et al 2014
-        Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
-        J. Chem. Phys. 141, 214106
-
-    """
     def __init__(
-            self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
-            maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
-            init=None, init_maxiter=10000, init_maxerr=1.0E-8):
+        self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
+        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
+        init=None, init_maxiter=10000, init_maxerr=1.0E-8):
+        r""" Discrete Transition(-based) Reweighting Analysis Method
+
+        Parameters
+        ----------
+        bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+            bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+            at thermodynamic state j.
+        lag : int
+            Integer lag time at which transitions are counted.
+        count_mode : str, optional, default='sliding'
+            Mode to obtain count matrices from discrete trajectories. Should be one of:
+            * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
+                  .. math::
+                     (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+            * 'sample' : a trajectory of length T will have :math:`T/\tau` counts at time indexes
+                  .. math::
+                        (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
+            Currently only 'sliding' is supported.
+        connectivity : str, optional, default='largest'
+            Defines what should be considered a connected set in the joint space of conformations and
+            thermodynamic ensembles. Currently only 'largest' is supported.
+        maxiter : int, optional, default=10000
+            The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+        maxerr : float, optional, default=1.0E-15
+            Convergence criterion based on the maximal free energy change in a self-consistent
+            iteration step.
+        save_convergence_info : int, optional, default=0
+            Every save_convergence_info iteration steps, store the actual increment
+            and the actual loglikelihood; 0 means no storage.
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis
+            algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+            there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+            units are (* is an arbitrary string):
+
+            |  'fs',   'femtosecond*'
+            |  'ps',   'picosecond*'
+            |  'ns',   'nanosecond*'
+            |  'us',   'microsecond*'
+            |  'ms',   'millisecond*'
+            |  's',    'second*'
+        init : str, optional, default=None
+            Use a specific initialization for self-consistent iteration:
+
+            | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+            | 'wham':  perform a short WHAM estimate to initialize the free energies
+        init_maxiter : int, optional, default=10000
+            The maximum number of self-consistent iterations during the initialization.
+        init_maxerr : float, optional, default=1.0E-8
+            Convergence criterion for the initialization.
+
+        Example
+        -------
+        >>> from pyemma.thermo import DTRAM
+        >>> import numpy as np
+        >>> B = np.array([[0, 0],[0.5, 1.0]])
+        >>> dtram = DTRAM(B, 1)
+        >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
+        >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
+        >>> dtram = dtram.estimate((ttrajs, dtrajs))
+        >>> dtram.log_likelihood() # doctest: +ELLIPSIS
+        -9.805...
+        >>> dtram.count_matrices # doctest: +SKIP
+        array([[[5, 1],
+                [1, 2]],
+
+               [[1, 4],
+                [3, 1]]], dtype=int32)
+        >>> dtram.stationary_distribution # doctest: +ELLIPSIS
+        array([ 0.38...,  0.61...])
+        >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
+        [array([ 0.38...,  0.61...]), array([ 0.50...,  0.49...])]
+
+        References
+        ----------
+
+        .. [1] Wu, H. et al 2014
+            Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
+            J. Chem. Phys. 141, 214106
+
+        """
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag

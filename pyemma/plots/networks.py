@@ -181,7 +181,10 @@ class NetworkPlot(object):
         else:
             figsize = (Dx / Dy * max_height, max_height)
         if self.ax is None:
-            fig, self.ax = _plt.subplots(figsize=figsize)
+            self.ax = _plt.gca()
+            fig = _plt.gcf()
+            fig.set_figwidth(figsize[0])
+            fig.set_figheight(figsize[1])
         else:
             fig = self.ax.figure
             window_extend = self.ax.get_window_extent()
@@ -224,6 +227,8 @@ class NetworkPlot(object):
         # set arrow labels
         if isinstance(arrow_labels, _np.ndarray):
             L = arrow_labels
+            if isinstance(arrow_labels[0,0], six.string_types):
+                arrow_label_format = '%s'
         elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
             L = self.A[:, :]
         elif arrow_labels is None:
@@ -535,6 +540,15 @@ def plot_flux(
     if minflux > 0:
         I, J = _np.where(F < minflux)
         F[I, J] = 0.0
+
+    if state_labels == 'auto':
+        # the first and last element correspond to A and B in ReactiveFlux
+        n = _np.shape(F)[0]
+        state_labels = ['A']
+        if n > 2:
+            state_labels += list(str(i - 1) for i in range(1, n - 1))
+        state_labels += ['B']
+
     fig = plot.plot_network(
         state_sizes=state_sizes, state_scale=state_scale, state_colors=state_colors,
         state_labels=state_labels, arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,

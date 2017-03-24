@@ -67,6 +67,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     float (*distance)(float*, float*, size_t, float*, float*, float*);
     PyObject* return_new_centers;
     debug = 0;
+    closest_center_index = 0;
     if(debug) printf("KMEANS: \n----------- cluster called ----------\n");
     if(debug) printf("KMEANS: declaring variables...");
     if(debug) printf("done.\n");

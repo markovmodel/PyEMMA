@@ -222,5 +222,13 @@ class TestPCAExtensive(unittest.TestCase):
         true_corr = np.corrcoef(feature_traj.T, pca_traj.T)[:nfeat,-npcs:]
         np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
 
+    def test_pipelining_sklearn_compat(self):
+        from pyemma.coordinates.transform import PCA
+        t = PCA(dim=2)
+        x = np.random.random((20, 3))
+        y = t.fit_transform(x)
+        y2 = t.get_output()
+        np.testing.assert_allclose(y2[0], y)
+
 if __name__ == "__main__":
     unittest.main()

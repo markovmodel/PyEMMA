@@ -23,15 +23,20 @@ import math
 import numpy as np
 
 
-def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1.):
+def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1., **plot_kwargs):
     # plot estimates
-    lest = ax.plot(dt*cktest.lagtimes, cktest.estimates[:, i, j], color='black')
+    for default in ['color', 'linestyle']:
+        if default in plot_kwargs.keys():
+            #print("ignoring plot_kwarg %s: %s"%(default, plot_kwargs[default]))
+            plot_kwargs.pop(default)
+
+    lest = ax.plot(dt*cktest.lagtimes, cktest.estimates[:, i, j], color='black', **plot_kwargs)
     # plot error of estimates if available
     if cktest.has_errors and cktest.err_est:
         ax.fill_between(dt*cktest.lagtimes, cktest.estimates_conf[0][:, i, j], cktest.estimates_conf[1][:, i, j],
                         color='black', alpha=0.2)
     # plot predictions
-    lpred = ax.plot(dt*cktest.lagtimes, cktest.predictions[:, i, j], color='blue', linestyle='dashed')
+    lpred = ax.plot(dt*cktest.lagtimes, cktest.predictions[:, i, j], color='blue', linestyle='dashed', **plot_kwargs)
     # plot error of predictions if available
     if cktest.has_errors:
         ax.fill_between(dt*cktest.lagtimes, cktest.predictions_conf[0][:, i, j], cktest.predictions_conf[1][:, i, j],
@@ -54,7 +59,7 @@ def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='ste
 
 
 def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
-                padding_between=0.1, padding_top=0.075, units='steps', dt=1.):
+                padding_between=0.1, padding_top=0.075, units='steps', dt=1., **plot_kwargs):
     """Plot of Chapman-Kolmogorov test
 
     Parameters
@@ -87,6 +92,10 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     padding_top : float, default=0.05
         padding space on top of subplots (as a fraction of 1.0)
 
+    **plot_kwargs : optional keyword arguments for the matplotlib.pylab.plot() call
+        The user is allowed to choose values like marker='x', linewidth=3 etc. Note that
+        'linestyle' and 'color' are defaults and cannot be changed using plot_kwargs
+
     Returns
     -------
     fig : Figure object
@@ -95,7 +104,6 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
 
     """
     import matplotlib.pylab as plt
-
     sharey = y01
     # first fix subfigure layout
     if diag:
@@ -122,12 +130,12 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
         if diag and k < cktest.nsets:
             ipos = int(k/layout[1])
             jpos = int(k%layout[1])
-            lest, lpred = _add_ck_subplot(cktest, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units, dt=dt)
+            lest, lpred = _add_ck_subplot(cktest, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units, dt=dt, **plot_kwargs)
             k += 1
         else:
             i = int(k/cktest.nsets)
             j = int(k%cktest.nsets)
-            lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01, units=units, dt=dt)
+            lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01, units=units, dt=dt, **plot_kwargs)
     # figure legend
     predlabel = 'predict'
     estlabel = 'estimate'

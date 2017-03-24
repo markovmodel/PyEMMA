@@ -33,7 +33,8 @@ import pkg_resources
 
 # for IDE stupidity, just add a new cfg var here, if you add a property to Wrapper
 cfg_dir = default_config_file = default_logging_config = logging_config = \
-    show_progress_bars = used_filenames = use_trajectory_lengths_cache = None
+    show_progress_bars = used_filenames = use_trajectory_lengths_cache = \
+    check_version = None
 
 __all__ = (
            'cfg_dir',
@@ -46,6 +47,7 @@ __all__ = (
            'traj_info_max_entries',
            'traj_info_max_size',
            'coordinates_check_output',
+           'check_version',
            )
 
 if six.PY2:
@@ -233,10 +235,8 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
             if ext != ".cfg":
                 filename += ".cfg"
 
-        filename = os.path.join(self.cfg_dir, filename)
-
         # if we have no cfg dir, try to create it first. Return if it failed.
-        if not self.cfg_dir:
+        if not self.cfg_dir or not os.path.isdir(self.cfg_dir) or not os.stat(self.cfg_dir) != os.W_OK:
             try:
                 self.cfg_dir = self.DEFAULT_CONFIG_DIR
             except ConfigDirectoryException as cde:
@@ -245,6 +245,8 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
                                           ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
                                           .format(dir=self.cfg_dir, exc=cde)))
                 return
+
+        filename = os.path.join(self.cfg_dir, filename)
 
         try:
             with open(filename, 'w') as fh:
@@ -372,6 +374,14 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
     @coordinates_check_output.setter
     def coordinates_check_output(self, val):
         self._conf_values.set('pyemma', 'coordinates_check_output', str(val))
+
+    @property
+    def check_version(self):
+        return self._conf_values.getboolean('pyemma', 'check_version')
+
+    @check_version.setter
+    def check_version(self, val):
+        self._conf_values.set('pyemma', 'check_version', str(val))
 
     ### FIlE HANDLING
 

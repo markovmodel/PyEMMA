@@ -20,9 +20,11 @@ from pyemma.msm import MSM as _MSM
 from pyemma.msm.util.subset import SubSet as _SubSet
 from pyemma.msm.util.subset import add_full_state_methods as _add_full_state_methods
 from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
+from pyemma.util.annotators import aliased as _aliased, alias as _alias
 from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 
 @_add_full_state_methods
+@_aliased
 class ThermoMSM(_MSM, _SubSet):
     def __init__(
         self, P, active_set, nstates_full,
@@ -79,24 +81,19 @@ class ThermoMSM(_MSM, _SubSet):
         self.active_set = active_set
         self.nstates_full = nstates_full
 
-    @property
-    @_map_to_full_state(default_arg=_np.inf)
-    def f(self):
-        return self.free_energies
-
-    @property
-    @_map_to_full_state(default_arg=_np.inf)
-    def free_energies(self):
-        return -_np.log(self.stationary_distribution)
-
-    @property
+    @_MSM.pi.getter
     @_map_to_full_state(default_arg=0.0)
-    def stationary_distribution(self):
-        return super(ThermoMSM, self).stationary_distribution
+    @_alias('stationary_distribution')
+    def pi(self):
+        r"""The stationary distribution on the configuration states."""
+        return super(ThermoMSM, self).pi
 
     @property
-    def pi_full_state(self):
-        return self.stationary_distribution_full_state
+    @_map_to_full_state(default_arg=_np.inf)
+    @_alias('free_energies')
+    def f(self):
+        r"""The free energies (in units of kT) on the configuration states."""
+        return -_np.log(self.pi)
     
     @_map_to_full_state(default_arg=_np.inf)
     def eigenvectors_right(self, k=None):

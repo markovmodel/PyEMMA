@@ -31,6 +31,9 @@ from pyemma.coordinates.util.stat import histogram
 from six import string_types as _string_types
 from six.moves import range, zip
 
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+import warnings
+
 _logger = _logging.getLogger(__name__)
 
 __docformat__ = "restructuredtext en"
@@ -50,6 +53,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'covariance_lagged',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_mini_batch_kmeans',
@@ -334,6 +338,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
             :attributes:
 
     """
+    from pyemma.coordinates.data._base.iterable import Iterable
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
@@ -352,6 +357,10 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         # create MemoryReader
         from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
         reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000, **kw)
+    elif isinstance(inp, Iterable):
+        if chunk_size is not None:
+            inp.chunk = chunk_size
+        return inp
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
@@ -496,21 +505,18 @@ def discretizer(reader,
     with a PCA transformation and cluster the principal components
     with uniform time clustering:
 
-    >>> import numpy as np
     >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
     >>> from pyemma.datasets import get_bpti_test_data
+    >>> from pyemma.util.contexts import settings
     >>> reader = source(get_bpti_test_data()['trajs'], top=get_bpti_test_data()['top'])
     >>> transform = pca(dim=2)
     >>> cluster = cluster_regspace(dmin=0.1)
-    >>> disc = discretizer(reader, transform, cluster)
 
-    Finally you want to run the pipeline:
+    Create the discretizer, access the the discrete trajectories and save them to files:
 
-    >>> disc.parametrize()
-
-    Access the the discrete trajectories and saving them to files:
-
-    >>> disc.dtrajs # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     disc = discretizer(reader, transform, cluster)
+    ...     disc.dtrajs # doctest: +ELLIPSIS
     [array([...
 
     This will store the discrete trajectory to "traj01.dtraj":
@@ -984,8 +990,8 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, stride=1,
-         force_eigenvalues_le_one=False, mean=None, remove_mean=True, skip=0):
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
+         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf')):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1048,18 +1054,23 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
-    force_eigenvalues_le_one : boolean, deprecated (eigenvalues are always <= 1, since 2.1)
-        Compute covariance matrix and time-lagged covariance matrix such
-        that the generalized eigenvalues are always guaranteed to be <= 1.
-
-    mean : ndarray, optional, default None
-        This option is deprecated, and setting this value is non-effective.
+    weights : optional, default="empirical"
+             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+                * "empirical":  no re-weighting
+                * "koopman":    use re-weighting procedure from [6]_
+                * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                                re-weighting factors (np.ndarray(T,)).
 
     remove_mean: bool, optional, default True
         remove mean during covariance estimation. Should not be turned off.
 
     skip : int, default=0
         skip the first initial n frames per trajectory.
+
+    ncov_max : int, default=infinity
+        limit the memory usage of the algorithm from [7]_ to an amount that corresponds
+        to ncov_max additional copies of each correlation matrix
 
     Returns
     -------
@@ -1076,14 +1087,16 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
     .. math::
 
-        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
-        C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+        C_0 &=      (X_t - \mu)^T \mathrm{diag}(w) (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T \mathrm{diag}(w) (X_t + \tau - \mu)
 
-    and solves the eigenvalue problem
+    where w is a vector of weights for each time step. By default, these weights
+    are all equal to one, but different weights are possible, like the re-weighting
+    to equilibrium described in [6]_. Subsequently, the eigenvalue problem
 
     .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
 
-    where :math:`r_i` are the independent components and :math:`\lambda_i` are
+    is solved,where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
     related to the relaxation timescale by
 
@@ -1155,15 +1168,131 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
        for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
+    .. [6] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
+        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted),
+        https://arxiv.org/abs/1610.06773.
+
+    .. [7] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+        computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
+
     """
     from pyemma.coordinates.transform.tica import TICA
-    if mean is not None:
-        import warnings
-        warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
+    from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+    import six
+    import types
+    if isinstance(weights, six.string_types):
+        if weights == "koopman":
+            if data is None:
+                raise ValueError("Data must be supplied for reweighting='koopman'")
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
+            _param_stage(data, koop, stride=stride)
+            weights = koop.weights
+        elif weights == "empirical":
+            weights = None
+        else:
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
+        weights = weights
+    else:
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
-    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-               mean=mean, remove_mean=remove_mean, skip=skip, stride=stride)
+    if not remove_mean:
+        import warnings
+        user_msg = 'remove_mean option is deprecated. The mean is removed from the data by default, otherwise it' \
+                   'cannot be guaranteed that all eigenvalues will be smaller than one. Some functionalities might' \
+                   'become useless in this case (e.g. commute_maps). Also, not removing the mean will not result in' \
+                   'a significant speed up of calculations.'
+        warnings.warn(
+            user_msg,
+            category=PyEMMA_DeprecationWarning)
+
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip,
+               weights=weights, reversible=reversible, ncov_max=ncov_max)
     return _param_stage(data, res, stride=stride)
+
+
+def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+    """
+        Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
+        number of time steps and N the number of dimensions, this function can compute lagged covariances like
+
+        .. math::
+
+            C_00 &=      X^T X \\
+            C_{0t} &= X^T Y \\
+            C_{tt} &= Y^T Y,
+
+        where X comprises the first T-lag time steps and Y the last T-lag time steps. It is also possible to use more
+        than one time series, the number of time steps in each time series can also vary.
+
+        Parameters
+        ----------
+        data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+            source function array with the data, if available. When given, the covariances are immediately computed.
+        c00 : bool, optional, default=True
+            compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+        c0t : bool, optional, default=False
+            compute lagged correlations. Does not work with lag==0.
+        ctt : bool, optional, default=False
+            compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+        remove_constant_mean : ndarray(N,), optional, default=None
+            substract a constant vector of mean values from time series.
+        remove_data_mean : bool, optional, default=False
+            substract the sample mean from the time series (mean-free correlations).
+        reversible : bool, optional, default=False
+            symmetrize correlations.
+        bessel : bool, optional, default=True
+            use Bessel's correction for correlations in order to use an unbiased estimator
+        lag : int, optional, default=0
+            lag time. Does not work with xy=True or yy=True.
+        weights : optional, default="empirical"
+             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+                * "empirical":  no re-weighting
+                * "koopman":    use re-weighting procedure from [1]_
+                * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                                re-weighting factors (np.ndarray(T,)).
+        stride: int, optional, default = 1
+            Use only every stride-th time step. By default, every time step is used.
+        skip : int, optional, default=0
+            skip the first initial n frames per trajectory.
+        chunksize : int, optional, default=None
+            The chunk size at which the input files are being processed.
+
+        Returns
+        -------
+        lc : a :class:`LaggedCovariance <pyemma.coordinates.estimation.covariance.LaggedCovariance>` object.
+
+        .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
+        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
+
+        """
+
+    from pyemma.coordinates.estimation.covariance import LaggedCovariance
+    from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+    import types
+    import six
+    if isinstance(weights, six.string_types):
+        if weights== "koopman":
+            if data is None:
+                raise ValueError("Data must be supplied for reweighting='koopman'")
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            _param_stage(data, koop, stride=stride)
+            weights = koop.weights
+        elif weights == "empirical":
+            weights = None
+        else:
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
+        weights = weights
+    else:
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+
+    lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
+                          remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
+                          weights=weights, stride=stride, skip=skip, chunksize=chunksize)
+    return _param_stage(data, lc, stride=stride)
 
 
 # =========================================================================
@@ -1289,10 +1418,12 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     --------
 
     >>> import numpy as np
+    >>> from pyemma.util.contexts import settings
     >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
-    >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
-    >>> cluster_obj.get_output() # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
+    ...     cluster_obj.get_output() # doctest: +ELLIPSIS
     [array([...
 
     .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
@@ -1329,8 +1460,7 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     """
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
-                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs,
-                           stride=stride, skip=skip)
+                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
@@ -1582,7 +1712,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
-    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, stride=stride, skip=skip)
+    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip)
 
     parametrized_stage = _param_stage(data, res, stride=stride, chunk_size=chunk_size)
     if return_dtrajs and data is not None:

@@ -171,10 +171,7 @@ class MSM(_Model):
     @alias('transition_matrix')
     def P(self):
         """ The transition matrix on the active set. """
-        try:
-            return self._P
-        except AttributeError:
-            return None
+        return self._P
 
     @P.setter
     def P(self, value):
@@ -186,7 +183,7 @@ class MSM(_Model):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
-            if not hasattr(self, '_reversible') or self.reversible is None:
+            if self.reversible is None:
                 self.reversible = msmana.is_reversible(self._P)
 
             from scipy.sparse import issparse
@@ -233,22 +230,16 @@ class MSM(_Model):
     @property
     def neig(self):
         """ number of eigenvalues to compute. """
-        try:
-            return self._neig
-        except AttributeError:
-            return None
+        return self._neig
 
     @neig.setter
     def neig(self, value):
         # set or correct eig param
         if value is None:
-            if hasattr(self, '_sparse') and self.sparse:
+            if self.sparse:
                 value = 10
             else:
-                if hasattr(self, '_nstates'):
-                    value = self._nstates
-                else:
-                    value = None
+                value = self._nstates
 
         # set ncv for consistency
         if not hasattr(self, 'ncv'):
@@ -258,16 +249,14 @@ class MSM(_Model):
 
     @property
     def dt_model(self):
+        """Description of the physical time corresponding to the lag."""
         return self._dt_model
 
     @dt_model.setter
     def dt_model(self, value):
-        if not value:
-            value = '1 step'
         self._dt_model = value
-
-        # this is only used internally?
         from pyemma.util.units import TimeUnit
+        # this is used internally to scale output times to a physical time unit.
         self._timeunit_model = TimeUnit(self.dt_model)
 
 
@@ -278,19 +267,17 @@ class MSM(_Model):
     @property
     @alias('stationary_distribution')
     def pi(self):
+        """The stationary distribution on the MSM states"""
         return self._pi
 
     @pi.setter
     def pi(self, value):
-        """The stationary distribution on the MSM states"""
-        # check sum is one
-        if value is not None:
-            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14,
-                                        err_msg='A stationary distribution should sum up to one.')
-
         if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)
+        elif value is not None:
+            # check sum is one
+            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
         self._pi = value
 
     def _compute_eigenvalues(self, neig):

@@ -313,7 +313,6 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y <= np.pi))
         self.assertEqual(len(self.feat.describe()), self.feat.dimension())
 
-
     def test_angles_deg(self):
         sel = np.array([[1, 2, 5],
                         [1, 3, 8],
@@ -331,6 +330,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_angles(sel, cossin=True)
         assert(self.feat.dimension() == 2 * sel.shape[0])
         Y = self.feat.transform(self.traj)
+        self.assertEqual(Y.shape, (self.traj.n_frames, 2*sel.shape[0]))
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 

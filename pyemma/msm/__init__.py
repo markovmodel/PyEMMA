@@ -52,6 +52,7 @@ use the API functions above.
    ChapmanKolmogorovValidator
    MaximumLikelihoodMSM
    BayesianMSM
+   OOMReweightedMSM
    MaximumLikelihoodHMSM
    BayesianHMSM
 
@@ -72,16 +73,9 @@ If you are not an expert user, use the API functions above.
 
 MSM functions (low-level API)
 =============================
-Low-level functions for estimation and analysis of transition matrices and io.
+Low-level functions for estimation and analysis of transition matrices and io have been moved to `MSMTools
+<https://msmtools.readthedocs.io/>`_.
 
-.. toctree::
-   :maxdepth: 1
-
-   msm.dtraj
-   msm.generation
-   msm.estimation
-   msm.analysis
-   msm.flux
 
 """
 from __future__ import absolute_import as _
@@ -93,6 +87,7 @@ from msmtools.analysis.dense.pcca import PCCA
 # Estimators and models
 from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import OOMReweightedMSM
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 

@@ -37,7 +37,6 @@ from . import util
 from . import plots
 from . import thermo
 
-
 def load(filename):
     """ Restores a previously saved model or estimator from disk.
 
@@ -55,18 +54,62 @@ def load(filename):
     from ._base.serialization.serialization import load as _load
     return _load(filename)
 
-def _setup_testing():
-    # setup function for testing
-    from pyemma.util import config
-    # do not cache trajectory info in user directory (temp traj files)
-    config.use_trajectory_lengths_cache = False
-    config.show_progress_bars = False
 
-import unittest as _unittest
-# override unittests base class constructor to achieve same behaviour without nose.
-_old_init = _unittest.TestCase.__init__
-def _new_init(self, *args, **kwargs):
-    _old_init(self, *args, **kwargs)
-    _setup_testing()
+def _version_check(current, testing=False):
+    """ checks latest version online from http://emma-project.org.
 
-_unittest.TestCase.__init__ = _new_init
+    Can be disabled by setting config.check_version = False.
+
+    >>> from mock import patch
+    >>> import warnings, pyemma
+    >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
+    ...     warnings.simplefilter('always', UserWarning)
+    ...     v = pyemma.version
+    ...     t = pyemma._version_check(v, testing=True)
+    ...     t.start()
+    ...     t.join()
+    ...     assert cw, "no warning captured"
+    ...     assert "latest release" in str(cw[0].message), "wrong msg"
+    """
+    if not config.check_version:
+        class _dummy:
+            def start(self): pass
+        return _dummy()
+    import json
+    import platform
+    import six
+    import os
+    from six.moves.urllib.request import urlopen, Request
+    from distutils.version import LooseVersion as parse
+    from contextlib import closing
+    import threading
+    import uuid
+
+    import sys
+    if 'pytest' in sys.modules or os.getenv('CI', False):
+        testing = True
+
+    def _impl():
+        try:
+            r = Request('http://emma-project.org/versions.json',
+                        headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
+                        .format(emma_version=current, python_version=platform.python_version(),
+                                platform=platform.platform(terse=True), addr=uuid.getnode())} if not testing else {})
+            encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
+            with closing(urlopen(r, timeout=30)) as response:
+                payload = str(response.read(), **encoding_args)
+            versions = json.loads(payload)
+            latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
+            latest = parse(latest_json)
+            if parse(current) < latest:
+                import warnings
+                warnings.warn("You are not using the latest release of PyEMMA."
+                              " Latest is {latest}, you have {current}."
+                              .format(latest=latest, current=current), category=UserWarning)
+        except Exception:
+            import logging
+            logging.getLogger('pyemma').debug("error during version check", exc_info=True)
+    return threading.Thread(target=_impl)
+
+# start check in background
+_version_check(version).start()

@@ -5,7 +5,7 @@ from pyemma.util.annotators import estimation_required, alias, aliased, deprecat
 
 
 @aliased
-class TestEstimator(Estimator):
+class _Estimator(Estimator):
 
     def __init__(self):
         self._prop = ""
@@ -44,36 +44,35 @@ class TestEstimationRequired(unittest.TestCase):
         _deprecated_method()
 
     def test_requires_estimation_property(self):
-        testimator = TestEstimator()
+        testimator = _Estimator()
         with self.assertRaises(ValueError) as ctx:
             testimator.property_method_requires
-        self.assertTrue('Tried calling property_method_requires on TestEstimator' in str(ctx.exception))
+        self.assertIn('Tried calling property_method_requires on _Estimator', str(ctx.exception))
         testimator.estimate(None)
         self.assertEqual("", testimator.property_method_requires, "should return an empty string since now estimated")
 
     def test_requires_estimation(self):
-        testimator = TestEstimator()
+        testimator = _Estimator()
         self.assertRaises(ValueError, testimator.method_requires_estimation)
         testimator.estimate(None)
         # now that we called 'estimate()', should not raise
         testimator.method_requires_estimation()
 
     def test_requires_estimation_alias(self):
-        testimator = TestEstimator()
+        testimator = _Estimator()
         self.assertRaises(ValueError, testimator.testimator_method_requires)
         testimator.estimate(None)
         # now that we called 'estimate()', should not raise
         testimator.testimator_method_requires()
 
     def test_requires_estimation_alias_reverse(self):
-        testimator = TestEstimator()
+        testimator = _Estimator()
         self.assertRaises(ValueError, testimator.testimator_method_requires_rev)
         testimator.estimate(None)
         # now that we called 'estimate()', should not raise
         testimator.testimator_method_requires_rev()
 
     def test_does_not_require_estimation(self):
-        testimator = TestEstimator()
+        testimator = _Estimator()
         # does not require 'estimate()', should not raise
         testimator.method_does_not_require_estimation()
-
