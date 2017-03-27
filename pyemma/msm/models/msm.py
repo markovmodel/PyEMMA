@@ -188,6 +188,10 @@ class MSM(_Model):
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
+        else:
+            # set dummy values for not yet known attributes.
+            self.nstates = 0
+            self.sparse = None
 
         # TODO: if spectral decomp etc. already has been computed, reset its state.
 
@@ -236,10 +240,11 @@ class MSM(_Model):
     def neig(self, value):
         # set or correct eig param
         if value is None:
-            if self.sparse:
-                value = 10
-            else:
-                value = self._nstates
+            if self.P is not None:
+                if self.sparse:
+                    value = 10
+                else:
+                    value = self._nstates
 
         # set ncv for consistency
         if not hasattr(self, 'ncv'):
@@ -257,7 +262,8 @@ class MSM(_Model):
         self._dt_model = value
         from pyemma.util.units import TimeUnit
         # this is used internally to scale output times to a physical time unit.
-        self._timeunit_model = TimeUnit(self.dt_model)
+        if value is not None:
+            self._timeunit_model = TimeUnit(self.dt_model)
 
 
     ################################################################################
