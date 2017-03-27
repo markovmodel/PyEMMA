@@ -40,10 +40,12 @@ class _MSMEstimator(_Estimator, _MSM):
     # version for serialization
     _serialize_version = 0
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
-    _serialize_fields = ('_C_active', '_C_full', '_active_set', '_active_state_indexes', '_connected_sets',
-                         '_dtrajs_full',  # we dont want _dtraj_active, since it is recomputed every time...
+    _serialize_fields = ('_active_set', '_active_state_indexes',
+                         '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
                          '_nstates_full',
+                         '_is_estimated',
                          )
+
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
@@ -132,19 +134,10 @@ class _MSMEstimator(_Estimator, _MSM):
             raise ValueError('count mode ' + count_mode + ' is unknown.')
 
         # store connectivity mode (lowercase)
-        self.connectivity = connectivity.lower()
-        if self.connectivity == 'largest':
-            pass  # this is the current default. no need to do anything
-        elif self.connectivity == 'all':
-            raise NotImplementedError('MSM estimation with connectivity=\'all\' is currently not implemented.')
-        elif self.connectivity == 'none':
-            raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
-        else:
-            raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
+        self.connectivity = connectivity
 
         # time step
         self.dt_traj = dt_traj
-        self.timestep_traj = _TimeUnit(dt_traj)
 
     def estimate(self, dtrajs, **parms):
         """
@@ -204,7 +197,26 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @connectivity.setter
     def connectivity(self, value):
+        value = str(value).lower()
+        if value == 'largest':
+            pass  # this is the current default. no need to do anything
+        elif value == 'all':
+            raise NotImplementedError('MSM estimation with connectivity=\'all\' is currently not implemented.')
+        elif value == 'none':
+            raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
+        else:
+            raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
         self._connectivity = value
+
+    @property
+    def dt_traj(self):
+        return self._dt_traj
+
+    @dt_traj.setter
+    def dt_traj(self, value):
+        # time step
+        self._dt_traj = value
+        self.timestep_traj = _TimeUnit(self.dt_traj)
 
     @property
     def largest_connected_set(self):
@@ -646,6 +658,11 @@ class _MSMEstimator(_Estimator, _MSM):
 @aliased
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+    _serialize_fields = ('_C_active', '_C_full',
+                         '_full2active', '_connected_sets',
+                         '_nstates', '_nstates_full',
+                         )
+    _serialize_version = 0
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
@@ -901,6 +918,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 @aliased
 class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
+    # TODO: make serializable
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0):
