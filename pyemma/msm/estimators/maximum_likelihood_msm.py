@@ -205,7 +205,7 @@ class _MSMEstimator(_Estimator, _MSM):
         elif value == 'none':
             raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
         else:
-            raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
+            raise ValueError('connectivity mode {} is unknown.'.format(value))
         self._connectivity = value
 
     @property
@@ -918,7 +918,12 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 @aliased
 class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
-    # TODO: make serializable
+    _serialize_version = 0
+    _serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
+                         '_active_set', '_connected_sets',
+                         '_eigenvalues_OOM', '_full2_active',
+                         '_is_estimated', '_nstates', '_nstates_full',
+                         '_omega', '_sigma', '_oom_rank', '_rank_ind')
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0):

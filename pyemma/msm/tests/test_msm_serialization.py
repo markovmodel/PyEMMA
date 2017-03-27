@@ -46,6 +46,7 @@ class TestMSMSerialization(unittest.TestCase):
         cls.msm = datasets.load_2well_discrete().msm
         cls.bmsm_rev = bayesian_markov_model(obs_macro, cls.lag,
                                              reversible=True, nsamples=cls.nsamples)
+        cls.oom = pyemma.msm.estimate_markov_model(obs_macro, cls.lag, weights='oom')
 
     def setUp(self):
         self.f = tempfile.mktemp()
@@ -186,6 +187,8 @@ class TestMSMSerialization(unittest.TestCase):
         its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags)
 
         its.save(self.f)
+        from psutil._pslinux import cat
+        print(cat(self.f))
         restored = load(self.f)
 
         self.assertEqual(restored.estimator.get_params(deep=False), its.estimator.get_params(deep=False))
@@ -215,6 +218,17 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(restored.predictions_conf, ck.predictions_conf)
         np.testing.assert_equal(restored.estimates, ck.estimates)
         np.testing.assert_equal(restored.estimates_conf, ck.estimates_conf)
+
+    def test_oom(self):
+        self.oom.save(self.f)
+
+        restored = load(self.f)
+        np.testing.assert_equal(self.oom.eigenvalues_OOM, restored.eigenvalues_OOM)
+        np.testing.assert_equal(self.oom.timescales_OOM, restored.timescales_OOM)
+        np.testing.assert_equal(self.oom.OOM_rank, restored.OOM_rank)
+        np.testing.assert_equal(self.oom.OOM_omega, restored.OOM_omega)
+        np.testing.assert_equal(self.oom.OOM_sigma, restored.OOM_sigma)
+
 
 if __name__ == '__main__':
     unittest.main()
