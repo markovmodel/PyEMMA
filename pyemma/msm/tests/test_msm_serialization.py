@@ -188,7 +188,7 @@ class TestMSMSerialization(unittest.TestCase):
         its.save(self.f)
         restored = load(self.f)
 
-        self.assertEqual(restored.estimator, its.estimator)
+        self.assertEqual(restored.estimator.get_params(deep=False), its.estimator.get_params(deep=False))
         np.testing.assert_equal(restored.lags, its.lags)
         np.testing.assert_equal(restored.timescales, its.timescales)
 
@@ -199,7 +199,7 @@ class TestMSMSerialization(unittest.TestCase):
         its.save(self.f)
         restored = load(self.f)
 
-        self.assertEqual(restored.estimator, its.estimator)
+        self.assertEqual(restored.estimator.get_params(deep=False), its.estimator.get_params(deep=False))
         np.testing.assert_equal(restored.lags, its.lags)
         np.testing.assert_equal(restored.timescales, its.timescales)
         np.testing.assert_equal(restored.sample_mean, its.sample_mean)
