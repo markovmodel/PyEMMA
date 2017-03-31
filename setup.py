@@ -54,13 +54,12 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import getSetuptoolsError, lazy_cythonize
+from setup_util import lazy_cythonize
 try:
     from setuptools import setup, Extension, find_packages
-    from pkg_resources import VersionConflict
 except ImportError as ie:
-    print(getSetuptoolsError())
-    sys.exit(23)
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
 
 ###############################################################################
 # Extensions
@@ -92,9 +91,7 @@ def extensions():
 
     import mdtraj
     from numpy import get_include as _np_inc
-    from scipy import get_include as _sc_inc
     np_inc = _np_inc()
-    sc_inc = _sc_inc()
 
     exts = []
 
@@ -140,7 +137,7 @@ def extensions():
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
-                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc, sc_inc],
+                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
                   extra_compile_args=['-std=c99', '-O3'])
 
     orderedset = \
@@ -287,10 +284,6 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
-
-        # copy setup.cfg to the package so we can include it easily later on
-        import shutil
-        shutil.copy('setup.cfg', 'pyemma')
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
