@@ -5,11 +5,14 @@
 #ifndef PYEMMA_KMEANS_H
 #define PYEMMA_KMEANS_H
 
-#include <time.h>
-#include <clustering.h>
-#include <metric.h>
+#include <limits>
+#include <ctime>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+
+#include <clustering.h>
+#include <metric.h>
 
 namespace py = pybind11;
 
@@ -26,6 +29,7 @@ protected:
 
 namespace {
 
+//FIXME: this breakes the module's thread safety.
 py::function set_callback;
 
 void c_set_callback(py::function callback) {
@@ -64,11 +68,6 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     centers = NULL; chunk = NULL;
     if(debug) printf("done\n");
 
-    /* import chunk */
-    if(debug) printf("KMEANS: importing chunk...");
-    //if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
-    //if(!PyArray_ISCARRAY_RO(np_chunk) ) { PyErr_SetString(PyExc_ValueError, "\"chunk\" isn\'t C-style contiguous or isn\'t behaved."); goto error; };
-    //if(PyArray_NDIM(np_chunk)!=2) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of \"chunk\" isn\'t 2."); goto error;  };
     if(np_chunk.ndim() != 2) {throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
     N_frames = np_chunk.shape(0);
     dim = np_chunk.shape(1);
@@ -127,8 +126,7 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     int* centers_counter_p = centers_counter.data();
     dtype* new_centers_p = new_centers.data();
     for (i = 0; i < N_frames; i++) {
-        //TODO: use std::numeric_limits<dtype>?
-        mindist = FLT_MAX;
+        mindist = std::numeric_limits<dtype>::max();
         for(j = 0; j < N_centers; ++j) {
             d = metric.compute(&chunk[i*dim], centers[j]);
             if(d<mindist) {
@@ -213,7 +211,7 @@ initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_
     size_t dim, n_frames;
     int *taken_points;
     int best_candidate = -1;
-    dtype best_potential = FLT_MAX;
+    dtype best_potential = std::numerical_limits<dtype>::max();
     std::vector<int> next_center_candidates;
     std::vector<dtype> next_center_candidates_rand;
     std::vector<dtype> next_center_candidates_potential;
@@ -333,7 +331,7 @@ initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_
 
         /* ... and select the best candidate by the minimum value of the maximum squared distances */
         best_candidate = -1;
-        best_potential = FLT_MAX;
+        best_potential = std::numeric_limits<dtype>::max();
         for(j = 0; j < n_trials; j++) {
             if(next_center_candidates[j] != -1 && next_center_candidates_potential[j] < best_potential) {
                 best_potential = next_center_candidates_potential[j];
