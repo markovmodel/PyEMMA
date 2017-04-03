@@ -45,7 +45,6 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     int debug;
     std::size_t N_centers, N_frames, dim;
 
-    metric_t metric(dim);
 
     dtype *chunk;
     dtype **centers;
@@ -55,9 +54,8 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     std::vector<int> centers_counter;
     void *arr_data;
     std::vector<dtype> new_centers;
-    int i, j;
+    size_t i, j;
     int closest_center_index;
-    npy_intp dims[2];
     debug = 0;
     closest_center_index = 0;
     if(debug) printf("KMEANS: \n----------- cluster called ----------\n");
@@ -74,6 +72,8 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     if(dim==0) {
         throw std::runtime_error("chunk dimension must be larger than zero.");
     }
+    metric_t metric(dim);
+
     chunk = np_chunk.mutable_data();
     if(debug) printf("done with N_frames=%zd, dim=%zd\n", N_frames, dim);
 
@@ -146,7 +146,7 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
                 (*(new_centers_p + i * dim + j)) = centers[i][j];
             }
         } else {
-            for (j=0; j < dim; j++) {
+            for (j = 0; j < dim; j++) {
                 (*(new_centers_p + i * dim + j)) /= (*(centers_counter_p + i));
             }
         }
@@ -203,15 +203,16 @@ void costFunction(py::array_t<dtype> np_data, py::list np_centers) {
 template <typename dtype, typename metric_t>
 py::array_t<dtype, py::array::c_style>
 initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_random_seed) {
-    int centers_found, first_center_index, i, j, n_trials;
+    size_t centers_found, first_center_index, n_trials;
     int some_not_done;
     dtype d;
     dtype dist_sum;
     dtype sum;
     size_t dim, n_frames;
+    size_t i, j;
     int *taken_points;
     int best_candidate = -1;
-    dtype best_potential = std::numerical_limits<dtype>::max();
+    dtype best_potential = std::numeric_limits<dtype>::max();
     std::vector<int> next_center_candidates;
     std::vector<dtype> next_center_candidates_rand;
     std::vector<dtype> next_center_candidates_potential;
