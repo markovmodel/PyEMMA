@@ -96,6 +96,8 @@ def extensions():
     np_inc = _np_inc()
     sc_inc = _sc_inc()
 
+    import pybind11
+
     exts = []
 
     if sys.platform.startswith('win'):
@@ -110,6 +112,7 @@ def extensions():
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
+                      pybind11.get_include(),
                       'pyemma/coordinates/clustering/include',
                   ],
                   libraries=[lib_prefix+'theobald'],
@@ -118,7 +121,7 @@ def extensions():
     kmeans_module = \
         Extension('pyemma.coordinates.clustering.kmeans_clustering',
                   sources=[
-                      'pyemma/coordinates/clustering/src/kmeans.c',
+                      'pyemma/coordinates/clustering/src/kmeans.cpp',
                       'pyemma/coordinates/clustering/src/clustering.c'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
@@ -126,7 +129,7 @@ def extensions():
                       'pyemma/coordinates/clustering/include'],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99'])
+                  extra_compile_args=['-std=c++14'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
@@ -273,6 +276,7 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
+                                  'pybind11>=2.1.0',
                                   ]
 
     metadata['package_data'] = {

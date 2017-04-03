@@ -33,8 +33,6 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <theobald_rmsd.h>
-#include <center.h>
 #include <stdio.h>
 #include <float.h>
 

@@ -155,15 +155,15 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         converged_in_max_iter = False
         prev_cost = 0
         while it < self.max_iter:
-            self._cluster_centers_iter = kmeans_clustering.cluster(
+            self._cluster_centers_iter = kmeans_clustering.cluster_euclidean_f(
                                                 self._in_memory_chunks,
                                                 self._cluster_centers_iter,
-                                                self.metric)
+                                                )
             self._cluster_centers_iter = [row for row in self._cluster_centers_iter]
 
-            cost = kmeans_clustering.cost_function(self._in_memory_chunks,
+            cost = kmeans_clustering.cost_function_euclidean_f(self._in_memory_chunks,
                                                    self._cluster_centers_iter,
-                                                   self.metric,
+
                                                    self.n_clusters)
             rel_change = np.abs(cost - prev_cost) / cost
             prev_cost = cost
@@ -239,8 +239,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         self._cluster_centers_iter.append(X[l].astype(np.float32, order='C'))
         elif last_chunk and self.init_strategy == 'kmeans++':
             kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
-            cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                self.metric, self.n_clusters, not self.fixed_seed)
+            cc = kmeans_clustering.init_centers_euclidean_f(self._in_memory_chunks,
+                                                self.n_clusters, not self.fixed_seed)
             self._cluster_centers_iter = [c for c in cc]
 
     def _collect_data(self, X, first_chunk):
