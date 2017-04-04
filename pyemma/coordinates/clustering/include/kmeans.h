@@ -20,63 +20,6 @@
 namespace py = pybind11;
 
 
-class ClusteringBase {
-public:
-    ClusteringBase(const char* metric) {
-
-    }
-    py::array_t<unsigned int> assign(...) {}
-
-};
-
-template <typename dtype>
-class KMeans : public ClusteringBase {
-public:
-    KMeans(int k, const char* metric) : k(k) {
-
-    }
-    py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
-                     py::list py_centers) {
-
-    }
-
-    void costFunction(py::array_t<dtype> np_data, py::list np_centers) {
-        int i, r;
-        dtype value, d;
-        dtype *data, *centers;
-        size_t dim, n_frames;
-
-        value = 0.0;
-        n_frames = np_data.shape(0);
-        dim = np_data.shape(0);
-        //metric_t metric(dim);
-
-        for (r = 0; r < np_centers.size(); r++) {
-            // this is a list of numpy arrays.
-            centers = (dtype *) PyArray_DATA(np_centers[r].ptr());
-            for (i = 0; i < n_frames; i++) {
-                value += metric->compute(&data[i * dim], &centers[0]);
-            }
-        }
-    }
-
-    py::array_t<dtype, py::array::c_style>
-    initCentersKMpp(py::array_t<dtype, py::array::c_style|py::array::forcecast> np_data, int k, bool use_random_seed) {
-
-    };
-
-
-    void set_callback(py::function callback) { this->callback = callback; }
-protected:
-    int k;
-    py::function callback;
-
-    // TODO: use a unique_ptr or something, anyhow it should be a ptr for polymorphism?
-    metric::metric<dtype>* metric;
-
-};
-
-
 namespace {
 
 //FIXME: this breakes the module's thread safety.
@@ -90,20 +33,18 @@ void c_set_callback(py::function callback) {
 
 
 template<typename dtype, typename metric_t>
-py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
-                           py::list py_centers) {
+py::array_t<dtype> cluster(py::array_t<dtype, py::array::c_style> np_chunk,
+                           py::array_t<dtype, py::array::c_style> py_centers) {
     int debug;
-    std::size_t N_centers, N_frames, dim;
 
-    dtype **centers;
-    std::vector<int> centers_counter;
-    std::vector<dtype> new_centers;
     size_t i, j;
     debug = 1;
 
     if(np_chunk.ndim() != 2) { throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
-    N_frames = np_chunk.shape(0);
-    dim = np_chunk.shape(1);
+
+    size_t N_frames = np_chunk.shape(0);
+    size_t dim = np_chunk.shape(1);
+
     if(dim == 0) {
         throw std::runtime_error("chunk dimension must be larger than zero.");
     }
@@ -115,29 +56,33 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
 
     /* import list of cluster centers */
     if(debug) printf("KMEANS: importing list of cluster centers...");
-    N_centers = py_centers.size();
-    std::vector<dtype> centers_(N_centers);
-    centers = (dtype**) centers_.data();
+    size_t N_centers = py_centers.shape(0);
 
-    for(i = 0; i < N_centers; ++i) {
-        auto py_item = py_centers[i].ptr();
-        if (! py::isinstance<py::array>(py_item)) {
-            throw std::runtime_error("py_centers does not exclusively contain numpy arrays.");
-        }
-        PyArrayObject* np_item = (PyArrayObject*)py_item;
-        if(PyArray_TYPE(np_item)!=NPY_FLOAT32) { throw std::runtime_error("dtype of cluster center isn\'t float (32).");  };
-        if(!PyArray_ISBEHAVED_RO(np_item) ) { throw std::runtime_error("cluster center isn\'t behaved.");  };
-        if(PyArray_NDIM(np_item)!=1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1.");   };
-        if(np_item->dimensions[0]!=dim) {
-            throw std::runtime_error("Dimension of cluster centers doesn\'t match dimension of frames.");
-        }
-        centers[i] = (float*)PyArray_DATA(np_item);
-    }
+    // TODO: check centers should have shape (k, ndim)
+    // FIXME: access pattern to centers is based on [][], but now its linear...
+    dtype* centers = (dtype*)py_centers.mutable_data();
+
+//    for(i = 0; i < N_centers; ++i) {
+//        auto py_item = py_centers[i].ptr();
+//        if (! py::isinstance<py::array>(py_item)) {
+//            throw std::runtime_error("py_centers does not exclusively contain numpy arrays.");
+//        }
+//        auto np_item = py::reinterpret_borrow<py::array>(py_item);
+//        //PyArrayObject* np_item = (PyArrayObject*)py_item;
+//        if(np_item.dtype() != py::dtype("float")) { throw std::runtime_error("dtype of cluster center isn\'t float (32).");  };
+//        //if(!PyArray_ISBEHAVED_RO(np_item) ) { throw std::runtime_error("cluster center isn\'t behaved.");  };
+//        //if(PyArray_NDIM(np_item)!=1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1.");   };
+//        if (np_item.shape(1) != 1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1."); }
+//        if(np_item.shape(0) != dim) {
+//            throw std::runtime_error("Dimension of cluster centers doesn\'t match dimension of frames.");
+//        }
+//        centers[i] = (float*)PyArray_DATA(np_item);
+//    }
 
     if(debug) printf("done, k=%zd\n", N_centers);
     /* initialize centers_counter and new_centers with zeros */
-    centers_counter = std::vector<int>(N_centers, 0);
-    new_centers = std::vector<dtype>(N_centers * dim, 0.0);
+    std::vector<int> centers_counter(N_centers, 0);
+    std::vector<dtype> new_centers(N_centers * dim, 0.0);
 
     /* do the clustering */
     if(debug) printf("KMEANS: performing the clustering...");
@@ -150,7 +95,7 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
         mindist = std::numeric_limits<dtype>::max();
         for(j = 0; j < N_centers; ++j) {
             d = metric.compute(&chunk[i*dim], centers[j]);
-            if(d<mindist) {
+            if(d < mindist) {
                 mindist = d;
                 closest_center_index = j;
             }
@@ -188,7 +133,7 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
 
 
 template <typename dtype, typename metric_t>
-void costFunction(py::array_t<dtype> np_data, py::list np_centers) {
+dtype costFunction(py::array_t<dtype> np_data, py::array_t<dtype> np_centers) {
     int i, r;
     dtype value, d;
     dtype *data, *centers;
@@ -196,16 +141,16 @@ void costFunction(py::array_t<dtype> np_data, py::list np_centers) {
 
     value = 0.0;
     n_frames = np_data.shape(0);
-    dim = np_data.shape(0);
+    dim = np_data.shape(1);
     metric_t metric(dim);
 
     for(r = 0; r < np_centers.size(); r++) {
-        // this is a list of numpy arrays.
-        centers = (dtype*) PyArray_DATA(np_centers[r].ptr());
+        centers = np_centers.mutable_data();
         for(i = 0; i < n_frames; i++) {
             value += metric.compute(&data[i*dim], &centers[0]);
         }
     }
+    return value;
 }
 
 
@@ -265,6 +210,7 @@ initCentersKMpp(py::array_t<dtype, py::array::c_style|py::array::forcecast> np_d
     next_center_candidates.reserve(n_trials);
     next_center_candidates_rand.reserve(n_trials);
     next_center_candidates_potential.reserve(n_trials);
+    //TODO: use from class
     metric_t metric(dim);
 
     /* pick first center randomly */

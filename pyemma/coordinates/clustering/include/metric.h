@@ -47,7 +47,7 @@ public:
 
 };
 
-
+template <typename dummy>
 class min_rmsd_metric : metric<float> {
 public:
 

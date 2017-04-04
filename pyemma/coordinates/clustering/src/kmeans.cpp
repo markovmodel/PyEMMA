@@ -78,7 +78,7 @@ static char INIT_CENTERS_USAGE[] = "init_centers(data, metric, k)\n"\
 PYBIND11_PLUGIN(kmeans_clustering) {
         py::module m("kmeans_clustering", MOD_USAGE);
 
-        typedef metric::min_rmsd_metric minRMSD_f;
+       // typedef metric::min_rmsd_metric minRMSD_f;
         typedef metric::euclidean_metric<float> euclidean_f;
 
         //m.def("cluster_minRMSD_f", &cluster<float, minRMSD_f>, CLUSTER_USAGE);

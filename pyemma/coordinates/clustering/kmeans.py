@@ -159,7 +159,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                                 self._in_memory_chunks,
                                                 self._cluster_centers_iter,
                                                 )
-            self._cluster_centers_iter = [row for row in self._cluster_centers_iter]
+            # TODO: this is not needed at all?
+            #self._cluster_centers_iter = [row for row in self._cluster_centers_iter]
 
             cost = kmeans_clustering.cost_function_euclidean_f(self._in_memory_chunks,
                                                    self._cluster_centers_iter,
