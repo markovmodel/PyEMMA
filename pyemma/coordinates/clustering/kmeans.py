@@ -163,7 +163,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
             cost = kmeans_clustering.cost_function_euclidean_f(self._in_memory_chunks,
                                                    self._cluster_centers_iter,
-
                                                    self.n_clusters)
             rel_change = np.abs(cost - prev_cost) / cost
             prev_cost = cost

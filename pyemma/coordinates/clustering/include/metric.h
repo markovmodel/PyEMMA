@@ -24,7 +24,7 @@ public:
     metric(std::size_t dim) : dim(dim) {}
 
     // overload operator()?
-    //template<typename ... Params>
+    template<typename ... Params>
     dtype compute() {}
 
     size_t dim;

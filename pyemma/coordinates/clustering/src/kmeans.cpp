@@ -25,7 +25,7 @@
 namespace py = pybind11;
 
 
-static char MOD_USAGE[] = "Chunked regular spatial clustering";
+static char MOD_USAGE[] = "kmeans clustering";
 
 static char CLUSTER_USAGE[] = "cluster(chunk, centers, mindist, metric)\n"\
 "Given a chunk of data and a list of cluster centers, update the list of cluster centers with the newly found centers.\n"\
