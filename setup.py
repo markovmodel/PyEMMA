@@ -129,7 +129,7 @@ def extensions():
                       'pyemma/coordinates/clustering/include'],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c++14'])
+                  extra_compile_args=['-std=c++14', '-O0', '-ggdb'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',

@@ -11,19 +11,37 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
+#include <Python.h>
+
 #include <clustering.h>
 #include <metric.h>
+#include <object.h>
 
 namespace py = pybind11;
 
 
-class KMeans {
+class ClusteringBase {
 public:
-    KMeans(int k) : k(k) {
+    ClusteringBase(const char* metric) {
 
     }
+    py::array_t<unsigned int> assign(...) {}
+
+};
+
+template <typename dtype>
+class KMeans : public ClusteringBase {
+public:
+    KMeans(int k, const char* metric) : k(k) {
+
+    }
+    void set_callback(py::function callback) { this->callback = callback; }
 protected:
     int k;
+    py::function callback;
+
+    metric::metric* metric;
+
 };
 
 
@@ -45,7 +63,6 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     int debug;
     std::size_t N_centers, N_frames, dim;
 
-
     dtype *chunk;
     dtype **centers;
     dtype mindist;
@@ -56,20 +73,19 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     std::vector<dtype> new_centers;
     size_t i, j;
     int closest_center_index;
-    debug = 0;
+    debug = 1;
     closest_center_index = 0;
     if(debug) printf("KMEANS: \n----------- cluster called ----------\n");
     if(debug) printf("KMEANS: declaring variables...");
     if(debug) printf("done.\n");
 
     if(debug) printf("KMEANS: initializing some of them...");
-    centers = NULL; chunk = NULL;
     if(debug) printf("done\n");
 
     if(np_chunk.ndim() != 2) {throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
     N_frames = np_chunk.shape(0);
     dim = np_chunk.shape(1);
-    if(dim==0) {
+    if(dim == 0) {
         throw std::runtime_error("chunk dimension must be larger than zero.");
     }
     metric_t metric(dim);
@@ -80,46 +96,43 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
     /* import list of cluster centers */
     if(debug) printf("KMEANS: importing list of cluster centers...");
     N_centers = py_centers.size();
-    if(!(centers = (float**) malloc(N_centers*sizeof(dtype)))) {
-        throw std::runtime_error("could not allocate memory for centers");
-    }
-    for(size_t i = 0; i < N_centers; ++i) {
-        //l = 0;
-        py::array_t<dtype, py::array::c_style> np_item;
+    std::vector<dtype> centers_(N_centers);
+    centers = (dtype**) centers_.data();
 
+    for(i = 0; i < N_centers; ++i) {
+        l = 0;
         if(debug) printf("%d", l++); /* 0 */
-        // TODO: handle casting exceptions
-        PyObject* py_item = py_centers[i].ptr(); //PyList_GetItem(py_centers,i); /* ref:borr. */
-        np_item = py::cast(py_centers[i].ptr());
-//        if(debug) printf("%d", l++); /* 1 */
-//        if(debug) printf("%d", l++); /* 2 */
-//        if(!PyArray_Check(py_item)) { PyErr_SetString(PyExc_ValueError, "Elements of centers must be numpy arrays."); goto error; }
-//        if(debug) printf("%d", l++); /* 3 */
-//        np_item = (PyArrayObject*)py_item;
-//        if(debug) printf("%d", l++); /* 4 */
-//        if(PyArray_TYPE(np_item)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of cluster center isn\'t float (32)."); goto error; };
-//        if(debug) printf("%d", l++); /* 5 */
-//        if(!PyArray_ISBEHAVED_RO(np_item) ) { PyErr_SetString(PyExc_ValueError, "cluster center isn\'t behaved."); goto error; };
-//        if(debug) printf("%d", l++); /* 6 */
-//        if(PyArray_NDIM(np_item)!=1) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of cluster centers must be 1."); goto error;  };
-//        if(debug) printf("%d", l++); /* 7 */
-        if(np_item.shape(0) != dim) {
-            throw std::runtime_error( "Dimension of cluster centers doesn\'t match dimension of frames.");
+        auto blah = py_centers[i];
+        if (blah.is_none()) {throw std::runtime_error("none"); }
+        auto py_item = blah.ptr();
+        if(debug) printf("%d", l++); /* 1 */
+        if(!py_item) throw std::runtime_error("wtf");
+        if(debug) printf("%d", l++); /* 2 */
+        //if(!PyArray_Check(py_item)) { throw std::runtime_error("Elements of centers must be numpy arrays.");  }
+        if(debug) printf("%d", l++); /* 3 */
+        PyArrayObject* np_item = (PyArrayObject*)py_item;
+        if(debug) printf("%d", l++); /* 4 */
+        if(PyArray_TYPE(np_item)!=NPY_FLOAT32) { throw std::runtime_error("dtype of cluster center isn\'t float (32).");  };
+        if(debug) printf("%d", l++); /* 5 */
+        if(!PyArray_ISBEHAVED_RO(np_item) ) { throw std::runtime_error("cluster center isn\'t behaved.");  };
+        if(debug) printf("%d", l++); /* 6 */
+        if(PyArray_NDIM(np_item)!=1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1.");   };
+        if(debug) printf("%d", l++); /* 7 */
+        if(np_item->dimensions[0]!=dim) {
+            throw std::runtime_error("Dimension of cluster centers doesn\'t match dimension of frames.");
         }
-//        if(debug) printf("%d", l++); /* 8 */
-        centers[i] = (dtype*)PyArray_DATA(np_item.mutable_data());
-        //if(debug) printf("%d", l++); /* 9 */
+        if(debug) printf("%d", l++); /* 8 */
+        centers[i] = (float*)PyArray_DATA(np_item);
+        if(debug) printf("%d", l++); /* 9 */
     }
-
 
     if(debug) printf("done, k=%zd\n", N_centers);
-////////////////////////7 args////////////////7
     /* initialize centers_counter and new_centers with zeros */
     if(debug) printf("KMEANS: initializing calloc centers counter and new_centers stuff...");
     //centers_counter = (int*) calloc(N_centers, sizeof(int));
     centers_counter = std::vector<int>(N_centers, 0);
     //new_centers = (dtype*) calloc(N_centers * dim, sizeof(dtype));
-    new_centers = std::vector<dtype>(N_centers * dim);
+    new_centers = std::vector<dtype>(N_centers * dim, 0.0);
 
     /* do the clustering */
     if(debug) printf("KMEANS: performing the clustering...");
@@ -155,23 +168,12 @@ py::list cluster(py::array_t<dtype, py::array::c_style> np_chunk,
 
     if(debug) printf("KMEANS: creating return_new_centers...");
     py::array_t<dtype> return_new_centers(N_centers*dim);
-    //dims[0] = N_centers; dims[1] = dim;
-    /*return_new_centers = PyArray_SimpleNew(2, dims, NPY_FLOAT32);
-    if (return_new_centers == NULL){
-        PyErr_SetString(PyExc_MemoryError, "Error occurs when creating a new PyArray");
-        goto error;
-    }
-    arr_data = PyArray_DATA((PyArrayObject*)return_new_centers);
-     */
+    arr_data = return_new_centers.mutable_data();
     if(debug) printf("done\n");
     /* Need to copy the data of the malloced buffer to the PyObject
        since the malloced buffer will disappear after the C extension is called. */
     if(debug) printf("KMEANS: attempting memcopy...");
-    memcpy(arr_data, new_centers.data(), return_new_centers.itemsize() * N_centers * dim);
-    if(debug) printf("done\n");
-    if(debug) printf("KMEANS: increasing ref to return_new_centers object...");
-    // TODO: needed?
-    //Py_INCREF(return_new_centers);  /* The returned list should still exist after calling the C extension */
+    memcpy(arr_data, new_centers_p, return_new_centers.itemsize() * N_centers * dim);
     if(debug) printf("done\n");
     return return_new_centers;
 }
@@ -202,7 +204,7 @@ void costFunction(py::array_t<dtype> np_data, py::list np_centers) {
 
 template <typename dtype, typename metric_t>
 py::array_t<dtype, py::array::c_style>
-initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_random_seed) {
+initCentersKMpp(py::array_t<dtype, py::array::c_style|py::array::forcecast> np_data, int k, bool use_random_seed) {
     size_t centers_found, first_center_index, n_trials;
     int some_not_done;
     dtype d;
@@ -407,7 +409,7 @@ initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_
      *   explicit array_t(const std::vector<size_t> &shape, const T *ptr = nullptr,
             handle base = handle())
      */
-     std::vector<size_t> shape;
+    std::vector<size_t> shape;
     shape.push_back(k);
     shape.push_back(dim);
     py::array_t<dtype, py::array::c_style> ret_init_centers(shape);
@@ -416,19 +418,10 @@ initCentersKMpp(py::array_t<dtype, py::array::c_style> np_data, int k, bool use_
     memcpy(ret_init_centers.mutable_data(), arr_data.data(), arr_data.size());
     return ret_init_centers;
 
-    /*error:
     // reset the seed to something else than 42
     if(!use_random_seed) {
         srand(time(NULL));
     }
-    free(taken_points);
-    free(init_centers);
-    free(squared_distances);
-    free(next_center_candidates);
-    free(next_center_candidates_rand);
-    free(next_center_candidates_potential);
-     */
-    // return ret_init_centers;
 }
 
 

@@ -203,6 +203,7 @@ PyObject *assign(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O!OO!si", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric, &n_threads)) goto error; /* ref:borr. */
 
     /* import chunk */
+    /** TODO: here we could support the python iterable interface **/
     if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
     if(!PyArray_ISCARRAY_RO(np_chunk) ) { PyErr_SetString(PyExc_ValueError, "\"chunk\" isn\'t C-style contiguous or isn\'t behaved."); goto error; };
     if(PyArray_NDIM(np_chunk)!=2) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of \"chunk\" isn\'t 2."); goto error;  };
