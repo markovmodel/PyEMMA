@@ -44,6 +44,8 @@ def _lazy_estimation(func, *args, **kw):
 
 
 class PCAModel(Model):
+    _serialize_version = 0
+
     def set_model_params(self, mean, eigenvectors):
         self.mean = mean
         self.eigenvectors = eigenvectors

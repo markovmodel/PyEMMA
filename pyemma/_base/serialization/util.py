@@ -1,6 +1,9 @@
 
 class _old_locations(object):
-    """ updates the renamed classes dictionary for serialization handling.
+    """ Updates the renamed classes dictionary for serialization handling.
+
+    The idea is to provide a location/name history to the current decorated class,
+    so old occurrences can be easily mapped to the current name upon loading old models.
 
     Parameters
     ----------
@@ -18,7 +21,3 @@ class _old_locations(object):
         new_class = args[0]
         for old in locations:
             _renamed_classes[old] = new_class
-
-
-def dotted_name_to_json_str(dotted_name):
-    pass
