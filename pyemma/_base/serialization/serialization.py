@@ -28,6 +28,9 @@ from pyemma.util.types import is_string, is_int
 logger = logging.getLogger(__name__)
 _debug = False
 
+if _debug:
+    logger.level = logging.DEBUG
+
 _reg_np_handler()
 
 _renamed_classes = {}
@@ -40,15 +43,18 @@ class DeveloperError(Exception):
 
 def load(file_like):
     import bz2
-    if is_string(file_like):
-        file_like = bz2.BZ2File(file_like)
-    with contextlib.closing(file_like) as file_like:
-        inp = file_like.read()
+    with contextlib.closing(bz2.BZ2File(file_like)) as fh:
+        inp = fh.read()
     kw = {}
     if six.PY3:
         kw['encoding'] = 'ascii'
     inp = str(inp, **kw)
-    # TODO: this is the place to check for renamed classed and substitute it in the inp string.
+
+    for renamed in _renamed_classes:
+        new = _renamed_classes[renamed]
+        inp = inp.replace('"%s"' % renamed, new)
+        if _debug:
+            logger.debug("replacing {renamed} with {new}".format(renamed=renamed, new=new))
     obj = jsonpickle.loads(inp)
 
     return obj
@@ -80,12 +86,12 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def save(self, filename):
+    def save(self, filename_or_file, compression_level=9):
         """
         Parameters
         -----------
-        filename: str or file like
-            path to desired output file or a type which implements the file protocol.
+        filename_or_file: str or file like
+            path to desired output file or a type which implements the file protocol (accepting bytes as input).
         """
         try:
             flattened = jsonpickle.dumps(self)
@@ -99,11 +105,13 @@ class SerializableMixIn(object):
             flattened = bytes(flattened, encoding='ascii')
 
         import bz2
-        with contextlib.closing(bz2.BZ2File(filename, 'w')) as fh:
-            try:
-                fh.write(flattened)
-            except:
-                raise
+        compressed = bz2.compress(flattened, compresslevel=compression_level)
+        if not hasattr(filename_or_file, 'write'):
+            with open(filename_or_file, mode='w') as fh:
+                fh.write(compressed)
+        else:
+            filename_or_file.write(compressed)
+            filename_or_file.flush()
 
     @classmethod
     def load(cls, file_like):

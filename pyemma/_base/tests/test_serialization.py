@@ -79,11 +79,21 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v1()
         try:
             with tempfile.NamedTemporaryFile(delete=False) as fh:
-                inst.save(filename=fh.name)
+                inst.save(fh)
                 new = test_cls_v1.load(fh.name)
                 self.assertEqual(new, inst)
         finally:
             os.unlink(fh.name)
+
+    def test_save_file_like(self):
+        from io import BytesIO
+        buff = BytesIO()
+        t = test_cls_v1()
+        t.save(buff)
+
+        buff.seek(0)
+        t2 = pyemma.load(buff)
+        self.assertEqual(t2, t)
 
     def test_updated_class(self):
         global test_cls_v1
