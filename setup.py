@@ -54,7 +54,8 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import getSetuptoolsError, lazy_cythonize
+from setup_util import getSetuptoolsError, lazy_cythonize, init_submodules
+
 try:
     from setuptools import setup, Extension, find_packages
     from pkg_resources import VersionConflict
@@ -288,12 +289,9 @@ else:
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
 
-        # copy setup.cfg to the package so we can include it easily later on
-        import shutil
-        shutil.copy('setup.cfg', 'pyemma')
-
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
+    init_submodules()
 
 setup(**metadata)
 
