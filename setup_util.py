@@ -105,6 +105,3 @@ def init_submodules():
     args = "git submodule update --init pyemma/_ext/jsonpickle/".split(' ')
     print("populating git submodules with cmd:", args)
     subprocess.check_call(args)
-
-    import os.path
-    print("contents of submod", os.listdir("pyemma/_ext/jsonpickle"))
