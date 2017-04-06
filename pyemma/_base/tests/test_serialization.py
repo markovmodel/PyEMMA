@@ -61,7 +61,6 @@ class test_cls_v3(SerializableMixIn):
 
 
 class TestSerialisation(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         register_ndarray_handler()
@@ -87,13 +86,13 @@ class TestSerialisation(unittest.TestCase):
             os.unlink(fh.name)
 
     def test_updated_class(self):
+        global test_cls_v1
         old_class = test_cls_v1
         try:
             f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v1()
             inst.save(f.name)
 
-            global test_cls_v1
             test_cls_v1 = test_cls_v2
 
             inst_restored = pyemma.load(f.name)
@@ -105,13 +104,13 @@ class TestSerialisation(unittest.TestCase):
             test_cls_v1 = old_class
 
     def test_updated_class_v2_to_v3(self):
+        global test_cls_v2
         old_class = test_cls_v2
         try:
             f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v2()
             inst.save(f.name)
 
-            global test_cls_v2
             test_cls_v2 = test_cls_v3
 
             inst_restored = pyemma.load(f.name)
@@ -124,13 +123,13 @@ class TestSerialisation(unittest.TestCase):
             test_cls_v2 = old_class
 
     def test_updated_class_v1_to_v3(self):
+        global test_cls_v1
         old_class = test_cls_v1
         try:
             f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v1()
             inst.save(f.name)
 
-            global test_cls_v1
             test_cls_v1 = test_cls_v3
 
             inst_restored = pyemma.load(f.name)
@@ -148,8 +147,7 @@ class TestSerialisation(unittest.TestCase):
         s = SerializableMixIn()
         s._serialize_interpolation_map = interpolation_map
         s._validate_interpolation_map()
-        is_sorted = lambda l: all(l[i] <= l[i+1] for i in xrange(len(l)-1))
-        self.assertTrue(is_sorted(s._serialize_interpolation_map.keys()))
+        self.assertSequenceEqual(list(s._serialize_interpolation_map.keys()), sorted(s._serialize_interpolation_map.keys()))
 
     def test_validate_map_invalid_op(self):
         interpolation_map = {3: [('foo', 'x', None)]}
@@ -168,7 +166,7 @@ class TestSerialisation(unittest.TestCase):
         with self.assertRaises(DeveloperError) as cm:
             s._validate_interpolation_map()
 
-        self.assertIn("contain", cm.exception.args[0])
+        self.assertIn("have to be list or tuple", cm.exception.args[0])
 
 
 if __name__ == '__main__':

@@ -142,22 +142,24 @@ class SerializableMixIn(object):
     def _validate_interpolation_map(self):
         # version numbers should be sorted
         from collections import OrderedDict
-        inter_map = OrderedDict(sorted(self._serialize_interpolation_map.iteritems()))
+        inter_map = OrderedDict(sorted(self._serialize_interpolation_map.items()))
+        if _debug:
+            logger.debug("validate map: %s", inter_map)
 
-        # all version keys are integers
-        if not all(is_int(k) for k in inter_map):
-            raise DeveloperError("all keys of _serialize_interpolation_map have to be of type int.")
+        # check for valid operations: add, rm, mv, map
+        valid_ops = ('set', 'rm', 'mv', 'map')
+        for k, v in inter_map.items():
+            if not is_int(k):
+                raise DeveloperError("all keys of _serialize_interpolation_map "
+                                     "have to be of type int (class version numbers)")
+            if not isinstance(v, (list, tuple)):
+                raise DeveloperError("actions per version have to be list or tuple")
 
-        # check mapping operations are contained in an iterable type
-        if not all(isinstance(x, (list, tuple)) for x in inter_map.itervalues()):
-            raise DeveloperError("all operations in _serialize_interpolation_map have "
-                                 "to be contained in a list or tuple.")
-
-        # check for valid operations: add, rm, mv
-        valid_ops = ('set', 'rm', 'mv')
-        if not all(action[0] in valid_ops for actions in inter_map.itervalues() for action in actions):
-            raise DeveloperError("Your _serialize_interpolation_map contains invalid operations. "
-                                 "Valid ops are: {}".format(valid_ops))
+            for action in v:
+                if action[0] not in valid_ops:
+                    raise DeveloperError("Your _serialize_interpolation_map contains invalid operations. "
+                                         "Valid ops are: {valid_ops}. You provided {provided}"
+                                         .format(valid_ops=valid_ops, provided=action[0]))
 
         self._serialize_interpolation_map = inter_map
 
@@ -178,20 +180,24 @@ class SerializableMixIn(object):
             actions = self._serialize_interpolation_map[key]
             for a in actions:
                 if _debug:
-                    logger.debug("processing rule: %s" % str(a))
-                if a[0] == 'set':
-                    state[a[1]] = a[2]
-                elif a[0] == 'mv':
-                    try:
-                        value = state.pop(a[1])
-                        state[a[2]] = value
-                    except KeyError:
-                        raise DeveloperError("the previous version didn't "
-                                             "store an attribute named '{}'".format(a[1]))
-                elif a[0] == 'rm':
-                    state.pop(a[1], None)
+                    logger.debug("processing rule: %s", str(a))
+                if len(a) == 3:
+                    operation, name, value = a
+                    if operation == 'set':
+                        state[name] = value
+                    elif operation == 'mv':
+                        try:
+                            value = state.pop(a[1])
+                            state[a[2]] = value
+                        except KeyError:
+                            raise DeveloperError("the previous version didn't "
+                                                 "store an attribute named '{}'".format(a[1]))
+                elif len(a) == 2:
+                    action, value = a
+                    if action == 'rm':
+                        state.pop(value, None)
         if _debug:
-            logger.debug("interpolated state: %s" % state)
+            logger.debug("interpolated state: %s", state)
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
