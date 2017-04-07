@@ -5,6 +5,4 @@
 [submodule "pyemma/_ext/jsonpickle"]
 	path = pyemma/_ext/jsonpickle
 	url = https://github.com/markovmodel/jsonpickle
-[submodule "jsonpickle"]
-	path = pyemma/_ext/jsonpickle
-	url = https://github.com/markovmodel/jsonpickle
+
