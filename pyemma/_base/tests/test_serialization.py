@@ -67,7 +67,7 @@ class _deleted_in_old_version(test_cls_v3):
     pass
 
 
-old_loc = b"pyemma._base.tests.test_serialization._deleted_in_old_version"
+old_loc = "pyemma._base.tests.test_serialization._deleted_in_old_version"
 @_old_locations([old_loc])
 class test_cls_with_old_locations(_deleted_in_old_version):
     _serialize_version = 0

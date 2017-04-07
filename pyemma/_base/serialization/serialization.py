@@ -52,6 +52,9 @@ def load(file_like):
     if _debug:
         logger.debug("type of input: %s", type(inp))
 
+    kw = {} if six.PY2 else {'encoding':'ascii'}
+    inp = str(inp, **kw)
+
     for renamed in _renamed_classes:
         new = _renamed_classes[renamed]
         inp = inp.replace(renamed, new)

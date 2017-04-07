@@ -1,3 +1,6 @@
+from pyemma._ext.jsonpickle.util import importable_name
+
+
 class _old_locations(object):
     """ Updates the renamed classes dictionary for serialization handling.
 
@@ -16,16 +19,18 @@ class _old_locations(object):
         # restrict to pyemma and valid module names: https://regex101.com/r/vjcWT8/1
         # FIXME: this does not allow underscores in names...
         # assert all(re.fullmatch("pyemma(\.[a-zA-Z]+[0-9]*)+", s) for s in locations)
-        locations = map(bytes, locations)
+        #locations = map(bytes, locations)
         self.locations = locations
 
     def __call__(self, *args, **kwargs):
         from .serialization import _renamed_classes
-        import six
         cls = args[0]
-        new_name = "{module}.{cls}".format(module=cls.__module__, cls=cls.__name__)
-        kw = {} if six.PY2 else {'encoding': 'ascii'}
-        new_class = bytes(new_name, **kw)
+        new_class = importable_name(cls)
+
+        # import six
+        #new_name = "{module}.{cls}".format(module=cls.__module__, cls=cls.__name__)
+        #kw = {} if six.PY2 else {'encoding': 'ascii'}
+        #new_class = bytes(new_name, **kw)
 
         for old in self.locations:
             _renamed_classes[old] = new_class
