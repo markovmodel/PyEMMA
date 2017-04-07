@@ -138,7 +138,7 @@ def extensions():
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
-                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc, sc_inc],
+                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
                   extra_compile_args=['-std=c99', '-O3'])
 
     orderedset = \
