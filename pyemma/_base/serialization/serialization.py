@@ -26,7 +26,7 @@ from pyemma._ext import jsonpickle
 from pyemma.util.types import is_string, is_int
 
 logger = logging.getLogger(__name__)
-_debug = False
+_debug = True
 
 if _debug:
     logger.level = logging.DEBUG
@@ -43,18 +43,24 @@ class DeveloperError(Exception):
 
 def load(file_like):
     import bz2
-    with contextlib.closing(bz2.BZ2File(file_like)) as fh:
-        inp = fh.read()
+    if not hasattr(file_like, 'read'):
+        with contextlib.closing(bz2.BZ2File(file_like)) as fh:
+            inp = fh.read()
+    else:
+        inp = bz2.decompress(file_like.read())
+
+    if _debug:
+        logger.debug("type of input: %s", type(inp))
     kw = {}
     if six.PY3:
         kw['encoding'] = 'ascii'
-    inp = str(inp, **kw)
+    #inp = str(inp, **kw)
 
     for renamed in _renamed_classes:
         new = _renamed_classes[renamed]
         inp = inp.replace('"%s"' % renamed, new)
         if _debug:
-            logger.debug("replacing {renamed} with {new}".format(renamed=renamed, new=new))
+            logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
     obj = jsonpickle.loads(inp)
 
     return obj
@@ -107,7 +113,7 @@ class SerializableMixIn(object):
         import bz2
         compressed = bz2.compress(flattened, compresslevel=compression_level)
         if not hasattr(filename_or_file, 'write'):
-            with open(filename_or_file, mode='w') as fh:
+            with open(filename_or_file, mode='wb') as fh:
                 fh.write(compressed)
         else:
             filename_or_file.write(compressed)
