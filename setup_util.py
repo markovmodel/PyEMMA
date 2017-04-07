@@ -69,18 +69,8 @@ def detect_openmp():
     return hasopenmp, needs_gomp
 
 
-def getSetuptoolsError():
-    bootstrap_setuptools = """\
-python2.7 -c "import urllib2;
-url=\'https://bootstrap.pypa.io/ez_setup.py\';\n
-exec urllib2.urlopen(url).read()\""""
-    cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
-    s = 'You can use the following command to upgrade/install it:\n%s' % cmd
-    return s
-
-
 class lazy_cythonize(list):
-    """evaluates extension list lazyly.
+    """evaluates extension list lazily.
     pattern taken from http://tinyurl.com/qb8478q"""
     def __init__(self, callback):
         self._list, self.callback = None, callback

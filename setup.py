@@ -54,14 +54,13 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import getSetuptoolsError, lazy_cythonize, init_submodules
+from setup_util import lazy_cythonize, init_submodules
 
 try:
     from setuptools import setup, Extension, find_packages
-    from pkg_resources import VersionConflict
 except ImportError as ie:
-    print(getSetuptoolsError())
-    sys.exit(23)
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
 
 ###############################################################################
 # Extensions
@@ -93,9 +92,7 @@ def extensions():
 
     import mdtraj
     from numpy import get_include as _np_inc
-    from scipy import get_include as _sc_inc
     np_inc = _np_inc()
-    sc_inc = _sc_inc()
 
     exts = []
 
@@ -237,6 +234,8 @@ metadata = dict(
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     keywords='Markov State Model Algorithms',
+    # packages are found if their folder contains an __init__.py,
+    packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
