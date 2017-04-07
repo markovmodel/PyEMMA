@@ -1,12 +1,14 @@
 import os
 import tempfile
 import unittest
+from io import BytesIO
 
 import numpy as np
 
 import pyemma
 from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_npz_handler
 from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.util import _old_locations
 from pyemma._ext.jsonpickle import dumps, loads
 
 
@@ -58,6 +60,22 @@ class test_cls_v3(SerializableMixIn):
 
     def __eq__(self, other):
         return np.allclose(self.c, other.c) and self.y == other.y and self.z == other.z
+
+
+class _deleted_in_old_version(test_cls_v3):
+    _serialize_version = 0
+    pass
+
+
+old_loc = b"pyemma._base.tests.test_serialization._deleted_in_old_version"
+@_old_locations([old_loc])
+class test_cls_with_old_locations(_deleted_in_old_version):
+    _serialize_version = 0
+
+    # _serialize_fields = test_cls_v3._serialize_fields
+
+    def __init__(self):
+        super(test_cls_with_old_locations, self).__init__()
 
 
 class TestSerialisation(unittest.TestCase):
@@ -178,6 +196,22 @@ class TestSerialisation(unittest.TestCase):
 
         self.assertIn("have to be list or tuple", cm.exception.args[0])
 
+    def test_renamed_class(self):
+        """ ensure a removed class gets properly remapped to an existing one """
+        try:
+            buff = BytesIO()
+
+            old = _deleted_in_old_version()
+            old.save(buff)
+            buff.seek(0)
+
+            # now restore and check it got properly remapped to the new class
+            restored = pyemma.load(buff)
+            assert isinstance(restored, test_cls_with_old_locations)
+            #self.assertIsInstance(restored, test_cls_with_old_locations)
+        finally:
+            from pyemma._base.serialization.serialization import _renamed_classes
+            _renamed_classes.pop(old_loc)
 
 if __name__ == '__main__':
     unittest.main()

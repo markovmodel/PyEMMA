@@ -26,7 +26,7 @@ from pyemma._ext import jsonpickle
 from pyemma.util.types import is_string, is_int
 
 logger = logging.getLogger(__name__)
-_debug = True
+_debug = False
 
 if _debug:
     logger.level = logging.DEBUG
@@ -51,14 +51,10 @@ def load(file_like):
 
     if _debug:
         logger.debug("type of input: %s", type(inp))
-    kw = {}
-    if six.PY3:
-        kw['encoding'] = 'ascii'
-    #inp = str(inp, **kw)
 
     for renamed in _renamed_classes:
         new = _renamed_classes[renamed]
-        inp = inp.replace('"%s"' % renamed, new)
+        inp = inp.replace(renamed, new)
         if _debug:
             logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
     obj = jsonpickle.loads(inp)
@@ -73,7 +69,7 @@ class SerializableMixIn(object):
     add a version number to your class to distinguish old and new copies of the
     source code:
 
-    >>> import tempfile, pyemma, os
+    >>> import tempfile, pyemma
     >>> class MyClass(SerializableMixIn):
     ...    _serialize_version = 0
     ...    _serialize_fields = ['x']
