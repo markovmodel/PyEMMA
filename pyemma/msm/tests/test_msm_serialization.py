@@ -187,8 +187,6 @@ class TestMSMSerialization(unittest.TestCase):
         its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags)
 
         its.save(self.f)
-        from psutil._pslinux import cat
-        print(cat(self.f))
         restored = load(self.f)
 
         self.assertEqual(restored.estimator.get_params(deep=False), its.estimator.get_params(deep=False))
