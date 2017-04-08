@@ -107,7 +107,7 @@ class SerializableMixIn(object):
         import bz2
         compressed = bz2.compress(flattened, compresslevel=compression_level)
         if not hasattr(filename_or_file, 'write'):
-            with open(filename_or_file, mode='w') as fh:
+            with open(filename_or_file, mode='wb') as fh:
                 fh.write(compressed)
         else:
             filename_or_file.write(compressed)
