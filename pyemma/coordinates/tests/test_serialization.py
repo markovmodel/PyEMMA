@@ -107,7 +107,7 @@ class TestSerializationCoordinates(unittest.TestCase):
 
     def test_tica_estimated(self):
         params = {'lag': 10, 'dim': 3, 'kinetic_map': True,
-                  'mean': None, 'remove_mean': True, 'stride': 2}
+                  'stride': 2}
         t = pyemma.coordinates.tica(data=self.data, **params)
 
         assert t._estimated
@@ -120,7 +120,7 @@ class TestSerializationCoordinates(unittest.TestCase):
 
     def test_pca(self):
         params = {'dim': 3,
-                  'mean': None, 'stride': 2}
+                  'stride': 2}
         p = pyemma.coordinates.pca(**params)
 
         self.compare(p, params)

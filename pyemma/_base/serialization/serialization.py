@@ -43,18 +43,23 @@ class DeveloperError(Exception):
 
 def load(file_like):
     import bz2
-    with contextlib.closing(bz2.BZ2File(file_like)) as fh:
-        inp = fh.read()
-    kw = {}
-    if six.PY3:
-        kw['encoding'] = 'ascii'
+    if not hasattr(file_like, 'read'):
+        with contextlib.closing(bz2.BZ2File(file_like)) as fh:
+            inp = fh.read()
+    else:
+        inp = bz2.decompress(file_like.read())
+
+    if _debug:
+        logger.debug("type of input: %s", type(inp))
+
+    kw = {} if six.PY2 else {'encoding':'ascii'}
     inp = str(inp, **kw)
 
     for renamed in _renamed_classes:
         new = _renamed_classes[renamed]
-        inp = inp.replace('"%s"' % renamed, new)
+        inp = inp.replace(renamed, new)
         if _debug:
-            logger.debug("replacing {renamed} with {new}".format(renamed=renamed, new=new))
+            logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
     obj = jsonpickle.loads(inp)
 
     return obj
@@ -67,7 +72,7 @@ class SerializableMixIn(object):
     add a version number to your class to distinguish old and new copies of the
     source code:
 
-    >>> import tempfile, pyemma, os
+    >>> import tempfile, pyemma
     >>> class MyClass(SerializableMixIn):
     ...    _serialize_version = 0
     ...    _serialize_fields = ['x']
