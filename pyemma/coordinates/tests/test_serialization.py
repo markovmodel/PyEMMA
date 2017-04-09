@@ -131,9 +131,9 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         t = pyemma.coordinates.pca(data=self.data, **params)
         assert t._estimated
-        params['cov'] = t.cov
+        #params['cov'] = t.cov
         params['mean'] = t.mean
-        params['eigenvalues'] = t.eigenvalues
+        #params['eigenvalues'] = t.eigenvalues
         params['eigenvectors'] = t.eigenvectors
 
         self.compare(t, params)
@@ -166,6 +166,7 @@ class TestSerializationCoordinates(unittest.TestCase):
         r.featurizer.add_distances_ca()
 
         params = {'filenames': trajs}
+        #TODO: add check.
 
 if __name__ == '__main__':
     unittest.main()
