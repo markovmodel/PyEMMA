@@ -22,16 +22,10 @@ class _old_locations(object):
         #locations = map(bytes, locations)
         self.locations = locations
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, cls):
         from .serialization import _renamed_classes
-        cls = args[0]
-        new_class = importable_name(cls)
-
-        # import six
-        #new_name = "{module}.{cls}".format(module=cls.__module__, cls=cls.__name__)
-        #kw = {} if six.PY2 else {'encoding': 'ascii'}
-        #new_class = bytes(new_name, **kw)
-
+        assert hasattr(cls, "__module__"), "makes only sense for importable classes."
+        new_class = "{module}.{cls}".format(module=cls.__module__, cls=cls.__name__)
         for old in self.locations:
             _renamed_classes[old] = new_class
 
