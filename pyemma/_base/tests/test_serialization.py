@@ -6,7 +6,7 @@ from io import BytesIO
 import numpy as np
 
 import pyemma
-from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_npz_handler
+#from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_npz_handler
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.serialization.util import _old_locations
 from pyemma._ext.jsonpickle import dumps, loads
@@ -79,19 +79,21 @@ class test_cls_with_old_locations(_deleted_in_old_version):
 
 
 class TestSerialisation(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        register_ndarray_handler()
-
     def test_numpy(self):
-        try:
-            x = np.random.randint(0, 1000, size=100000)
-            s = dumps(x)
-            actual = loads(s)
+        x = np.random.randint(0, 1000, size=100000)
+        s = dumps(x)
+        actual = loads(s)
 
-            np.testing.assert_equal(actual, x)
-        finally:
-            unregister_ndarray_npz_handler()
+        np.testing.assert_equal(actual, x)
+
+    def test_numpy_extracted_dtypes(self):
+        value = np.arange(3)
+        from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
+        for dtype in NumpyExtractedDtypeHandler.np_dtypes:
+            converted = value.astype(dtype)[0]
+            exported = dumps(converted)
+            actual = loads(exported)
+            self.assertEqual(actual, converted)
 
     def test_save_interface(self):
         inst = test_cls_v1()
@@ -207,8 +209,8 @@ class TestSerialisation(unittest.TestCase):
 
             # now restore and check it got properly remapped to the new class
             restored = pyemma.load(buff)
-            assert isinstance(restored, test_cls_with_old_locations)
-            #self.assertIsInstance(restored, test_cls_with_old_locations)
+            #assert isinstance(restored, test_cls_with_old_locations)
+            self.assertIsInstance(restored, test_cls_with_old_locations)
         finally:
             from pyemma._base.serialization.serialization import _renamed_classes
             _renamed_classes.pop(old_loc)

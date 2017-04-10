@@ -4,34 +4,22 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 @author: Martin K. Scherer
 """
 
-import numpy as np
 from io import BytesIO
+
+import numpy as np
 
 from pyemma._ext.jsonpickle import handlers
 from pyemma._ext.jsonpickle import util
-from pyemma._ext.jsonpickle.handlers import unregister as _unregister
-from pyemma._ext.jsonpickle.ext.numpy import (register_handlers as _register_handlers,
-                                              unregister_handlers as _unregister_handlers)
 
 
 def register_ndarray_handler():
     """ Override jsonpickle handler for numpy arrays with compressed NPZ handler.
     First unregisters the default handler
     """
-    # register jsonpickle default numpy handlers
-    #_register_handlers()
-    from  pyemma._ext.jsonpickle.ext.numpy import NumpyDTypeHandler, NumpyGenericHandler
-    from pyemma._ext.jsonpickle.handlers import register
-    register(np.dtype, NumpyDTypeHandler, base=True)
-    register(np.generic, NumpyGenericHandler, base=True)
-    # now override with our own
     NumpyNPZHandler.handles(np.ndarray)
 
-
-def unregister_ndarray_npz_handler():
-    """ Restore jsonpickle default numpy array handler.
-    """
-    _register_handlers()
+    for t in NumpyExtractedDtypeHandler.np_dtypes:
+        NumpyExtractedDtypeHandler.handles(t)
 
 
 class NumpyNPZHandler(handlers.BaseHandler):
@@ -51,9 +39,33 @@ class NumpyNPZHandler(handlers.BaseHandler):
     def restore(self, obj):
         binary = util.b64decode(obj['npz_file_bytes'])
         buff = BytesIO(binary)
-        fh = np.load(buff)
-        array = fh['x']
-        fh.close()
+        with np.load(buff) as fh:
+            array = fh['x']
         return array
 
-NumpyNPZHandler.handles(np.ndarray)
+
+class NumpyExtractedDtypeHandler(handlers.BaseHandler):
+    """
+    if one extracts a value from a numpy array, the resulting type is numpy.int64 etc.
+    We convert these values to Python primitives right here.
+    
+    All float types up to float64 are mapped by builtin.float
+    All integer (signed/unsigned) types up to int64 are mapped by builtin.int
+    """
+    np_dtypes = (np.float16, np.float32, np.float64,
+                 np.int8, np.int16, np.int32, np.int64,
+                 np.uint8, np.uint16, np.uint32, np.uint64)
+
+    def __init__(self, context):
+        super(NumpyExtractedDtypeHandler, self).__init__(context=context)
+
+    def flatten(self, obj, data):
+        str_t = type(obj).__name__
+        if str_t.startswith("float"):
+            value = float(obj)
+        elif str_t.startswith("int") or str_t.startswith("uint"):
+            value = int(obj)
+        else:
+            raise ValueError("not yet impled for type %s" % str_t)
+
+        return value
