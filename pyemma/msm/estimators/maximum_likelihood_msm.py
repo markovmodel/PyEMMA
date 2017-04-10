@@ -163,13 +163,18 @@ class _MSMEstimator(_Estimator, _MSM):
     # Basic attributes
     ################################################################################
 
+    @alias("lagtime")
     @property
-    def lagtime(self):
+    def lag(self):
         """
         The lag time at which the Markov model was estimated
 
         """
-        return self.lag
+        return self._lag
+
+    @lag.setter
+    def lag(self, value):
+        self._lag = int(value)
 
     @property
     def nstates_full(self):

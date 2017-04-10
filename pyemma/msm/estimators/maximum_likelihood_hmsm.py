@@ -245,7 +245,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # get estimation parameters
         self.likelihoods = hmm_est.likelihoods  # Likelihood history
-        self.likelihood = self.likelihoods[-1]
+        self.likelihood = float(self.likelihoods[-1])
         self.hidden_state_probabilities = hmm_est.hidden_state_probabilities  # gamma variables
         self.hidden_state_trajectories = hmm_est.hmm.hidden_state_trajectories  # Viterbi path
         self.count_matrix = hmm_est.count_matrix  # hidden count matrix
@@ -256,8 +256,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         # parametrize self
         self._dtrajs_full = dtrajs
         self._dtrajs_lagged = dtrajs_lagged_strided
-        self._nstates_obs_full = msmest.number_of_states(dtrajs)
-        self._nstates_obs = msmest.number_of_states(dtrajs_lagged_strided)
+        self._nstates_obs_full = int(msmest.number_of_states(dtrajs))
+        self._nstates_obs = int(msmest.number_of_states(dtrajs_lagged_strided))
         self._observable_set = _np.arange(self._nstates_obs)
         self._dtrajs_obs = dtrajs
         self.set_model_params(P=transition_matrix, pobs=observation_probabilities,
