@@ -8,11 +8,11 @@ def no_progress_bars():
 
     def pg_enabled():
         out = subprocess.check_output(['python', '-c', 'from __future__ import print_function; import pyemma; print(pyemma.config.show_progress_bars)'])
-        return out.find('True') != -1
+        return out.find(b'True') != -1
 
     def cache_enabled():
         out = subprocess.check_output(['python', '-c', 'from __future__ import print_function; import pyemma; print(pyemma.config.use_trajectory_lengths_cache)'])
-        return out.find('True') != -1
+        return out.find(b'True') != -1
 
     cfg_script = "import pyemma; pyemma.config.show_progress_bars = {pg}; pyemma.config.use_trajectory_lengths_cache = {cache};pyemma.config.save()"
 
