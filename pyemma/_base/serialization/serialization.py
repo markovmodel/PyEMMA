@@ -42,6 +42,17 @@ class DeveloperError(Exception):
 
 
 def load(file_like):
+    """ loads a previously saved object of this class from a file.
+
+    Parameter
+    ---------
+    file_like : str or file like object (has to provide read method).
+        The file like object tried to be read for a serialized object.
+
+    Returns
+    -------
+    obj : the de-serialized object
+    """
     import bz2
     if not hasattr(file_like, 'read'):
         with contextlib.closing(bz2.BZ2File(file_like)) as fh:
@@ -72,7 +83,8 @@ class SerializableMixIn(object):
     add a version number to your class to distinguish old and new copies of the
     source code:
 
-    >>> import tempfile, pyemma
+    >>> import pyemma
+    >>> from io import BytesIO
     >>> class MyClass(SerializableMixIn):
     ...    _serialize_version = 0
     ...    _serialize_fields = ['x']
@@ -80,11 +92,12 @@ class SerializableMixIn(object):
     ...        self.x = x
 
     >>> inst = MyClass()
-    >>> file = tempfile.NamedTemporaryFile()
-    >>> inst.save(file.name)
-    >>> inst_restored = pyemma.load(file.name)
+    >>> file = BytesIO()
+    >>> inst.save(file)
+    >>> _= file.seek(0)
+    >>> inst_restored = pyemma.load(file)
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
-
+    # skipped because MyClass is not importable.
 
     """
 
@@ -137,7 +150,7 @@ class SerializableMixIn(object):
             raise ValueError("Given file '%s' did not contain the right type:"
                              " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
         if not hasattr(cls, '_serialize_version'):
-            raise DeveloperError("your class does not implement the deserialization protocol of PyEMMA.")
+            raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
 
         return obj
 

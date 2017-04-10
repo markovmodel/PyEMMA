@@ -6,7 +6,6 @@ from io import BytesIO
 import numpy as np
 
 import pyemma
-#from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_npz_handler
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.serialization.util import _old_locations
 from pyemma._ext.jsonpickle import dumps, loads
@@ -30,8 +29,8 @@ class test_cls_v2(SerializableMixIn):
     _serialize_version = 2
     # interpolate from version 1: add attr z with value 42
     _serialize_interpolation_map = {1: [('set', 'z', 42),
-                                         ('mv', 'a', 'b'),
-                                         ('rm', 'x')]}
+                                        ('mv', 'a', 'b'),
+                                        ('rm', 'x')]}
 
     def __init__(self):
         self.b = np.random.random((3, 2))
@@ -68,6 +67,8 @@ class _deleted_in_old_version(test_cls_v3):
 
 
 old_loc = "pyemma._base.tests.test_serialization._deleted_in_old_version"
+
+
 @_old_locations([old_loc])
 class test_cls_with_old_locations(_deleted_in_old_version):
     _serialize_version = 0
@@ -79,8 +80,17 @@ class test_cls_with_old_locations(_deleted_in_old_version):
 
 
 class TestSerialisation(unittest.TestCase):
+    def setUp(self):
+        self.fn = tempfile.mktemp()
+
+    def tearDown(self):
+        try:
+            os.unlink(self.fn)
+        except:
+            pass
+
     def test_numpy(self):
-        x = np.random.randint(0, 1000, size=100000)
+        x = np.random.randint(0, 1000, size=1000)
         s = dumps(x)
         actual = loads(s)
 
@@ -97,13 +107,9 @@ class TestSerialisation(unittest.TestCase):
 
     def test_save_interface(self):
         inst = test_cls_v1()
-        try:
-            with tempfile.NamedTemporaryFile(delete=False) as fh:
-                inst.save(fh)
-                new = test_cls_v1.load(fh.name)
-                self.assertEqual(new, inst)
-        finally:
-            os.unlink(fh.name)
+        inst.save(self.fn)
+        new = test_cls_v1.load(self.fn)
+        self.assertEqual(new, inst)
 
     def test_save_file_like(self):
         from io import BytesIO
@@ -119,57 +125,51 @@ class TestSerialisation(unittest.TestCase):
         global test_cls_v1
         old_class = test_cls_v1
         try:
-            f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v1()
-            inst.save(f.name)
+            inst.save(self.fn)
 
             test_cls_v1 = test_cls_v2
 
-            inst_restored = pyemma.load(f.name)
+            inst_restored = pyemma.load(self.fn)
 
             self.assertIsInstance(inst_restored, test_cls_v2)
             self.assertEqual(inst_restored.z, 42)
         finally:
-            os.unlink(f.name)
             test_cls_v1 = old_class
 
     def test_updated_class_v2_to_v3(self):
         global test_cls_v2
         old_class = test_cls_v2
         try:
-            f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v2()
-            inst.save(f.name)
+            inst.save(self.fn)
 
             test_cls_v2 = test_cls_v3
 
-            inst_restored = pyemma.load(f.name)
+            inst_restored = pyemma.load(self.fn)
 
             self.assertIsInstance(inst_restored, test_cls_v2)
             self.assertEqual(inst_restored.z, 23)
             self.assertFalse(hasattr(inst_restored, 'y'))
         finally:
-            os.unlink(f.name)
             test_cls_v2 = old_class
 
     def test_updated_class_v1_to_v3(self):
         global test_cls_v1
         old_class = test_cls_v1
         try:
-            f = tempfile.NamedTemporaryFile(delete=False)
             inst = test_cls_v1()
-            inst.save(f.name)
+            inst.save(self.fn)
 
             test_cls_v1 = test_cls_v3
 
-            inst_restored = pyemma.load(f.name)
+            inst_restored = pyemma.load(self.fn)
 
             self.assertIsInstance(inst_restored, test_cls_v3)
             self.assertEqual(inst_restored.z, 23)
             np.testing.assert_equal(inst_restored.c, inst.a)
             self.assertFalse(hasattr(inst_restored, 'y'))
         finally:
-            os.unlink(f.name)
             test_cls_v1 = old_class
 
     def test_validate_map_order(self):
@@ -177,7 +177,8 @@ class TestSerialisation(unittest.TestCase):
         s = SerializableMixIn()
         s._serialize_interpolation_map = interpolation_map
         s._validate_interpolation_map()
-        self.assertSequenceEqual(list(s._serialize_interpolation_map.keys()), sorted(s._serialize_interpolation_map.keys()))
+        self.assertSequenceEqual(list(s._serialize_interpolation_map.keys()),
+                                 sorted(s._serialize_interpolation_map.keys()))
 
     def test_validate_map_invalid_op(self):
         interpolation_map = {3: [('foo', 'x', None)]}
@@ -209,11 +210,12 @@ class TestSerialisation(unittest.TestCase):
 
             # now restore and check it got properly remapped to the new class
             restored = pyemma.load(buff)
-            #assert isinstance(restored, test_cls_with_old_locations)
+            # assert isinstance(restored, test_cls_with_old_locations)
             self.assertIsInstance(restored, test_cls_with_old_locations)
         finally:
             from pyemma._base.serialization.serialization import _renamed_classes
             _renamed_classes.pop(old_loc)
+
 
 if __name__ == '__main__':
     unittest.main()
