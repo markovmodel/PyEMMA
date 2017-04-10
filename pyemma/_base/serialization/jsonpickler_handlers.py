@@ -19,7 +19,11 @@ def register_ndarray_handler():
     First unregisters the default handler
     """
     # register jsonpickle default numpy handlers
-    _register_handlers()
+    #_register_handlers()
+    from  pyemma._ext.jsonpickle.ext.numpy import NumpyDTypeHandler, NumpyGenericHandler
+    from pyemma._ext.jsonpickle.handlers import register
+    register(np.dtype, NumpyDTypeHandler, base=True)
+    register(np.generic, NumpyGenericHandler, base=True)
     # now override with our own
     NumpyNPZHandler.handles(np.ndarray)
 
@@ -51,3 +55,5 @@ class NumpyNPZHandler(handlers.BaseHandler):
         array = fh['x']
         fh.close()
         return array
+
+NumpyNPZHandler.handles(np.ndarray)
