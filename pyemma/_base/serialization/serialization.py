@@ -81,7 +81,27 @@ class SerializableMixIn(object):
 
     Derive from this class to make your class serializable. Do not forget to
     add a version number to your class to distinguish old and new copies of the
-    source code:
+    source code. The static attribute '_serialize_fields' is a iterable of names,
+    which are preserved during serialization.
+    
+    To aid the process of loading old models in a new version of the software, there
+    is the the static field '_serialize_interpolation_map', which is a mapping from
+    old version number to a set of operations to transform the old class state to the
+    recent version of the class.
+    
+    Valid operations are:
+    1. ('rm', 'name') -> delete the attribute with given name.
+    2. ('mv', 'old', 'new') -> rename the attribute from 'old' to 'new'.
+    3. ('set', 'name', value) -> set an attribute with name 'name' to given value.
+    4. ('map', 'name', func) -> apply the function 'func' to attribute 'name'. The function
+      should accept one argument, namely the attribute and return the new value for it.
+    
+    Similar to map, there are two callbacks to hook into the serialization process:
+    5. ('set_state_hook', func) -> a function which may transform the state dictionary
+       before __getstate__ returns.
+
+    Example
+    -------
 
     >>> import pyemma
     >>> from io import BytesIO
@@ -159,6 +179,7 @@ class SerializableMixIn(object):
         if not hasattr(self, '_serialize_fields'):
             return {}
         res = {}
+        assert all(isinstance(f, six.string_types) for f in klass._serialize_fields)
         for field in klass._serialize_fields:
             # only try to get fields, we actually have.
             if hasattr(self, field):
@@ -194,7 +215,8 @@ class SerializableMixIn(object):
         # Drag in all prior versions attributes
         self._validate_interpolation_map()
 
-        logger.debug("input state: %s" % state)
+        if _debug:
+            logger.debug("input state: %s" % state)
         state_version = state['_serialize_version']
         for key in self._serialize_interpolation_map.keys():
             if not (self._serialize_version > key >= state_version):
@@ -218,6 +240,12 @@ class SerializableMixIn(object):
                         except KeyError:
                             raise DeveloperError("the previous version didn't "
                                                  "store an attribute named '{}'".format(a[1]))
+                    elif operation == 'map':
+                        func = value
+                        if hasattr(func, '__func__'):
+                            func = func.__func__
+                        assert callable(func)
+                        state[name] = func(state[name])
                 elif len(a) == 2:
                     action, value = a
                     if action == 'rm':
@@ -228,18 +256,20 @@ class SerializableMixIn(object):
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
         if _debug:
-            logger.debug("restoring state for class %s" % klass)
+            logger.debug("restoring state for class %s", klass)
 
         klass_version = state['_serialize_version']  # state['__serialize_class_versions'][klass.__name__]
-        if klass_version < klass._serialize_version and hasattr(self, '_serialize_interpolation_map'):
-            self.__interpolate(state)
+        # TODO: decide whether to call interpolate for every klass, or just self (which will allow for only one map).
+        # This should be less confusing, than allowing for every class in the hierachy, but is more restrictive of what can be done.
+        if klass_version < klass._serialize_version and hasattr(klass, '_serialize_interpolation_map'):
+            klass.__interpolate(self, state)
 
         for field in klass._serialize_fields:
             if field in state:
                 setattr(self, field, state[field])
             else:
                 if _debug:
-                    logger.debug("skipped %s, because it is not declared in _serialize_fields" % field)
+                    logger.debug("skipped %s, because it is not declared in _serialize_fields", field)
 
     def __getstate__(self):
         # We just dump the version number for comparison with the actual class.
