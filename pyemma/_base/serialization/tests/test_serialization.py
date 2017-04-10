@@ -62,21 +62,32 @@ class test_cls_v3(SerializableMixIn):
 
 
 class _deleted_in_old_version(test_cls_v3):
-    _serialize_version = 0
-    pass
+    _serialize_version = 4
+    def __init__(self):
+        super(_deleted_in_old_version, self).__init__()
 
 
-old_loc = "pyemma._base.tests.test_serialization._deleted_in_old_version"
+old_loc = "{mod}.{cls}".format(mod=_deleted_in_old_version.__module__,
+                               cls=_deleted_in_old_version.__name__)
 
 
 @_old_locations([old_loc])
 class test_cls_with_old_locations(_deleted_in_old_version):
-    _serialize_version = 0
-
-    # _serialize_fields = test_cls_v3._serialize_fields
+    _serialize_version = 5
 
     def __init__(self):
         super(test_cls_with_old_locations, self).__init__()
+
+
+class to_interpolate_with_functions(test_cls_v1):
+
+    @staticmethod
+    def map_y(x):
+        return 42
+
+    _serialize_version = 2
+    # map from version 1 to 2
+    _serialize_interpolation_map = {1: [('map', 'y', map_y)]}
 
 
 class TestSerialisation(unittest.TestCase):
@@ -97,6 +108,8 @@ class TestSerialisation(unittest.TestCase):
         np.testing.assert_equal(actual, x)
 
     def test_numpy_extracted_dtypes(self):
+        """ scalar values extracted from a numpy array do not posses a python builtin type,
+        ensure they are converted to those types properly."""
         value = np.arange(3)
         from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
         for dtype in NumpyExtractedDtypeHandler.np_dtypes:
@@ -122,6 +135,7 @@ class TestSerialisation(unittest.TestCase):
         self.assertEqual(t2, t)
 
     def test_updated_class(self):
+        """ """
         global test_cls_v1
         old_class = test_cls_v1
         try:
@@ -198,6 +212,20 @@ class TestSerialisation(unittest.TestCase):
             s._validate_interpolation_map()
 
         self.assertIn("have to be list or tuple", cm.exception.args[0])
+
+    def test_interpolation_with_map(self):
+        global test_cls_v1
+        old_cls = test_cls_v1
+        try:
+            c = test_cls_v1()
+            c.save(self.fn)
+            test_cls_v1 = to_interpolate_with_functions
+            inst_restored = pyemma.load(self.fn)
+
+            self.assertIsInstance(inst_restored, to_interpolate_with_functions)
+            self.assertEqual(inst_restored.y, to_interpolate_with_functions.map_y(None))
+        finally:
+            test_cls_v1 = old_cls
 
     def test_renamed_class(self):
         """ ensure a removed class gets properly remapped to an existing one """
