@@ -126,6 +126,26 @@ class TestFeaturizer(unittest.TestCase):
         self.ref_frame = 0
         self.atom_indices = np.arange(0, self.traj.n_atoms/2)
 
+    def tearDown(self):
+        """
+        before we destroy the featurizer created in each test, we dump it via
+        serialization and restore it to check for equality.
+        """
+
+        def feat_equal(a, b):
+            assert isinstance(a, MDFeaturizer)
+            assert isinstance(b, MDFeaturizer)
+            assert a.dimension() == b.dimension()
+            assert a.active_features == b.active_features
+
+        from io import BytesIO
+        buff = BytesIO()
+        self.feat.save(buff)
+        buff.seek(0)
+        import pyemma
+        restored = pyemma.load(buff)
+        feat_equal(restored, self.feat)
+
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
     
