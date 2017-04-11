@@ -21,9 +21,10 @@ import logging
 import six
 
 from pyemma._base.logging import Loggable
-from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler as _reg_np_handler
+from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
+
 from pyemma._ext import jsonpickle
-from pyemma.util.types import is_string, is_int
+from pyemma.util.types import is_int
 
 logger = logging.getLogger(__name__)
 _debug = False
@@ -31,7 +32,8 @@ _debug = False
 if _debug:
     logger.level = logging.DEBUG
 
-_reg_np_handler()
+# indicate whether serialization handlers have already been registered
+_handlers_registered = False
 
 _renamed_classes = {}
 """ this dict performs a mapping between old and new names. A class can be renamed multiple times. """
@@ -71,13 +73,76 @@ def load(file_like):
         inp = inp.replace(renamed, new)
         if _debug:
             logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
+
+    if not _handlers_registered:
+        _reg_all_handlers()
+
     obj = jsonpickle.loads(inp)
 
     return obj
 
 
-class SerializableMixIn(object):
+class _SerializableBase(object):
     """ Base class of serializable classes.
+
+       Derive from this class to make your class serializable via save and load methods.
+    """
+    def save(self, filename_or_file, compression_level=9):
+        """
+        Parameters
+        -----------
+        filename_or_file: str or file like
+            path to desired output file or a type which implements the file protocol (accepting bytes as input).
+        """
+        if not _handlers_registered:
+            _reg_all_handlers()
+
+        try:
+            flattened = jsonpickle.dumps(self)
+        except Exception as e:
+            if isinstance(self, Loggable):
+                self.logger.exception('During saving the object ("{error}") '
+                                      'the following error occurred'.format(error=e))
+            raise
+
+        if six.PY3:
+            flattened = bytes(flattened, encoding='ascii')
+
+        import bz2
+        compressed = bz2.compress(flattened, compresslevel=compression_level)
+        if not hasattr(filename_or_file, 'write'):
+            with open(filename_or_file, mode='wb') as fh:
+                fh.write(compressed)
+        else:
+            filename_or_file.write(compressed)
+            filename_or_file.flush()
+
+    @classmethod
+    def load(cls, file_like):
+        """ loads a previously saved object of this class from a file.
+
+        Parameter
+        ---------
+        file_like : str or file like object (has to provide read method).
+            The file like object tried to be read for a serialized object.
+
+        Returns
+        -------
+        obj : the de-serialized object
+        """
+        obj = load(file_like)
+
+        if obj.__class__ != cls:
+            raise ValueError("Given file '%s' did not contain the right type:"
+                             " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
+        if not hasattr(cls, '_serialize_version'):
+            raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
+
+        return obj
+
+
+class SerializableMixIn(_SerializableBase):
+    """ Base class of serializable classes using get/set_state.
 
     Derive from this class to make your class serializable. Do not forget to
     add a version number to your class to distinguish old and new copies of the
@@ -123,56 +188,6 @@ class SerializableMixIn(object):
 
     _serialize_fields = ()
     """ attribute names to serialize """
-
-    def save(self, filename_or_file, compression_level=9):
-        """
-        Parameters
-        -----------
-        filename_or_file: str or file like
-            path to desired output file or a type which implements the file protocol (accepting bytes as input).
-        """
-        try:
-            flattened = jsonpickle.dumps(self)
-        except Exception as e:
-            if isinstance(self, Loggable):
-                self.logger.exception('During saving the object ("{error}") '
-                                      'the following error occurred'.format(error=e))
-            raise
-
-        if six.PY3:
-            flattened = bytes(flattened, encoding='ascii')
-
-        import bz2
-        compressed = bz2.compress(flattened, compresslevel=compression_level)
-        if not hasattr(filename_or_file, 'write'):
-            with open(filename_or_file, mode='wb') as fh:
-                fh.write(compressed)
-        else:
-            filename_or_file.write(compressed)
-            filename_or_file.flush()
-
-    @classmethod
-    def load(cls, file_like):
-        """ loads a previously saved object of this class from a file.
-
-        Parameter
-        ---------
-        file_like : str or file like object (has to provide read method).
-            The file like object tried to be read for a serialized object.
-
-        Returns
-        -------
-        obj : the de-serialized object
-        """
-        obj = load(file_like)
-
-        if obj.__class__ != cls:
-            raise ValueError("Given file '%s' did not contain the right type:"
-                             " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
-        if not hasattr(cls, '_serialize_version'):
-            raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
-
-        return obj
 
     def _get_state_of_serializeable_fields(self, klass):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""

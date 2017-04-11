@@ -22,6 +22,21 @@ def register_ndarray_handler():
         NumpyExtractedDtypeHandler.handles(t)
 
 
+def register_datasources_handlers():
+    from pyemma.coordinates.data import FeatureReader, NumPyFileReader, PyCSVReader, FragmentedTrajectoryReader
+
+    # handle FeatureReaders serialization by the reduce protocol (invoke constructor with given arguments).
+    handlers.SimpleReduceHandler.handles(FeatureReader)
+    handlers.SimpleReduceHandler.handles(NumPyFileReader)
+    handlers.SimpleReduceHandler.handles(PyCSVReader)
+    handlers.SimpleReduceHandler.handles(FragmentedTrajectoryReader)
+
+
+def register_all_handlers():
+    register_ndarray_handler()
+    register_datasources_handlers()
+
+
 class NumpyNPZHandler(handlers.BaseHandler):
     """ stores NumPy array as a compressed NPZ file. """
     def __init__(self, context):

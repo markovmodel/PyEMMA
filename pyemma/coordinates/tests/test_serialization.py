@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +25,7 @@ import numpy as np
 
 import pyemma
 import pyemma.coordinates as coor
+from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 
 
 class TestSerializationCoordinates(unittest.TestCase):
@@ -66,12 +67,15 @@ class TestSerializationCoordinates(unittest.TestCase):
                 self.assertListEqual(actual, expected)
             else:
                 self.assertEqual(actual, expected)
+        # return the restored obj for further evaluation
+        return restored
 
     def test_clustering_kmeans(self):
         params = {'k': 10, 'init_strategy': 'uniform', 'max_iter': 42,
                   'metric': 'minRMSD', 'stride': 1}
-        cl = coor.cluster_kmeans(**params)
+        cl = coor.cluster_kmeans([np.random.random((100, 3))],**params)
         params['n_clusters'] = params['k']
+        params['clustercenters'] = cl.clustercenters  # this is a model param, so it should contained in the output
         del params['k']
 
         self.compare(cl, params)
@@ -165,8 +169,55 @@ class TestSerializationCoordinates(unittest.TestCase):
         r = pyemma.coordinates.source(trajs, top=top)
         r.featurizer.add_distances_ca()
 
-        params = {'filenames': trajs}
-        #TODO: add check.
+        params = {'filenames': trajs, 'ndim': r.ndim, 'topfile': r.topfile}
+        restored = self.compare(r, params=params)
+
+        self.assertEqual(restored.featurizer.active_features, r.featurizer.active_features)
+
+    def test_numpy_reader(self):
+        arr = np.empty(10)
+        from pyemma.util.files import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            files = [os.path.join(d, '1.npy'), os.path.join(d, '2.npy')]
+            np.save(files[0], arr)
+            np.save(files[1], arr)
+            params = {'filenames':files, 'chunksize': 23}
+            r = NumPyFileReader(**params)
+            self.compare(r, params)
+
+    def test_csv_reader(self):
+        arr = np.empty(10)
+        from pyemma.util.files import TemporaryDirectory
+        with TemporaryDirectory() as d:
+            files = [os.path.join(d, '1.csv'), os.path.join(d, '2.csv')]
+            np.savetxt(files[0], arr)
+            np.savetxt(files[1], arr)
+            params = {'filenames':files, 'chunksize': 23}
+            from pyemma.coordinates.data import PyCSVReader
+            r = PyCSVReader(**params)
+            self.compare(r, params)
+
+    def test_fragmented_reader(self):
+        from pyemma.coordinates.tests.util import create_traj
+        from pyemma.util.files import TemporaryDirectory
+        import pkg_resources
+
+        top_file = pkg_resources.resource_filename(__name__, 'data/test.pdb')
+        trajfiles = []
+
+        with TemporaryDirectory() as d:
+            for _ in range(3):
+                f, _, _ = create_traj(top_file, dir=d)
+                trajfiles.append(f)
+            # three trajectories: one consisting of all three, one consisting of the first,
+            # one consisting of the first and the last
+            frag_trajs = [trajfiles, [trajfiles[0]], [trajfiles[0], trajfiles[2]]]
+            chunksize = 232
+            source = coor.source(frag_trajs, top=top_file, chunk_size=chunksize)
+            params = {'chunksize': chunksize, 'ndim': source.ndim, '_trajectories': trajfiles}
+            restored = self.compare(source, params)
+
+            np.testing.assert_equal(source.get_output(), restored.get_output())
 
 if __name__ == '__main__':
     unittest.main()
