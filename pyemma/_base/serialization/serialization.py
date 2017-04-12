@@ -115,6 +115,7 @@ class _SerializableBase(object):
         # if we are serializing a pipeline element, store whether to store the chain elements.
         old_flag = self._save_data_producer
         self._save_data_producer = save_streaming_chain
+        assert self._save_data_producer == save_streaming_chain
         try:
             flattened = jsonpickle.dumps(self)
         except Exception as e:
@@ -163,18 +164,16 @@ class _SerializableBase(object):
 
     @property
     def _save_data_producer(self):
-        if not hasattr(self, '_SerializableMixIn__save_data_producer'):
+        if not hasattr(self, '_SerializableBase__save_data_producer'):
             self.__save_data_producer = False
         return self.__save_data_producer
 
     @_save_data_producer.setter
     def _save_data_producer(self, value):
-        value = bool(value)
         self.__save_data_producer = value
         # forward flag to the next data producer
-        if hasattr(self, 'data_producer') and self.data_producer:
-            # TODO: check data_producers type
-            #assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
+        if hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self:
+            assert isinstance(self.data_producer, _SerializableBase), self.data_producer
             self.data_producer._save_data_producer = value
 
 

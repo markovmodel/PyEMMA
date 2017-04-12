@@ -156,8 +156,6 @@ class TestSerializationCoordinates(unittest.TestCase):
         assert isinstance(restored.data_producer, type(tica))
         assert isinstance(restored.data_producer.data_producer, type(reader))
 
-
-
     def test_featurizer_empty(self):
         from pyemma.datasets import get_bpti_test_data
         top = get_bpti_test_data()['top']
