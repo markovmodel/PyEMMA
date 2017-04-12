@@ -43,6 +43,10 @@ class DeveloperError(Exception):
     """ the devs have done something wrong. """
 
 
+class OldVersionUnsupported(NotImplementedError):
+    """ can not load recent models with old software versions. """
+
+
 def load(file_like):
     """ loads a previously saved object of this class from a file.
 
@@ -87,16 +91,30 @@ class _SerializableBase(object):
 
        Derive from this class to make your class serializable via save and load methods.
     """
-    def save(self, filename_or_file, compression_level=9):
+
+    _serialize_fields = ()
+    """ attribute names to serialize """
+
+    def save(self, filename_or_file, compression_level=9, save_streaming_chain=False):
         """
         Parameters
         -----------
         filename_or_file: str or file like
             path to desired output file or a type which implements the file protocol (accepting bytes as input).
+        compression_level : int
+            if given, must be a number between 1 and 9.
+        save_streaming_chain : boolean, default=False
+            if True, the data_producer(s) of this object will also be saved in the given file.
+            
+        Examples
+        --------
+        TODO: write me
         """
         if not _handlers_registered:
             _reg_all_handlers()
-
+        # if we are serializing a pipeline element, store whether to store the chain elements.
+        old_flag = self._save_data_producer
+        self._save_data_producer = save_streaming_chain
         try:
             flattened = jsonpickle.dumps(self)
         except Exception as e:
@@ -104,6 +122,9 @@ class _SerializableBase(object):
                 self.logger.exception('During saving the object ("{error}") '
                                       'the following error occurred'.format(error=e))
             raise
+        finally:
+            # restore old state.
+            self._save_data_producer = old_flag
 
         if six.PY3:
             flattened = bytes(flattened, encoding='ascii')
@@ -139,6 +160,22 @@ class _SerializableBase(object):
             raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
 
         return obj
+
+    @property
+    def _save_data_producer(self):
+        if not hasattr(self, '_SerializableMixIn__save_data_producer'):
+            self.__save_data_producer = False
+        return self.__save_data_producer
+
+    @_save_data_producer.setter
+    def _save_data_producer(self, value):
+        value = bool(value)
+        self.__save_data_producer = value
+        # forward flag to the next data producer
+        if hasattr(self, 'data_producer') and self.data_producer:
+            # TODO: check data_producers type
+            #assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
+            self.data_producer._save_data_producer = value
 
 
 class SerializableMixIn(_SerializableBase):
@@ -250,8 +287,8 @@ class SerializableMixIn(_SerializableBase):
                         state[name] = value
                     elif operation == 'mv':
                         try:
-                            value = state.pop(a[1])
-                            state[a[2]] = value
+                            arg = state.pop(name)
+                            state[value] = arg
                         except KeyError:
                             raise DeveloperError("the previous version didn't "
                                                  "store an attribute named '{}'".format(a[1]))
@@ -297,9 +334,14 @@ class SerializableMixIn(_SerializableBase):
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 
-        res = {'_serialize_version': self._serialize_version,
+        res = {'_serialize_version': self._serialize_version,}
                # TODO: do we really need to store fields here?
-               '_serialize_fields': self._serialize_fields}
+               #'_serialize_fields': self._serialize_fields}
+
+        # if we want to save the chain, do this now:
+        if self._save_data_producer:
+            assert hasattr(self, 'data_producer')
+            res['data_producer'] = dp = self.data_producer
 
         classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
                               and c != SerializableMixIn and c != object and c != Estimator and c != Model]
@@ -335,6 +377,11 @@ class SerializableMixIn(_SerializableBase):
         return res
 
     def __setstate__(self, state):
+        # no backward compatibility.
+        if state['_serialize_version'] > self._serialize_version:
+            raise OldVersionUnsupported("Can not load recent models with old version of PyEMMA."
+                                        " You need at least {supported}".format(supported=state['_pyemma_version']))
+
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 
@@ -360,6 +407,9 @@ class SerializableMixIn(_SerializableBase):
             names = self._get_param_names()
             new_state = {key: state[key] for key in names if key in state}
             self.set_params(**new_state)
+
+        if hasattr(self, 'data_producer') and 'data_producer' in state:
+            self.data_producer = state['data_producer']
 
         if hasattr(state, '_pyemma_version'):
             self._pyemma_version = state['_pyemma_version']

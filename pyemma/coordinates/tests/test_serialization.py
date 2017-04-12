@@ -142,6 +142,22 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         self.compare(t, params)
 
+    def test_save_chain(self):
+        """ ensure a chain is correctly saved/restored"""
+        from pyemma.datasets import get_bpti_test_data
+
+        reader = pyemma.coordinates.source(get_bpti_test_data()['trajs'], top=get_bpti_test_data()['top'])
+        tica = pyemma.coordinates.tica(reader)
+        cluster = pyemma.coordinates.cluster_uniform_time(tica, 10)
+
+        cluster.save(self.fn, save_streaming_chain=True)
+        restored = pyemma.load(self.fn)
+        assert isinstance(restored, type(cluster))
+        assert isinstance(restored.data_producer, type(tica))
+        assert isinstance(restored.data_producer.data_producer, type(reader))
+
+
+
     def test_featurizer_empty(self):
         from pyemma.datasets import get_bpti_test_data
         top = get_bpti_test_data()['top']

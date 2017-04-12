@@ -84,3 +84,6 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
             raise ValueError("not yet impled for type %s" % str_t)
 
         return value
+
+    def restore(self, obj):
+        raise RuntimeError("this should never be called, because the handled types are converted to primitives.")
