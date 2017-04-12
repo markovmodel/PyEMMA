@@ -128,7 +128,7 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def save(self, filename_or_file, compression_level=9):
+    def save(self, filename_or_file, compression_level=9, save_streaming_chain=False):
         """
         Parameters
         -----------
@@ -136,7 +136,16 @@ class SerializableMixIn(object):
             path to desired output file or a type which implements the file protocol (accepting bytes as input).
         compression_level : int
             if given, must be a number between 1 and 9.
+        save_streaming_chain : boolean, default=False
+            if True, the data_producer(s) of this object will also be saved in the given file.
+            
+        Examples
+        --------
+        TODO: write me
         """
+        # if we are serializing a pipeline element, store whether to store the chain elements.
+        old_flag = self._save_data_producer
+        self._save_data_producer = save_streaming_chain
         try:
             flattened = jsonpickle.dumps(self)
         except Exception as e:
@@ -144,6 +153,9 @@ class SerializableMixIn(object):
                 self.logger.exception('During saving the object ("{error}") '
                                       'the following error occurred'.format(error=e))
             raise
+        finally:
+            # restore old state.
+            self._save_data_producer = old_flag
 
         if six.PY3:
             flattened = bytes(flattened, encoding='ascii')
@@ -179,6 +191,24 @@ class SerializableMixIn(object):
             raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
 
         return obj
+
+    @property
+    def _save_data_producer(self):
+        if not hasattr(self, '_SerializableMixIn__save_data_producer'):
+            self.__save_data_producer = False
+        return self.__save_data_producer
+
+    @_save_data_producer.setter
+    def _save_data_producer(self, value):
+        value = bool(value)
+        self.__save_data_producer = value
+
+        # forward flag to the next data producer
+        assert hasattr(self, 'data_producer')
+        if self.data_producer:
+            # TODO: check data_producers type
+            #assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
+            self.data_producer._save_data_producer = value
 
     def _get_state_of_serializeable_fields(self, klass):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
@@ -288,9 +318,14 @@ class SerializableMixIn(object):
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 
-        res = {'_serialize_version': self._serialize_version,
+        res = {'_serialize_version': self._serialize_version,}
                # TODO: do we really need to store fields here?
-               '_serialize_fields': self._serialize_fields}
+               #'_serialize_fields': self._serialize_fields}
+
+        # if we want to save the chain, do this now:
+        if self._save_data_producer:
+            assert hasattr(self, 'data_producer')
+            res['data_producer'] = dp = self.data_producer
 
         classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
                               and c != SerializableMixIn and c != object and c != Estimator and c != Model]
@@ -356,6 +391,9 @@ class SerializableMixIn(object):
             names = self._get_param_names()
             new_state = {key: state[key] for key in names if key in state}
             self.set_params(**new_state)
+
+        if hasattr(self, 'data_producer') and 'data_producer' in state:
+            self.data_producer = state['data_producer']
 
         if hasattr(state, '_pyemma_version'):
             self._pyemma_version = state['_pyemma_version']
