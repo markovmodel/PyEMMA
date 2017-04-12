@@ -130,6 +130,8 @@ class SerializableMixIn(object):
         -----------
         filename_or_file: str or file like
             path to desired output file or a type which implements the file protocol (accepting bytes as input).
+        compression_level : int
+            if given, must be a number between 1 and 9.
         """
         try:
             flattened = jsonpickle.dumps(self)
