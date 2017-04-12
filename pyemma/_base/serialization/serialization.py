@@ -204,8 +204,7 @@ class SerializableMixIn(object):
         self.__save_data_producer = value
 
         # forward flag to the next data producer
-        assert hasattr(self, 'data_producer')
-        if self.data_producer:
+        if hasattr(self, 'data_producer') and self.data_producer:
             # TODO: check data_producers type
             #assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
             self.data_producer._save_data_producer = value
@@ -271,8 +270,8 @@ class SerializableMixIn(object):
                         state[name] = value
                     elif operation == 'mv':
                         try:
-                            value = state.pop(a[1])
-                            state[a[2]] = value
+                            arg = state.pop(name)
+                            state[value] = arg
                         except KeyError:
                             raise DeveloperError("the previous version didn't "
                                                  "store an attribute named '{}'".format(a[1]))
