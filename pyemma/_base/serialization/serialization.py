@@ -41,6 +41,10 @@ class DeveloperError(Exception):
     """ the devs have done something wrong. """
 
 
+class OldVersionUnsupported(NotImplementedError):
+    """ can not load recent models with old software versions. """
+
+
 def load(file_like):
     """ loads a previously saved object of this class from a file.
 
@@ -322,6 +326,11 @@ class SerializableMixIn(object):
         return res
 
     def __setstate__(self, state):
+        # no backward compatibility.
+        if state['_serialize_version'] > self._serialize_version:
+            raise OldVersionUnsupported("Can not load recent models with old version of PyEMMA."
+                                        " You need at least {supported}".format(supported=state['_pyemma_version']))
+
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 

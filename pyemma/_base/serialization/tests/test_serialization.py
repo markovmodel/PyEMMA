@@ -244,6 +244,21 @@ class TestSerialisation(unittest.TestCase):
             from pyemma._base.serialization.serialization import _renamed_classes
             _renamed_classes.pop(old_loc)
 
+    def test_recent_model_with_old_version(self):
+        """ no backward compatibility, eg. recent models are not supported by old version of software. """
+        global test_cls_v3
+        old_cls = test_cls_v3
+        try:
+            inst = test_cls_v3()
+            inst.save(self.fn)
+            test_cls_v3 = test_cls_v1
+            from pyemma._base.serialization.serialization import OldVersionUnsupported
+            with self.assertRaises(OldVersionUnsupported) as c:
+                pyemma.load(self.fn)
+            self.assertIn("need at least {version}".format(version=pyemma.version), c.exception.args[0])
+        finally:
+            test_cls_v3 = old_cls
+
 
 if __name__ == '__main__':
     unittest.main()
