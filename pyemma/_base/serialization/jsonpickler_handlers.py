@@ -31,10 +31,15 @@ def register_datasources_handlers():
     handlers.SimpleReduceHandler.handles(PyCSVReader)
     handlers.SimpleReduceHandler.handles(FragmentedTrajectoryReader)
 
+def register_featurizer():
+    from pyemma.coordinates.data.featurization._base import Feature
+    handlers.SimpleReduceHandler.handles(Feature)
+
 
 def register_all_handlers():
     register_ndarray_handler()
     register_datasources_handlers()
+    register_featurizer()
 
 
 class NumpyNPZHandler(handlers.BaseHandler):
