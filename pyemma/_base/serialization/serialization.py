@@ -169,6 +169,12 @@ class _SerializableBase(object):
         self.__save_data_producer = value
         # forward flag to the next data producer
         if hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self:
+            # TODO: review, this could be desired, but is super inefficient.
+            from pyemma.coordinates.data import DataInMemory
+            if isinstance(self.data_producer, DataInMemory):
+                import warnings
+                warnings.warn("We refuse to save NumPy arrays wrapped with DataInMemory.")
+                return
             assert isinstance(self.data_producer, _SerializableBase), self.data_producer
             self.data_producer._save_data_producer = value
 
