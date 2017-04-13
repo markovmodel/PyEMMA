@@ -22,8 +22,9 @@ import six
 
 from pyemma._base.logging import Loggable
 from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
-
+from pyemma._base.serialization.util import class_rename_registry
 from pyemma._ext import jsonpickle
+from pyemma._ext.jsonpickle.util import importable_name as _importable_name
 from pyemma.util.types import is_int
 
 logger = logging.getLogger(__name__)
@@ -34,9 +35,6 @@ if _debug:
 
 # indicate whether serialization handlers have already been registered
 _handlers_registered = False
-
-_renamed_classes = {}
-""" this dict performs a mapping between old and new names. A class can be renamed multiple times. """
 
 
 class DeveloperError(Exception):
@@ -72,11 +70,9 @@ def load(file_like):
     kw = {} if six.PY2 else {'encoding':'ascii'}
     inp = str(inp, **kw)
 
-    for renamed in _renamed_classes:
-        new = _renamed_classes[renamed]
-        inp = inp.replace(renamed, new)
-        if _debug:
-            logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
+    inp = class_rename_registry.upgrade_old_names_in_json(inp)
+    if _debug: pass
+        #logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
 
     if not _handlers_registered:
         _reg_all_handlers()
@@ -227,8 +223,6 @@ class SerializableMixIn(_SerializableBase):
 
     def _get_state_of_serializeable_fields(self, klass):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
-        if not hasattr(self, '_serialize_fields'):
-            return {}
         res = {}
         assert all(isinstance(f, six.string_types) for f in klass._serialize_fields)
         for field in klass._serialize_fields:
@@ -237,10 +231,10 @@ class SerializableMixIn(_SerializableBase):
                 res[field] = getattr(self, field)
         return res
 
-    def _validate_interpolation_map(self):
+    def _validate_interpolation_map(self, klass):
         # version numbers should be sorted
         from collections import OrderedDict
-        inter_map = OrderedDict(sorted(self._serialize_interpolation_map.items()))
+        inter_map = OrderedDict(sorted(klass._serialize_interpolation_map.items()))
         if _debug:
             logger.debug("validate map: %s", inter_map)
 
@@ -259,24 +253,32 @@ class SerializableMixIn(_SerializableBase):
                                          "Valid ops are: {valid_ops}. You provided {provided}"
                                          .format(valid_ops=valid_ops, provided=action[0]))
 
-        self._serialize_interpolation_map = inter_map
+        klass._serialize_interpolation_map = inter_map
 
-    def __interpolate(self, state):
+    def __interpolate(self, state, klass):
+        # First lookup the version of klass in the state (this maps from old versions too).
         # Lookup attributes in interpolation map according to version number of the class.
         # Drag in all prior versions attributes
-        self._validate_interpolation_map()
+        if not hasattr(klass, '_serialize_interpolation_map'):
+            return
+
+        klass_version = self._get_version_for_class_from_state(state, klass)
+
+        if klass_version > klass._serialize_version:
+            return
+
+        self._validate_interpolation_map(klass)
 
         if _debug:
             logger.debug("input state: %s" % state)
-        state_version = state['_serialize_version']
-        for key in self._serialize_interpolation_map.keys():
-            if not (self._serialize_version > key >= state_version):
+        for key in klass._serialize_interpolation_map.keys():
+            if not (klass._serialize_version > key >= klass_version):
                 if _debug:
                     logger.debug("skipped interpolation rules for version %s" % key)
                 continue
             if _debug:
                 logger.debug("processing rules for version %s" % key)
-            actions = self._serialize_interpolation_map[key]
+            actions = klass._serialize_interpolation_map[key]
             for a in actions:
                 if _debug:
                     logger.debug("processing rule: %s", str(a))
@@ -304,16 +306,30 @@ class SerializableMixIn(_SerializableBase):
         if _debug:
             logger.debug("interpolated state: %s", state)
 
+    def _get_version_for_class_from_state(self, state, klass):
+        """ retrieves the version of the current klass from the state mapping from old locations to new ones. """
+
+        """ klass may have renamed, so we have to look this up in _new_to_old.
+        
+        """
+
+        names = [_importable_name(klass)]
+        # lookup old names, handled by current klass.
+        names.extend(class_rename_registry.old_handled_by(klass))
+        for n in names:
+            try:
+                return state['class_tree_versions'][n]
+            except KeyError:
+                continue
+        # if we did not find a suitable version number return infinity.
+        return float('inf')
+
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
 
-        klass_version = state['_serialize_version']  # state['__serialize_class_versions'][klass.__name__]
-        # TODO: decide whether to call interpolate for every klass, or just self (which will allow for only one map).
-        # This should be less confusing, than allowing for every class in the hierachy, but is more restrictive of what can be done.
-        if klass_version < klass._serialize_version and hasattr(klass, '_serialize_interpolation_map'):
-            klass.__interpolate(self, state)
+        klass.__interpolate(self, state, klass)
 
         for field in klass._serialize_fields:
             if field in state:
@@ -333,9 +349,17 @@ class SerializableMixIn(_SerializableBase):
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 
-        res = {'_serialize_version': self._serialize_version,}
-               # TODO: do we really need to store fields here?
-               #'_serialize_fields': self._serialize_fields}
+        #res = {'_serialize_version': self._serialize_version,}
+        # TODO: do we really need to store fields here?
+        #'_serialize_fields': self._serialize_fields}
+        res = {'class_tree_versions': {}}
+        for c in self.__class__.mro():
+            name = _importable_name(c)
+            if hasattr(c, '_serialize_version'):
+                v = c._serialize_version
+            else:
+                v = -1
+            res['class_tree_versions'][name] = v
 
         # if we want to save the chain, do this now:
         if self._save_data_producer:
@@ -350,10 +374,6 @@ class SerializableMixIn(_SerializableBase):
             if hasattr(klass, '_serialize_fields') and klass._serialize_fields and not klass == SerializableMixIn:
                 inc = self._get_state_of_serializeable_fields(klass)
                 res.update(inc)
-
-        # We only store the version of the most specialized class
-        res['_serialize_version'] = self.__class__.mro()[0]._serialize_version
-        assert res['_serialize_version'] == self._serialize_version
 
         # handle special cases Estimator and Model, just use their parameters.
         if hasattr(self, 'get_params'):
@@ -377,9 +397,10 @@ class SerializableMixIn(_SerializableBase):
 
     def __setstate__(self, state):
         # no backward compatibility.
-        if state['_serialize_version'] > self._serialize_version:
-            raise OldVersionUnsupported("Can not load recent models with old version of PyEMMA."
-                                        " You need at least {supported}".format(supported=state['_pyemma_version']))
+        # TODO: is the child impl version sufficient to check this? Deleted classes could also trigger this...
+        #if self._get_version_for_class_from_state(state, klass=type(self)) > self._serialize_version:
+        #    raise OldVersionUnsupported("Can not load recent models with old version of PyEMMA."
+        #                                " You need at least {supported}".format(supported=state['_pyemma_version']))
 
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
@@ -392,6 +413,7 @@ class SerializableMixIn(_SerializableBase):
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
         if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
+            # only apply params suitable for the current model
             names = self._get_model_param_names()
             new_state = {key: state[key] for key in names}
 
