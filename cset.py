@@ -196,6 +196,7 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     return _compute_csets(
         connectivity, state_counts, count_matrices, None, None, None, nn=nn, callback=callback)
 
+
 def _overlap_BAR_variance(a, b, factor=1.0):
     N_1 = a.shape[0]
     N_2 = b.shape[0]
@@ -209,6 +210,7 @@ def _overlap_BAR_variance(a, b, factor=1.0):
     b = (1.0 / (2.0 + 2.0 * _np.cosh(df - du - _np.log(1.0 * N_1 / N_2)))).sum()
     return (1 / b - (N_1 + N_2) / (N_1 * N_2)) < factor
 
+
 def _compute_csets(
     connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn,
     equilibrium_state_counts=None, factor=1.0, callback=None):
@@ -219,13 +221,20 @@ def _compute_csets(
     else:
         all_state_counts = state_counts
 
-    if connectivity == 'summed_count_matrix':
+    if connectivity is None:
+        cset_projected = _np.where(all_state_counts.sum(axis=0) > 0)[0]
+        csets = [ _np.where(all_state_counts[k, :] > 0)[0] for k in range(n_therm_states) ]
+        return csets, cset_projected
+    elif connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
-        C_sum = count_matrices.sum(axis=0)
+        C_proxy = _np.zeros((n_conf_states, n_conf_states), dtype=int)
+        for C in count_matrices:
+            for comp in _msmtools.estimation.connected_sets(C, directed=True):
+                C_proxy[comp[0:-1], comp[1:]] = 1 # add chain of states
         if equilibrium_state_counts is not None:
             eq_states = _np.where(equilibrium_state_counts.sum(axis=0) > 0)[0]
-            C_sum[eq_states, eq_states[:, _np.newaxis]] = 1
-        cset_projected = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
+            C_proxy[eq_states, eq_states[:, _np.newaxis]] = 1
+        cset_projected = _msmtools.estimation.largest_connected_set(C_proxy, directed=False)
         csets = []
         for k in range(n_therm_states):
             cset = _np.intersect1d(_np.where(all_state_counts[k, :] > 0), cset_projected)
@@ -288,8 +297,6 @@ def _compute_csets(
                                 y = i + l * n_conf_states
                                 i_s.append(x)
                                 j_s.append(y)
-                                i_s.append(y)
-                                j_s.append(x)
         else: # assume overlap between nn neighboring umbrellas
             assert nn is not None, 'With connectivity="neighbors", nn can\'t be None.'
             assert nn >= 1 and nn <= n_therm_states - 1
@@ -304,17 +311,16 @@ def _compute_csets(
                         all_state_counts[k, :] > 0, all_state_counts[k + l, :] > 0))[0]
                     a = w + k * n_conf_states
                     b = w + (k + l) * n_conf_states
-                    i_s += list(a) # bi
-                    j_s += list(b) # di
-                    i_s += list(b) # rec
-                    j_s += list(a) # tional
+                    i_s += list(a)
+                    j_s += list(b)
 
         # connectivity between conformational states:
         # just copy it from the count matrices
         for k in range(n_therm_states):
-            temp = _sp.sparse.coo_matrix(count_matrices[k, :, :])
-            i_s += list(temp.row + k * n_conf_states)
-            j_s += list(temp.col + k * n_conf_states)
+            for comp in _msmtools.estimation.connected_sets(count_matrices[k, :, :], directed=True):
+                # add chain that links all states in the component
+                i_s += list(comp[0:-1] + k * n_conf_states)
+                j_s += list(comp[1:]   + k * n_conf_states)
 
         # If there is global equilibrium data, assume full connectivity
         # between all visited conformational states within the same thermodynamic state.
@@ -325,12 +331,10 @@ def _compute_csets(
                 chain = (vertices[0:-1], vertices[1:])
                 i_s += list(chain[0] + k * n_conf_states)
                 j_s += list(chain[1] + k * n_conf_states)
-                i_s += list(chain[1] + k * n_conf_states)
-                j_s += list(chain[0] + k * n_conf_states)
 
         data = _np.ones(len(i_s), dtype=int)
         A = _sp.sparse.coo_matrix((data, (i_s, j_s)), shape=(dim, dim))
-        cset = _msmtools.estimation.largest_connected_set(A, directed=True)
+        cset = _msmtools.estimation.largest_connected_set(A, directed=False)
         # group by thermodynamic state
         cset = _np.unravel_index(cset, (n_therm_states, n_conf_states), order='C')
         csets = [[] for k in range(n_therm_states)]
