@@ -38,13 +38,13 @@ class AngleFeature(Feature):
 
     def __init__(self, top, angle_indexes, deg=False, cossin=False, periodic=True):
         self.top = top
-        self.angle_indexes = np.array(angle_indexes)
-        if len(self.angle_indexes) == 0:
+        self._angle_indexes = np.array(angle_indexes)
+        if len(self._angle_indexes) == 0:
             raise ValueError("empty indices")
         self.deg = deg
         self.cossin = cossin
         self.periodic = periodic
-        self._dim = len(self.angle_indexes)
+        self._dim = len(self._angle_indexes)
         if cossin:
             self._dim *= 2
 
@@ -55,18 +55,18 @@ class AngleFeature(Feature):
             labels = [s % (_describe_atom(self.top, triple[0]),
                            _describe_atom(self.top, triple[1]),
                            _describe_atom(self.top, triple[2]))
-                      for triple in self.angle_indexes
+                      for triple in self._angle_indexes
                       for s in sin_cos]
         else:
             labels = ["ANGLE: %s - %s - %s " %
                       (_describe_atom(self.top, triple[0]),
                        _describe_atom(self.top, triple[1]),
                        _describe_atom(self.top, triple[2]))
-                      for triple in self.angle_indexes]
+                      for triple in self._angle_indexes]
         return labels
 
     def transform(self, traj):
-        rad = mdtraj.compute_angles(traj, self.angle_indexes, self.periodic)
+        rad = mdtraj.compute_angles(traj, self._angle_indexes, self.periodic)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
             rad = rad.reshape(rad.shape[0], rad.shape[1]*rad.shape[2])
@@ -76,13 +76,20 @@ class AngleFeature(Feature):
             return rad
 
     def __hash__(self):
-        hash_value = _hash_numpy_array(self.angle_indexes)
+        hash_value = _hash_numpy_array(self._angle_indexes)
         hash_value ^= hash_top(self.top)
         hash_value ^= hash(self.deg)
         hash_value ^= hash(self.cossin)
 
         return hash_value
 
+    @property
+    def angle_indexes(self):
+        if self.cossin:
+            angle_indexes = np.repeat(self._angle_indexes, 2, axis=0)
+            return angle_indexes
+        else:
+            return self._angle_indexes
 
 class DihedralFeature(AngleFeature):
 
@@ -102,7 +109,7 @@ class DihedralFeature(AngleFeature):
                        _describe_atom(self.top, quad[1]),
                        _describe_atom(self.top, quad[2]),
                        _describe_atom(self.top, quad[3]))
-                      for quad in self.angle_indexes
+                      for quad in self._angle_indexes
                       for s in sin_cos]
         else:
             labels = ["DIH: %s - %s - %s - %s " %
@@ -110,11 +117,11 @@ class DihedralFeature(AngleFeature):
                        _describe_atom(self.top, quad[1]),
                        _describe_atom(self.top, quad[2]),
                        _describe_atom(self.top, quad[3]))
-                      for quad in self.angle_indexes]
+                      for quad in self._angle_indexes]
         return labels
 
     def transform(self, traj):
-        rad = mdtraj.compute_dihedrals(traj, self.angle_indexes, self.periodic)
+        rad = mdtraj.compute_dihedrals(traj, self._angle_indexes, self.periodic)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
             rad = rad.reshape(rad.shape[0], rad.shape[1]*rad.shape[2])
@@ -123,7 +130,6 @@ class DihedralFeature(AngleFeature):
             rad = np.rad2deg(rad)
 
         return rad
-
 
 class BackboneTorsionFeature(DihedralFeature):
 
@@ -198,10 +204,10 @@ class Chi1TorsionFeature(DihedralFeature):
         if self.cossin:
             cossin = ("COS(CHI1 %s)", "SIN(CHI1 %s)")
             labels_chi1 = [s % getlbl(top.atom(ires[1]))
-                           for ires in self.angle_indexes
+                           for ires in self._angle_indexes
                            for s in cossin]
         else:
             labels_chi1 = ["CHI1" + getlbl(top.atom(ires[1]))
-                           for ires in self.angle_indexes]
+                           for ires in self._angle_indexes]
 
         return labels_chi1
