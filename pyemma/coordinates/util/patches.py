@@ -145,7 +145,6 @@ class iterload(object):
         else:
             n_atoms = self._topology.n_atoms
 
-        # if we have a random access iterator or conventional mdtraj chunked strided reading would exceed a memory limit:
         if (self.is_ra_iter or
                     self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
                 (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
@@ -341,6 +340,9 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
         cell_lengths, cell_angles = res[1:]
     elif len(res) == 4 or isinstance(f, (HDF5TrajectoryFile, DTRTrajectoryFile, NetCDFTrajectoryFile)):
         cell_lengths, cell_angles = res[2:4]
+    elif len(res) == 3:
+        # this tng format.
+        box = res[2]
     else:
         assert len(res) == 1, "len:{l}, type={t}".format(l=len(res), t=f)
         #raise NotImplementedError("format read function not handled..." + str(f))

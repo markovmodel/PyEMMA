@@ -459,28 +459,32 @@ class TestRandomAccessStride(TestCase):
         """ ensure we use a random access pattern for high strides chunksize combinations to avoid memory issues."""
         n=int(1e5)
         n_bytes = 3*3*8*n # ~8Mb
-        traj = create_traj(length=n, dir=self.tmpdir)[0]
+        savable_formats_mdtra_18 = (
+            '.xtc', '.trr',  '.dcd', '.h5', '.binpos', '.nc', '.netcdf',
+             '.ncdf', '.tng')
+        for ext in savable_formats_mdtra_18:
+            traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
 
-        from mock import patch
-        # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
-        with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
-            r = coor.source(traj, top=get_top())
-            it = r.iterator(stride=1000, chunk=100000)
+            from mock import patch
+            # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
+            with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
+                r = coor.source(traj, top=get_top())
+                it = r.iterator(stride=1000, chunk=100000)
+                assert it._mditer.is_ra_iter
+
+                out_ra = r.get_output(stride=1000, chunk=10000)
+            it = r.iterator(stride=1)
+            assert not it._mditer.is_ra_iter
+            out = r.get_output(stride=1000)
+            np.testing.assert_equal(out_ra, out)
+
+            # check max stride exceeding
+            from pyemma.coordinates.util.patches import iterload
+            it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA+1)
             assert it._mditer.is_ra_iter
 
-            out_ra = r.get_output(stride=1000, chunk=10000)
-        it = r.iterator(stride=1)
-        assert not it._mditer.is_ra_iter
-        out = r.get_output(stride=1000)
-        np.testing.assert_equal(out_ra, out)
-
-        # check max stride exceeding
-        from pyemma.coordinates.util.patches import iterload
-        it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA+1)
-        assert it._mditer.is_ra_iter
-
-        it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA)
-        assert not it._mditer.is_ra_iter
+            it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA)
+            assert not it._mditer.is_ra_iter
 
 if __name__ == '__main__':
     unittest.main()
