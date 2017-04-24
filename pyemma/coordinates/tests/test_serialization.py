@@ -155,6 +155,9 @@ class TestSerializationCoordinates(unittest.TestCase):
         assert isinstance(restored, type(cluster))
         assert isinstance(restored.data_producer, type(tica))
         assert isinstance(restored.data_producer.data_producer, type(reader))
+        cluster.save(self.fn, save_streaming_chain=False)
+        restored = pyemma.load(self.fn)
+        assert restored.data_producer is None
 
     def test_featurizer_empty(self):
         from pyemma.datasets import get_bpti_test_data
