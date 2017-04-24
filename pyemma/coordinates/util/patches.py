@@ -73,6 +73,7 @@ load_topology_cached = _cache_mdtraj_topology(load_topology)
 class iterload(object):
 
     MEMORY_CUTOFF = int(128 * 1024**2) # 128 MB
+    MAX_STRIDE_SWITCH_TO_RA = 20
 
     def __init__(self, filename, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
@@ -138,7 +139,16 @@ class iterload(object):
             raise Exception("Not supported as trajectory format {ext}".format(ext=self._extension))
 
         self._mode = None
-        if self.is_ra_iter:
+
+        if self._atom_indices is not None:
+            n_atoms = len(self._atom_indices)
+        else:
+            n_atoms = self._topology.n_atoms
+
+        # if we have a random access iterator or conventional mdtraj chunked strided reading would exceed a memory limit:
+        if (self.is_ra_iter or
+                    self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
+                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
             self._mode = 'random_access'
             self._f = (lambda x:
                        md_open(x, n_atoms=self._topology.n_atoms)
@@ -171,12 +181,7 @@ class iterload(object):
 
     @property
     def is_ra_iter(self):
-        if self._atom_indices is not None:
-            n_atoms = len(self._atom_indices)
-        else:
-            n_atoms = self._topology.n_atoms
-        return (isinstance(self._stride, np.ndarray) or
-               (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF))
+        return isinstance(self._stride, np.ndarray)
 
     def __iter__(self):
         return self
