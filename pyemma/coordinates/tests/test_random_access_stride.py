@@ -455,5 +455,18 @@ class TestRandomAccessStride(TestCase):
                                                     np.array(self.stride[self.stride[:, 0] == i][:, 1])
                                                 ], err_msg="not equal for chunksize=%s" % chunksize)
 
+    def test_RA_high_stride(self):
+        """ ensure we use a random access pattern for high strides chunksize combinations to avoid memory issues."""
+        n=int(1e5)
+        n_bytes = 3*3*8*n # ~8Mb
+        traj = create_traj(length=n, dir=self.tmpdir)[0]
+
+        from mock import patch
+        # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
+        with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
+            r = coor.source(traj, top=get_top())
+            it = r.iterator(stride=1000, chunk=100000)
+            assert it._mditer.is_ra_iter
+
 if __name__ == '__main__':
     unittest.main()
