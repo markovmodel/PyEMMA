@@ -59,10 +59,10 @@ def compute_csets_TRAM(
         The thermodynamic state of the reversible transitions is ignored
         in constructing the reversible pathways. This is equivalent
         to assuming that two ensembles overlap at some Markov state
-        whenever thare exist frames from both ensembles in that
+        whenever there exist frames from both ensembles in that
         Markov state.
 
-        largest: alias for reversible_paths
+        largest: alias for reversible_pathways
 
         summed_count_matrix: all thermodynamic states are assumed to
         overlap. The connected set is then computed by summing
@@ -175,10 +175,10 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
         The thermodynamic state of the reversible transitions is ignored
         in constructing the reversible pathways. This is equivalent
         to assuming that two ensembles overlap at some Markov state
-        whenever thare exist frames from both ensembles in that
+        whenever there exist frames from both ensembles in that
         Markov state.
 
-        largest: alias for reversible_paths
+        largest: alias for reversible_pathways
 
         summed_count_matrix: all thermodynamic states are assumed to
         overlap. The connected set is then computed by summing
