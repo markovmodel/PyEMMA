@@ -47,7 +47,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
     def __init__(
         self, lag, count_mode='sliding',
-        connectivity='largest',
+        connectivity='reversible_pathways',
         ground_state=None, nstates_full=None, equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
@@ -71,9 +71,9 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                   .. math::
                         (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
             Currently only 'sliding' is supported.
-        connectivity : str, optional, default='summed_count_matrix'
-            One of 'summed_count_matrix', 'strong_in_every_ensemble',
-            'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+        connectivity : str, optional, default='reversible_pathways'
+            One of 'reversible_pathways', 'summed_count_matrix', 'neighbors',
+            'post_hoc_RE' or 'BAR_variance'.
             Defines what should be considered a connected set in the joint space
             of conformations and thermodynamic ensembles.
             For details see thermotools.cset.compute_csets_TRAM.

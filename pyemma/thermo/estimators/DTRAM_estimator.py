@@ -38,7 +38,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     r""" Discrete Transition(-based) Reweighting Analysis Method."""
 
     def __init__(
-        self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
+        self, bias_energies_full, lag, count_mode='sliding', connectivity='reversible_pathways',
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         init=None, init_maxiter=10000, init_maxerr=1.0E-8):
         r""" Discrete Transition(-based) Reweighting Analysis Method
@@ -59,9 +59,9 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                   .. math::
                         (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
             Currently only 'sliding' is supported.
-        connectivity : str, optional, default='largest'
+        connectivity : str, optional, default='reversible_pathways'
             Defines what should be considered a connected set in the joint space of conformations and
-            thermodynamic ensembles. Currently only 'largest', 'summed_count_matrix' and None are supported.
+            thermodynamic ensembles. Currently only 'reversible_pathways', 'summed_count_matrix' and None are supported.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15
@@ -127,8 +127,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
         self.count_mode = count_mode
-        assert connectivity in [ None, 'largest', 'summed_count_matrix' ], \
-            'Currently the only implemented connectivity checks are \'largest\', \'summed_count_matrix\' and None'
+        assert connectivity in [ None, 'reversible_pathways', 'summed_count_matrix' ], \
+            'Currently the only implemented connectivity checks are \'reversible_pathways\', \'summed_count_matrix\' and None'
         self.connectivity = connectivity
         self.dt_traj = dt_traj
         self.maxiter = maxiter

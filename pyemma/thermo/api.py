@@ -463,7 +463,7 @@ def estimate_multi_temperature(
 
 def tram(
     ttrajs, dtrajs, bias, lag, unbiased_state=None,
-    count_mode='sliding', connectivity='summed_count_matrix',
+    count_mode='sliding', connectivity='reversible_pathways',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
     init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None, overcounting_factor=1.0):
@@ -509,9 +509,9 @@ def tram(
         |  'ms',   'millisecond*'
         |  's',    'second*'
 
-    connectivity : str, optional, default='summed_count_matrix'
-        One of 'summed_count_matrix', 'strong_in_every_ensemble',
-        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+    connectivity : str, optional, default='reversible_pathways'
+        One of 'reversible_pathways', 'summed_count_matrix',
+        'neighbors', 'post_hoc_RE', 'BAR_variance' or None.
         Defines what should be considered a connected set in the joint space
         of conformations and thermodynamic ensembles.
         For details see thermotools.cset.compute_csets_TRAM.
@@ -654,7 +654,7 @@ def tram(
 
 def dtram(
     ttrajs, dtrajs, bias, lag, unbiased_state=None,
-    count_mode='sliding', connectivity='largest',
+    count_mode='sliding', connectivity='reversible_pathways',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     init=None, init_maxiter=10000, init_maxerr=1.0E-8):
     r"""
@@ -687,9 +687,10 @@ def dtram(
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
 
         Currently only 'sliding' is supported.
-    connectivity : str, optional, default='largest'
+    connectivity : str, optional, default='reversible_pathways'
         Defines what should be considered a connected set in the joint space of conformations and
-        thermodynamic ensembles. Currently only 'largest' is supported.
+        thermodynamic ensembles. Currently only 'reversible_pathways', 'summed_count_matrix' and
+        None are supported.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
