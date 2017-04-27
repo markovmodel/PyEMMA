@@ -266,7 +266,7 @@ def _compute_csets(
             cset = _np.intersect1d(_np.where(all_state_counts[k, :] > 0), cset_projected)
             csets.append(cset)
         return csets, cset_projected
-    elif connectivity == 'reversible_paths' or connectivity == 'largest':
+    elif connectivity == 'reversible_pathways' or connectivity == 'largest':
         C_proxy = _np.zeros((n_conf_states, n_conf_states), dtype=int)
         for C in count_matrices:
             for comp in _msmtools.estimation.connected_sets(C, directed=True):
