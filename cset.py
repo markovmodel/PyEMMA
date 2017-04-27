@@ -397,7 +397,7 @@ def restrict_to_csets(
     state_counts, count_matrices, dtrajs, bias_trajs
 
     state_counts, count_matrices and dtrajs are in the same format
-    as the input parameters. Elements of state_counts and cont_matrices
+    as the input parameters. Elements of state_counts and count_matrices
     not in the connected sets are zero. Elements of dtrajs not in the
     connected sets are negative.
 
