@@ -47,7 +47,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
     def __init__(
         self, lag, count_mode='sliding',
-        connectivity='summed_count_matrix',
+        connectivity='largest',
         ground_state=None, nstates_full=None, equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,

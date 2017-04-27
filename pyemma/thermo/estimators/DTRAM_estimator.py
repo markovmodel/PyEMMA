@@ -29,6 +29,7 @@ from msmtools.estimation import largest_connected_set as _largest_connected_set
 from thermotools import dtram as _dtram
 from thermotools import wham as _wham
 from thermotools import util as _util
+from thermotools import cset as _cset
 
 __author__ = 'noe, wehmeyer'
 
@@ -60,7 +61,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
             Currently only 'sliding' is supported.
         connectivity : str, optional, default='largest'
             Defines what should be considered a connected set in the joint space of conformations and
-            thermodynamic ensembles. Currently only 'largest' is supported.
+            thermodynamic ensembles. Currently only 'largest', 'summed_count_matrix' and None are supported.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15
@@ -126,7 +127,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
         self.count_mode = count_mode
-        assert connectivity == 'largest', 'Currently the only implemented connectivity is \'largest\''
+        assert connectivity in [ None, 'largest', 'summed_count_matrix' ], \
+            'Currently the only implemented connectivity checks are \'largest\', \'summed_count_matrix\' and None'
         self.connectivity = connectivity
         self.dt_traj = dt_traj
         self.maxiter = maxiter
@@ -185,7 +187,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         # restrict to connected set
         C_sum = self.count_matrices_full.sum(axis=0)
         # TODO: use improved cset
-        cset = _largest_connected_set(C_sum, directed=True)
+        _, cset = _cset.compute_csets_dTRAM(self.connectivity, self.count_matrices_full)
         self.active_set = cset
         # correct counts
         self.count_matrices = self.count_matrices_full[:, cset[:, _np.newaxis], cset]
