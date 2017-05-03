@@ -71,6 +71,10 @@ load_topology_cached = _cache_mdtraj_topology(load_topology)
 
 
 class iterload(object):
+
+    MEMORY_CUTOFF = int(128 * 1024**2) # 128 MB
+    MAX_STRIDE_SWITCH_TO_RA = 20
+
     def __init__(self, filename, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
 
@@ -135,12 +139,22 @@ class iterload(object):
             raise Exception("Not supported as trajectory format {ext}".format(ext=self._extension))
 
         self._mode = None
-        if isinstance(self._stride, np.ndarray):
+
+        if self._atom_indices is not None:
+            n_atoms = len(self._atom_indices)
+        else:
+            n_atoms = self._topology.n_atoms
+
+        if (self.is_ra_iter or
+                    self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
+                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
             self._mode = 'random_access'
             self._f = (lambda x:
                        md_open(x, n_atoms=self._topology.n_atoms)
                        if self._extension in ('.crd', '.mdcrd')
                        else md_open(self._filename))(self._filename)
+            if not isinstance(self._stride, np.ndarray):
+                self._stride  = np.arange(self._skip, len(self._f), self._stride)
             self._ra_it = self._random_access_generator(self._f)
         else:
             self._mode = 'traj'
@@ -163,6 +177,10 @@ class iterload(object):
     def skip(self, value):
         assert self._mode == 'traj'
         self._skip = value
+
+    @property
+    def is_ra_iter(self):
+        return isinstance(self._stride, np.ndarray)
 
     def __iter__(self):
         return self
@@ -188,7 +206,7 @@ class iterload(object):
             except (IOError, IndexError):
                 raise StopIteration("too short trajectory")
 
-        if isinstance(self._stride, np.ndarray):
+        if self.is_ra_iter:
             return next(self._ra_it)
         else:
             if self._chunksize == 0:
@@ -322,6 +340,9 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
         cell_lengths, cell_angles = res[1:]
     elif len(res) == 4 or isinstance(f, (HDF5TrajectoryFile, DTRTrajectoryFile, NetCDFTrajectoryFile)):
         cell_lengths, cell_angles = res[2:4]
+    elif len(res) == 3:
+        # this tng format.
+        box = res[2]
     else:
         assert len(res) == 1, "len:{l}, type={t}".format(l=len(res), t=f)
         #raise NotImplementedError("format read function not handled..." + str(f))
