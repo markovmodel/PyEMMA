@@ -36,70 +36,70 @@ def compute_csets_TRAM(
     connectivity, state_counts, count_matrices, equilibrium_state_counts=None,
     ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
     r"""
-    Computes the largest connected sets for TRAM data.
+    Computes the largest connected sets in the produce space of Markov state and
+    thermodynamic states for TRAM data.
 
     Parameters
     ----------
     connectivity : string
-        one of None, 'reversible_pathways', 'summed_count_matrix',
-        'neighbors', 'post_hoc_RE' or 'BAR_variance'
+        one of None, 'reversible_pathways', 'post_hoc_RE' or 'BAR_variance',
+        'neighbors', 'summed_count_matrix' or None.
         Selects the algorithm for measuring overlap between thermodynamic
         and Markov states.
 
-        None: assume that everything is connected
+        * 'reversible_pathways' : requires that every state in the connected set
+          can be reached by following a pathway of reversible transitions. A
+          reversible transition between two Markov states (within the same
+          thermodynamic state k) is a pair of Markov states that belong to the
+          same strongly connected component of the count matrix (from
+          thermodynamic state k). A pathway of reversible transitions is a list of
+          reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+          (i_(N-1), i_N)]. The thermodynamic state where the reversible
+          transitions happen, is ignored in constructing the reversible pathways.
+          This is equivalent to assuming that two ensembles overlap at some Markov
+          state whenever there exist frames from both ensembles in that Markov
+          state.
 
-        reversible_pathways: requires that every state in the connected
-        set can be reached via a pathway of reversible transitions.
-        A reversible transition between two Markov states (within the
-        same thermodynamic state k) is a pair of Markov states that
-        belong to the same strongly connected component of the
-        count matrix (from the respective thermodynamic state k).
-        A pathway of reversible transitions is a list of reversible
-        transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-1), i_N)].
-        The thermodynamic state of the reversible transitions is ignored
-        in constructing the reversible pathways. This is equivalent
-        to assuming that two ensembles overlap at some Markov state
-        whenever there exist frames from both ensembles in that
-        Markov state.
+        * 'largest' : alias for reversible_pathways
 
-        largest: alias for reversible_pathways
+        * 'post_hoc_RE' : similar to 'reversible_pathways' but with a more strict
+          requirement for the overlap between thermodynamic states. It is required
+          that every state in the connected set can be reached by following a
+          pathway of reversible transitions or jumping between overlapping
+          thermodynamic states while staying in the same Markov state. A reversible
+          transition between two Markov states (within the same thermodynamic
+          state k) is a pair of Markov states that belong to the same strongly
+          connected component of the count matrix (from thermodynamic state k).
+          Two thermodynamic states k and l are defined to overlap at Markov state
+          n if a replica exchange simulation [2]_ restricted to state n would show
+          at least one transition from k to l or one transition from from l to k.
+          The expected number of replica exchanges is estimated from the
+          simulation data. The minimal number required of replica exchanges
+          per Markov state can be increased by decreasing `connectivity_factor`.
 
-        summed_count_matrix: all thermodynamic states are assumed to
-        overlap. The connected set is then computed by summing
-        the count matrices over all thermodynamic states and
-        taking it's largest strongly connected set.
-        Not recommended!
+        * 'BAR_variance' : like 'post_hoc_RE' but with a different condition to
+          define the thermodynamic overlap based on the variance of the BAR
+          estimator [3]_. Two thermodynamic states k and l are defined to overlap
+          at Markov state n if the variance of the free energy difference Delta
+          f_{kl} computed with BAR (and restricted to conformations form Markov
+          state n) is less or equal than one. The minimally required variance
+          can be controlled with `connectivity_factor`.
 
-        neighbors: assume that the data comes from an Umbrella sampling
-        simulation and the number of the thermodynamic state matches
-        the position of the Umbrella along the order parameter. The
-        connected set is computed by assuming that only Umbrellas up to
-        the nn'th neighbor (along the order parameter) overlap.
-        Technically this is computed by building an adjacency matrix on
-        the product space of thermodynamic states and conformational
-        states. The largest connected set of that adjacency matrix
-        determines the TRAM connected sets. In the matrix, the links
-        within each thermodynamic state (between different conformational
-        states) are placed like in the 'reversible_pathway' algorithm.
-        The links between different thermodynamic states k and l (within
-        the same conformational state n) are set according to the value
-        of nn; if there are samples in both states (k,n) and (l,n) and
-        |l-n|<=nn, a link is added.
+        * 'neighbors' : like 'post_hoc_RE' or 'BAR_variance' but assume a
+          overlap between "neighboring" thermodynamic states. It is assumed that
+          the data comes from an Umbrella sampling simulation and the number of
+          the thermodynamic state matches the position of the Umbrella along the
+          order parameter. The overlap of thermodynamic states k and l within
+          Markov state n is set according to the value of nn; if there are
+          samples in both product-space states (k,n) and (l,n) and |l-n|<=nn,
+          the states are overlapping.
 
-        post_hoc_RE: like neighbors but don't assume any neighborhood
-        relations between ensembles but compute them. A combination
-        (k,n) of thermodynamic state k and configuration state n
-        overlaps with (l,n) if a replica exchange simulation [1]_
-        restricted to state n would show at least one transition from k
-        to l or one transition from from l to k.
-        The parameters ttrajs, dtrajs, bias_trajs must be set.
+        * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+          The connected set is then computed by summing the count matrices over
+          all thermodynamic states and taking it's largest strongly connected set.
+          Not recommended!
 
-        BAR_variance: like neighbors but compute overlap between
-        thermodynamic states using the BAR variance [2]_. Two states (k,i)
-        and (l,i) overlap if the variance of the free energy difference
-        \Delta f_{kl} (restricted to conformational state i) is less or
-        equal than one.
-        The parameter ttrajs, dtrajs, bias_trajs must be set.
+        * None : assume that everything is connected. For debugging.
 
     state_counts : numpy.ndarray((T, M), dtype=numpy.intc)
         Number of visits to the combinations of thermodynamic state t
@@ -124,7 +124,7 @@ def compute_csets_TRAM(
         scaling factor used for connectivity = 'post_hoc_RE' or
         'BAR_variance'. Values greater than 1.0 weaken the connectivity
         conditions. For 'post_hoc_RE' this multiplies the number of
-        hypothetically observed transtions. For 'BAR_variance' this
+        hypothetically observed transitions. For 'BAR_variance' this
         scales the threshold for the minimal allowed variance of free
         energy differences.
 
@@ -157,50 +157,46 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     Parameters
     ----------
     connectivity : string
-        one of None, 'reversible_pathways', 'summed_count_matrix' or
-        'neighbors'
+        one 'reversible_pathways', 'neighbors', 'summed_count_matrix' or None.
         Selects the algorithm for measuring overlap between thermodynamic
         and Markov states.
 
-        None: assume that everything is connected
+        * 'reversible_pathways' : requires that every state in the connected set
+          can be reached by following a pathway of reversible transitions. A
+          reversible transition between two Markov states (within the same
+          thermodynamic state k) is a pair of Markov states that belong to the
+          same strongly connected component of the count matrix (from
+          thermodynamic state k). A pathway of reversible transitions is a list of
+          reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+          (i_(N-1), i_N)]. The thermodynamic state where the reversible
+          transitions happen, is ignored in constructing the reversible pathways.
+          This is equivalent to assuming that two ensembles overlap at some Markov
+          state whenever there exist frames from both ensembles in that Markov
+          state.
 
-        reversible_pathways: requires that every state in the connected
-        set can be reached via a pathway of reversible transitions.
-        A reversible transition between two Markov states (within the
-        same thermodynamic state k) is a pair of Markov states that
-        belong to the same strongly connected component of the
-        count matrix (from the respective thermodynamic state k).
-        A pathway of reversible transitions is a list of reversible
-        transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-1), i_N)].
-        The thermodynamic state of the reversible transitions is ignored
-        in constructing the reversible pathways. This is equivalent
-        to assuming that two ensembles overlap at some Markov state
-        whenever there exist frames from both ensembles in that
-        Markov state.
+        * 'largest' : alias for reversible_pathways
 
-        largest: alias for reversible_pathways
+        * 'neighbors' : similar to 'reversible_pathways' but with a more strict
+          requirement for the overlap between thermodynamic states. It is required
+          that every state in the connected set can be reached by following a
+          pathway of reversible transitions or jumping between overlapping
+          thermodynamic states while staying in the same Markov state. A reversible
+          transition between two Markov states (within the same thermodynamic
+          state k) is a pair of Markov states that belong to the same strongly
+          connected component of the count matrix (from thermodynamic state k).
+          It is assumed that the data comes from an Umbrella sampling simulation
+          and the number of the thermodynamic state matches the position of the
+          Umbrella along the order parameter. The overlap of thermodynamic states
+          k and l within Markov state n is set according to the value of nn; if
+          there are samples in both product-space states (k,n) and (l,n) and
+          |l-n|<=nn, the states are overlapping.
 
-        summed_count_matrix: all thermodynamic states are assumed to
-        overlap. The connected set is then computed by summing
-        the count matrices over all thermodynamic states and
-        taking it's largest strongly connected set.
-        Not recommended!
+        * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+          The connected set is then computed by summing the count matrices over
+          all thermodynamic states and taking it's largest strongly connected set.
+          Not recommended!
 
-        neighbors: assume that the data comes from an Umbrella sampling
-        simulation and the number of the thermodynamic state matches
-        the position of the Umbrella along the order parameter. The
-        connected set is computed by assuming that only Umbrellas up to
-        the nn'th neighbor (along the order parameter) overlap.
-        Technically this is computed by building an adjacency matrix on
-        the product space of thermodynamic states and conformational
-        states. The largest connected set of that adjacency matrix
-        determines the TRAM connected sets. In the matrix, the links
-        within each thermodynamic state (between different conformational
-        states) are placed like in the 'reversible_pathway' algorithm.
-        The links between different thermodynamic states k and l (within
-        the same conformational state n) are set according to the value
-        of nn; if there are samples in both states (k,n) and (l,n) and
-        |l-n|<=nn, a link is added
+        * None : assume that everything is connected. For debugging.
 
     count_matrices : numpy.ndarray((T, M, M))
         Count matrices for all T thermodynamic states.
