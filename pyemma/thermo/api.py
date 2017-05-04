@@ -463,7 +463,7 @@ def estimate_multi_temperature(
 
 def tram(
     ttrajs, dtrajs, bias, lag, unbiased_state=None,
-    count_mode='sliding', connectivity='reversible_pathways',
+    count_mode='sliding', connectivity='post_hoc_RE',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
     init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None, overcounting_factor=1.0):
@@ -509,25 +509,61 @@ def tram(
         |  'ms',   'millisecond*'
         |  's',    'second*'
 
-    connectivity : str, optional, default='reversible_pathways'
-        One of 'reversible_pathways', 'summed_count_matrix',
-        'neighbors', 'post_hoc_RE', 'BAR_variance' or None.
-        Defines what should be considered a connected set in the joint space
-        of conformations and thermodynamic ensembles.
-        For details see thermotools.cset.compute_csets_TRAM.
-    nn : int, optional, default=None
-        Only needed if connectivity='neighbors'
-        See thermotools.cset.compute_csets_TRAM.
+    connectivity : str, optional, default='post_hoc_RE'
+        One of 'post_hoc_RE', 'BAR_variance', 'reversible_pathways' or
+        'summed_count_matrix'. Defines what should be considered a connected set
+        in the joint (product) space of conformations and thermodynamic ensembles.
+        * 'reversible_pathways' : requires that every state in the connected set
+          can be reached by following a pathway of reversible transitions. A
+          reversible transition between two Markov states (within the same
+          thermodynamic state k) is a pair of Markov states that belong to the
+          same strongly connected component of the count matrix (from
+          thermodynamic state k). A pathway of reversible transitions is a list of
+          reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+          (i_(N-1), i_N)]. The thermodynamic state where the reversible
+          transitions happen, is ignored in constructing the reversible pathways.
+          This is equivalent to assuming that two ensembles overlap at some Markov
+          state whenever there exist frames from both ensembles in that Markov
+          state.
+        * 'post_hoc_RE' : similar to 'reversible_pathways' but with a more strict
+          requirement for the overlap between thermodynamic states. It is required
+          that every state in the connected set can be reached by following a
+          pathway of reversible transitions or jumping between overlapping
+          thermodynamic states while staying in the same Markov state. A reversible
+          transition between two Markov states (within the same thermodynamic
+          state k) is a pair of Markov states that belong to the same strongly
+          connected component of the count matrix (from thermodynamic state k).
+          Two thermodynamic states k and l are defined to overlap at Markov state
+          n if a replica exchange simulation [2]_ restricted to state n would show
+          at least one transition from k to l or one transition from from l to k.
+          The expected number of replica exchanges is estimated from the
+          simulation data. The minimal number required of replica exchanges
+          per Markov state can be increased by decreasing `connectivity_factor`.
+        * 'BAR_variance' : like 'post_hoc_RE' but with a different condition to
+          define the thermodynamic overlap based on the variance of the BAR
+          estimator [3]_. Two thermodynamic states k and l are defined to overlap
+          at Markov state n if the variance of the free energy difference Delta
+          f_{kl} computed with BAR (and restricted to conformations form Markov
+          state n) is less or equal than one. The minimally required variance
+          can be controlled with `connectivity_factor`.
+        * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+          The connected set is then computed by summing the count matrices over
+          all thermodynamic states and taking it's largest strongly connected set.
+          Not recommended!
+        For more details see :func:`thermotools.cset.compute_csets_TRAM`.
     connectivity_factor : float, optional, default=1.0
-        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
-        requirement, see thermotools.cset.compute_csets_TRAM.
+        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Values
+        greater than 1.0 weaken the connectivity conditions. For 'post_hoc_RE'
+        this multiplies the number of hypothetically observed transitions. For
+        'BAR_variance' this scales the threshold for the minimal allowed variance
+        of free energy differences.
     direct_space : bool, optional, default=False
-        Whether to perform the self-consitent iteration with Boltzmann factors
+        Whether to perform the self-consistent iteration with Boltzmann factors
         (direct space) or free energies (log-space). When analyzing data from
         multi-temperature simulations, direct-space is not recommended.
     N_dtram_accelerations : int, optional, default=0
         Convergence of TRAM can be speeded up by interleaving the updates
-        in the self-consitent iteration with a dTRAM-like update step.
+        in the self-consistent iteration with a dTRAM-like update step.
         N_dtram_accelerations says how many times the dTRAM-like update
         step should be applied in every iteration of the TRAM equations.
         Currently this is only effective if direct_space=True.
@@ -616,6 +652,10 @@ def tram(
     .. [1] Wu, H. et al 2016
         Multiensemble Markov models of molecular thermodynamics and kinetics
         Proc. Natl. Acad. Sci. USA 113 E3221--E3230
+    .. [2]_ Hukushima et al, Exchange Monte Carlo method and application to spin
+        glass simulations, J. Phys. Soc. Jan. 65, 1604 (1996)
+    .. [3]_ Shirts and Chodera, Statistically optimal analysis of samples
+        from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
 
     """
     # prepare trajectories
@@ -688,9 +728,27 @@ def dtram(
 
         Currently only 'sliding' is supported.
     connectivity : str, optional, default='reversible_pathways'
-        Defines what should be considered a connected set in the joint space of conformations and
-        thermodynamic ensembles. Currently only 'reversible_pathways', 'summed_count_matrix' and
-        None are supported.
+        One of 'reversible_pathways', 'summed_count_matrix' or None.
+        Defines what should be considered a connected set in the joint (product)
+        space of conformations and thermodynamic ensembles.
+        * 'reversible_pathways' : requires that every state in the connected set
+          can be reached by following a pathway of reversible transitions. A
+          reversible transition between two Markov states (within the same
+          thermodynamic state k) is a pair of Markov states that belong to the
+          same strongly connected component of the count matrix (from
+          thermodynamic state k). A pathway of reversible transitions is a list of
+          reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+          (i_(N-1), i_N)]. The thermodynamic state where the reversible
+          transitions happen, is ignored in constructing the reversible pathways.
+          This is equivalent to assuming that two ensembles overlap at some Markov
+          state whenever there exist frames from both ensembles in that Markov
+          state.
+        * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+          The connected set is then computed by summing the count matrices over
+          all thermodynamic states and taking it's largest strongly connected set.
+          Not recommended!
+        * None : assume that everything is connected. For debugging.
+        For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15

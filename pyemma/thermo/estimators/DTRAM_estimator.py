@@ -60,8 +60,27 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                         (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
             Currently only 'sliding' is supported.
         connectivity : str, optional, default='reversible_pathways'
-            Defines what should be considered a connected set in the joint space of conformations and
-            thermodynamic ensembles. Currently only 'reversible_pathways', 'summed_count_matrix' and None are supported.
+            One of 'reversible_pathways', 'summed_count_matrix' or None.
+            Defines what should be considered a connected set in the joint (product)
+            space of conformations and thermodynamic ensembles.
+            * 'reversible_pathways' : requires that every state in the connected set
+              can be reached by following a pathway of reversible transitions. A
+              reversible transition between two Markov states (within the same
+              thermodynamic state k) is a pair of Markov states that belong to the
+              same strongly connected component of the count matrix (from
+              thermodynamic state k). A pathway of reversible transitions is a list of
+              reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+              (i_(N-1), i_N)]. The thermodynamic state where the reversible
+              transitions happen, is ignored in constructing the reversible pathways.
+              This is equivalent to assuming that two ensembles overlap at some Markov
+              state whenever there exist frames from both ensembles in that Markov
+              state.
+            * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+              The connected set is then computed by summing the count matrices over
+              all thermodynamic states and taking it's largest strongly connected set.
+              Not recommended!
+            * None : assume that everything is connected. For debugging.
+            For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15
@@ -69,7 +88,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
             iteration step.
         save_convergence_info : int, optional, default=0
             Every save_convergence_info iteration steps, store the actual increment
-            and the actual loglikelihood; 0 means no storage.
+            and the actual log-likelihood; 0 means no storage.
         dt_traj : str, optional, default='1 step'
             Description of the physical time corresponding to the lag. May be used by analysis
             algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
