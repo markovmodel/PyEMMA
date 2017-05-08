@@ -90,7 +90,7 @@ class TICA(StreamingEstimationTransformer):
         skip : int, default=0
             skip the first initial n frames per trajectory.
         reversible: bool, default=True
-            symmetrize correlation matrices C_0, C_{\tau}. At the moment, setting reversible=False is not implemented.
+            symmetrize correlation matrices C_0, C_{\tau}.
         weights: object, optional, default = None
             An object that allows to compute re-weighting factors to estimate equilibrium means and correlations from
             off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
@@ -141,10 +141,11 @@ class TICA(StreamingEstimationTransformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         if kinetic_map and commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-        if not reversible:
-            raise NotImplementedError("Reversible=False is currently not implemented.")
-        # if (kinetic_map or commute_map) and not reversible:
-        #     raise NotImplementedError('kinetic_map and commute_map are not yet implemented for irreversible processes.')
+        if (kinetic_map or commute_map) and not reversible:
+            kinetic_map = False
+            commute_map = False
+            warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
+                          "False.")
         super(TICA, self).__init__()
 
         if dim > -1:
