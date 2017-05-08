@@ -1068,6 +1068,9 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     skip : int, default=0
         skip the first initial n frames per trajectory.
 
+    reversible: bool, default=True
+            symmetrize correlation matrices C_0, C_{\tau}.
+
     ncov_max : int, default=infinity
         limit the memory usage of the algorithm from [7]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
@@ -1184,6 +1187,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         if weights == "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
+            if not reversible:
+                raise ValueError("Koopman re-weighting is designed for reversible processes, set reversible=True")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
             _param_stage(data, koop, stride=stride)
             weights = koop.weights

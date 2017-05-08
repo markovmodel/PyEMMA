@@ -376,9 +376,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
           states. Estimation will be conducted on the full set of
           states without ensuring connectivity. This only permits
           nonreversible estimation. Currently not implemented.
-    estimate : bool, optional
-        If true estimate the MSM when creating the MSM object.
-    dt : str, optional
+    dt_traj : str, optional
         Description of the physical time corresponding to the lag. May
         be used by analysis algorithms such as plotting tools to
         pretty-print the axes. By default '1 step', i.e. there is no
