@@ -16,4 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .reporter import ProgressReporter
+import unittest
+
+from pyemma._base.progress import ProgressReporter
+from pyemma.util.contexts import settings
+
+
+class TestProgress(unittest.TestCase):
+
+    def setUp(self):
+        self.pg = ProgressReporter()
+        self.pg._progress_register(100, "test")
+
+    def test_config_override(self):
+        self.pg.show_progress = True
+        with settings(show_progress_bars=False):
+            assert self.pg.show_progress == False
+
+    def test_config_2(self):
+        self.pg.show_progress = False
+        with settings(show_progress_bars=True):
+            assert not self.pg.show_progress
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -51,12 +51,7 @@ def _compute_u(K):
     return u
 
 
-class _Weights(object):
-
-    def weights(self, X):
-        raise NotImplementedError("weights function not implemented.")
-
-class _KoopmanWeights(_Weights):
+class _KoopmanWeights(object):
     def __init__(self, u, u_const):
         self._u = u
         self._u_const = u_const

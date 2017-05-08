@@ -317,8 +317,9 @@ class TestProtectedUmbrellaSamplingBiasSequence(unittest.TestCase):
         force_constants = np.array([
             util._ensure_force_constant(1.0, 1),
             util._ensure_force_constant(2.0, 1)], dtype=np.float64)
+        width = np.zeros(shape=(umbrella_centers.shape[1],), dtype=np.float64)
         self._assert_bias_sequences(
-            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants),
+            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants, width),
             [np.array([[0.0, 1.0], [0.125, 0.25], [0.5, 0.0]])])
 
     def test_umbrella_sampling_bias_sequences_1x1(self):
@@ -329,48 +330,72 @@ class TestProtectedUmbrellaSamplingBiasSequence(unittest.TestCase):
         force_constants = np.array([
             util._ensure_force_constant(1.0, 1),
             util._ensure_force_constant(2.0, 1)], dtype=np.float64)
+        width = np.zeros(shape=(umbrella_centers.shape[1],), dtype=np.float64)
         self._assert_bias_sequences(
-            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants),
+            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants, width),
             [np.array([[0.0, 1.0], [0.125, 0.25], [0.5, 0.0]])])
 
     def test_umbrella_sampling_bias_sequences_catches_unmatching_dimension(self):
         # wrong centers + constants
         with self.assertRaises(TypeError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0, 1.0]]), [[[1.0, 0.0], [1.0, 0.0]]])
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0, 1.0]]), [[[1.0, 0.0], [1.0, 0.0]]],
+                np.array([0.0, 0.0]))
         with self.assertRaises(TypeError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                [[1.0, 1.0]], np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                [[1.0, 1.0]], np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([1.0, 1.0]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([1.0, 1.0]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0, 1.0]]), np.array([[1.0, 0.0], [1.0, 0.0]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0, 1.0]]), np.array([[1.0, 0.0], [1.0, 0.0]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[[1.0, 1.0]]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[[1.0, 1.0]]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0, 1.0]]), np.array([[[[1.0, 0.0], [1.0, 0.0]]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0, 1.0]]), np.array([[[[1.0, 0.0], [1.0, 0.0]]]]),
+                np.array([0.0, 0.0]))
         # conflicting centers + constants
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0, 1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0, 1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
-                np.array([[1.0, 1.0], [2.0, 2.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]])],
+                np.array([[1.0, 1.0], [2.0, 2.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         # traj does not match valid centers + constants
         with self.assertRaises(TypeError):
-            util._get_umbrella_bias_sequences([[[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]]],
-                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [[[0.0, 0.0], [0.5, 0.1], [1.0, 0.2]]],
+                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
-            util._get_umbrella_bias_sequences([np.array([0.0, 0.5, 1.0])],
-                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+            util._get_umbrella_bias_sequences(
+                [np.array([0.0, 0.5, 1.0])],
+                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
             util._get_umbrella_bias_sequences(
                 [np.array([[0.0, 1.0, 2.0], [0.5, 1.0, 2.0], [1.0, 1.0, 2.0]])],
-                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]))
+                np.array([[1.0, 1.0]]), np.array([[[1.0, 0.0], [1.0, 0.0]]]),
+                np.array([0.0, 0.0]))

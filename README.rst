@@ -4,7 +4,7 @@ EMMA (Emma's Markov Model Algorithms)
 
 .. image:: https://img.shields.io/travis/markovmodel/PyEMMA/master.svg
    :target: https://travis-ci.org/markovmodel/PyEMMA
-.. image:: https://badge.fury.io/py/pyemma.svg
+.. image:: https://img.shields.io/pypi/v/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
 .. image:: https://img.shields.io/pypi/dm/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma

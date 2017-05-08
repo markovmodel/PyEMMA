@@ -505,21 +505,18 @@ def discretizer(reader,
     with a PCA transformation and cluster the principal components
     with uniform time clustering:
 
-    >>> import numpy as np
     >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
     >>> from pyemma.datasets import get_bpti_test_data
+    >>> from pyemma.util.contexts import settings
     >>> reader = source(get_bpti_test_data()['trajs'], top=get_bpti_test_data()['top'])
     >>> transform = pca(dim=2)
     >>> cluster = cluster_regspace(dmin=0.1)
-    >>> disc = discretizer(reader, transform, cluster)
 
-    Finally you want to run the pipeline:
+    Create the discretizer, access the the discrete trajectories and save them to files:
 
-    >>> disc.parametrize()
-
-    Access the the discrete trajectories and saving them to files:
-
-    >>> disc.dtrajs # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     disc = discretizer(reader, transform, cluster)
+    ...     disc.dtrajs # doctest: +ELLIPSIS
     [array([...
 
     This will store the discrete trajectory to "traj01.dtraj":
@@ -1184,8 +1181,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     """
     from pyemma.coordinates.transform.tica import TICA
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-    from pyemma.coordinates.estimation.koopman import _Weights
     import six
+    import types
     if isinstance(weights, six.string_types):
         if weights == "koopman":
             if data is None:
@@ -1198,11 +1195,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
-    elif isinstance(weights, _Weights):
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
     else:
-        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
     if not remove_mean:
         import warnings
@@ -1279,7 +1276,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-    from pyemma.coordinates.estimation.koopman import _Weights
+    import types
     import six
     if isinstance(weights, six.string_types):
         if weights== "koopman":
@@ -1288,14 +1285,14 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
             _param_stage(data, koop, stride=stride)
             weights = koop.weights
-        elif weights== "empirical":
+        elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
-    elif isinstance(weights, _Weights):
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+    elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
     else:
-        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
@@ -1426,10 +1423,12 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     --------
 
     >>> import numpy as np
+    >>> from pyemma.util.contexts import settings
     >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
-    >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
-    >>> cluster_obj.get_output() # doctest: +ELLIPSIS
+    >>> with settings(show_progress_bars=False):
+    ...     cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
+    ...     cluster_obj.get_output() # doctest: +ELLIPSIS
     [array([...
 
     .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_

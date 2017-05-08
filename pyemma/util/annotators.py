@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import absolute_import
 import warnings
+
 from decorator import decorator, decorate
 from inspect import stack
 
@@ -33,8 +34,9 @@ __all__ = ['alias',
 
 def fix_docs(cls):
     """ copies docstrings of derived attributes (methods, properties, attrs) from parent classes."""
-    public_undocumented_members = {name: func for name, func in vars(cls).items()
-                                   if not name.startswith('_') and not func.__doc__}
+    import inspect
+    public_undocumented_members = {name: func for name, func in inspect.getmembers(cls)
+                                   if not name.startswith('_') and func.__doc__ is None}
 
     for name, func in public_undocumented_members.items():
         for parent in cls.mro()[1:]:
@@ -44,9 +46,12 @@ def fix_docs(cls):
                     # copy property, since its doc attribute is read-only
                     new_prop = property(fget=func.fget, fset=func.fset,
                                         fdel=func.fdel, doc=parfunc.__doc__)
-                    cls.func = new_prop
+                    setattr(cls, name, new_prop)
                 else:
-                    func.__doc__ = parfunc.__doc__
+                    if hasattr(func, '__func__'):  # handle instancemethods
+                        func.__func__.__doc__ = parfunc.__doc__
+                    else:
+                        func.__doc__ = parfunc.__doc__
                 break
     return cls
 
@@ -176,7 +181,7 @@ def deprecated(*optional_message):
                 frame = caller_stack.pop(0)
                 filename = frame[1]
                 # skip callee frames if they are other decorators or this file(func)
-                if 'decorator' in filename or __file__ in filename:
+                if '<decorator' in filename or __file__ in filename:
                     continue
                 else: break
             lineno = frame[2]

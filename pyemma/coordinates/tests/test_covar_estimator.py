@@ -4,12 +4,12 @@ import numpy as np
 
 from pyemma.coordinates import covariance_lagged
 from pyemma.coordinates import source
-from pyemma.coordinates.estimation.koopman import _Weights
+#from pyemma.coordinates.estimation.koopman import _Weights
 
 
 __author__ = 'noe'
 
-class weight_object(_Weights):
+class weight_object(object):
     def __init__(self):
         self.A = np.random.rand(2)
     def weights(self, X):

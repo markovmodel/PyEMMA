@@ -2,65 +2,52 @@ package:
   name: pyemma-dev
   # version number: [base tag]+[commits-upstream]_[git_hash]
   # eg. v2.0+0_g8824162
-  version: {{ GIT_DESCRIBE_TAG[1:] + '+' +GIT_BUILD_STR}}
+  version: {{ GIT_DESCRIBE_TAG[1:] + '+' + GIT_BUILD_STR}}
 source:
   path: ../..
+  # borked, but preferable, because it creates a "clean" working copy locally.
+  #git_url: ../../
 
 build:
   preserve_egg_dir: True
 
 requirements:
   build:
-    - python
-    - setuptools
-    - cython >=0.20
-    - bhmm >=0.6,<0.7
-    - joblib >0.8.4
-    - matplotlib
-    - mdtraj >=1.7
-    - mock
-    - funcsigs
-    - msmtools >=1.1.3
-    - thermotools >=0.2.3
-    - nose
-    - numpy x.x 
-    - pyyaml
-    - scipy
-    - six
-    - psutil >=3.1.1
-    - decorator >=4.0.0
-    - progress_reporter <=1.2
-
-  run:
-    - python
-    - setuptools
-    - bhmm >=0.6,<0.7
-    - joblib >0.8.4
-    - matplotlib
-    - mdtraj >=1.7
-    - mock
-    - funcsigs
-    - msmtools >=1.1.3
-    - thermotools >=0.2.3
+    - cython
+    - mdtraj
     - numpy x.x
+    - python
+    - scipy
+    - setuptools
+  run:
+    - bhmm >=0.6,<0.7
+    - decorator >=4.0.0
+    - joblib >0.8.4
+    - matplotlib
+    - mdtraj
+    - mock
+    - msmtools >=1.2
+    - numpy x.x
+    - progress_reporter
+    - psutil >3.1
+    - python
     - pyyaml
     - scipy
+    - setuptools
     - six >=1.10
-    - psutil >=3.1.1
-    - decorator >=4.0.0
-    - progress_reporter <=1.2
+    - thermotools >=0.2.5
 
 test:
+  source_files:
+    - conftest.py
+    - setup.cfg
+  files:
+    - matplotlibrc
   requires:
     - pytest 
     - pytest-cov
-    #- pytest-xdist
-  imports:
-    - pyemma
 
 about:
   home: http://emma-project.org
   license: GNU Lesser Public License v3+
   summary: "EMMA: Emma's Markov Model Algorithms"
-
-

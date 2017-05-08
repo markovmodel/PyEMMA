@@ -47,7 +47,7 @@ class _IterationProgressIndicatorCallBack(_ProgressIndicatorCallBack):
 
 
 class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
-    def __init__(self, reporter, stage, maxiter, maxerr):
+    def __init__(self, reporter, stage, maxiter, maxerr, subcallback=None):
         description =  str(stage) + ' increment={err:0.1e}/{maxerr:0.1e}'
         super(_ConvergenceProgressIndicatorCallBack, self).__init__()
         self.final = maxiter
@@ -55,11 +55,14 @@ class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
         self.stage = stage
         self.reporter = reporter
         self.state = 0.0
+        self.subcallback = subcallback
         if not reporter.show_progress: return
         reporter._prog_rep_progressbars[stage].denominator = self.final
         reporter._prog_rep_progressbars[stage].template = '{desc:.60}: {percent:3d}% ({fraction}) {bar} {spinner}'
 
     def __call__(self, *args, **kwargs):
+        if self.subcallback is not None:
+            self.subcallback(*args, **kwargs)
         if not self.reporter.show_progress: return
         if self.waiting(): return
         current = kwargs['iteration_step']

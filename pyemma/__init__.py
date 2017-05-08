@@ -38,23 +38,6 @@ from . import plots
 from . import thermo
 
 
-def _setup_testing():
-    # setup function for testing
-    from pyemma.util import config
-    # do not cache trajectory info in user directory (temp traj files)
-    config.use_trajectory_lengths_cache = False
-    config.show_progress_bars = False
-
-import unittest as _unittest
-# override unittests base class constructor to achieve same behaviour without nose.
-_old_init = _unittest.TestCase.__init__
-def _new_init(self, *args, **kwargs):
-    _old_init(self, *args, **kwargs)
-    _setup_testing()
-
-_unittest.TestCase.__init__ = _new_init
-
-
 def _version_check(current, testing=False):
     """ checks latest version online from http://emma-project.org.
 
@@ -108,7 +91,7 @@ def _version_check(current, testing=False):
                               .format(latest=latest, current=current), category=UserWarning)
         except Exception:
             import logging
-            logging.getLogger('pyemma').exception("error during version check")
+            logging.getLogger('pyemma').debug("error during version check", exc_info=True)
     return threading.Thread(target=_impl)
 
 # start check in background

@@ -87,11 +87,12 @@ class AssignCenters(AbstractClustering):
 
     @AbstractClustering.data_producer.setter
     def data_producer(self, dp):
-        # check dimensions
-        dim = self.clustercenters.shape[1]
-        if not dim == dp.dimension():
-            raise ValueError('cluster centers have wrong dimension. Have dim=%i'
-                             ', but input has %i' % (dim, dp.dimension()))
+        if dp is not None:
+            # check dimensions
+            dim = self.clustercenters.shape[1]
+            if not dim == dp.dimension():
+                raise ValueError('cluster centers have wrong dimension. Have dim=%i'
+                                 ', but input has %i' % (dim, dp.dimension()))
         AbstractClustering.data_producer.fset(self, dp)
 
     def _estimate(self, iterable, **kw):

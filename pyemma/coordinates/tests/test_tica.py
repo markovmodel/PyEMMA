@@ -39,6 +39,7 @@ from pyemma.util.contexts import numpy_random_seed
 from pyemma.coordinates.estimation.koopman import _KoopmanWeights
 from pyemma._ext.variational.solvers.direct import sort_by_norm
 from pyemma._ext.variational.solvers.direct import eig_corr
+from pyemma._ext.variational.util import ZeroRankError
 from logging import getLogger
 import pyemma.util.types as types
 from six.moves import range
@@ -179,7 +180,18 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_with_skip(self):
         data = np.random.random((100, 10))
-        tica_obj = api.tica(lag=10, dim=1, skip=1)
+        tica_obj = api.tica(data, lag=10, dim=1, skip=1)
+
+    def test_pipelining_sklearn_compat(self):
+        from pyemma.coordinates.transform import TICA
+        t = TICA(1)
+        x = np.random.random((20, 3))
+        y = t.fit_transform(x)
+        y2 = t.get_output()
+        np.testing.assert_allclose(y2[0], y)
+
+    def test_commute_map(self):
+        tica(list(range(100)), commute_map=True, kinetic_map=False)
 
 
 class TestTICAExtensive(unittest.TestCase):
@@ -590,6 +602,27 @@ class TestKoopman(unittest.TestCase):
         np.testing.assert_allclose(out_traj_rev, ev_traj_rev)
         np.testing.assert_allclose(out_traj_eq, ev_traj_eq)
 
+
+class TestTICAErrors(unittest.TestCase):
+    def test_constant_features(self):
+        z = np.zeros((100,10))
+        o = np.ones((100, 10))
+        tica_obj = _internal_tica(lag=10)
+        tica_obj.partial_fit(z)
+        with self.assertRaises(ZeroRankError):
+            tica_obj.timescales
+        with self.assertRaises(ZeroRankError):
+            tica_obj.transform(z)
+        tica_obj.partial_fit(o)
+        try:
+            tica_obj.timescales
+            tica_obj.transform(z)
+        except ZeroRankError:
+            self.fail('ZeroRankError was raised unexpectedly.')
+
+        tica_obj = _internal_tica(lag=10)
+        with self.assertRaises(ZeroRankError):
+            tica_obj.fit_transform(o)
 
 
 if __name__ == "__main__":

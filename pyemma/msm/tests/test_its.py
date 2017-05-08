@@ -37,45 +37,48 @@ on_win = sys.platform == 'win32'
 
 
 class TestITS_MSM(unittest.TestCase):
-    def setUp(self):
+
+    # run only-once
+    @classmethod
+    def setUpClass(cls):
         from msmtools.generation import generate_traj
-        self.dtrajs = []
+        cls.dtrajs = []
 
         # simple case
         dtraj_simple = [0, 1, 1, 1, 0]
-        self.dtrajs.append([dtraj_simple])
+        cls.dtrajs.append([dtraj_simple])
 
         # as ndarray
-        self.dtrajs.append([np.array(dtraj_simple)])
+        cls.dtrajs.append([np.array(dtraj_simple)])
 
         dtraj_disc = [0, 1, 1, 0, 0]
-        self.dtrajs.append([dtraj_disc])
+        cls.dtrajs.append([dtraj_disc])
 
         # multitrajectory case
-        self.dtrajs.append([[0], [1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]])
+        cls.dtrajs.append([[0], [1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]])
 
         # large-scale case
         large_trajs = []
         for i in range(10):
             large_trajs.append(np.random.randint(10, size=1000))
-        self.dtrajs.append(large_trajs)
+        cls.dtrajs.append(large_trajs)
 
         # Markovian timeseries with timescale about 5
-        self.P2 = np.array([[0.9, 0.1], [0.1, 0.9]])
-        self.dtraj2 = generate_traj(self.P2, 1000)
-        self.dtrajs.append([self.dtraj2])
+        cls.P2 = np.array([[0.9, 0.1], [0.1, 0.9]])
+        cls.dtraj2 = generate_traj(cls.P2, 1000)
+        cls.dtrajs.append([cls.dtraj2])
 
         # Markovian timeseries with timescale about 5
-        self.P4 = np.array([[0.95, 0.05, 0.0, 0.0],
+        cls.P4 = np.array([[0.95, 0.05, 0.0, 0.0],
                             [0.05, 0.93, 0.02, 0.0],
                             [0.0, 0.02, 0.93, 0.05],
                             [0.0, 0.0, 0.05, 0.95]])
-        self.dtraj4_2 = generate_traj(self.P4, 20000)
+        cls.dtraj4_2 = generate_traj(cls.P4, 20000)
         I = [0, 0, 1, 1]  # coarse-graining
-        for i in range(len(self.dtraj4_2)):
-            self.dtraj4_2[i] = I[self.dtraj4_2[i]]
-        self.dtrajs.append([self.dtraj4_2])
-        # print "T4 ", timescales(self.P4)[1]
+        for i in range(len(cls.dtraj4_2)):
+            cls.dtraj4_2[i] = I[cls.dtraj4_2[i]]
+        cls.dtrajs.append([cls.dtraj4_2])
+        # print "T4 ", timescales(cls.P4)[1]
 
     def compute_nice(self, reversible):
         """
@@ -116,8 +119,7 @@ class TestITS_MSM(unittest.TestCase):
             its = msm.timescales_msm(dtraj, lags=lags, reversible=False)
             # FIXME: we do not trigger a UserWarning, but msmtools.exceptions.SpectralWarning, intended?
             #assert issubclass(w[-1].category, UserWarning)
-        got_lags = its.lagtimes
-        np.testing.assert_equal(got_lags, expected_lags)
+        np.testing.assert_equal(its.lags, expected_lags)
 
     def test_2(self):
         t2 = timescales(self.P2)[1]
@@ -161,6 +163,56 @@ class TestITS_MSM(unittest.TestCase):
         test_frac = longer_than_3/all_frames
         assert np.allclose(its.fraction_of_frames, np.array([1, 1, test_frac]))
 
+    def test_insert_lag_time(self):
+        lags = [1, 3, 5]
+        its = timescales_msm(self.dtraj2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        new_lags = np.concatenate((lags, [2, 4]+list(range(6, 9))), axis=0)
+        its.lags = new_lags
+        np.testing.assert_equal(its._lags, new_lags)
+        its.estimate(self.dtraj2)
+
+        # compare with a one shot estimation
+        its_one_shot = timescales_msm(self.dtraj2, lags=new_lags, errors='bayes', nsamples=10, show_progress=False)
+
+        np.testing.assert_equal(its.timescales, its_one_shot.timescales)
+
+        self.assertEqual([m.lag for m in its.models],
+                         [m.lag for m in its_one_shot.models])
+
+        # estimate with different data to trigger re-estimation
+        from pyemma.util.testing_tools import MockLoggingHandler
+        log_handler = MockLoggingHandler()
+        its.logger.addHandler(log_handler)
+        extended_new_lags = new_lags.tolist()
+        extended_new_lags.append(20)
+        its.estimate(self.dtraj4_2, lags=extended_new_lags)
+
+        np.testing.assert_equal(its.models[0].dtrajs_full[0], self.dtraj4_2)
+        self.assertIn("estimating from new data", log_handler.messages['warning'][0])
+
+        # remove a lag time and ensure the corresponding model is removed too
+        new_lags =  new_lags[:-3]
+        new_lags_len = len(new_lags)
+        its.lags = new_lags
+        np.testing.assert_equal(its.lags, new_lags)
+        assert len(its.models) == new_lags_len
+        assert len(its.timescales) == new_lags_len
+        assert len(its.sample_mean) == new_lags_len
+
+    def test_insert_remove_lag_time(self):
+        # test insert and removal at the same time
+        lags = [1, 3, 5]
+        its = timescales_msm(self.dtraj4_2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        new_lags = lags + [6, 7, 8]
+        new_lags = new_lags[2:]
+        new_lags += [21, 22]
+        # omit the first lag
+        new_lags = new_lags[1:]
+        its.estimate(self.dtraj4_2, lags=new_lags)
+        its_one_shot = timescales_msm(self.dtraj4_2, lags=new_lags)
+
+        np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
+
 
 class TestITS_AllEstimators(unittest.TestCase):
     """ Integration tests for various estimators
@@ -192,9 +244,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
         np.testing.assert_array_less(L, estimator.timescales)
-        #assert np.alltrue(L < estimator.timescales)
         np.testing.assert_array_less(estimator.timescales, R)
-        #assert np.alltrue(estimator.timescales < R)
 
     def test_its_hmsm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])

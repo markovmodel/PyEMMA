@@ -54,13 +54,12 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import getSetuptoolsError, lazy_cythonize
+from setup_util import lazy_cythonize
 try:
     from setuptools import setup, Extension, find_packages
-    from pkg_resources import VersionConflict
 except ImportError as ie:
-    print(getSetuptoolsError())
-    sys.exit(23)
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
 
 ###############################################################################
 # Extensions
@@ -92,9 +91,7 @@ def extensions():
 
     import mdtraj
     from numpy import get_include as _np_inc
-    from scipy import get_include as _sc_inc
     np_inc = _np_inc()
-    sc_inc = _sc_inc()
 
     exts = []
 
@@ -140,7 +137,7 @@ def extensions():
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
-                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc, sc_inc],
+                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
                   extra_compile_args=['-std=c99', '-O3'])
 
     orderedset = \
@@ -219,23 +216,6 @@ def get_cmdclass():
 
     versioneer_cmds['test'] = PyTest
 
-    from setuptools.command.egg_info import egg_info
-
-    class extensions_json(egg_info):
-        def run(self):
-            f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyemma', '_extensions.json')
-            print("Generating {}".format(f))
-            extension_names = [e.name for e in extensions()]
-
-            with open(f, 'wb') as fp:
-                import json
-                s = json.dumps(extension_names).encode('ascii')
-                fp.write(s)
-
-            egg_info.run(self)
-
-    versioneer_cmds['egg_info'] = extensions_json
-
     return versioneer_cmds
 
 
@@ -262,10 +242,10 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
-                      'mdtraj>=1.7.0',
+                      'mdtraj>=1.8.0',
                       'matplotlib',
-                      'msmtools>=1.1.4',
-                      'thermotools>=0.2.3',
+                      'msmtools>=1.2',
+                      'thermotools>=0.2.5',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
                       'pyyaml',
@@ -293,7 +273,7 @@ else:
                                   ]
 
     metadata['package_data'] = {
-                                'pyemma': ['pyemma.cfg', 'logging.yml', '_extensions.json', 'setup.cfg'],
+                                'pyemma': ['pyemma.cfg', 'logging.yml'],
                                 'pyemma.coordinates.tests': ['data/*'],
                                 'pyemma.msm.tests': ['data/*'],
                                 'pyemma.datasets': ['*.npz'],
@@ -304,10 +284,6 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
-
-        # copy setup.cfg to the package so we can include it easily later on
-        import shutil
-        shutil.copy('setup.cfg', 'pyemma')
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)

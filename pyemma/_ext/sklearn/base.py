@@ -26,6 +26,18 @@ import six
 from pyemma.util.reflection import getargspec_no_self
 
 ###############################################################################
+def _first_and_last_element(arr):
+    """Returns first and last element of numpy array or sparse matrix."""
+    if isinstance(arr, np.ndarray) or hasattr(arr, 'data'):
+        # numpy array or sparse matrix with .data attribute
+        data = arr.data if sparse.issparse(arr) else arr
+        return data.flat[0], data.flat[-1]
+    else:
+        # Sparse matrices without .data attribute. Only dok_matrix at
+        # the time of writing, in this case indexing is fast
+        return arr[0, 0], arr[-1, -1]
+
+
 def clone(estimator, safe=True):
     """Constructs a new estimator with the same parameters.
     Clone does a deep copy of the model in an estimator
@@ -33,9 +45,9 @@ def clone(estimator, safe=True):
     with the same parameters that has not been fit on any data.
     Parameters
     ----------
-    estimator: estimator object, or list, tuple or set of objects
+    estimator : estimator object, or list, tuple or set of objects
         The estimator or group of estimators to be cloned
-    safe: boolean, optional
+    safe : boolean, optional
         If safe is false, clone will fall back to a deepcopy on objects
         that are not estimators.
     """
@@ -62,6 +74,9 @@ def clone(estimator, safe=True):
     for name in new_object_params:
         param1 = new_object_params[name]
         param2 = params_set[name]
+        if param1 is param2:
+            # this should always happen
+            continue
         if isinstance(param1, np.ndarray):
             # For most ndarrays, we do not test for complete equality
             if not isinstance(param2, type(param1)):
@@ -74,9 +89,8 @@ def clone(estimator, safe=True):
                 equality_test = (
                     param1.shape == param2.shape
                     and param1.dtype == param2.dtype
-                    # We have to use '.flat' for 2D arrays
-                    and param1.flat[0] == param2.flat[0]
-                    and param1.flat[-1] == param2.flat[-1]
+                    and (_first_and_last_element(param1) ==
+                         _first_and_last_element(param2))
                 )
             else:
                 equality_test = np.all(param1 == param2)
@@ -93,19 +107,20 @@ def clone(estimator, safe=True):
             else:
                 equality_test = (
                     param1.__class__ == param2.__class__
-                    and param1.data[0] == param2.data[0]
-                    and param1.data[-1] == param2.data[-1]
+                    and (_first_and_last_element(param1) ==
+                         _first_and_last_element(param2))
                     and param1.nnz == param2.nnz
                     and param1.shape == param2.shape
                 )
         else:
-            new_obj_val = new_object_params[name]
-            params_set_val = params_set[name]
-            # The following construct is required to check equality on special
-            # singletons such as np.nan that are not equal to them-selves:
-            equality_test = (new_obj_val == params_set_val or
-                             new_obj_val is params_set_val)
-        if not equality_test:
+            # fall back on standard equality
+            equality_test = param1 == param2
+        if equality_test:
+            warnings.warn("Estimator %s modifies parameters in __init__."
+                          " This behavior is deprecated as of 0.18 and "
+                          "support for this behavior will be removed in 0.20."
+                          % type(estimator).__name__, DeprecationWarning)
+        else:
             raise RuntimeError('Cannot clone object %s, as the constructor '
                                'does not seem to set parameter %s' %
                                (estimator, name))
