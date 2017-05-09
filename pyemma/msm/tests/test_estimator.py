@@ -20,7 +20,7 @@ import mock
 from pyemma import msm
 from functools import wraps
 
-from pyemma._base.estimator import param_grid, estimate_param_scan
+from pyemma._base.estimator import param_grid, estimate_param_scan, Estimator
 
 
 class TestCK_MSM(unittest.TestCase):
@@ -54,6 +54,20 @@ class TestCK_MSM(unittest.TestCase):
         with mock.patch('pyemma._base.estimator._estimate_param_scan_worker', worker_wrapper):
             hmm = msm.estimate_hidden_markov_model([0, 0, 0, 1, 1, 1, 0, 0], 2, 1, )
             hmm.cktest()
+
+    def test_keyboard_interrupt(self):
+        """ ensure we can break the execution no matter of failfast=False"""
+        class sleeping_estimator(Estimator):
+            def __init__(self, raise_=False):
+                self._raise = raise_
+            def _estimate(self, X):
+                if not self.raise_:
+                    import time
+                    time.sleep(5)
+                else:
+                    raise KeyboardInterrupt()
+        with self.assertRaises(KeyboardInterrupt):
+            estimate_param_scan(sleeping_estimator, X=None, param_sets=[{'raise_': (False, True)}], failfast=False)
 
     def test_evaluate_msm(self):
         from pyemma.msm.estimators import MaximumLikelihoodMSM
