@@ -1370,6 +1370,8 @@ class OOMReweightedMSM(_MSMEstimator):
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs  # TODO: remove this in a future version.
+        from pyemma.util.discrete_trajectories import index_states
+        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
         self._connected_sets = msmest.connected_sets(self._C_full)
         self._Xi = Xi
         self._omega = omega
