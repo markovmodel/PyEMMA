@@ -32,6 +32,7 @@ from pyemma.coordinates.data._base.transformer import StreamingEstimationTransfo
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.util.annotators import deprecated, fix_docs
 from pyemma.util.reflection import get_default_args
+import warnings
 
 __all__ = ['TICA']
 
