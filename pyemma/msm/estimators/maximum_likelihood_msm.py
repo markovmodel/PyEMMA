@@ -433,12 +433,6 @@ class _MSMEstimator(_Estimator, _MSM):
         A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
         For example, for connectivity='largest', the indexes will be given within the connected set.
         Frames that are not in the connected set will be -1.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
         """
         self._check_is_estimated()
         # compute connected dtrajs
