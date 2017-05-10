@@ -460,6 +460,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         """
         self._check_is_estimated()
+        dtrajs = ensure_dtraj_list(dtrajs)
         # compute connected dtrajs
         dtrajs_active = [self._full2active[dtraj] for dtraj in dtrajs]
         return dtrajs_active
@@ -468,9 +469,10 @@ class _MSMEstimator(_Estimator, _MSM):
         # ensure dtrajs is given, otherwise warn the user.
         if dtrajs is None:
             import inspect
-            s = inspect.stack(context=1)
-            method = s[1][1][3]
-            warnings.warn("The dtrajs argument will be mandatory in the future for method {method}".format(method=method))
+            s = inspect.stack(context=3)
+            method = s[1][3]
+            warnings.warn("The dtrajs argument will be mandatory in the future for method {method}."
+                          .format(method=method), stacklevel=3)
             dtrajs = self._dtrajs_full
         return dtrajs
 
@@ -538,6 +540,7 @@ class _MSMEstimator(_Estimator, _MSM):
         """The fraction of counts in the largest connected set.
         """
         self._check_is_estimated()
+        dtrajs = ensure_dtraj_list(dtrajs)
         from pyemma.util.discrete_trajectories import count_states
 
         hist = count_states(dtrajs)
@@ -674,7 +677,6 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
     # For general statistics
     ################################################################################
-    @deprecated('Note that this method will require a dtrajs argument in the future.')
     def trajectory_weights(self, dtrajs=None):
         r"""Uses the MSM to assign a probability weight to each trajectory frame.
 
@@ -1127,7 +1129,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
     # TODO: change to statistically effective count matrix!
     @property
-    @deprecated('please use compute_effective_count_matrix in the future.')
+    @deprecated('Please use compute_effective_count_matrix in the future.')
     def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
 
@@ -1166,6 +1168,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         """
         self._check_is_estimated()
+        dtrajs = ensure_dtraj_list(dtrajs)
         import msmtools.estimation as msmest
         Ceff_full = msmest.effective_count_matrix(dtrajs, self.lag)
         from pyemma.util.linalg import submatrix
