@@ -749,7 +749,6 @@ class _MSMEstimator(_Estimator, _MSM):
     # HMM-based coarse graining
     ################################################################################
 
-    @deprecated('Note that this method will require a dtrajs argument in the future.')
     def hmm(self, nhidden, dtrajs=None):
         """Estimates a hidden Markov state model as described in [1]_
 
