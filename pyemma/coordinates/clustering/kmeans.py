@@ -221,7 +221,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                     description="initialize kmeans++ centers", stage=0)
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
         self._init_in_memory_chunks(total_length)
-        self._progress_register(self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride),
+        self._progress_register(self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip,
+                                                            stride=self.stride if self.stride is not None else 1),
                                 description="creating data array", stage='data')
 
         if self.init_strategy == 'uniform':
