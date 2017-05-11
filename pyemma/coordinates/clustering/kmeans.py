@@ -221,6 +221,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                     description="initialize kmeans++ centers", stage=0)
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
         self._init_in_memory_chunks(total_length)
+        self._progress_register(self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride),
+                                description="creating data array", stage='data')
+
         if self.init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
@@ -251,6 +254,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
+        self._progress_update(1, stage='data')
 
 
 class MiniBatchKmeansClustering(KmeansClustering):
