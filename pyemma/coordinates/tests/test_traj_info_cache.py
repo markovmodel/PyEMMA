@@ -113,6 +113,15 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 api.source(f.name)
                 assert f.name in cm.exception.message
 
+        # bogus files
+        with NamedTemporaryFile(suffix='.npy', delete=False) as f:
+            x = np.array([1, 2, 3])
+            np.save(f, x)
+            with open(f.name, 'wb') as f2:
+                f2.write(b'asdf')
+            with self.assertRaises(IOError) as cm:
+                api.source(f.name)
+
     def test_featurereader_xtc(self):
         # cause cache failures
         with settings(use_trajectory_lengths_cache=False):
