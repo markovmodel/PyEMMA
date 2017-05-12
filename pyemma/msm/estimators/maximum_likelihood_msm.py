@@ -39,7 +39,7 @@ class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
-                 connectivity='largest', dt_traj='1 step'):
+                 connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -111,6 +111,21 @@ class _MSMEstimator(_Estimator, _MSM):
             |  'ms',  'millisecond*'
             |  's',   'second*'
 
+        score_method : str, optional, default='VAMP2'
+            Score to be used with score function. Available are:
+
+            |  'VAMP1'  [1]_
+            |  'VAMP2'  [1]_
+            |  'VAMPE'  [1]_
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        References
+        ----------
+        .. [1] H. Wu and F. Noe: Variational approach for Markov processes (in preparation)
+
         """
         self.lag = lag
 
@@ -140,11 +155,49 @@ class _MSMEstimator(_Estimator, _MSM):
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
 
+        # score
+        self.score_method = score_method
+        self.score_k = score_k
+
+    ################################################################################
+    # Generic functions
+    ################################################################################
+
+    def _get_dtraj_stats(self, dtrajs):
+        """ Compute raw trajectory counts
+
+        Parameters
+        ----------
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
+
+        """
+        # harvest discrete statistics
+        if isinstance(dtrajs, _DiscreteTrajectoryStats):
+            dtrajstats = dtrajs
+        else:
+            # compute and store discrete trajectory statistics
+            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
+            # check if this MSM seems too large to be dense
+            if dtrajstats.nstates > 4000 and not self.sparse:
+                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
+                                    'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                    'Consider using sparse=True.')
+
+        # count lagged
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+
+        # for other statistics
+        return dtrajstats
+
     def estimate(self, dtrajs, **parms):
         """
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
         **params :
@@ -155,10 +208,66 @@ class _MSMEstimator(_Estimator, _MSM):
         MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
+        dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
         return super(_MSMEstimator, self).estimate(dtrajs, **parms)
 
     def _check_is_estimated(self):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
+
+    def score(self, dtrajs, score_method=None, score_k=None):
+        """ Scores the MSM using the given test data
+
+        Currently only implemented for dense matrices
+
+        Parameters
+        ----------
+        dtrajs : list of arrays
+            test data (discrete trajectories).
+        score_method : str
+            Overwrite scoring method if desired. If `None`, the estimators scoring
+            method will be used. See __init__ for documention.
+        score_k : str
+            Overwrite scoring rank if desired. If `None`, the estimators scoring
+            rank will be used. See __init__ for documention.
+
+        """
+        # reset estimator data if needed
+        if score_method is not None:
+            self.score_method = score_method
+        if self.score_k is not None:
+            self.score_k = score_k
+
+        # determine actual scoring rank
+        if self.score_k is None:
+            self.score_k = self.nstates
+        if self.score_k > self.nstates:
+            self.logger.warning('Requested scoring rank ' + str(self.score_k) + ' which exceeds' +
+                                'number of MSM states. Reduced to score_k = ' + str(self.nstates))
+            self.score_k = self.nstates  # limit to nstates
+
+        # training data
+        K = self.transition_matrix  # model
+        C0t_train = self.count_matrix_active
+        if self.sparse:  #
+            C0t_train = C0t_train.toarray()
+        C00_train = _np.diag(self.count_matrix_active.sum(axis=0))  # empirical cov
+        Ctt_train = _np.diag(self.count_matrix_active.sum(axis=1))  # empirical cov
+
+        # test data
+        C0t_test_raw = self._get_dtraj_stats(dtrajs).count_matrix().toarray()
+        # map to present active set
+        map_from = self.active_set[_np.where(self.active_set < C0t_test_raw.shape[0])[0]]
+        map_to = _np.arange(len(map_from))
+        C0t_test = _np.zeros((self.nstates, self.nstates))
+        C0t_test[_np.ix_(map_to, map_to)] = C0t_test_raw[_np.ix_(map_from, map_from)]
+        C00_test = _np.diag(C0t_test.sum(axis=0))
+        Ctt_test = _np.diag(C0t_test.sum(axis=1))
+
+        # score
+        from pyemma.util.metrics import vamp_score
+        return vamp_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_test,
+                          k=self.score_k, score=self.score_method)
+
 
     ################################################################################
     # Basic attributes
@@ -437,7 +546,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
 
-            ################################################################################
+    ################################################################################
     # For general statistics
     ################################################################################
 
@@ -537,10 +646,10 @@ class _MSMEstimator(_Estimator, _MSM):
             timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
             if timescale_ratios[nhidden-2] < 1.5:
                 self.logger.warning('Requested coarse-grained model with ' + str(nhidden) + ' metastable states at ' +
-                                 'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
-                                 str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
-                                 str(timescale_ratios[nhidden-2]) + ' while we recommend at least 1.5. ' +
-                                 ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
+                                    'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
+                                    str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
+                                    str(timescale_ratios[nhidden-2]) + ' while we recommend at least 1.5. ' +
+                                    'It is possible that the resulting HMM is inaccurate. Handle with caution.')
         # run HMM estimate
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nhidden, msm_init=self,
@@ -571,7 +680,7 @@ class _MSMEstimator(_Estimator, _MSM):
         """
         self._check_is_estimated()
         # check input
-        assert _types.is_int(self.nstates) and ncoarse > 1 and ncoarse <= self.nstates, \
+        assert _types.is_int(self.nstates) and 1 < ncoarse <= self.nstates, \
             'nstates must be an int in [2,msmobj.nstates]'
 
         return self.hmm(ncoarse)
@@ -750,18 +859,18 @@ class MaximumLikelihoodMSM(_MSMEstimator):
     def _prepare_input_revpi(self, C, pi):
         """Max. state index visited by trajectories"""
         nC = C.shape[0]
-        """Max. state index of the stationary vector array"""
+        # Max. state index of the stationary vector array
         npi = pi.shape[0]
-        """pi has to be defined on all states visited by the trajectories"""
+        # pi has to be defined on all states visited by the trajectories
         if nC > npi:
-            errstr="""There are visited states for which no stationary
+            errstr = """There are visited states for which no stationary
             probability is given"""
             raise ValueError(errstr)
-        """Reduce pi to the 'visited set'"""
+        # Reduce pi to the visited set
         pi_visited = pi[0:nC]
-        """Find visited states with positive stationary probabilities"""
+        # Find visited states with positive stationary probabilities"""
         pos = _np.where(pi_visited > 0.0)[0]
-        """Reduce C to positive probability states"""
+        # Reduce C to positive probability states"""
         C_pos = msmest.connected_cmatrix(C, lcc=pos)
         if C_pos.sum() == 0.0:
             errstr = """The set of states with positive stationary
@@ -769,31 +878,16 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             reversible with respect to the given stationary vector can
             not be estimated"""
             raise ValueError(errstr)
-        """Compute largest connected set of C_pos, undirected connectivity"""
+        # Compute largest connected set of C_pos, undirected connectivity"""
         lcc = msmest.largest_connected_set(C_pos, directed=False)
         return pos[lcc]
 
     def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # harvest discrete statistics
-        if isinstance(dtrajs, _DiscreteTrajectoryStats):
-            dtrajstats = dtrajs
-        else:
-            # compute and store discrete trajectory statistics
-            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
-            # check if this MSM seems too large to be dense
-            if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                  'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                  'Consider using sparse=True.')
-
-        # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
-
-        # full count matrix and number of states
-        self._C_full = dtrajstats.count_matrix()
-        self._nstates_full = self._C_full.shape[0]
+        """ Estimates the MSM """
+        # get trajectory counts. This sets _C_full and _nstates_full
+        dtrajstats = self._get_dtraj_stats(dtrajs)
+        self._C_full = dtrajstats.count_matrix()  # full count matrix
+        self._nstates_full = self._C_full.shape[0]  # number of states
 
         # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
@@ -822,7 +916,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # computed derived quantities
         # back-mapping from full to lcs
-        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active = -1 * _np.ones(dtrajstats.nstates, dtype=int)
         self._full2active[self.active_set] = _np.arange(len(self.active_set))
 
         # restrict stationary distribution to active set
@@ -883,7 +977,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         """
         self._check_is_estimated()
-        import msmtools.estimation as msmest
         Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
         from pyemma.util.linalg import submatrix
         Ceff = submatrix(Ceff_full, self.active_set)
@@ -992,24 +1085,11 @@ class OOMReweightedMSM(_MSMEstimator):
         self.rank_Ct = rank_Ct
 
     def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # remove last lag steps from dtrajs:
-        dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
-        # compute and store discrete trajectory statistics
-        dtrajstats = _DiscreteTrajectoryStats(dtrajs_lag)
-        # check if this MSM seems too large to be dense
-        if dtrajstats.nstates > 4000 and not self.sparse:
-            self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                              'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                              'Consider using sparse=True.')
-
-        # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
-
-        # full count matrix and number of states
-        self._C_full = dtrajstats.count_matrix()
-        self._nstates_full = self._C_full.shape[0]
+        """ Estimate MSM """
+        # get trajectory counts. This sets _C_full and _nstates_full
+        dtrajstats = self._get_dtraj_stats(dtrajs)
+        self._C_full = dtrajstats.count_matrix()  # full count matrix
+        self._nstates_full = self._C_full.shape[0]  # number of states
 
         # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
@@ -1031,13 +1111,14 @@ class OOMReweightedMSM(_MSMEstimator):
 
         # computed derived quantities
         # back-mapping from full to lcs
-        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active = -1 * _np.ones(dtrajstats.nstates, dtype=int)
         self._full2active[self.active_set] = _np.arange(len(self.active_set))
 
         # Estimate transition matrix
+        dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]  # remove last lag steps from dtrajs
         if self.connectivity == 'largest':
             # Re-sampling:
-            if self.rank_Ct=='bootstrap_counts':
+            if self.rank_Ct == 'bootstrap_counts':
                 Ceff_full = msmest.effective_count_matrix(dtrajs_lag, self.lag)
                 from pyemma.util.linalg import submatrix
                 Ceff = submatrix(Ceff_full, self.active_set)
@@ -1062,7 +1143,7 @@ class OOMReweightedMSM(_MSMEstimator):
             self._active_set = self._active_set[lcc_new]
             self._C_active = dtrajstats.count_matrix(subset=self.active_set)
             self._nstates = self._C_active.shape[0]
-            self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+            self._full2active = -1 * _np.ones(dtrajstats.nstates, dtype=int)
             self._full2active[self.active_set] = _np.arange(len(self.active_set))
             warnings.warn("Caution: Re-estimation of count matrix resulted in reduction of the active set.")
 
