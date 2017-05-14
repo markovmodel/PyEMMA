@@ -241,8 +241,8 @@ class _MSMEstimator(_Estimator, _MSM):
         if self.score_k is None:
             self.score_k = self.nstates
         if self.score_k > self.nstates:
-            self.logger.warning('Requested scoring rank ' + str(self.score_k) + ' which exceeds' +
-                                'number of MSM states. Reduced to score_k = ' + str(self.nstates))
+            self.logger.warning('Requested scoring rank ' + str(self.score_k) +
+                                'exceeds number of MSM states. Reduced to score_k = ' + str(self.nstates))
             self.score_k = self.nstates  # limit to nstates
 
         # training data
@@ -250,8 +250,8 @@ class _MSMEstimator(_Estimator, _MSM):
         C0t_train = self.count_matrix_active
         if self.sparse:  #
             C0t_train = C0t_train.toarray()
-        C00_train = _np.diag(self.count_matrix_active.sum(axis=0))  # empirical cov
-        Ctt_train = _np.diag(self.count_matrix_active.sum(axis=1))  # empirical cov
+        C00_train = _np.diag(self.count_matrix_active.sum(axis=1))  # empirical cov
+        Ctt_train = _np.diag(self.count_matrix_active.sum(axis=0))  # empirical cov
 
         # test data
         C0t_test_raw = self._get_dtraj_stats(dtrajs).count_matrix().toarray()
@@ -260,8 +260,8 @@ class _MSMEstimator(_Estimator, _MSM):
         map_to = _np.arange(len(map_from))
         C0t_test = _np.zeros((self.nstates, self.nstates))
         C0t_test[_np.ix_(map_to, map_to)] = C0t_test_raw[_np.ix_(map_from, map_from)]
-        C00_test = _np.diag(C0t_test.sum(axis=0))
-        Ctt_test = _np.diag(C0t_test.sum(axis=1))
+        C00_test = _np.diag(C0t_test.sum(axis=1))
+        Ctt_test = _np.diag(C0t_test.sum(axis=0))
 
         # score
         from pyemma.util.metrics import vamp_score

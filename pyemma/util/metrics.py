@@ -16,6 +16,9 @@ def _svd_sym_koopman(K, C00_train, Ctt_train):
     # symmetrized operator and SVD
     K_sym = mdot(spd_inv_sqrt(C00_train), C0t_re, spd_inv_sqrt(Ctt_train))
     U, S, Vt = np.linalg.svd(K_sym, compute_uv=True, full_matrices=False)
+    # projects back to singular functions of K
+    U=mdot(spd_inv_sqrt(C00_train),U)
+    Vt=mdot(Vt,spd_inv_sqrt(Ctt_train))
     return U, S, Vt.T
 
 
