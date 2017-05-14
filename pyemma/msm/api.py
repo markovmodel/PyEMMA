@@ -300,7 +300,8 @@ def markov_model(P, dt_model='1 step'):
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
-                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
+                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
+                          score_method='VAMP2', score_k=10):
     r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodMSM` that
@@ -404,6 +405,17 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         norm of the change vector, :math:`|e_i|_2`, is compared to
         maxerr.
 
+    score_method : str, optional, default='VAMP2'
+        Score to be used with score function. Available are:
+
+        |  'VAMP1'  [12]_
+        |  'VAMP2'  [12]_
+        |  'VAMPE'  [12]_
+
+    score_k : int or None
+        The maximum number of eigenvalues or singular values used in the
+        score. If set to None, all available eigenvalues will be used.
+
     Returns
     -------
     msm : :class:`MaximumLikelihoodMSM <pyemma.msm.MaximumLikelihoodMSM>`
@@ -487,6 +499,10 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         Markov State Models from short non-Equilibrium Simulations - Analysis and
          Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
 
+    .. [12] H. Wu and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+
     Example
     -------
     >>> from pyemma import msm
@@ -550,7 +566,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                         count_mode=count_mode,
                         sparse=sparse, connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter,
-                        maxerr=maxerr)
+                        maxerr=maxerr, score_method=score_method, score_k=score_k)
         # estimate and return
         return mlmsm.estimate(dtrajs)
     elif weights == 'oom':
@@ -558,7 +574,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
             import warnings
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
-                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
+                           score_method=score_method, score_k=score_k)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 

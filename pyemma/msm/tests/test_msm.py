@@ -154,6 +154,27 @@ class TestMSMDoubleWell(unittest.TestCase):
         cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True)
 
     # ---------------------------------
+    # SCORE
+    # ---------------------------------
+
+    def _score(self, msm):
+        dtrajs_test = self.dtraj[80000:]
+        s1 = msm.score(dtrajs_test, score_method='VAMP1', score_k=2)
+        assert 1.0 <= s1 <= 2.0
+        s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
+        assert 1.0 <= s2 <= 2.0
+        se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
+        se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
+
+    def test_score(self):
+        #self._score(self.msmrev)
+        #self._score(self.msmrevpi)
+        #self._score(self.msm)
+        self._score(self.msmrev_sparse)
+        #self._score(self.msmrevpi_sparse)
+        #self._score(self.msm_sparse)
+
+    # ---------------------------------
     # BASIC PROPERTIES
     # ---------------------------------
 
@@ -331,7 +352,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert (msmana.is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))    
+            assert (msmana.is_reversible(P))
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)

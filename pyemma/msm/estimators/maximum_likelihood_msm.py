@@ -241,17 +241,20 @@ class _MSMEstimator(_Estimator, _MSM):
         if self.score_k is None:
             self.score_k = self.nstates
         if self.score_k > self.nstates:
-            self.logger.warning('Requested scoring rank ' + str(self.score_k) + ' which exceeds' +
-                                'number of MSM states. Reduced to score_k = ' + str(self.nstates))
+            self.logger.warning('Requested scoring rank ' + str(self.score_k) +
+                                'exceeds number of MSM states. Reduced to score_k = ' + str(self.nstates))
             self.score_k = self.nstates  # limit to nstates
 
         # training data
         K = self.transition_matrix  # model
         C0t_train = self.count_matrix_active
-        if self.sparse:  #
+        from scipy.sparse import issparse
+        if issparse(K):  # can't deal with sparse right now.
+            K = K.toarray()
+        if issparse(C0t_train):  # can't deal with sparse right now.
             C0t_train = C0t_train.toarray()
-        C00_train = _np.diag(self.count_matrix_active.sum(axis=0))  # empirical cov
-        Ctt_train = _np.diag(self.count_matrix_active.sum(axis=1))  # empirical cov
+        C00_train = _np.diag(C0t_train.sum(axis=1))  # empirical cov
+        Ctt_train = _np.diag(C0t_train.sum(axis=0))  # empirical cov
 
         # test data
         C0t_test_raw = self._get_dtraj_stats(dtrajs).count_matrix().toarray()
@@ -260,8 +263,8 @@ class _MSMEstimator(_Estimator, _MSM):
         map_to = _np.arange(len(map_from))
         C0t_test = _np.zeros((self.nstates, self.nstates))
         C0t_test[_np.ix_(map_to, map_to)] = C0t_test_raw[_np.ix_(map_from, map_from)]
-        C00_test = _np.diag(C0t_test.sum(axis=0))
-        Ctt_test = _np.diag(C0t_test.sum(axis=1))
+        C00_test = _np.diag(C0t_test.sum(axis=1))
+        Ctt_test = _np.diag(C0t_test.sum(axis=0))
 
         # score
         from pyemma.util.metrics import vamp_score
@@ -753,7 +756,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', maxiter=1000000,
-                 maxerr=1e-8):
+                 maxerr=1e-8, score_method='VAMP2', score_k=10):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -844,9 +847,26 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             in order to track changes in small probabilities. The Euclidean norm
             of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
+        score_method : str, optional, default='VAMP2'
+            Score to be used with score function. Available are:
+
+            |  'VAMP1'  [1]_
+            |  'VAMP2'  [1]_
+            |  'VAMPE'  [1]_
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        References
+        ----------
+        .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
+            (in preparation)
+
         """
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
-                                                   sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+                                                   sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
+                                                   score_method=score_method, score_k=score_k)
         
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize
@@ -990,7 +1010,8 @@ class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
-                 dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0):
+                 dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
+                 score_method='VAMP2', score_k=10):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -1070,6 +1091,22 @@ class OOMReweightedMSM(_MSMEstimator):
         tol_rank: float, optional, default = 10.0
             signal-to-noise threshold for rank decision.
 
+        score_method : str, optional, default='VAMP2'
+            Score to be used with score function. Available are:
+
+            |  'VAMP1'  [1]_
+            |  'VAMP2'  [1]_
+            |  'VAMPE'  [1]_
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        References
+        ----------
+        .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
+            (in preparation)
+
         """
         # Check count mode:
         self.count_mode = str(count_mode).lower()
@@ -1079,15 +1116,19 @@ class OOMReweightedMSM(_MSMEstimator):
             raise ValueError('rank_Ct must be either \'bootstrap_counts\' or \'bootstrap_trajs\'')
 
         super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
-                                               connectivity=connectivity, dt_traj=dt_traj)
+                                               connectivity=connectivity, dt_traj=dt_traj,
+                                               score_method=score_method, score_k=score_k)
         self.nbs = nbs
         self.tol_rank = tol_rank
         self.rank_Ct = rank_Ct
 
     def _estimate(self, dtrajs):
         """ Estimate MSM """
+        # remove last lag steps from dtrajs:
+        dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
+
         # get trajectory counts. This sets _C_full and _nstates_full
-        dtrajstats = self._get_dtraj_stats(dtrajs)
+        dtrajstats = self._get_dtraj_stats(dtrajs_lag )
         self._C_full = dtrajstats.count_matrix()  # full count matrix
         self._nstates_full = self._C_full.shape[0]  # number of states
 
@@ -1115,7 +1156,6 @@ class OOMReweightedMSM(_MSMEstimator):
         self._full2active[self.active_set] = _np.arange(len(self.active_set))
 
         # Estimate transition matrix
-        dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]  # remove last lag steps from dtrajs
         if self.connectivity == 'largest':
             # Re-sampling:
             if self.rank_Ct == 'bootstrap_counts':
