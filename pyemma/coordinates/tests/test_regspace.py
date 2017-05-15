@@ -53,10 +53,10 @@ class TestRegSpaceClustering(unittest.TestCase):
     def setUp(self):
         self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
-        self.clustering.data_producer = RandomDataSource()
+        self.src = RandomDataSource()
 
     def test_algorithm(self):
-        self.clustering.parametrize()
+        self.clustering.estimate(self.src)
 
         # correct type of dtrajs
         assert types.is_int_vector(self.clustering.dtrajs[0])
@@ -74,7 +74,7 @@ class TestRegSpaceClustering(unittest.TestCase):
                                     % (c[0], c[1], self.dmin, dist))
 
     def test_assignment(self):
-        self.clustering.parametrize()
+        self.clustering.estimate(self.src)
 
         assert len(self.clustering.clustercenters) > 1
 
@@ -88,26 +88,26 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.clustering.assign(data_to_cluster, stride=1)
 
     def test_spread_data(self):
-        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        src =  RandomDataSource(a=-2, b=2)
         self.clustering.dmin = 2
-        self.clustering.parametrize()
+        self.clustering.estimate(src)
 
     def test1d_data(self):
         data = np.random.random(100)
         cluster_regspace(data, dmin=0.3)
 
     def test_non_existent_metric(self):
-        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        src = RandomDataSource(a=-2, b=2)
         self.clustering.dmin = 2
         self.clustering.metric = "non_existent_metric"
         with self.assertRaises(ValueError):
-            self.clustering.parametrize()
+            self.clustering.estimate(src)
 
     def test_minRMSD_metric(self):
-        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        src = RandomDataSource(a=-2, b=2)
         self.clustering.dmin = 2
         self.clustering.metric = "minRMSD"
-        self.clustering.parametrize()
+        self.clustering.estimate(src)
 
         data_to_cluster = np.random.random((1000, 3))
 
@@ -122,7 +122,7 @@ class TestRegSpaceClustering(unittest.TestCase):
             # Cause all warnings to always be triggered.
             warnings.simplefilter("always")
             # Trigger a warning.
-            self.clustering.estimate(self.clustering.data_producer)
+            self.clustering.estimate(self.src)
             assert w
             assert len(w) == 1
 

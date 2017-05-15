@@ -26,7 +26,7 @@ from __future__ import absolute_import
 import unittest
 import numpy as np
 
-from pyemma.msm import its
+from pyemma.msm import its, MaximumLikelihoodMSM, ImpliedTimescales
 from pyemma.plots import plot_implied_timescales
 from msmtools.generation import generate_traj
 
@@ -40,21 +40,23 @@ class TestItsPlot(unittest.TestCase):
                       [.25, .25, .25, .25],
                       ])
         # bogus its object
-        lags = [1,2,3,5,10]
-        cls.its = its(generate_traj(P, 100), lags=lags, errors='bayes'
-                      )
+        lags = [1, 2, 3, 5, 10]
+        dtraj = generate_traj(P, 100)
+        estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
+        cls.its = ImpliedTimescales(estimator=estimator)
+        cls.its.estimate(dtraj, lags=lags)
+
         cls.refs = cls.its.timescales[-1]
         return cls
 
     def test_plot(self):
         plot_implied_timescales(self.its,
-                                refs=self.refs)
+                                refs=self.refs, outfile='/tmp/1.pdf')
     def test_nits(self):
         plot_implied_timescales(self.its,
                                 refs=self.refs, nits=2)
     def test_process(self):
-        plot_implied_timescales(self.its,
-                                refs=self.refs, process=[1,2])
+        plot_implied_timescales(self.its, refs=self.refs, process=[1,2], dt=0.01, units='ns', outfile='/tmp/2.pdf')
 
 
 if __name__ == "__main__":

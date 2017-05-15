@@ -154,11 +154,6 @@ class TestClusterAssign(unittest.TestCase):
         c = self.ass
         assert c.output_type() == np.int32
 
-    def test_parametrize(self):
-        c = self.ass
-        # nothing should happen
-        c.parametrize()
-
     def test_save_dtrajs(self):
         c = self.ass
         prefix = "test"
