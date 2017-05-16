@@ -100,7 +100,6 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         for tau in [1, 10, 100, 1000, 2000]:
             trans = tica(lag=tau, dim=self.dim, kinetic_map=False)
 
-            log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             trans.estimate(reader)
             data = trans.get_output()
 

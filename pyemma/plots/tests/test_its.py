@@ -51,12 +51,13 @@ class TestItsPlot(unittest.TestCase):
 
     def test_plot(self):
         plot_implied_timescales(self.its,
-                                refs=self.refs, outfile='/tmp/1.pdf')
+                                refs=self.refs)
+
     def test_nits(self):
         plot_implied_timescales(self.its,
                                 refs=self.refs, nits=2)
     def test_process(self):
-        plot_implied_timescales(self.its, refs=self.refs, process=[1,2], dt=0.01, units='ns', outfile='/tmp/2.pdf')
+        plot_implied_timescales(self.its, refs=self.refs, process=[1,2], dt=0.01, units='ns')
 
 
 if __name__ == "__main__":

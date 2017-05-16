@@ -164,8 +164,8 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_in_memory(self):
         data = np.random.random((100, 10))
-        tica_obj = api.tica(lag=10, dim=1)
         reader = api.source(data)
+        tica_obj = api.tica(reader, lag=10, dim=1)
 
         tica_obj.in_memory = True
         tica_obj.get_output()
