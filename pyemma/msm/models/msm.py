@@ -443,7 +443,7 @@ class MSM(_Model):
 
         """
         p0 = _types.ensure_ndarray(p0, ndim=1, size=self.nstates, kind='numeric')
-        assert _types.is_int(k) and k>=0, 'k must be a non-negative integer'
+        assert _types.is_int(k) and k >= 0, 'k must be a non-negative integer'
 
         if k == 0:  # simply return p0 normalized
             return p0 / p0.sum()

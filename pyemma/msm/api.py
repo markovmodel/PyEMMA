@@ -53,7 +53,8 @@ __all__ = ['markov_model',
 # MARKOV STATE MODELS - flat Markov chains on discrete observation space
 # =============================================================================
 
-#TODO: show_progress is not documented
+
+# TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
                    errors=None, nsamples=50, n_jobs=1, show_progress=True):
@@ -133,7 +134,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     ImpliedTimescales
         The object returned by this function.
     pyemma.plots.plot_implied_timescales
-        Implied timescales plotting function. Just call it with the :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>`
+        Implied timescales plotting function. Just call it with the
+        :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>`
         object produced by this function as an argument.
 
 
@@ -184,7 +186,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     else:
         raise ValueError("Weights must be either \'empirical\' or \'oom\'")
     # Set errors to None if weights==oom:
-    if weights=='oom' and (errors is not None):
+    if weights == 'oom' and (errors is not None):
         errors = None
 
     # format data
@@ -197,7 +199,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     # Choose estimator:
     if errors is None:
-        if weights=='empirical':
+        if weights == 'empirical':
             estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
         else:
             estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity)
@@ -1098,7 +1100,8 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
 
     """
     # initialize HMSM estimator
-    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, msm_init='largest-strong',
+    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, stationary=stationary,
+                              msm_init='largest-strong',
                               connectivity=connectivity, mincount_connectivity=mincount_connectivity, separate=separate,
                               observe_nonempty=observe_nonempty, stride=stride, dt_traj=dt_traj,
                               accuracy=accuracy, maxit=maxit)
@@ -1263,6 +1266,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, stride=stride, nsamples=nsamples, reversible=reversible,
+                                  stationary=stationary,
                                   connectivity=connectivity, mincount_connectivity=mincount_connectivity,
                                   separate=separate, observe_nonempty=observe_nonempty,
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
@@ -1397,7 +1401,6 @@ def tpt(msmobj, A, B):
         raise ValueError('set A or B defines more states, than given transition matrix.')
 
     # forward committor
-    #msmobj.
     qplus = msmana.committor(T, A, B, forward=True)
     # backward committor
     if msmana.is_reversible(T, mu=mu):

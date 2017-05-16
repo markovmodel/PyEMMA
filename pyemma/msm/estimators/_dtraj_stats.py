@@ -153,7 +153,7 @@ class DiscreteTrajectoryStats(object):
             # set size
             self._connected_set_sizes[i] = len(self._connected_sets[i])
             # submatrix
-            self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
+            # self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
 
         # largest connected set
         self._lcs = self._connected_sets[0]
@@ -273,7 +273,7 @@ class DiscreteTrajectoryStats(object):
             self._assert_subset(subset)
             C = submatrix(self._C, subset)
         elif connected_set is not None:
-            C = self._C_sub[connected_set]
+            C = submatrix(self._C, self._connected_sets[connected_set])
         else: # full matrix wanted
             C = self._C
 

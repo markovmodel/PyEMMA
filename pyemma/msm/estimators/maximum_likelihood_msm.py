@@ -19,8 +19,8 @@
 from __future__ import absolute_import
 
 import numpy as _np
+import warnings
 from msmtools import estimation as msmest
-import scipy.sparse as scs
 
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
@@ -30,7 +30,6 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 from pyemma.msm.estimators._OOM_MSM import *
-import warnings
 
 
 @fix_docs
@@ -257,7 +256,7 @@ class _MSMEstimator(_Estimator, _MSM):
         Ctt_train = _np.diag(C0t_train.sum(axis=0))  # empirical cov
 
         # test data
-        C0t_test_raw = self._get_dtraj_stats(dtrajs).count_matrix().toarray()
+        C0t_test_raw = msmest.count_matrix(dtrajs, self.lag, sparse_return=False)
         # map to present active set
         map_from = self.active_set[_np.where(self.active_set < C0t_test_raw.shape[0])[0]]
         map_to = _np.arange(len(map_from))
@@ -270,7 +269,6 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.util.metrics import vamp_score
         return vamp_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_test,
                           k=self.score_k, score=self.score_method)
-
 
     ################################################################################
     # Basic attributes
@@ -1128,7 +1126,7 @@ class OOMReweightedMSM(_MSMEstimator):
         dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
 
         # get trajectory counts. This sets _C_full and _nstates_full
-        dtrajstats = self._get_dtraj_stats(dtrajs_lag )
+        dtrajstats = self._get_dtraj_stats(dtrajs_lag)
         self._C_full = dtrajstats.count_matrix()  # full count matrix
         self._nstates_full = self._C_full.shape[0]  # number of states
 
