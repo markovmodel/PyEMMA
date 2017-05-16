@@ -37,7 +37,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     r""" Discrete Transition(-based) Reweighting Analysis Method."""
 
     def __init__(
-        self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
+        self, bias_energies_full, lag, ground_state=None, count_mode='sliding', connectivity='largest',
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         init=None, init_maxiter=10000, init_maxerr=1.0E-8):
         r""" Discrete Transition(-based) Reweighting Analysis Method
@@ -49,6 +49,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
             at thermodynamic state j.
         lag : int
             Integer lag time at which transitions are counted.
+        ground_state : int, optional, default=None
+            Index of the unbiased thermodynamic state or None if there is no unbiased data available.
         count_mode : str, optional, default='sliding'
             Mode to obtain count matrices from discrete trajectories. Should be one of:
             * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
@@ -136,6 +138,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init = init
         self.init_maxiter = init_maxiter
         self.init_maxerr = init_maxerr
+        self.ground_state = ground_state
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
         self.timestep_traj = _TimeUnit(dt_traj)

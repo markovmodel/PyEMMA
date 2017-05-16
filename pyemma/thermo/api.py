@@ -822,7 +822,7 @@ def dtram(
     from pyemma.thermo import DTRAM
     dtram_estimators = [
         DTRAM(
-            bias, _lag,
+            bias, _lag, ground_state=unbiased_state,
             count_mode=count_mode, connectivity=connectivity,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
