@@ -119,7 +119,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         elif isinstance(val, int):
             if val < 0 or val > 2**32-1:
                 self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
-                                 " Seed has been set to a time dependant value.")
+                                 " Seed will be chosen randomly.")
                 self.fixed_seed = False
             else:
                 self._fixed_seed = val

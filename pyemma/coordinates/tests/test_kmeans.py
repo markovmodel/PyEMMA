@@ -95,6 +95,9 @@ class TestKmeans(unittest.TestCase):
         km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=-1)
         self.assertGreaterEqual(km.fixed_seed, 0)
 
+    def test_seed_too_large(self):
+        km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=2**32)
+
     def test_3gaussian_2d_multitraj(self):
         # generate 1D data from three gaussians
         X1 = np.zeros((100, 2))
