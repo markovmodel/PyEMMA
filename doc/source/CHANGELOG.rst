@@ -24,6 +24,10 @@ Changelog
     [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
         dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
 
+- coordinates:
+   - kmeans: allow the random seed used for initializing the centers to be passed. The prior behaviour
+     was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #
+
 **Fixes**:
 
 - coordinates:
