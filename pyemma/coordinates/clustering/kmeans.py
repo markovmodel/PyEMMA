@@ -117,7 +117,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             else:
                 self._fixed_seed = random.randint(0, 2**32-1)
         elif isinstance(val, int):
-            if not (0 < val > 2**32-1):
+            if val < 0 or val > 2**32-1:
                 self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
                                  " Seed will be chosen randomly.")
                 self.fixed_seed = False
