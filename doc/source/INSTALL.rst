@@ -37,11 +37,11 @@ If you already have a conda installation, directly go to step 3:
 2. If you have installed from a Linux shell, either open a new shell to have an updated PATH,
    or update your PATH variable by ``source ~/.bashrc`` (or .tcsh, .csh - whichever shell you are using).
 
-3. Add the omnia-md software channel, and install (or update) PyEMMA:
+3. Add the conda-forge software channel, and install (or update) PyEMMA:
 
    .. code::
 
-      conda config --add channels omnia
+      conda config --add channels conda-forge
       conda install pyemma
 
    if the command conda is unknown, the PATH variable is probably not set correctly (see 1. and 2.)

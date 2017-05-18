@@ -178,5 +178,11 @@ class TestKmeans(unittest.TestCase):
     def test_skip(self):
         cluster_kmeans(np.random.rand(100, 3), skip=42)
 
+    def test_with_pg(self):
+        from pyemma.util.contexts import settings
+        with settings(show_progress_bars=True):
+            cluster_kmeans(np.random.rand(100, 3))
+
+
 if __name__ == "__main__":
     unittest.main()
