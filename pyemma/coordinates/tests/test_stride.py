@@ -62,8 +62,6 @@ class TestStride(unittest.TestCase):
         for stride in range(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             t = coor.tica(data=r, lag=2, dim=2)
-            # t.data_producer = r
-            t.parametrize()
 
             # subsample data
             out_tica = t.get_output(stride=stride)
@@ -110,7 +108,6 @@ class TestStride(unittest.TestCase):
             try:
                 t = coor.tica(r, lag=tau, stride=stride, dim=2)
                 # force_eigenvalues_le_one=True enables an internal consistency check in TICA
-                t.parametrize(stride=stride)
                 self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))
             except RuntimeError:
                 assert tau % stride != 0

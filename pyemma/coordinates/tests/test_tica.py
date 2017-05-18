@@ -88,7 +88,6 @@ class TestTICA_Basic(unittest.TestCase):
         with numpy_random_seed(0):
             data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
-        tica_obj.parametrize()
         Y = tica_obj._transform_array(data)
         # right shape
         assert types.is_float_matrix(Y)
@@ -165,12 +164,10 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_in_memory(self):
         data = np.random.random((100, 10))
-        tica_obj = api.tica(lag=10, dim=1)
         reader = api.source(data)
-        tica_obj.data_producer = reader
+        tica_obj = api.tica(reader, lag=10, dim=1)
 
         tica_obj.in_memory = True
-        tica_obj.parametrize()
         tica_obj.get_output()
 
     def test_too_short_trajs(self):
@@ -365,10 +362,6 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_output_type(self):
         assert self.tica_obj.output_type() == np.float32
-
-    def test_parametrize(self):
-        # nothing should happen
-        self.tica_obj.parametrize()
 
     def test_trajectory_length(self):
         assert self.tica_obj.trajectory_length(0) == self.T
