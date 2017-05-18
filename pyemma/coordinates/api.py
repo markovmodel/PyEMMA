@@ -1398,8 +1398,9 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         determines if the initial cluster centers are chosen according to the kmeans++-algorithm
         or drawn uniformly distributed from the provided data set
 
-    fixed_seed : bool
-        if set to true, the random seed gets fixed resulting in deterministic behavior; default is false
+    fixed_seed : bool or (positive) integer 
+        if set to true, the random seed gets fixed resulting in deterministic behavior; default is false.
+        If an integer >= 0 is given, use this to initialize the random generator.
 
     n_jobs : int or None, default None
         Number of threads to use during assignment of the data.
