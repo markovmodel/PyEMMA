@@ -115,12 +115,11 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             if val:
                 self._fixed_seed = 42
             else:
-                import time
-                # make sure we do not overflow unsigned int
-                self._fixed_seed = min(int(time.time()), 2**32 - 1)
+                self._fixed_seed = random.randint(0, 2**32-1)
         elif isinstance(val, int):
-            if val < 0:
-                self.logger.warn("seed has to be positive. Seed has been set to a time dependant value.")
+            if val < 0 or val > 2**32-1:
+                self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
+                                 " Seed has been set to a time dependant value.")
                 self.fixed_seed = False
             else:
                 self._fixed_seed = val
