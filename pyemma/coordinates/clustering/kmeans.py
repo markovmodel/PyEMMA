@@ -111,12 +111,13 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
     @fixed_seed.setter
     def fixed_seed(self, val):
-        if isinstance(val, bool):
+        from pyemma.util import types
+        if isinstance(val, bool) or val is None:
             if val:
                 self._fixed_seed = 42
             else:
                 self._fixed_seed = random.randint(0, 2**32-1)
-        elif isinstance(val, int):
+        elif types.is_int(val):
             if val < 0 or val > 2**32-1:
                 self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
                                  " Seed will be chosen randomly.")
