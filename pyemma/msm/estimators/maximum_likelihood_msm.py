@@ -216,7 +216,7 @@ class _MSMEstimator(_Estimator, _MSM):
     def score(self, dtrajs, score_method=None, score_k=None):
         """ Scores the MSM using the given test data
 
-        Currently only implemented for dense matrices
+        Currently only implemented using dense matrices - will be slow for large state spaces.
 
         Parameters
         ----------
@@ -230,6 +230,8 @@ class _MSMEstimator(_Estimator, _MSM):
             rank will be used. See __init__ for documention.
 
         """
+        dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
+
         # reset estimator data if needed
         if score_method is not None:
             self.score_method = score_method
@@ -269,6 +271,48 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.util.metrics import vamp_score
         return vamp_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_test,
                           k=self.score_k, score=self.score_method)
+
+    def score_cv(self, dtrajs, n=10, score_method=None, score_k=None):
+        """ Does crossvalidation to train and score the MSM
+
+        Divides the data into training and test data, fits a MSM using the training
+        data using the parameters of this estimator, and scores is using the test
+        data.
+        Currently only one way of splitting is implemented, where for each n,
+        the data is randomly divided into two approximately equally large sets of
+        discrete trajectory fragments with lengths of at least the lagtime.
+
+        Currently only implemented using dense matrices - will be slow for large state spaces.
+
+        Parameters
+        ----------
+        dtrajs : list of arrays
+            Test data (discrete trajectories).
+        n : number of samples
+            Number of repetitions of the cross-validation. Use large n to get solid
+            means of the score.
+        score_method : str
+            Overwrite scoring method if desired. If `None`, the estimators scoring
+            method will be used. See __init__ for documention.
+        score_k : str
+            Overwrite scoring rank if desired. If `None`, the estimators scoring
+            rank will be used. See __init__ for documention.
+
+        """
+        dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
+
+        from pyemma.msm.estimators._dtraj_stats import blocksplit_dtrajs, cvsplit_dtrajs
+        if self.count_mode not in ('sliding', 'sample'):
+            raise ValueError('score_cv currently only supports count modes "sliding" and "sample"')
+        sliding = self.count_mode == 'sliding'
+        scores = []
+        for i in range(n):
+            dtrajs_split = blocksplit_dtrajs(dtrajs, lag=self.lag, sliding=sliding)
+            dtrajs_train, dtrajs_test = cvsplit_dtrajs(dtrajs_split)
+            self.fit(dtrajs_train)
+            s = self.score(dtrajs_test, score_method=score_method, score_k=score_k)
+            scores.append(s)
+        return _np.array(scores)
 
     ################################################################################
     # Basic attributes
