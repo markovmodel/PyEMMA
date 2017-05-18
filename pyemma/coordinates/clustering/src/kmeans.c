@@ -261,7 +261,8 @@ error:
 }
 
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
-    int k, centers_found, first_center_index, i, j, n_trials, random_seed;
+    int k, centers_found, first_center_index, i, j, n_trials;
+    unsigned random_seed;
     int some_not_done;
     float d;
     float dist_sum;
@@ -296,7 +297,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     dist_sum = 0.0;
 
     /* parse python input (np_data, metric, k) */
-    if (!PyArg_ParseTuple(args, "O!sii", &PyArray_Type, &np_data, &metric, &k, &random_seed)) {
+    if (!PyArg_ParseTuple(args, "O!siI", &PyArray_Type, &np_data, &metric, &k, &random_seed)) {
         goto error;
     }
 
