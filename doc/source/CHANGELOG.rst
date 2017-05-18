@@ -13,7 +13,8 @@ Changelog
 **Fixes**:
 
 - coordinates:
-  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038
+  - Removed deprecated method parametrize. Use estimate or fit for now. #1088
 
 2.3.1 (2-6-2017)
 ----------------
