@@ -69,12 +69,12 @@ class MSM(_Model):
             number, whitespace and unit. Permitted units are
             (* is an arbitrary string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+            *  'fs',  'femtosecond*'
+            *  'ps',  'picosecond*'
+            *  'ns',  'nanosecond*'
+            *  'us',  'microsecond*'
+            *  'ms',  'millisecond*'
+            *  's',   'second*'
 
         neig : int or None
             The number of eigenvalues / eigenvectors to be kept. If set to None,
@@ -119,12 +119,12 @@ class MSM(_Model):
             physical time unit. Specify by a number, whitespace and unit.
             Permitted units are (* is an arbitrary string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+            *  'fs',  'femtosecond*'
+            *  'ps',  'picosecond*'
+            *  'ns',  'nanosecond*'
+            *  'us',  'microsecond*'
+            *  'ms',  'millisecond*'
+            *  's',   'second*'
 
         neig : int or None
             The number of eigenvalues / eigenvectors to be kept. If set to

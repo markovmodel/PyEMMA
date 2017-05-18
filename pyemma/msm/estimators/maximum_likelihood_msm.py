@@ -54,7 +54,7 @@ class _MSMEstimator(_Estimator, _MSM):
             mode to obtain count matrices from discrete trajectories. Should be
             one of:
 
-            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+            * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
               at time indexes
 
               .. math::
@@ -64,7 +64,7 @@ class _MSMEstimator(_Estimator, _MSM):
             * 'effective' : Uses an estimate of the transition counts that are
               statistically uncorrelated. Recommended when used with a
               Bayesian MSM.
-            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+            * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
               at time indexes
 
               .. math::
@@ -103,27 +103,22 @@ class _MSMEstimator(_Estimator, _MSM):
             number, whitespace and unit. Permitted units are (* is an arbitrary
             string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+            *  'fs',  'femtosecond*'
+            *  'ps',  'picosecond*'
+            *  'ns',  'nanosecond*'
+            *  'us',  'microsecond*'
+            *  'ms',  'millisecond*'
+            *  's',   'second*'
 
         score_method : str, optional, default='VAMP2'
-            Score to be used with score function. Available are:
+            Score to be used with score function - see there for documentation.
 
-            |  'VAMP1'  [1]_
-            |  'VAMP2'  [1]_
-            |  'VAMPE'  [1]_
+            *  'VAMP1'  Sum of singular values of the symmetrized transition matrix.
+            *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix.
 
         score_k : int or None
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
-
-        References
-        ----------
-        .. [1] H. Wu and F. Noe: Variational approach for Markov processes (in preparation)
 
         """
         self.lag = lag
@@ -214,7 +209,7 @@ class _MSMEstimator(_Estimator, _MSM):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
 
     def score(self, dtrajs, score_method=None, score_k=None):
-        """ Scores the MSM using the given test data
+        """ Scores the MSM using the dtrajs using the variational approach for Markov processes [1]_ [2]_
 
         Currently only implemented using dense matrices - will be slow for large state spaces.
 
@@ -228,6 +223,31 @@ class _MSMEstimator(_Estimator, _MSM):
         score_k : str
             Overwrite scoring rank if desired. If `None`, the estimators scoring
             rank will be used. See __init__ for documention.
+        score_method : str, optional, default='VAMP2'
+            Overwrite scoring method to be used if desired. If `None`, the estimators scoring
+            method will be used.
+            Available scores are based on the variational approach for Markov processes [1]_ [2]_ :
+
+            *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the sum of transition
+                        matrix eigenvalues, also called Rayleigh quotient [1]_ [3]_ .
+            *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the kinetic variance [4]_ .
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        References
+        ----------
+        .. [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+            in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+        .. [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+            from time series data (in preparation)
+        .. [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+            dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015)
+        .. [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+            dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015)
 
         """
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
@@ -273,7 +293,7 @@ class _MSMEstimator(_Estimator, _MSM):
                           k=self.score_k, score=self.score_method)
 
     def score_cv(self, dtrajs, n=10, score_method=None, score_k=None):
-        """ Does crossvalidation to train and score the MSM
+        """ Scores the MSM using the variational approach for Markov processes [1]_ [2]_ and crossvalidation [3]_ .
 
         Divides the data into training and test data, fits a MSM using the training
         data using the parameters of this estimator, and scores is using the test
@@ -291,12 +311,31 @@ class _MSMEstimator(_Estimator, _MSM):
         n : number of samples
             Number of repetitions of the cross-validation. Use large n to get solid
             means of the score.
-        score_method : str
-            Overwrite scoring method if desired. If `None`, the estimators scoring
-            method will be used. See __init__ for documention.
-        score_k : str
-            Overwrite scoring rank if desired. If `None`, the estimators scoring
-            rank will be used. See __init__ for documention.
+        score_method : str, optional, default='VAMP2'
+            Overwrite scoring method to be used if desired. If `None`, the estimators scoring
+            method will be used.
+            Available scores are based on the variational approach for Markov processes [1]_ [2]_ :
+
+            *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the sum of transition
+                        matrix eigenvalues, also called Rayleigh quotient [1]_ [3]_ .
+            *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the kinetic variance [4]_ .
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        References
+        ----------
+        .. [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+            in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+        .. [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+            from time series data (in preparation).
+        .. [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+            dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
+        .. [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+            dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
 
         """
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format

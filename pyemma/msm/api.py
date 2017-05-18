@@ -328,7 +328,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
 
-        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
           at time indexes
 
               .. math::
@@ -338,7 +338,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         * 'effective' : Uses an estimate of the transition counts that are
           statistically uncorrelated. Recommended when used with a
           Bayesian MSM.
-        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
           at time indexes
 
               .. math::
@@ -386,12 +386,13 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         physical time unit.  Specify by a number, whitespace and
         unit. Permitted units are (* is an arbitrary string):
 
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
+        *  'fs',  'femtosecond*'
+        *  'ps',  'picosecond*'
+        *  'ns',  'nanosecond*'
+        *  'us',  'microsecond*'
+        *  'ms',  'millisecond*'
+        *  's',   'second*'
+
     maxiter : int, optional
         Optional parameter with reversible = True.  maximum number of
         iterations before the transition matrix estimation method
@@ -408,11 +409,14 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         maxerr.
 
     score_method : str, optional, default='VAMP2'
-        Score to be used with score function. Available are:
+        Score to be used with MSM score function. Available scores are
+        based on the variational approach for Markov processes [13]_ [14]_:
 
-        |  'VAMP1'  [12]_
-        |  'VAMP2'  [12]_
-        |  'VAMPE'  [12]_
+        *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the sum of transition
+                    matrix eigenvalues, also called Rayleigh quotient [13]_ [15]_ .
+        *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the kinetic variance [16]_ .
 
     score_k : int or None
         The maximum number of eigenvalues or singular values used in the
@@ -447,10 +451,10 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     References
     ----------
     The mathematical theory of Markov (state) model estimation was introduced
-    in [1]_. Further theoretical developments were made in [2]_. The term
-    Markov state model was coined in [3]_. Continuous-time Markov models
+    in [1]_ . Further theoretical developments were made in [2]_ . The term
+    Markov state model was coined in [3]_ . Continuous-time Markov models
     (Master equation models) were suggested in [4]_. Reversible Markov model
-    estimation was introduced in [5]_, and further developed in [6]_,[7]_,[9]_.
+    estimation was introduced in [5]_ , and further developed in [6]_ [7]_ [9]_ .
     It was shown in [8]_ that the quality of Markov state models does in fact
     not depend on memory loss, but rather on where the discretization is
     suitable to approximate the eigenfunctions of the Markov operator (the
@@ -503,6 +507,18 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
     .. [12] H. Wu and F. Noe: Variational approach for learning Markov processes
         from time series data (in preparation)
+
+    .. [13] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+
+    .. [14] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+    .. [15] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015)
+
+    .. [16] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015)
 
 
     Example
