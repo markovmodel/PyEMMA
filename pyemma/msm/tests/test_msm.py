@@ -127,9 +127,7 @@ class TestMSMRevPi(unittest.TestCase):
         self.assertTrue(np.all(msm.active_set==np.array([0, 2])))
         with self.assertRaises(ValueError):
             msm = estimate_markov_model(dtraj_invalid, 1, statdist=pi)
-        
-        
-        
+
 
 class TestMSMDoubleWell(unittest.TestCase):
 
