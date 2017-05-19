@@ -29,7 +29,7 @@ Changelog
      was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #1091
 
 - datasets:
-   - added a multi-ensemble data generator for the 1D asymmetric double well.
+   - added a multi-ensemble data generator for the 1D asymmetric double well. #1097
 
 **Fixes**:
 
