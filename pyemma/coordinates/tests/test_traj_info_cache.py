@@ -85,7 +85,8 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
-        my_conf = config()
+        from pyemma.util._config import Config
+        my_conf = Config()
         my_conf.cfg_dir = self.work_dir
         with mock.patch('pyemma.coordinates.data.util.traj_info_cache.config', my_conf):
             with NamedTemporaryFile(delete=False) as fh:

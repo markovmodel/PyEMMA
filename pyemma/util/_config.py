@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2016, 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,6 @@ from six.moves import configparser
 
 import os
 import shutil
-import sys
 import warnings
 
 from pyemma.util.files import mkdir_p
@@ -30,25 +29,6 @@ from pyemma.util.exceptions import ConfigDirectoryException
 
 import pkg_resources
 
-
-# for IDE stupidity, just add a new cfg var here, if you add a property to Wrapper
-cfg_dir = default_config_file = default_logging_config = logging_config = \
-    show_progress_bars = used_filenames = use_trajectory_lengths_cache = \
-    check_version = None
-
-__all__ = (
-           'cfg_dir',
-           'default_config_file',
-           'default_logging_file',
-           'logging_config',
-           'show_progress_bars',
-           'used_filenames',
-           'use_trajectory_lengths_cache',
-           'traj_info_max_entries',
-           'traj_info_max_size',
-           'coordinates_check_output',
-           'check_version',
-           )
 
 if six.PY2:
     class NotADirectoryError(Exception):
@@ -60,101 +40,13 @@ class ReadConfigException(Exception):
     pass
 
 
-class Wrapper(object):
-    r"""
-Runtime Configuration
-=====================
+class Config(object):
 
-You can change some runtime behaviour of PyEMMA by setting a configuration
-value in PyEMMAs config module. These can be persisted to hard disk to be
-permanent on every import of the package.
-
-
-Change values
--------------
-To access the config at runtime eg. if progress bars should be shown:
-
->>> from pyemma import config # doctest: +SKIP
->>> print(config.show_progress_bars) # doctest: +SKIP
-True
->>> config.show_progress_bars = False # doctest: +SKIP
->>> print(config.show_progress_bars) # doctest: +SKIP
-False
-
-
-Store your changes / Create a configuration directory
------------------------------------------------------
-
-To create an editable configuration file, use the :py:func:`pyemma.config.save` method:
-
->>> from pyemma import config # doctest: +SKIP
->>> config.save('/tmp/pyemma_current.cfg') # doctest: +SKIP
-
-This will store the current runtime configuration values in the given file.
-Note that these settings will not be used on the next start of PyEMMA, because
-you first need to tell us, where you have stored this file. To do so, please
-set the environment variable **"PYEMMA_CFG_DIR"** to the directory, where you have
-stored the config file.
-
-* For Linux/OSX this thread `thread
-  <https://unix.stackexchange.com/questions/117467/how-to-permanently-set-environmental-variables>`_
-  may be helpful.
-* For Windows have a look at
-  `this <https://stackoverflow.com/questions/17312348/how-do-i-set-windows-environment-variables-permanently>`_.
-
-
-For details have a look at the brief documentation:
-https://docs.python.org/2/howto/logging.html
-
-Default configuration file
---------------------------
-Default settings are stored in a provided pyemma.cfg file, which is included in
-the Python package:
-
-.. literalinclude:: ../../pyemma/pyemma.cfg
-    :language: ini
-
-Configuration files
--------------------
-
-To configure the runtime behavior such as the logging system or other parameters,
-the configuration module reads several config files to build
-its final set of settings. It searches for the file 'pyemma.cfg' in several
-locations with different priorities:
-
-#. $CWD/pyemma.cfg
-#. $HOME/.pyemma/pyemma.cfg
-#. ~/pyemma.cfg
-#. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
-
-Note that you can also override the location of the configuration directory by
-setting an environment variable named **"PYEMMA_CFG_DIR"** to a writeable path to
-override the location of the config files.
-
-The default values are stored in latter file to ensure these values are always
-defined.
-
-If no configuration file could be found, the defaults from the shipped package
-will apply.
-
-
-Load a configuration file
--------------------------
-
-In order to load a pre-saved configuration file, use the :py:func:`load` method:
-
->>> from pyemma import config # doctest: +SKIP
->>> config.load('pyemma_silent.cfg') # doctest: +SKIP
-
-    """
     DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.pyemma')
     DEFAULT_CONFIG_FILE_NAME = 'pyemma.cfg'
     DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
 
-    __name__ = 'pyemma.util.config'
-    __file__ = __file__
-
-    def __init__(self, wrapped):
+    def __init__(self):
         # this is a SafeConfigParser instance
         self._conf_values = None
 
@@ -182,13 +74,6 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
             warnings.warn("Error during logging configuration. Logging might not be functional!"
                           "Error: %s" % e)
 
-        # wrap this module
-        self.wrapped = wrapped
-        self.__wrapped__ = wrapped
-
-    def __call__(self, ):
-        return Wrapper(sys.modules[__name__])
-
     def load(self, filename=None):
         """ load runtime configuration from given filename.
         If filename is None try to read from default file from
@@ -204,13 +89,13 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
         try:
             config = self.__read_cfg(files)
         except ReadConfigException as e:
-            print(Wrapper._format_msg('config.load("{file}") failed with {error}'.format(file=filename, error=e)))
+            print(Config._format_msg('config.load("{file}") failed with {error}'.format(file=filename, error=e)))
         else:
             self._conf_values = config
 
         # notice user?
         if self.show_config_notification and not self.cfg_dir:
-            print(Wrapper._format_msg("no configuration directory set or usable."
+            print(Config._format_msg("no configuration directory set or usable."
                                       " Falling back to defaults."))
 
     def save(self, filename=None):
@@ -241,7 +126,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
                 self.cfg_dir = self.DEFAULT_CONFIG_DIR
             except ConfigDirectoryException as cde:
 
-                print(Wrapper._format_msg('Could not create configuration directory "{dir}"! config.save() failed.'
+                print(Config._format_msg('Could not create configuration directory "{dir}"! config.save() failed.'
                                           ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
                                           .format(dir=self.cfg_dir, exc=cde)))
                 return
@@ -252,7 +137,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
             with open(filename, 'w') as fh:
                 self._conf_values.write(fh)
         except IOError as ioe:
-            print(Wrapper._format_msg("Save failed with error %s" % ioe))
+            print(Config._format_msg("Save failed with error %s" % ioe))
 
     @property
     def used_filenames(self):
@@ -262,13 +147,15 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
     @property
     def default_config_file(self):
         """ default config file living in PyEMMA package """
-        return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_CONFIG_FILE_NAME)
+        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_CONFIG_FILE_NAME)
 
     @property
     def default_logging_file(self):
-        return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_LOGGING_FILE_NAME)
+        """ default logging configuration"""
+        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_LOGGING_FILE_NAME)
 
     def keys(self):
+        """ valid configuration keys"""
         return self._conf_values.options('pyemma')
 
     @property
@@ -308,9 +195,10 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
     ### SETTINGS
     @property
     def logging_config(self):
+        """ currently used logging configuration file. Can not be changed during runtime. """
         cfg = self._conf_values.get('pyemma', 'logging_config')
         if cfg == 'DEFAULT':
-            cfg = os.path.join(self.cfg_dir, Wrapper.DEFAULT_LOGGING_FILE_NAME)
+            cfg = os.path.join(self.cfg_dir, Config.DEFAULT_LOGGING_FILE_NAME)
         return cfg
 
     # FIXME: how should we re-initialize logging without interfering with existing loggers?
@@ -329,6 +217,8 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def traj_info_max_entries(self):
+        """ How many entries (files) the trajectory info cache can hold.
+        The cache will forget the least recently used entries when this limit is hit."""
         return self._conf_values.getint('pyemma', 'traj_info_max_entries')
 
     @traj_info_max_entries.setter
@@ -337,14 +227,18 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def traj_info_max_size(self):
+        """ Maximum trajectory info cache size in bytes.
+        The cache will forget the least recently used entries when this limit is hit."""
         return self._conf_values.getint('pyemma', 'traj_info_max_size')
 
     @traj_info_max_size.setter
     def traj_info_max_size(self, val):
         val = str(int(val))
         self._conf_values.set('pyemma', 'traj_info_max_size', val)
+
     @property
     def show_progress_bars(self):
+        """Show progress bars for heavy computations?"""
         return self._conf_values.getboolean('pyemma', 'show_progress_bars')
 
     @show_progress_bars.setter
@@ -353,6 +247,11 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def use_trajectory_lengths_cache(self):
+        """ Shall the trajectory info cache be used to remember attributes of trajectory files.
+
+        It is strongly recommended to use the cache especially for XTC files, because this will speed up
+        reader creation a lot.
+        """
         return self._conf_values.getboolean('pyemma', 'use_trajectory_lengths_cache')
 
     @use_trajectory_lengths_cache.setter
@@ -361,6 +260,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def show_config_notification(self):
+        """ """
         return self._conf_values.getboolean('pyemma', 'show_config_notification')
 
     @show_config_notification.setter
@@ -369,6 +269,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def coordinates_check_output(self):
+        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates """
         return self._conf_values.getboolean('pyemma', 'coordinates_check_output')
 
     @coordinates_check_output.setter
@@ -377,6 +278,15 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
 
     @property
     def check_version(self):
+        """ Check for the latest release online.
+        
+        Disable this if you have privacy concerns.
+        We collect:
+         * Python version
+         * PyEMMA version
+         * operating system
+         * MAC address
+        """
         return self._conf_values.getboolean('pyemma', 'check_version')
 
     @check_version.setter
@@ -403,7 +313,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
-        config = configparser.SafeConfigParser()
+        config = configparser.SafeConfigParser() if six.PY2 else configparser.ConfigParser()
 
         try:
             self._used_filenames = config.read(filenames)
@@ -419,7 +329,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
         """
         # use these files to extend/overwrite the conf_values.
         # Last red file always overwrites existing values!
-        cfg = Wrapper.DEFAULT_CONFIG_FILE_NAME
+        cfg = Config.DEFAULT_CONFIG_FILE_NAME
         filenames = [
             self.default_config_file,
             cfg,  # conf_values in current directory
@@ -449,4 +359,7 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
         from pyemma import __version__
         return "[PyEMMA {version}] {msg}".format(version=__version__, msg=msg)
 
-sys.modules[__name__] = Wrapper(sys.modules[__name__])
+    def __repr__(self):
+        cfg = {key: self[key] for key in self.keys()}
+        return "[PyEMMA config. State = {cfg}]".format(cfg=cfg)
+
