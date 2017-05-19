@@ -21,9 +21,7 @@ import numpy as _np
 from pyemma.coordinates import assign_to_centers as _assign_to_centers
 
 __all__ = [
-    'DoubeWellSampler',
-    'load_umbrella_sampling_data',
-    'load_multi_temperature_data']
+    'DoubleWellSampler']
 
 class DoubleWellSampler(object):
     '''Continuous multi-ensemble MCMC process in an asymmetric double well potential'''
