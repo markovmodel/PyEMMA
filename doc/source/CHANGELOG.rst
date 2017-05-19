@@ -22,7 +22,8 @@ Changelog
 **Fixes**:
 
 - coordinates:
-  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038
+  - Removed deprecated method parametrize. Use estimate or fit for now. #1088
 
   - References:
     [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
