@@ -14,6 +14,8 @@ Changelog
   similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
   inefficient and will be improved in future versions. #1093
 
+- config: Added a lot of documentation and added `mute` option to silence PyEMMA (almost completely).
+
 - References:
     [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
         in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
@@ -34,10 +36,13 @@ Changelog
   - Removed deprecated method parametrize. Use estimate or fit for now. #1088
   - Readers: nice error messages for file handling errors (which file caused the error). #1085
   - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
-  - Added progress bar for collecting the data in kmenas pre-clustering phase. #1084
+  - KMeans: Added progress bar for collecting the data in pre-clustering phase. #1084
 
 - msm:
   - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
+
+- general:
+  - config: better documentation of the configuration parameters. #1095
 
 
 2.3.2 (2-19-2017)
