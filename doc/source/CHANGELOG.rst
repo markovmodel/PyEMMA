@@ -30,10 +30,13 @@ Changelog
   - Removed deprecated method parametrize. Use estimate or fit for now. #1088
   - Readers: nice error messages for file handling errors (which file caused the error). #1085
   - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
-  - Added progress bar for collecting the data in kmenas pre-clustering phase. #1084
+  - KMeans: Added progress bar for collecting the data in pre-clustering phase. #1084
 
 - msm:
   - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
+
+- general:
+  - config: better documentation of the configuration parameters. #1095
 
 
 2.3.2 (2-19-2017)
