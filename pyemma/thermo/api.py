@@ -488,6 +488,8 @@ def tram(
     lag : int or list of int, optional, default=1
         Integer lag time at which transitions are counted. Providing a list of lag times will
         trigger one estimation per lag time.
+    unbiased_state : int, optional, default=None
+        Index of the unbiased thermodynamic state or None if there is no unbiased data available.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
@@ -676,6 +678,8 @@ def dtram(
     lag : int or list of int, optional, default=1
         Integer lag time at which transitions are counted. Providing a list of lag times will
         trigger one estimation per lag time.
+    unbiased_state : int, optional, default=None
+        Index of the unbiased thermodynamic state or None if there is no unbiased data available.
     count_mode : str, optional, default='sliding'
         Mode to obtain count matrices from discrete trajectories. Should be one of:
 

@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016, 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -396,12 +396,12 @@ def get_multi_temperature_data(
 
 def assign_unbiased_state_label(memm_list, unbiased_state):
     r"""
-    Sets the msm and msm_active_set labels for the given list of estimated MEMM objects.
+    Sets the msm label for the given list of estimated MEMM objects.
 
     Parameters
     ----------
     memm_list : list of estimated MEMM objects
-        The MEMM objects which shall have the msm and msm_active_set labels set.
+        The MEMM objects which shall have the msm label set.
     unbiased_state : int or None
         Index of the unbiased thermodynamic state (if present).
     """

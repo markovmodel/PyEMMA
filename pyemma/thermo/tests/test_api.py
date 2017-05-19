@@ -252,35 +252,3 @@ class TestMultiTemperature(unittest.TestCase):
             maxiter=10000, maxerr=1.0E-10, estimator='tram', lag=10)
         validate_thermodynamics(self, tram)
         validate_kinetics(self, tram)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
