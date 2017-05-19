@@ -14,6 +14,8 @@ Changelog
   similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
   inefficient and will be improved in future versions. #1093
 
+- config: Added a lot of documentation and added `mute` option to silence PyEMMA (almost completely).
+
 - References:
     [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
         in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
