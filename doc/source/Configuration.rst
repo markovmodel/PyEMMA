@@ -91,4 +91,15 @@ Configuration values
 --------------------
 
 .. autoclass:: pyemma.util._config.Config
-   :members:
+    :members:
+    :undoc-members:
+
+    .. rubric:: Methods
+
+    .. autoautosummary:: pyemma.util._config.Config
+       :methods:
+
+    .. rubric:: Attributes
+
+    .. autoautosummary:: pyemma.util._config.Config
+        :attributes:

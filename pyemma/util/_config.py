@@ -39,6 +39,7 @@ if six.PY2:
 class ReadConfigException(Exception):
     pass
 
+__all__ = ('Config', )
 
 class Config(object):
 
@@ -98,13 +99,18 @@ class Config(object):
             print(Config._format_msg("no configuration directory set or usable."
                                       " Falling back to defaults."))
 
+    def __call__(self):
+        # return a new instance, this is used for testing purposes only.
+        return Config()
+
     def save(self, filename=None):
         """ Saves the runtime configuration to disk.
 
         Parameters
         ----------
-        filename ; str or None, default=None
-            writeable path to configuration filename. If None, use default location and filename.
+        filename: str or None, default=None
+            writeable path to configuration filename.
+            If None, use default location and filename.
         """
         if not filename:
             filename = self.DEFAULT_CONFIG_FILE_NAME
@@ -281,11 +287,14 @@ class Config(object):
         """ Check for the latest release online.
         
         Disable this if you have privacy concerns.
-        We collect:
+        We currently collect:
+
          * Python version
          * PyEMMA version
          * operating system
          * MAC address
+
+        See :doc:`legal` for further information.
         """
         return self._conf_values.getboolean('pyemma', 'check_version')
 

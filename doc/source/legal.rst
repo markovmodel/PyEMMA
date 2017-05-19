@@ -1,3 +1,5 @@
+.. _legal-notes-label:
+
 =============
 Legal Notices
 =============
@@ -53,6 +55,8 @@ The text of this disclaimer is based on the services of www.disclaimer.de
 
 Data privacy statement
 ======================
+
+.. _legal-notes-priv-label:
 
 Server-Log-Files
 ----------------
