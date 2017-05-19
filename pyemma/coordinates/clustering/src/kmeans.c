@@ -262,7 +262,7 @@ error:
 
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     int k, centers_found, first_center_index, i, j, n_trials;
-    unsigned random_seed;
+    unsigned int random_seed;
     int some_not_done;
     float d;
     float dist_sum;
