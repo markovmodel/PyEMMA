@@ -292,6 +292,10 @@ class _MSMEstimator(_Estimator, _MSM):
         return vamp_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_test,
                           k=self.score_k, score=self.score_method)
 
+    def _blocksplit_dtrajs(self, dtrajs, sliding):
+        from pyemma.msm.estimators._dtraj_stats import blocksplit_dtrajs
+        return blocksplit_dtrajs(dtrajs, lag=self.lag, sliding=sliding)
+
     def score_cv(self, dtrajs, n=10, score_method=None, score_k=None):
         """ Scores the MSM using the variational approach for Markov processes [1]_ [2]_ and crossvalidation [3]_ .
 
@@ -340,13 +344,13 @@ class _MSMEstimator(_Estimator, _MSM):
         """
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
 
-        from pyemma.msm.estimators._dtraj_stats import blocksplit_dtrajs, cvsplit_dtrajs
+        from pyemma.msm.estimators._dtraj_stats import cvsplit_dtrajs
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('score_cv currently only supports count modes "sliding" and "sample"')
         sliding = self.count_mode == 'sliding'
         scores = []
         for i in range(n):
-            dtrajs_split = blocksplit_dtrajs(dtrajs, lag=self.lag, sliding=sliding)
+            dtrajs_split = self._blocksplit_dtrajs(dtrajs, sliding)
             dtrajs_train, dtrajs_test = cvsplit_dtrajs(dtrajs_split)
             self.fit(dtrajs_train)
             s = self.score(dtrajs_test, score_method=score_method, score_k=score_k)
@@ -1291,6 +1295,18 @@ class OOMReweightedMSM(_MSMEstimator):
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
         return self
+
+    def _blocksplit_dtrajs(self, dtrajs, sliding):
+        """ Override splitting method of base class.
+
+        For OOM estimators we currently need a clean trajectory splitting, i.e. we don't do block splitting at all.
+
+        """
+        if len(dtrajs) < 2:
+            raise NotImplementedError('Current cross-validation implementation for OOMReweightedMSM requires' +
+                                      'multiple trajectories. You can split the trajectory yourself into training' +
+                                      'and test set and use the score method after fitting the training set.')
+        return dtrajs
 
     @property
     def eigenvalues_OOM(self):

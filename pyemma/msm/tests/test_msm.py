@@ -161,8 +161,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert 1.0 <= s1 <= 2.0
         s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
         assert 1.0 <= s2 <= 2.0
-        se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
-        se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
+        # se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
+        # se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
 
     def test_score(self):
         self._score(self.msmrev)
