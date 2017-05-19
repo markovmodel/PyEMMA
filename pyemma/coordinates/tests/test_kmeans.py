@@ -23,6 +23,7 @@ Created on 28.01.2015
 from __future__ import absolute_import
 
 import os
+import random
 import unittest
 
 from pyemma.coordinates.api import cluster_kmeans
@@ -77,17 +78,25 @@ class TestKmeans(unittest.TestCase):
             np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
                                           "should yield same centers with fixed seed")
 
+            # check a user defined seed
+            seed = random.randint(0, 2**32-1)
+            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
+            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
+            self.assertEqual(km1.fixed_seed, km2.fixed_seed)
+            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
+                                          "should yield same centers with fixed seed")
+
             # test that not-fixed seed yields different results
-            retry, done = 0, False
-            while not done and retry < 4:
-                try:
-                    km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
-                    self.assertRaises(AssertionError, np.testing.assert_array_equal,
-                                      km1.clustercenters, km3.clustercenters)
-                    done = True
-                except AssertionError:
-                    retry += 1
-            self.assertTrue(done, 'using a fixed seed compared to a not fixed one made no difference!')
+            km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
+            self.assertNotEqual(km3.fixed_seed, 42)
+
+    def test_negative_seed(self):
+        """ ensure negative seeds converted to something positive"""
+        km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=-1)
+        self.assertGreaterEqual(km.fixed_seed, 0)
+
+    def test_seed_too_large(self):
+        km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=2**32)
 
     def test_3gaussian_2d_multitraj(self):
         # generate 1D data from three gaussians
