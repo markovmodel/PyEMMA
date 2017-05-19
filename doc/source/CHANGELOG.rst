@@ -14,6 +14,15 @@ Changelog
   similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
   inefficient and will be improved in future versions. #1093
 
+- References:
+    [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+    [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation).
+    [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
+    [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
 
 **Fixes**:
 
@@ -26,17 +35,6 @@ Changelog
 - msm:
   - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
 
-- References:
-
-[1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
-    in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
-[2] Wu, H and F. Noe: Variational approach for learning Markov processes
-    from time series data (in preparation).
-[4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
-    dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
-[3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
-    dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
-
 
 2.3.2 (2-19-2017)
 -----------------
@@ -45,9 +43,9 @@ Changelog
 
 thermo:
 
-- Allow for periodicity in estimate_umbrella_sampling()
+- Allow for periodicity in estimate_umbrella_sampling().
 - Add *_full_state getter variants to access stationary properties on the full set of states
- instead of the active set.
+  instead of the active set.
 
 **Fixes**:
 
