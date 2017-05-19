@@ -1,9 +1,18 @@
 Changelog
 =========
 
-2.3.2 (tba)
+2.4 (tba)
+---------
 
 **New features**:
+
+- msm: variational scores for model selection of MSMs. The scores are based on the variational
+  approach for Markov processes [1, 2] and can be employed for both reversible and non-reversible
+  MSMs. Both the Rayleigh quotient as well as the kinetic variance [3] and their non-reversible
+  generalizations are available. The scores are implemented in the `score` method of the MSM
+  estimators `MaximumLikelihoodMSM` and `OOMReweightedMSM`. Rudimentary support for Cross-validation
+  similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
+  inefficient and will be improved in future versions. #1093
 
 - thermo:
    - Allow for periodicity in estimate_umbrella_sampling()
@@ -14,6 +23,16 @@ Changelog
 
 - coordinates:
   - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+
+  - References:
+    [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+    [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation).
+    [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
+    [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
 
 2.3.1 (2-6-2017)
 ----------------
