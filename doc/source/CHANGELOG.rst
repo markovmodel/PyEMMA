@@ -27,6 +27,8 @@ Changelog
 **Fixes**:
 
 - coordinates:
+  - StreamingEstimators: If an exception occurred during flipping the `in_memory` property,
+    the state is not updated. #1096
   - Removed deprecated method parametrize. Use estimate or fit for now. #1088
   - Readers: nice error messages for file handling errors (which file caused the error). #1085
   - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
