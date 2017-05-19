@@ -137,6 +137,9 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     try:  # catch any exception
         estimator.estimate(X, **params)
         model = estimator.model
+    except KeyboardInterrupt:
+        # we want to be able to interactively interrupt the worker, no matter of failfast=False.
+        raise
     except:
         e = sys.exc_info()[1]
         if isinstance(estimator, Loggable):

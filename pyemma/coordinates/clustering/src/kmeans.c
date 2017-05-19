@@ -261,7 +261,8 @@ error:
 }
 
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
-    int k, centers_found, first_center_index, i, j, n_trials, use_random_seed;
+    int k, centers_found, first_center_index, i, j, n_trials;
+    unsigned int random_seed;
     int some_not_done;
     float d;
     float dist_sum;
@@ -294,26 +295,14 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     next_center_candidates_rand = NULL;
     next_center_candidates_potential = NULL;
     dist_sum = 0.0;
-    use_random_seed = 1;
-
 
     /* parse python input (np_data, metric, k) */
-    if (!PyArg_ParseTuple(args, "O!sii", &PyArray_Type, &np_data, &metric, &k, &use_random_seed)) {
+    if (!PyArg_ParseTuple(args, "O!siI", &PyArray_Type, &np_data, &metric, &k, &random_seed)) {
         goto error;
     }
 
-    if(use_random_seed) {
-        #ifndef _KMEANS_INIT_RANDOM_SEED
-        #define _KMEANS_INIT_RANDOM_SEED
-        /* set random seed */
-        srand(time(NULL));
-        #endif
-    } else {
-        #ifdef _KMEANS_INIT_RANDOM_SEED
-        #undef _KMEANS_INIT_RANDOM_SEED
-        #endif
-        srand(42);
-    }
+    /* set random seed */
+    srand(random_seed);
 
     n_frames = np_data->dimensions[0];
     dim = np_data->dimensions[1];
@@ -492,10 +481,8 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     memcpy(arr_data, init_centers, PyArray_ITEMSIZE((PyArrayObject*) ret_init_centers) * k * dim);
     Py_INCREF(ret_init_centers);  /* The returned list should still exist after calling the C extension */
 error:
-    // reset the seed to something else than 42
-    if(!use_random_seed) {
-        srand(time(NULL));
-    }
+    // reset the seed
+    srand(time(NULL));
     free(buffer_a);
     free(buffer_b);
     free(taken_points);
@@ -545,8 +532,8 @@ static char INIT_CENTERS_USAGE[] = "init_centers(data, metric, k)\n"\
 "    (input) One of \"euclidean\" or \"minRMSD\" (case sensitive).\n"\
 "k : int\n"\
 "    (input) the number of cluster centers to be assigned for initialization."\
-"use_random_seed : bool\n"\
-"    (input) determines if a fixed seed should be used or a random one\n"\
+"random_seed : unsigned int\n"\
+"    (input) fixed seed for choosing kmeans++ center candidates.\n"\
 "\n"\
 "Returns\n"\
 "-------\n"\

@@ -1,19 +1,66 @@
 Changelog
 =========
 
-2.3.2 (tba)
+2.4 (tba)
+---------
 
 **New features**:
 
-- thermo:
-   - Allow for periodicity in estimate_umbrella_sampling()
-   - Add *_full_state getter variants to access stationary properties on the full set of states
-     instead of the active set
+- msm: variational scores for model selection of MSMs. The scores are based on the variational
+  approach for Markov processes [1, 2] and can be employed for both reversible and non-reversible
+  MSMs. Both the Rayleigh quotient as well as the kinetic variance [3] and their non-reversible
+  generalizations are available. The scores are implemented in the `score` method of the MSM
+  estimators `MaximumLikelihoodMSM` and `OOMReweightedMSM`. Rudimentary support for Cross-validation
+  similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
+  inefficient and will be improved in future versions. #1093
+
+- config: Added a lot of documentation and added `mute` option to silence PyEMMA (almost completely).
+
+- References:
+    [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+    [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation).
+    [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
+    [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
+
+- coordinates:
+   - kmeans: allow the random seed used for initializing the centers to be passed. The prior behaviour
+     was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #1091
 
 **Fixes**:
 
 - coordinates:
-  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+  - Removed deprecated method parametrize. Use estimate or fit for now. #1088
+  - Readers: nice error messages for file handling errors (which file caused the error). #1085
+  - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
+  - KMeans: Added progress bar for collecting the data in pre-clustering phase. #1084
+
+- msm:
+  - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
+
+- general:
+  - config: better documentation of the configuration parameters. #1095
+
+
+2.3.2 (2-19-2017)
+-----------------
+
+**New features**:
+
+thermo:
+
+- Allow for periodicity in estimate_umbrella_sampling().
+- Add *_full_state getter variants to access stationary properties on the full set of states
+  instead of the active set.
+
+**Fixes**:
+
+coordinates:
+
+- [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038
 
 2.3.1 (2-6-2017)
 ----------------

@@ -167,6 +167,38 @@ class TestMSMFiveState(unittest.TestCase):
         cls.fing_rel = np.dot(a.T, L_rev.T) * np.dot((p0 / pi_rev).T, L_rev.T)
 
     # ---------------------------------
+    # SCORE
+    # ---------------------------------
+
+    def _score(self, msm):
+        dtrajs_test = self.dtrajs[0:500]
+        s1 = msm.score(dtrajs_test, score_method='VAMP1', score_k=2)
+        assert 1.0 <= s1 <= 2.0
+        s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
+        assert 1.0 <= s2 <= 2.0
+        # se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
+        # se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
+
+    def test_score(self):
+        self._score(self.msmrev)
+        self._score(self.msm)
+        self._score(self.msmrev_sparse)
+        self._score(self.msm_sparse)
+
+    def _score_cv(self, estimator):
+        s1 = estimator.score_cv(self.dtrajs[:500], n=2, score_method='VAMP1', score_k=2).mean()
+        assert 1.0 <= s1 <= 2.0
+        s2 = estimator.score_cv(self.dtrajs[:500], n=2, score_method='VAMP2', score_k=2).mean()
+        assert 1.0 <= s2 <= 2.0
+        # se = estimator.score_cv(self.dtrajs[:500], n=2, score_method='VAMPE', score_k=2).mean()
+        # se_inf = estimator.score_cv(self.dtrajs[:500], n=2, score_method='VAMPE', score_k=None).mean()
+
+    def test_score_cv(self):
+        self._score_cv(OOMReweightedMSM(lag=5, reversible=True))
+        self._score_cv(OOMReweightedMSM(lag=5, reversible=False))
+        self._score_cv(OOMReweightedMSM(lag=5, reversible=True, sparse=True))
+        self._score_cv(OOMReweightedMSM(lag=5, reversible=False, sparse=True))
+    # ---------------------------------
     # BASIC PROPERTIES
     # ---------------------------------
 

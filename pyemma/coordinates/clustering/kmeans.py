@@ -74,8 +74,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             can be either 'kmeans++' or 'uniform', determining how the initial
             cluster centers are being chosen
 
-        fixed_seed : bool
-            if True, the seed gets set to 42
+        fixed_seed : bool or int
+            if True, the seed gets set to 42. Use time based seeding otherwise.
+            if an integer is given, use this to initialize the random generator.
 
         oom_strategy : string, default='memmap'
             how to deal with out of memory situation during accumulation of all
@@ -102,6 +103,31 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
         self._cluster_centers_iter = None
         self._centers_iter_list = []
+
+    @property
+    def fixed_seed(self):
+        """ seed for random choice of initial cluster centers. Fix this to get reproducible results."""
+        return self._fixed_seed
+
+    @fixed_seed.setter
+    def fixed_seed(self, val):
+        from pyemma.util import types
+        if isinstance(val, bool) or val is None:
+            if val:
+                self._fixed_seed = 42
+            else:
+                self._fixed_seed = random.randint(0, 2**32-1)
+        elif types.is_int(val):
+            if val < 0 or val > 2**32-1:
+                self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
+                                 " Seed will be chosen randomly.")
+                self.fixed_seed = False
+            else:
+                self._fixed_seed = val
+        else:
+            raise ValueError("fixed seed has to be bool or integer")
+
+        self.logger.debug("seed = %i", self._fixed_seed)
 
     def _init_in_memory_chunks(self, size):
         available_mem = psutil.virtual_memory().available
@@ -221,10 +247,14 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                     description="initialize kmeans++ centers", stage=0)
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
         self._init_in_memory_chunks(total_length)
+        if not isinstance(self, MiniBatchKmeansClustering):
+            n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
+            self._progress_register(n_chunks, description="creating data array", stage='data')
+
         if self.init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
-            with conditional(self.fixed_seed, random_seed(42)):
+            with random_seed(self.fixed_seed):
                 for idx, traj_len in enumerate(traj_lengths):
                     self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
@@ -240,7 +270,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         elif last_chunk and self.init_strategy == 'kmeans++':
             kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
             cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                self.metric, self.n_clusters, not self.fixed_seed)
+                                                self.metric, self.n_clusters, self.fixed_seed)
             self._cluster_centers_iter = [c for c in cc]
 
     def _collect_data(self, X, first_chunk):
@@ -251,6 +281,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
+        if not isinstance(self, MiniBatchKmeansClustering):
+            self._progress_update(1, stage='data')
 
 
 class MiniBatchKmeansClustering(KmeansClustering):

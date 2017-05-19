@@ -85,7 +85,8 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
-        my_conf = config()
+        from pyemma.util._config import Config
+        my_conf = Config()
         my_conf.cfg_dir = self.work_dir
         with mock.patch('pyemma.coordinates.data.util.traj_info_cache.config', my_conf):
             with NamedTemporaryFile(delete=False) as fh:
@@ -112,6 +113,15 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             with self.assertRaises(ValueError) as cm:
                 api.source(f.name)
                 assert f.name in cm.exception.message
+
+        # bogus files
+        with NamedTemporaryFile(suffix='.npy', delete=False) as f:
+            x = np.array([1, 2, 3])
+            np.save(f, x)
+            with open(f.name, 'wb') as f2:
+                f2.write(b'asdf')
+            with self.assertRaises(IOError) as cm:
+                api.source(f.name)
 
     def test_featurereader_xtc(self):
         # cause cache failures

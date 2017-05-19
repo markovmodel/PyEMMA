@@ -48,7 +48,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
     def __init__(
         self, lag, count_mode='sliding',
         connectivity='post_hoc_RE',
-        ground_state=None, nstates_full=None, equilibrium=None,
+        nstates_full=None, equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
@@ -113,8 +113,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
               all thermodynamic states and taking it's largest strongly connected set.
               Not recommended!
             For more details see :func:`thermotools.cset.compute_csets_TRAM`.
-        ground_state : int, optional, default=None
-            Index of the unbiased thermodynamic state or None if there is no unbiased data available.
         nstates_full : int, optional, default=None
             Number of cluster centers, i.e., the size of the full set of states.
         equilibrium : list of booleans, optional 
@@ -196,7 +194,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.connectivity_factor = connectivity_factor
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
-        self.ground_state = ground_state
         self.nstates_full = nstates_full
         self.equilibrium = equilibrium
         self.maxiter = maxiter
@@ -410,9 +407,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
 
         models = []
-        for msm, acs in zip(fmsms, active_sets):
+        for i, (msm, acs) in enumerate(zip(fmsms, active_sets)):
             models.append(_ThermoMSM(
                 msm, self.active_set[acs], self.nstates_full,
+                pi=_np.exp(self.therm_energies[i] - self.biased_conf_energies[i, :]),
                 dt_model=self.timestep_traj.get_scaled(self.lag)))
 
         # set model parameters to self

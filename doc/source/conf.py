@@ -20,7 +20,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-    'sphinxcontrib.issuetracker',
+#    'sphinxcontrib.issuetracker',
 ]
 
 issuetracker = 'github'
