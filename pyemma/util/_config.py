@@ -48,8 +48,10 @@ class Config(object):
     DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
 
     def __init__(self):
-        # this is a SafeConfigParser instance
+        # this is a ConfigParser instance
         self._conf_values = None
+
+        self._old_level = None
 
         # note we do not invoke the cfg_dir setter here, because we do not want anything to be created/copied yet.
         # first check if there is a config dir set via environment
@@ -220,6 +222,28 @@ class Config(object):
     #    from pyemma.util.log import setup_logging
     #   #config['incremental'] = True
     #    setup_logging(self, config)
+
+    @property
+    def mute(self):
+        """ Switch this to True, to tell PyEMMA not to use progress bars and logging to console. """
+        return self._conf_values.getboolean('pyemma', 'mute')
+
+    @mute.setter
+    def mute(self, value):
+        value = bool(value)
+        import logging
+        if value:
+            self.show_progress_bars = False
+            self._old_level = logging.getLogger('pyemma').level
+            logging.getLogger('pyemma').setLevel('CRITICAL')
+        else:
+            self.show_progress_bars = True
+
+            if self._old_level is not None:
+                logging.getLogger('pyemma').setLevel(self._old_level)
+                self._old_level = None
+
+        self._conf_values.set('pyemma', 'mute', str(value))
 
     @property
     def traj_info_max_entries(self):
