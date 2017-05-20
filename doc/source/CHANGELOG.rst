@@ -30,6 +30,9 @@ Changelog
    - kmeans: allow the random seed used for initializing the centers to be passed. The prior behaviour
      was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #1091
 
+- datasets:
+   - added a multi-ensemble data generator for the 1D asymmetric double well. #1097
+
 **Fixes**:
 
 - coordinates:
