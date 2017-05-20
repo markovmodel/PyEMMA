@@ -47,7 +47,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
     def __init__(
         self, lag, count_mode='sliding',
-        connectivity='summed_count_matrix',
+        connectivity='post_hoc_RE',
         nstates_full=None, equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
@@ -71,12 +71,48 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                   .. math::
                         (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
             Currently only 'sliding' is supported.
-        connectivity : str, optional, default='summed_count_matrix'
-            One of 'summed_count_matrix', 'strong_in_every_ensemble',
-            'neighbors', 'post_hoc_RE' or 'BAR_variance'.
-            Defines what should be considered a connected set in the joint space
-            of conformations and thermodynamic ensembles.
-            For details see thermotools.cset.compute_csets_TRAM.
+        connectivity : str, optional, default='post_hoc_RE'
+            One of 'post_hoc_RE', 'BAR_variance', 'reversible_pathways' or
+            'summed_count_matrix'. Defines what should be considered a connected set
+            in the joint (product) space of conformations and thermodynamic ensembles.
+            * 'reversible_pathways' : requires that every state in the connected set
+              can be reached by following a pathway of reversible transitions. A
+              reversible transition between two Markov states (within the same
+              thermodynamic state k) is a pair of Markov states that belong to the
+              same strongly connected component of the count matrix (from
+              thermodynamic state k). A pathway of reversible transitions is a list of
+              reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+              (i_(N-1), i_N)]. The thermodynamic state where the reversible
+              transitions happen, is ignored in constructing the reversible pathways.
+              This is equivalent to assuming that two ensembles overlap at some Markov
+              state whenever there exist frames from both ensembles in that Markov
+              state.
+            * 'post_hoc_RE' : similar to 'reversible_pathways' but with a more strict
+              requirement for the overlap between thermodynamic states. It is required
+              that every state in the connected set can be reached by following a
+              pathway of reversible transitions or jumping between overlapping
+              thermodynamic states while staying in the same Markov state. A reversible
+              transition between two Markov states (within the same thermodynamic
+              state k) is a pair of Markov states that belong to the same strongly
+              connected component of the count matrix (from thermodynamic state k).
+              Two thermodynamic states k and l are defined to overlap at Markov state
+              n if a replica exchange simulation [2]_ restricted to state n would show
+              at least one transition from k to l or one transition from from l to k.
+              The expected number of replica exchanges is estimated from the
+              simulation data. The minimal number required of replica exchanges
+              per Markov state can be increased by decreasing `connectivity_factor`.
+            * 'BAR_variance' : like 'post_hoc_RE' but with a different condition to
+              define the thermodynamic overlap based on the variance of the BAR
+              estimator [3]_. Two thermodynamic states k and l are defined to overlap
+              at Markov state n if the variance of the free energy difference Delta
+              f_{kl} computed with BAR (and restricted to conformations form Markov
+              state n) is less or equal than one. The minimally required variance
+              can be controlled with `connectivity_factor`.
+            * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+              The connected set is then computed by summing the count matrices over
+              all thermodynamic states and taking it's largest strongly connected set.
+              Not recommended!
+            For more details see :func:`thermotools.cset.compute_csets_TRAM`.
         nstates_full : int, optional, default=None
             Number of cluster centers, i.e., the size of the full set of states.
         equilibrium : list of booleans, optional 
@@ -92,7 +128,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             iteration step.
         save_convergence_info : int, optional, default=0
             Every save_convergence_info iteration steps, store the actual increment
-            and the actual loglikelihood; 0 means no storage.
+            and the actual log-likelihood; 0 means no storage.
         dt_traj : str, optional, default='1 step'
             Description of the physical time corresponding to the lag. May be used by analysis
             algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -105,19 +141,19 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             |  'us',   'microsecond*'
             |  'ms',   'millisecond*'
             |  's',    'second*'
-        nn : int, optional, default=None
-            Only needed if connectivity='neighbors'
-            See thermotools.cset.compute_csets_TRAM.
         connectivity_factor : float, optional, default=1.0
-            Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
-            requirement, see thermotools.cset.compute_csets_TRAM.
+            Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Values
+            greater than 1.0 weaken the connectivity conditions. For 'post_hoc_RE'
+            this multiplies the number of hypothetically observed transitions. For
+            'BAR_variance' this scales the threshold for the minimal allowed variance
+            of free energy differences.
         direct_space : bool, optional, default=False
-            Whether to perform the self-consitent iteration with Boltzmann factors
+            Whether to perform the self-consistent iteration with Boltzmann factors
             (direct space) or free energies (log-space). When analyzing data from
             multi-temperature simulations, direct-space is not recommended.
         N_dtram_accelerations : int, optional, default=0
             Convergence of TRAM can be speeded up by interleaving the updates
-            in the self-consitent iteration with a dTRAM-like update step.
+            in the self-consistent iteration with a dTRAM-like update step.
             N_dtram_accelerations says how many times the dTRAM-like update
             step should be applied in every iteration of the TRAM equations.
             Currently this is only effective if direct_space=True.
@@ -141,10 +177,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
         References
         ----------
-
         .. [1] Wu, H. et al 2016
             Multiensemble Markov models of molecular thermodynamics and kinetics
             Proc. Natl. Acad. Sci. USA 113 E3221--E3230
+        .. [2]_ Hukushima et al, Exchange Monte Carlo method and application to spin
+            glass simulations, J. Phys. Soc. Jan. 65, 1604 (1996)
+        .. [3]_ Shirts and Chodera, Statistically optimal analysis of samples
+            from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
 
         """
         self.lag = lag

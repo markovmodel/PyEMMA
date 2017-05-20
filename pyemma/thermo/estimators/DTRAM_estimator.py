@@ -29,6 +29,7 @@ from msmtools.estimation import largest_connected_set as _largest_connected_set
 from thermotools import dtram as _dtram
 from thermotools import wham as _wham
 from thermotools import util as _util
+from thermotools import cset as _cset
 
 __author__ = 'noe, wehmeyer'
 
@@ -37,7 +38,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     r""" Discrete Transition(-based) Reweighting Analysis Method."""
 
     def __init__(
-        self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
+        self, bias_energies_full, lag, count_mode='sliding', connectivity='reversible_pathways',
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         init=None, init_maxiter=10000, init_maxerr=1.0E-8):
         r""" Discrete Transition(-based) Reweighting Analysis Method
@@ -58,9 +59,28 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                   .. math::
                         (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
             Currently only 'sliding' is supported.
-        connectivity : str, optional, default='largest'
-            Defines what should be considered a connected set in the joint space of conformations and
-            thermodynamic ensembles. Currently only 'largest' is supported.
+        connectivity : str, optional, default='reversible_pathways'
+            One of 'reversible_pathways', 'summed_count_matrix' or None.
+            Defines what should be considered a connected set in the joint (product)
+            space of conformations and thermodynamic ensembles.
+            * 'reversible_pathways' : requires that every state in the connected set
+              can be reached by following a pathway of reversible transitions. A
+              reversible transition between two Markov states (within the same
+              thermodynamic state k) is a pair of Markov states that belong to the
+              same strongly connected component of the count matrix (from
+              thermodynamic state k). A pathway of reversible transitions is a list of
+              reversible transitions [(i_1, i_2), (i_2, i_3),..., (i_(N-2), i_(N-1)),
+              (i_(N-1), i_N)]. The thermodynamic state where the reversible
+              transitions happen, is ignored in constructing the reversible pathways.
+              This is equivalent to assuming that two ensembles overlap at some Markov
+              state whenever there exist frames from both ensembles in that Markov
+              state.
+            * 'summed_count_matrix' : all thermodynamic states are assumed to overlap.
+              The connected set is then computed by summing the count matrices over
+              all thermodynamic states and taking it's largest strongly connected set.
+              Not recommended!
+            * None : assume that everything is connected. For debugging.
+            For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15
@@ -68,7 +88,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
             iteration step.
         save_convergence_info : int, optional, default=0
             Every save_convergence_info iteration steps, store the actual increment
-            and the actual loglikelihood; 0 means no storage.
+            and the actual log-likelihood; 0 means no storage.
         dt_traj : str, optional, default='1 step'
             Description of the physical time corresponding to the lag. May be used by analysis
             algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -126,7 +146,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
         self.count_mode = count_mode
-        assert connectivity == 'largest', 'Currently the only implemented connectivity is \'largest\''
+        assert connectivity in [ None, 'reversible_pathways', 'summed_count_matrix' ], \
+            'Currently the only implemented connectivity checks are \'reversible_pathways\', \'summed_count_matrix\' and None'
         self.connectivity = connectivity
         self.dt_traj = dt_traj
         self.maxiter = maxiter
@@ -185,7 +206,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         # restrict to connected set
         C_sum = self.count_matrices_full.sum(axis=0)
         # TODO: use improved cset
-        cset = _largest_connected_set(C_sum, directed=True)
+        _, cset = _cset.compute_csets_dTRAM(self.connectivity, self.count_matrices_full)
         self.active_set = cset
         # correct counts
         self.count_matrices = self.count_matrices_full[:, cset[:, _np.newaxis], cset]
