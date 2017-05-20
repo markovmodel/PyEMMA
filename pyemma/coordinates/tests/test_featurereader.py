@@ -263,5 +263,15 @@ class TestFeatureReader(unittest.TestCase):
         self.assertNotIn(0, res)
         self.assertIn(1, res)
 
+    def test_flip_in_memory_exception(self):
+        """ ensure in_memory behaves well during exceptions. """
+        reader = api.source(self.trajfile, top=self.topfile)
+        def dummy(x): raise ValueError("no")
+        reader.featurizer.add_custom_func(dummy, 1)
+        try:
+            reader.in_memory = True
+        except ValueError:
+            assert not reader.in_memory
+
 if __name__ == "__main__":
     unittest.main()
