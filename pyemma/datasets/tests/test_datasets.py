@@ -34,7 +34,7 @@ def test_umbrella_sampling_data():
     for key in us_data.keys():
         assert key in req_keys
     for key in req_keys:
-        assert us_data.has_key(key)
+        assert key in us_data
     memm = estimate_umbrella_sampling(
         us_data['us_trajs'],
         us_data['us_dtrajs'],
@@ -62,7 +62,7 @@ def test_multi_temperature_data():
     for key in mt_data.keys():
         assert key in req_keys
     for key in req_keys:
-        assert mt_data.has_key(key)
+        assert key in mt_data
     memm = estimate_multi_temperature(
         mt_data['energy_trajs'],
         mt_data['temp_trajs'],
@@ -78,3 +78,4 @@ def test_multi_temperature_data():
     memm.msm.pcca(2)
     pi = [memm.msm.pi[s].sum() for s in memm.msm.metastable_sets]
     assert_allclose(pi, [0.3, 0.7], rtol=0.25, atol=0.1)
+
