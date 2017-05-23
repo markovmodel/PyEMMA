@@ -1,9 +1,4 @@
-# additional for building the sphinx doc and ipython notebook rst conversion
-matplotlib>=1.5
-sphinx>=1.4
-nbconvert>=4.2.0
 sphinxcontrib-issuetracker
 
 # theme 
-sphinx_rtd_theme
 msmb_theme>=1.2
