@@ -296,6 +296,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             ttrajs=ttrajs+equilibrium_ttrajs, dtrajs=dtrajs_full+equilibrium_dtrajs_full, bias_trajs=self.btrajs+self.equilibrium_btrajs,
             nn=self.nn, factor=self.connectivity_factor,
             callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
+        self._progress_force_finish(stage='cset', description='finding connected set')
         self.active_set = pcset
 
         # check for empty states
