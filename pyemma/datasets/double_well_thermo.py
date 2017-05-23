@@ -38,23 +38,28 @@ class DoubleWellSampler(object):
         self.pi = _np.exp(-epot)
         self.pi[:] = self.pi / self.pi.sum()
         self.f = -_np.log(self.pi)
+
     @property
     def centers(self):
         return self.x.reshape(-1, 1)
+
     def _potential(self, x):
         try:
-            return _np.asarray(map(self._potential, x))
+            return _np.asarray(tuple(map(self._potential, x)))
         except TypeError:
             if x < self.xmin or x > self.xmax:
                 return _np.inf
             return x * (0.5 + x * (x * x - 2.0))
+
     def _bias(self, x, kbias, xbias):
         try:
             return 0.5 * kbias * (_np.asarray(x) - xbias)**2
         except TypeError:
             return 0.0
+
     def potential(self, x, kt=1.0, kbias=None, xbias=None):
         return (self._potential(x) + self._bias(x, kbias, xbias)) / kt
+
     def mcmc(self, xinit, length, kt=1.0, kbias=None, xbias=None, stride=None):
         xtraj = _np.zeros(shape=(length + 1,), dtype=_np.float64)
         etraj = _np.zeros(shape=(length + 1,), dtype=_np.float64)
@@ -72,6 +77,7 @@ class DoubleWellSampler(object):
         if stride is not None and stride > 1:
             xtraj, etraj = _np.ascontiguousarray(xtraj[::stride]), _np.ascontiguousarray(etraj[::stride])
         return xtraj, etraj
+
     def _draw(self, xinit=None, right=False, weighted=True):
         if xinit is None:
             if right:
@@ -79,12 +85,14 @@ class DoubleWellSampler(object):
                 return _np.random.rand() * (self.xmax - self.xmid - 2.0 * pad) + self.xmid + pad
             return _np.random.choice(self.x, size=1, p=self.pi if weighted is True else None)
         return xinit
+
     def sample(self, ntraj=1, xinit=None, length=10000):
         trajs = [self.mcmc(
              self._draw(xinit), length=length, stride=self.stride)[0] for i in range(ntraj)]
         return dict(
             trajs=trajs,
             dtrajs=_assign_to_centers(trajs, centers=self.centers))
+
     def us_sample(self, ntherm=11, us_fc=20.0, us_length=500, md_length=1000, nmd=20):
         xbias = _np.linspace(self.xmin + 0.2, self.xmax - 0.2, ntherm + 1)
         xbias = (0.5 * (xbias[1:] + xbias[:-1])).tolist()
@@ -101,6 +109,7 @@ class DoubleWellSampler(object):
             us_force_constants=kbias,
             md_trajs=md_trajs,
             md_dtrajs=dtrajs[ntherm:])
+
     def mt_sample(self, kt0=1.0, kt1=5.0, length0=10000, length1=10000, n0=10, n1=10):
         trajs = []
         utrajs = []
