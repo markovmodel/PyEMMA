@@ -27,10 +27,7 @@ import unittest
 import numpy as np
 
 from pyemma.plots.networks import plot_flux, plot_markov_model, plot_network
-#from pyemma.msm.flux.api import tpt
-from msmtools.flux import tpt
-from msmtools.analysis import mfpt
-import msmtools
+from pyemma.msm import tpt, MSM
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -47,27 +44,21 @@ class TestNetworkPlot(unittest.TestCase):
                           [0.0, 0.02, 0.02, 0.0, 0.96]])
         cls.A = [0]
         cls.B = [4]
+        cls.msm = MSM(cls.P)
 
         cls.P_mfpt = np.zeros_like(cls.P)
         for ii in np.arange(cls.P.shape[0]):
             for jj in np.arange(cls.P.shape[1]):
-                cls.P_mfpt[ii,jj] = mfpt(cls.P, [ii], [jj])
+                cls.P_mfpt[ii,jj] = cls.msm.mfpt([ii], [jj])
         return cls
 
     def test_flux(self):
-        r = tpt(self.P, self.A, self.B)
+        r = tpt(self.msm, self.A, self.B)
         fig, pos = plot_flux(r)
         assert type(fig) is matplotlib.figure.Figure
         # matplotlib.pyplot.show(fig)
         # x values should be close to committor
         np.testing.assert_allclose(pos[:,0], r.committor)
-
-    def test_random(self):
-        C = np.random.randint(0, 1000, size=(10, 10))
-        P = msmtools.estimation.transition_matrix(C, reversible=True)
-        r = tpt(P, [0], [len(C)-1])
-        fig, pos = plot_flux(r)
-        assert type(fig) is matplotlib.figure.Figure
 
     def test_plot_markov_model(self):
         fig, pos = plot_markov_model(self.P)
@@ -101,6 +92,36 @@ class TestNetworkPlot(unittest.TestCase):
         fig, pos = plot_network(
             self.P[:2,:2], arrow_labels=labels, ax=ax)
         assert type(fig) is matplotlib.figure.Figure
+
+    def test_state_labels_network(self):
+        state_labels = [str(i) for i in np.arange(len(self.P))]
+        plot_network(self.P, state_labels=state_labels)
+
+        with self.assertRaises(ValueError):
+            plot_network(self.P, state_labels=state_labels[:2])
+
+        state_labels = 'auto'
+        plot_network(self.P, state_labels=state_labels)
+
+    def test_state_labels_flux(self):
+        """ ensure our labels show up in the plot"""
+        flux = tpt(self.msm, [0,1], [2,4])
+        labels = ['foo', '0', '1', '2', 'bar']
+        fig, pos = plot_flux(flux, state_labels=labels)
+        labels_in_fig = np.array([text.get_text() for text in fig.axes[0].texts])
+
+        for l in labels:
+            self.assertEqual((labels_in_fig == l).sum(), 1)
+
+    def test_state_labels_flux_auto(self):
+        """ ensure auto generated labels show up in the plot"""
+        A = [0,1]
+        B = [2,4]
+        flux = tpt(self.msm, A, B)
+        fig, pos = plot_flux(flux, state_labels='auto')
+        labels_in_fig = np.array([text.get_text() for text in fig.axes[0].texts])
+        self.assertEqual((labels_in_fig == "A").sum(), len(A))
+        self.assertEqual((labels_in_fig == "B").sum(), len(B))
 
 if __name__ == "__main__":
     unittest.main()
