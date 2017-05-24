@@ -1,6 +1,18 @@
 Changelog
 =========
 
+2.4.1 (tba)
+-----------
+
+**New features**:
+
+-
+
+**Fixes**:
+
+- datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
+
+
 2.4 (05-19-2017)
 ----------------
 
