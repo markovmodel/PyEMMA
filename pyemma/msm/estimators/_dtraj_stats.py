@@ -164,7 +164,36 @@ class DiscreteTrajectoryStats(object):
 
         return dtrajs
 
-    def count_lagged(self, lag, count_mode='sliding'):
+    @staticmethod
+    def _compute_connected_sets(C, mincount_connectivity=0, strong=True):
+        """ Computes the connected sets of C.
+    
+        C : count matrix
+        mincount_connectivity : float
+            Minimum count which counts as a connection.
+        strong : boolean
+            True: Seek strongly connected sets. False: Seek weakly connected sets.
+        Returns
+        -------
+        Cconn, S
+        """
+        import msmtools.estimation as msmest
+        import scipy.sparse as scs
+        if mincount_connectivity > 0:
+            if scs.issparse(C):
+                # convert to lil format for effective editing a sparse matrix
+                Cconn = scs.lil_matrix(C)
+                mask = C < mincount_connectivity
+                Cconn[mask] = 0
+            else:
+                Cconn = C.copy()
+                Cconn[np.where(Cconn < mincount_connectivity)] = 0
+
+        # treat each connected set separately
+        S = msmest.connected_sets(Cconn, directed=strong)
+        return S
+
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n'):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -203,8 +232,17 @@ class DiscreteTrajectoryStats(object):
         else:
             raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
+        # store mincount_connectivity
+        if mincount_connectivity == '1/n':
+            self._mincount_connectivity = 1.0 / np.shape(self._C)[0]
+        self._mincount_connectivity = mincount_connectivity
+
         # Compute reversibly connected sets
-        self._connected_sets = msmest.connected_sets(self._C)
+        if self._mincount_connectivity > 0:
+            self._connected_sets = \
+                self._compute_connected_sets(self._C, mincount_connectivity=self._mincount_connectivity)
+        else:
+            self._connected_sets = msmest.connected_sets(self._C)
 
         # set sizes and count matrices on reversibly connected sets
         self._connected_set_sizes = np.zeros((len(self._connected_sets)))
