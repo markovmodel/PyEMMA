@@ -22,6 +22,7 @@ import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
+
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -30,8 +31,7 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 from pyemma.msm.estimators._OOM_MSM import *
-
-
+from pyemma.util.statistics import confidence_interval as _ci
 @fix_docs
 @aliased
 class _MSMEstimator(_Estimator, _MSM):
@@ -1361,3 +1361,338 @@ class OOMReweightedMSM(_MSMEstimator):
         """
         self._check_is_estimated()
         return self._sigma
+
+@fix_docs
+@aliased
+class AugmentedMarkovModelEstimator(_MSMEstimator):
+    r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
+
+    def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
+                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, verbose=False, eps=0.05, support_ci=1.00, max_iter=500):
+        r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
+
+        Parameters
+        ----------
+        lag : int
+            lag time at which transitions are counted and the transition matrix is
+            estimated.
+
+        count_mode : str, optional, default='sliding'
+            mode to obtain count matrices from discrete trajectories. Should be
+            one of:
+
+            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+              at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+              at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
+
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest'
+            is implemented)
+
+            * 'largest' : The active set is the largest reversibly connected set.
+              All estimation will be done on this subset and all quantities
+              (transition matrix, stationary distribution, etc) are only defined
+              on this subset and are correspondingly smaller than the full set
+              of states
+            * 'all' : The active set is the full set of states. Estimation will be
+              conducted on each reversibly connected set separately. That means
+              the transition matrix will decompose into disconnected submatrices,
+              the stationary vector is only defined within subsets, etc.
+              Currently not implemented.
+            * 'none' : The active set is the full set of states. Estimation will
+              be conducted on the full set of
+              states without ensuring connectivity. This only permits
+              nonreversible estimation. Currently not implemented.
+
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time of the input trajectories. May be used
+            by analysis algorithms such as plotting tools to pretty-print the axes.
+            By default '1 step', i.e. there is no physical time unit. Specify by a
+            number, whitespace and unit. Permitted units are (* is an arbitrary
+            string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+
+        score_method : str, optional, default='VAMP2'
+            Score to be used with score function. Available are:
+
+            |  'VAMP1'  [1]_
+            |  'VAMP2'  [1]_
+            |  'VAMPE'  [1]_
+
+        score_k : int or None
+            The maximum number of eigenvalues or singular values used in the
+            score. If set to None, all available eigenvalues will be used.
+
+        E : ndarray(n, k)
+          Expectations by state. Each column stands for one observable
+        
+        m : ndarray(k)
+          Experimental measurements
+        
+        w : ndarray(k)
+          Weights of experimental measurement (1/2s^2), where s is the std error
+
+        References
+        ----------
+        .. [1] Olsson, Wu, Paul, Clementi and Noe "Combining Experimental and Simulation Data via Augmented Markov Models"
+               In revision, PNAS (2017) 
+
+        """
+        # Check count mode:
+        self.count_mode = str(count_mode).lower()
+        if self.count_mode not in ('sliding', 'sample'):
+            raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
+
+        super(AugmentedMarkovModelEstimator, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=score_method, score_k=score_k)
+        self.E = E
+        self.m = m
+        self.w = w
+        self.verbose = verbose
+        self.eps = eps
+        # number of Markov states and experimental observables
+        self.n_mstates, self.n_exp = np.shape(E)
+        #check for zero weights
+        if np.any(w<1e-12):
+            raise ValueError("Some weights are less than 1e-12 or negative. Please remove these from input.")
+        #compute uncertainties
+        self.sigmas = np.sqrt(1./2./self.w)
+
+        self.converged = False
+        self.estimated = False
+        self.max_iter = max_iter
+
+    def _log_likelihood_biased(C, T, E, mhat, ws):
+        ll_unbiased = msmest.log_likelihood(C, T)
+        ll_bias = -np.sum(ws*(mhat-E)**2.)
+        return ll_unbiased + ll_bias
+
+    def _update_G(self):
+        _tmp = self.E_active*self.pihat[:, None]
+        self._G = np.dot(self.E_active.T, self.E_active*pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
+
+    def _update_Q(self):
+        self.Q = np.zeros((self.n_mstates_active, self.n_mstates_active))
+        for k in range(self.n_nexp_active):
+          self.Q = self.Q + self.w_active[k]*self._S[k]*_get_Rk(k)
+        self.Q = -2.*self.Q
+
+    def _calc_Rk(self, k):
+        pek = self.pihat*self.E_active[:,k]
+        pp = self.pihat[:, None] + self.pihat[None, :]
+        ppmhat = pp*mhat[k]
+        return (pek[:, None]+pek[None, :]) - ppmhat
+
+    def _update_Rslices(self, i):
+        pek = self.pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
+        pp = (self.pihat[:, None] + self.pihat[None, :])
+        ppmhat = pp*mhat[i*self.slicesz:(i+1)*self.slicesz, None, None]
+        self._Rs=(pek[:, None,:]+pek[None, :, :]).T - ppmhat
+        self._Rsi = i
+
+    def _get_Rk(self, k):
+        if k>(self._Rsi+1)*self._slicesz or k<(self._Rsi)*self._slicesz:
+          self._update_Rslices(np.floor(k/self._slicesz).astype(int))
+          return self._Rs[k%self._slicesz]
+        else:
+          return self._Rs[k%self._slicesz]
+
+    def _update_pihat(self):
+        expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
+        expons = expons - expons.max()
+
+        _ph_unnom = self.pi*np.exp(expons)
+        self.pihat = _ph_unnom/_ph_unnom.sum()
+
+    def _update_mhat(self): 
+        self.mhat = np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:]) 
+        self._update_S() 
+
+    def _update_S(self): 
+        self._S = self.mhat-self.m 
+
+    def _update_X_and_pi(self):
+        c_over_pi = self.csum/self.pi
+        D = c_over_pi[:, None] + c_over_pi + self.Q
+        # update estimate
+        self.X = self.C2 / D
+
+        # renormalize
+        self.X /= np.sum(self.X)
+
+        self.pi = np.sum(self.X, axis=1)
+
+    def _newton_lagrange(self):
+        l_old = self.lagrange.copy()
+        _ll_new = -np.inf
+        frac = 1.
+        mhat_old = self.mhat.copy()
+        dmhat_old = self.dmhat.copy()
+        old_slopesum = np.abs(self._S).sum()
+        slopesum = old_slopesum+1
+        while((self._ll_old>_ll_new) or (np.any(self.pihat<1e-12)) or slopesum>old_slopesum):
+            self._update_pihat()
+            self._update_G()
+            dl = 2.*(frac*self._G*self.w_active[:, None]*self._S[:, None]).sum(axis=0)
+            self.lagrange = l_old - frac*dl 
+            self._update_pihat()
+
+            while(np.any(self.pihat<1e-12)):
+                frac = frac*0.5
+                self.lagrange = l_old - frac*dl 
+                self._update_pihat()
+
+            self.lagrange = l_old - frac*dl 
+            self._update_pihat()
+            self._update_mhat()
+            self._update_Q()
+            self._update_X_and_pi()
+
+            P = self.X / self.pi[:, None]
+            _ll_new = log_likelihood_biased(self.C, P, self.m_active, self.mhat, self.w_active)
+            frac = frac*0.1
+
+
+            if frac<1e-12:
+                if self.verbose:
+                    print("INFO: small gradient fraction")
+                break
+
+            self.dmhat = self.mhat - mhat_old
+            self._ll_old = float(_ll_new)
+            slopesum = np.abs(self._S).sum()
+
+        self._lls.append(_ll_new)
+
+    def _estimate(self):
+        die = False
+        # get trajectory counts. This sets _C_full and _nstates_full
+        dtrajstats = self._get_dtraj_stats(dtrajs)
+        self._C_full = dtrajstats.count_matrix()  # full count matrix
+        self._nstates_full = self._C_full.shape[0]  # number of states
+
+        # set active set. This is at the same time a mapping from active to full
+        if self.connectivity == 'largest':
+            self.active_set = dtrajstats.largest_connected_set
+        else:
+            # for 'None' and 'all' all visited states are active
+            self.active_set = dtrajstats.visited_set
+        self.E_active = self.E[self.active_set]
+        #store microscopic observables
+        self.E_min, self.E_max = _ci(self.E_active, conf = support_ci)
+
+        self.n_mstates_active, self.n_exp_active = np.shape(self.E_active) 
+        
+        self.count_outside = []
+        self.count_inside = []
+
+        self._lls = []
+        
+        self.m_active = self.m[self.active_set]
+        self.w_active = self.w[self.active_set]
+
+        i = 0
+        # Determine which experimental values are outside the support as defined by the Confidence interval
+        for emi,ema,mm,mw in zip(self.E_min, self.E_max, self.m_active, self.w_active):
+            if mm<(emi) or mm>(ema):
+                if self.verbose:
+                    print("Warning: experimental value",mm,"is outside the support (%f,%f)"%(emi,ema))
+                self.count_outside.append(i)
+            else:
+                self.count_inside.append(i)
+            i = i + 1
+
+        if self.verbose:
+            print("Total experimental constraints outside support %d of %d"%(len(self.count_outside),len(self.E_min)))
+
+        self.P, self.pi = msmest.tmatrix(self.C, reversible = True, return_statdist = True)
+        self.lagrange = np.zeros(self.m_active.shape)
+        self.pihat = self.pi.copy()
+        self._update_mhat()
+        self.dmhat = np.ones(np.shape(self.mhat))
+
+        self._update_pihat()
+        self._update_mhat()
+
+        self._ll_old = log_likelihood_biased(self.C, self.P, self.m_active, self.mhat_active, self.w_active)
+
+
+        self._lls = [self._ll_old]
+        self.count_low_frac = 0
+        self.debug = debug_mode
+
+        self.phs = []
+        if self.debug:
+            self.ls = []
+            self.rmss = []
+            self.mhats = []
+        self._G = np.zeros((self.n_exp, self.n_exp))
+        self._update_pihat()
+        self._update_mhat()
+
+        self.Q = np.zeros((self.n_mstates, self.n_mstates))
+        self._update_Q()
+        self._update_X_and_pi()
+
+        self._ll_old = log_likelihood_biased(self.C, self.P, self.m[:], self.mhat[:], self.w[:])
+        self._update_G()
+
+        while i < self.max_iter:
+            pihat_old = self.pihat.copy()
+            self._update_pihat()
+            if not np.all(self.pihat>0):
+                self.pihat = pihat_old.copy()
+                die = True
+                if self.verbose:
+                    print("Warning: hat pi does not have a finite probability for all states, terminating")
+            self._update_mhat()
+            self._update_Q()
+            if i>1:
+                X_old = self.X.copy()
+                self._update_X_and_pi()
+                if np.any(self.X[self.nz]<0) and i>0:
+                    die = True
+                    print("Warning: new X is not proportional to C... reverting to previous step and terminating")
+                    self.X = X_old.copy()
+
+            if not self.converged:
+                self._newton_lagrange()
+            else:
+                P = self.X / self.pi[:, None]
+                _ll_new = self._log_likelihood_biased(self._C_full, P, self.m[self.active_set], self.mhat[self.active_set], self.w[self.active_set])
+                self._lls.append(_ll_new)
+
+            self.phs.append(self.pihat)
+            if self.debug:   
+               self.ls.append(self.lagrange.copy())
+               self.mhats.append(np.array(self.mhat))
+               self.rmss.append(np.average(self.E, weights=self.pihat.reshape((self.n_mstates,)), axis=0))
+
+          
+            if i>1 and np.all((np.abs(self.dmhat[self.active_set])/self.sigmas[self.active_set])<self.eps) and not self.converged: 
+                if self.verbose:
+                    print("Converged Lagrange multipliers after %i steps..."%i)
+                self.converged = True
+                self.estimated = True
+                #die = True
+            if self.converged:
+                if np.abs(self._lls[-2]-self._lls[-1])<1e-3:
+                   print("Converged pihat after %i steps..."%i)
+                   die = True
+        
+

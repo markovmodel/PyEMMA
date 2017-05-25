@@ -27,6 +27,7 @@ from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
 from .estimators import OOMReweightedMSM as _OOM_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
+from .estimators import AugmentedMarkovModel as _AMM
 
 from .models import MSM
 from pyemma.util.annotators import shortcut
