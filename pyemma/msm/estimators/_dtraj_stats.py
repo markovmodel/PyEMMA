@@ -234,7 +234,7 @@ class DiscreteTrajectoryStats(object):
 
         # store mincount_connectivity
         if mincount_connectivity == '1/n':
-            self._mincount_connectivity = 1.0 / np.shape(self._C)[0]
+            mincount_connectivity = 1.0 / np.shape(self._C)[0]
         self._mincount_connectivity = mincount_connectivity
 
         # Compute reversibly connected sets
