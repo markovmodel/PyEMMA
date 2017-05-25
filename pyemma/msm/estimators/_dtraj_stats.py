@@ -165,7 +165,7 @@ class DiscreteTrajectoryStats(object):
         return dtrajs
 
     @staticmethod
-    def _compute_connected_sets(C, mincount_connectivity=0, strong=True):
+    def _compute_connected_sets(C, mincount_connectivity, strong=True):
         """ Computes the connected sets of C.
     
         C : count matrix
@@ -179,15 +179,13 @@ class DiscreteTrajectoryStats(object):
         """
         import msmtools.estimation as msmest
         import scipy.sparse as scs
-        if mincount_connectivity > 0:
-            if scs.issparse(C):
-                # convert to lil format for effective editing a sparse matrix
-                Cconn = scs.lil_matrix(C)
-                mask = C < mincount_connectivity
-                Cconn[mask] = 0
-            else:
-                Cconn = C.copy()
-                Cconn[np.where(Cconn < mincount_connectivity)] = 0
+        if scs.issparse(C):
+            Cconn = C.tocsr(copy=True)
+            Cconn.data[Cconn.data < mincount_connectivity] = 0
+            Cconn.eliminate_zeros()
+        else:
+            Cconn = C.copy()
+            Cconn[np.where(Cconn < mincount_connectivity)] = 0
 
         # treat each connected set separately
         S = msmest.connected_sets(Cconn, directed=strong)
