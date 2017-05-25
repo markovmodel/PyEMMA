@@ -20,7 +20,7 @@ environment:
       CONDA_PY: "35"
 
     - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
-      CONDA_PY: "34"
+      CONDA_PY: "35"
       ARCH: "64"
 
     - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
