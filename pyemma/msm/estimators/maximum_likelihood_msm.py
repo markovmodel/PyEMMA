@@ -1368,7 +1368,7 @@ class AugmentedMarkovModel(_MSMEstimator):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
-                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, eps=0.05, support_ci=1.00, max_iter=500, debug=False, max_cache_memory=3000):
+                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, eps=0.05, support_ci=1.00, max_iter=500, debug=False, max_cache = 3000):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -1449,7 +1449,7 @@ class AugmentedMarkovModel(_MSMEstimator):
           Weights of experimental measurement (1/2s^2), where s is the std error
 
         eps : float, default=0.05
-          Convergence criterion for Lagrange multipliers
+          Convergence criterion for Lagrange multipliers. When the relative error on the observable average becomes less than this value for all observables, convergence is reached.
         
         support_ci : float, default=1.00
           Confidence interval for determination whether experimental data are inside or outside Markov model support
@@ -1460,7 +1460,7 @@ class AugmentedMarkovModel(_MSMEstimator):
         debug : bool, default=False
           Debug mode. Saves a number of quantities as a function of iteration (log likelihood, etc)
         
-        max_cache_memory : int, default=3000
+        max_cache : int, default=3000
           Maximum size (in megabytes) of cache when computing R tensor.
 
         References
@@ -1475,55 +1475,64 @@ class AugmentedMarkovModel(_MSMEstimator):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
 
         super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=score_method, score_k=score_k)
+        
         self.E = E
+        if E is not None:
+          self.n_mstates, self.n_exp = _np.shape(E)
+        else:
+          self.logger.info("AugmentedMarkovModel instance initialized without Markov state observable matrix (E). This is necessary for estimation.")
+        if m is None:
+          self.logger.info("AugmentedMarkovModel instance initialized without experimental values (m). This necessary for estimation.")
+        if w is None:
+          self.logger.info("AugmentedMarkovModel instance initialized without experimental weights (w). This is necessary for estimation.")
+        
         self.m = m
         self.w = w
         self.eps = eps
-        # number of Markov states and experimental observables
-        self.n_mstates, self.n_exp = np.shape(E)
-        #check for zero weights
-        if np.any(w<1e-12):
-            raise ValueError("Some weights are less than 1e-12 or negative. Please remove these from input.")
-        #compute uncertainties
-        self.sigmas = np.sqrt(1./2./self.w)
+        
+        self.support_ci = support_ci 
+        
+        # check for zero weights
+        if w is not None:
+            if _np.any(w<1e-12):
+                raise ValueError("Some weights are less than 1e-12 or negative. Please remove these from input.")
+            #compute uncertainties
+            self.sigmas = _np.sqrt(1./2./self.w)
+        else:
+            self.sigmas = None
 
         self.converged = False
         self.estimated = False
         self.max_iter = max_iter
         self.debug = debug
+        self.max_cache = max_cache
+        self._is_estimated = False
 
-
-    def _log_likelihood_biased(C, T, E, mhat, ws):
+    def _log_likelihood_biased(self, C, T, E, mhat, ws):
         ll_unbiased = msmest.log_likelihood(C, T)
-        ll_bias = -np.sum(ws*(mhat-E)**2.)
+        ll_bias = -_np.sum(ws*(mhat-E)**2.)
         return ll_unbiased + ll_bias
 
     def _update_G(self):
         _tmp = self.E_active*self.pihat[:, None]
-        self._G = np.dot(self.E_active.T, self.E_active*pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
+        self._G = _np.dot(self.E_active.T, self.E_active*self.pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
 
     def _update_Q(self):
-        self.Q = np.zeros((self.n_mstates_active, self.n_mstates_active))
-        for k in range(self.n_nexp_active):
-          self.Q = self.Q + self.w_active[k]*self._S[k]*_get_Rk(k)
+        self.Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
+        for k in range(self.n_exp_active):
+          self.Q = self.Q + self.w_active[k]*self._S[k]*self._get_Rk(k)
         self.Q = -2.*self.Q
-
-    def _calc_Rk(self, k):
-        pek = self.pihat*self.E_active[:,k]
-        pp = self.pihat[:, None] + self.pihat[None, :]
-        ppmhat = pp*mhat[k]
-        return (pek[:, None]+pek[None, :]) - ppmhat
 
     def _update_Rslices(self, i):
         pek = self.pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
         pp = (self.pihat[:, None] + self.pihat[None, :])
-        ppmhat = pp*mhat[i*self.slicesz:(i+1)*self.slicesz, None, None]
+        ppmhat = pp*self.mhat[i*self._slicesz:(i+1)*self._slicesz, None, None]
         self._Rs=(pek[:, None,:]+pek[None, :, :]).T - ppmhat
         self._Rsi = i
 
     def _get_Rk(self, k):
         if k>(self._Rsi+1)*self._slicesz or k<(self._Rsi)*self._slicesz:
-          self._update_Rslices(np.floor(k/self._slicesz).astype(int))
+          self._update_Rslices(_np.floor(k/self._slicesz).astype(int))
           return self._Rs[k%self._slicesz]
         else:
           return self._Rs[k%self._slicesz]
@@ -1532,11 +1541,11 @@ class AugmentedMarkovModel(_MSMEstimator):
         expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
 
-        _ph_unnom = self.pi*np.exp(expons)
+        _ph_unnom = self.pi*_np.exp(expons)
         self.pihat = _ph_unnom/_ph_unnom.sum()
 
     def _update_mhat(self): 
-        self.mhat = np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:]) 
+        self.mhat = _np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:]) 
         self._update_S() 
 
     def _update_S(self): 
@@ -1549,26 +1558,26 @@ class AugmentedMarkovModel(_MSMEstimator):
         self.X = self.C2 / D
 
         # renormalize
-        self.X /= np.sum(self.X)
+        self.X /= _np.sum(self.X)
 
-        self.pi = np.sum(self.X, axis=1)
+        self.pi = _np.sum(self.X, axis=1)
 
     def _newton_lagrange(self):
         l_old = self.lagrange.copy()
-        _ll_new = -np.inf
+        _ll_new = -_np.inf
         frac = 1.
         mhat_old = self.mhat.copy()
         dmhat_old = self.dmhat.copy()
-        old_slopesum = np.abs(self._S).sum()
+        old_slopesum = _np.abs(self._S).sum()
         slopesum = old_slopesum+1
-        while((self._ll_old>_ll_new) or (np.any(self.pihat<1e-12)) or slopesum>old_slopesum):
+        while((self._ll_old>_ll_new) or (_np.any(self.pihat<1e-12)) or slopesum>old_slopesum):
             self._update_pihat()
             self._update_G()
             dl = 2.*(frac*self._G*self.w_active[:, None]*self._S[:, None]).sum(axis=0)
             self.lagrange = l_old - frac*dl 
             self._update_pihat()
 
-            while(np.any(self.pihat<1e-12)):
+            while(_np.any(self.pihat<1e-12)):
                 frac = frac*0.5
                 self.lagrange = l_old - frac*dl 
                 self._update_pihat()
@@ -1580,16 +1589,16 @@ class AugmentedMarkovModel(_MSMEstimator):
             self._update_X_and_pi()
 
             P = self.X / self.pi[:, None]
-            _ll_new = log_likelihood_biased(self.C, P, self.m_active, self.mhat, self.w_active)
+            _ll_new = self._log_likelihood_biased(self.C, P, self.m_active, self.mhat, self.w_active)
             frac = frac*0.1
 
             if frac<1e-12:
                 self.logger.info("Small gradient fraction")
                 break
 
-            self.dmhat = self.mhat - mht_old
+            self.dmhat = self.mhat - mhat_old
             self._ll_old = float(_ll_new)
-            slopesum = np.abs(self._S).sum()
+            slopesum = _np.abs(self._S).sum()
 
         self._lls.append(_ll_new)
 
@@ -1601,20 +1610,22 @@ class AugmentedMarkovModel(_MSMEstimator):
         # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
             self.active_set = dtrajstats.largest_connected_set
-            self.C =  dtrajstats.count_matrix_largest()
+            self.C =  dtrajstats.count_matrix_largest.toarray()
         else:
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
-            self.C = dtrajstats.count_matrix()  # full count matrix
+            self.C = dtrajstats.count_matrix().toarray()  # full count matrix
             self._nstates_full = self.C.shape[0]  # number of states
+        self._is_estimated = True 
         self.E_active = self.E[self.active_set]
         self.C2 = 0.5*(self.C + self.C.T)
-        self.nz = np.nonzero(self.C2) 
-        
-        #store microscopic observables
-        self.E_min, self.E_max = _ci(self.E_active, conf = support_ci)
+        self.nz = _np.nonzero(self.C2) 
+        self.csum = _np.sum(self.C, axis=1)  # row sums C
 
-        self.n_mstates_active, self.n_exp_active = np.shape(self.E_active) 
+        #store microscopic observables
+        self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
+
+        self.n_mstates_active, self.n_exp_active = _np.shape(self.E_active) 
         
         self.count_outside = []
         self.count_inside = []
@@ -1639,17 +1650,15 @@ class AugmentedMarkovModel(_MSMEstimator):
 
         self.P, self.pi = msmest.tmatrix(self.C, reversible = True, return_statdist = True)
         
-        self._slicesz = np.floor(self.max_cache/(self.P.nbytes/1.e6)).astype(int) 
-        
-        self.lagrange = np.zeros(self.m_active.shape)
+        self.lagrange = _np.zeros(self.m_active.shape)
         self.pihat = self.pi.copy()
         self._update_mhat()
-        self.dmhat = np.ones(np.shape(self.mhat))
+        self.dmhat = _np.ones(_np.shape(self.mhat))
 
-        self._update_pihat()
-        self._update_mhat()
+        self._slicesz = _np.floor(self.max_cache/(self.P.nbytes/1.e6)).astype(int) 
+        self._update_Rslices(0)
 
-        self._ll_old = log_likelihood_biased(self.C, self.P, self.m_active, self.mhat_active, self.w_active)
+        self._ll_old = self._log_likelihood_biased(self.C, self.P, self.m_active, self.mhat, self.w_active)
 
         self._lls = [self._ll_old]
         self.count_low_frac = 0
@@ -1665,13 +1674,13 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._update_Q()
         self._update_X_and_pi()
 
-        self._ll_old = log_likelihood_biased(self.C, self.P, self.m_active, self.mhat_active, self.w_active)
+        self._ll_old = self._log_likelihood_biased(self.C, self.P, self.m_active, self.mhat, self.w_active)
         self._update_G()
 
         while i < self.max_iter:
             pihat_old = self.pihat.copy()
             self._update_pihat()
-            if not np.all(self.pihat>0):
+            if not _np.all(self.pihat>0):
                 self.pihat = pihat_old.copy()
                 die = True
                 self.logger.warn("hat pi does not have a finite probability for all states, terminating")
@@ -1680,7 +1689,7 @@ class AugmentedMarkovModel(_MSMEstimator):
             if i>1:
                 X_old = self.X.copy()
                 self._update_X_and_pi()
-                if np.any(self.X[self.nz]<0) and i>0:
+                if _np.any(self.X[self.nz]<0) and i>0:
                     die = True
                     self.logger.warn("Warning: new X is not proportional to C... reverting to previous step and terminating")
                     self.X = X_old.copy()
@@ -1689,23 +1698,26 @@ class AugmentedMarkovModel(_MSMEstimator):
                 self._newton_lagrange()
             else:
                 P = self.X / self.pi[:, None]
-                _ll_new = self._log_likelihood_biased(self._C_full, P, self.m_active, self.mhat, self.w_active)
+                _ll_new = self._log_likelihood_biased(self.C, P, self.m_active, self.mhat, self.w_active)
                 self._lls.append(_ll_new)
 
             self.phs.append(self.pihat)
             if self.debug:   
                self.ls.append(self.lagrange.copy())
-               self.mhats.append(np.array(self.mhat))
-               self.rmss.append(np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
+               self.mhats.append(_np.array(self.mhat))
+               self.rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
 
-            if i>1 and np.all((np.abs(self.dmhat)/self.sigmas[self.active_set])<self.eps) and not self.converged: 
+            if i>1 and _np.all((_np.abs(self.dmhat)/self.sigmas[self.active_set])<self.eps) and not self.converged: 
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
                 self.converged = True
                 self.estimated = True
                 #die = True
             if self.converged:
-                if np.abs(self._lls[-2]-self._lls[-1])<1e-3:
+                if _np.abs(self._lls[-2]-self._lls[-1])<1e-3:
                    self.logger.info("Converged pihat after %i steps..."%i)
                    die = True
-        
-
+            if die:
+                break
+            i = i + 1
+            if i == self.max_iter:
+                self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter)) 
