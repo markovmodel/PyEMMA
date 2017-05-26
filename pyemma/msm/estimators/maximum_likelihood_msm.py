@@ -1503,9 +1503,9 @@ class AugmentedMarkovModel(_MSMEstimator):
 
         self._converged = False
         self._estimated = False
-        self.max_iter = max_iter
+        self._max_iter = max_iter
         self.debug = debug
-        self.max_cache = max_cache
+        self._max_cache = max_cache
         self._is_estimated = False
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
@@ -1589,7 +1589,7 @@ class AugmentedMarkovModel(_MSMEstimator):
             self._update_X_and_pi()
 
             P = self.X / self.pi[:, None]
-            _ll_new = self._log_likelihood_biased(self.C, P, self.m, self.mhat, self.w)
+            _ll_new = self._log_likelihood_biased(self._C_active, P, self.m, self.mhat, self.w)
             frac = frac*0.1
 
             if frac<1e-12:
@@ -1606,23 +1606,42 @@ class AugmentedMarkovModel(_MSMEstimator):
         if self.E is None or self.w is None or self.m is None:
             raise ValueError("E, w or m was not specified. Stopping.") 
         die = False
+
+
         # get trajectory counts. This sets _C_full and _nstates_full
         dtrajstats = self._get_dtraj_stats(dtrajs)
+        self._C_full = dtrajstats.count_matrix()  # full count matrix
+        self._nstates_full = self._C_full.shape[0]  # number of states
 
         # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
+            # statdist not given - full connectivity on all states
             self.active_set = dtrajstats.largest_connected_set
-            self.C =  dtrajstats.count_matrix_largest.toarray()
         else:
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
-            self.C = dtrajstats.count_matrix().toarray()  # full count matrix
-            self._nstates_full = self.C.shape[0]  # number of states
-        self._is_estimated = True 
+
+        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
+        # is estimated
+        self._is_estimated = True
+
+        # if active set is empty, we can't do anything.
+        if _np.size(self.active_set) == 0:
+            raise RuntimeError('Active set is empty. Cannot estimate AMM.')
+
+        # active count matrix and number of states
+        self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+        self._nstates = self._C_active.shape[0]
+
         self.E_active = self.E[self.active_set]
-        self._C2 = 0.5*(self.C + self.C.T)
+       
+        if not self.sparse:
+          self._C_active = self._C_active.toarray() 
+          self._C_full   = self._C_full.toarray() 
+        
+        self._C2 = 0.5*(self._C_active + self._C_active.T)
         self._nz = _np.nonzero(self._C2) 
-        self._csum = _np.sum(self.C, axis=1)  # row sums C
+        self._csum = _np.sum(self._C_active, axis=1)  # row sums C
 
         #store microscopic observables
         self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
@@ -1645,17 +1664,17 @@ class AugmentedMarkovModel(_MSMEstimator):
 
             self.logger.info("Total experimental constraints outside support %d of %d"%(len(self.count_outside),len(self.E_min)))
 
-        self.P, self.pi = msmest.tmatrix(self.C, reversible = True, return_statdist = True)
+        self.P, self.pi = msmest.tmatrix(self._C_active, reversible = True, return_statdist = True)
         
         self.lagrange = _np.zeros(self.m.shape)
         self.pihat = self.pi.copy()
         self._update_mhat()
         self._dmhat = _np.ones(_np.shape(self.mhat))
 
-        self._slicesz = _np.floor(self.max_cache/(self.P.nbytes/1.e6)).astype(int) 
+        self._slicesz = _np.floor(self._max_cache/(self.P.nbytes/1.e6)).astype(int) 
         self._update_Rslices(0)
 
-        self._ll_old = self._log_likelihood_biased(self.C, self.P, self.m, self.mhat, self.w)
+        self._ll_old = self._log_likelihood_biased(self._C_active, self.P, self.m, self.mhat, self.w)
 
         self._lls = [self._ll_old]
         self.count_low_frac = 0
@@ -1672,10 +1691,10 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._update_Q()
         self._update_X_and_pi()
 
-        self._ll_old = self._log_likelihood_biased(self.C, self.P, self.m, self.mhat, self.w)
+        self._ll_old = self._log_likelihood_biased(self._C_active, self.P, self.m, self.mhat, self.w)
         self._update_G()
 
-        while i < self.max_iter:
+        while i < self._max_iter:
             pihat_old = self.pihat.copy()
             self._update_pihat()
             if not _np.all(self.pihat>0):
@@ -1696,7 +1715,7 @@ class AugmentedMarkovModel(_MSMEstimator):
                 self._newton_lagrange()
             else:
                 P = self.X / self.pi[:, None]
-                _ll_new = self._log_likelihood_biased(self.C, P, self.m, self.mhat, self.w)
+                _ll_new = self._log_likelihood_biased(self._C_active, P, self.m, self.mhat, self.w)
                 self._lls.append(_ll_new)
             
             if self.debug:   
@@ -1720,10 +1739,10 @@ class AugmentedMarkovModel(_MSMEstimator):
             if i == self.max_iter:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter))
         
-        _P = msmest.tmatrix(self.C, reversible = True, mu = self.pihat)
+        _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
         
         self._dtrajs_full = dtrajs
-        self._connected_sets = msmest.connected_sets(self.C)
+        self._connected_sets = msmest.connected_sets(self._C_active)
         self.set_model_params(P=_P, pi=self.pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
