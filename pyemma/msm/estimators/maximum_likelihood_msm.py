@@ -1555,7 +1555,7 @@ class AugmentedMarkovModel(_MSMEstimator):
         c_over_pi = self.csum/self.pi
         D = c_over_pi[:, None] + c_over_pi + self.Q
         # update estimate
-        self.X = self.C2 / D
+        self.X = self._C2 / D
 
         # renormalize
         self.X /= _np.sum(self.X)
@@ -1603,6 +1603,8 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._lls.append(_ll_new)
 
     def _estimate(self, dtrajs):
+        if self.E is None or self.w is None or self.m is None:
+            raise ValueError("E, w or m was not specified. Stopping.") 
         die = False
         # get trajectory counts. This sets _C_full and _nstates_full
         dtrajstats = self._get_dtraj_stats(dtrajs)
@@ -1618,9 +1620,9 @@ class AugmentedMarkovModel(_MSMEstimator):
             self._nstates_full = self.C.shape[0]  # number of states
         self._is_estimated = True 
         self.E_active = self.E[self.active_set]
-        self.C2 = 0.5*(self.C + self.C.T)
-        self.nz = _np.nonzero(self.C2) 
-        self.csum = _np.sum(self.C, axis=1)  # row sums C
+        self._C2 = 0.5*(self.C + self.C.T)
+        self._nz = _np.nonzero(self._C2) 
+        self._csum = _np.sum(self.C, axis=1)  # row sums C
 
         #store microscopic observables
         self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
@@ -1663,11 +1665,12 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._lls = [self._ll_old]
         self.count_low_frac = 0
 
-        self.phs = []
         if self.debug:
+            self.phs = []
             self.ls = []
             self.rmss = []
             self.mhats = []
+        
         self._update_pihat()
         self._update_mhat()
 
@@ -1689,7 +1692,7 @@ class AugmentedMarkovModel(_MSMEstimator):
             if i>1:
                 X_old = self.X.copy()
                 self._update_X_and_pi()
-                if _np.any(self.X[self.nz]<0) and i>0:
+                if _np.any(self.X[self._nz]<0) and i>0:
                     die = True
                     self.logger.warn("Warning: new X is not proportional to C... reverting to previous step and terminating")
                     self.X = X_old.copy()
@@ -1700,12 +1703,12 @@ class AugmentedMarkovModel(_MSMEstimator):
                 P = self.X / self.pi[:, None]
                 _ll_new = self._log_likelihood_biased(self.C, P, self.m_active, self.mhat, self.w_active)
                 self._lls.append(_ll_new)
-
-            self.phs.append(self.pihat)
+            
             if self.debug:   
-               self.ls.append(self.lagrange.copy())
-               self.mhats.append(_np.array(self.mhat))
-               self.rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
+                self.phs.append(self.pihat)
+                self.ls.append(self.lagrange.copy())
+                self.mhats.append(_np.array(self.mhat))
+                self.rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
 
             if i>1 and _np.all((_np.abs(self.dmhat)/self.sigmas[self.active_set])<self.eps) and not self.converged: 
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
@@ -1720,4 +1723,8 @@ class AugmentedMarkovModel(_MSMEstimator):
                 break
             i = i + 1
             if i == self.max_iter:
-                self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter)) 
+                self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter))
+
+    def hmm(self, n):
+        self.logger.info("Not Implemented - Please use PCCA for now.")
+    
