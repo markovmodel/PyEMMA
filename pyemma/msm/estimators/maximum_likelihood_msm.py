@@ -1746,6 +1746,8 @@ class AugmentedMarkovModel(_MSMEstimator):
         self.set_model_params(P=_P, pi=self.pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
+        return self
+
     def hmm(self, n):
         self.logger.info("Not Implemented - Please use PCCA for now.")
   
@@ -1755,4 +1757,4 @@ class AugmentedMarkovModel(_MSMEstimator):
         if self.debug:
             return {"log-likelihoods": self._lls, "pihats": self._phs, "mhats": self._mhats, "lagrange-multipliers": self._ls, "rms": self._rmss}
         else:
-            return None
+            return {"log-likelihoods": self._lls}

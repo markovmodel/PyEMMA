@@ -25,6 +25,7 @@ from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from .estimators import BayesianMSM as _Bayes_MSM
 from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
+from .estimators import AugmentedMarkovModel as _ML_AMM
 from .estimators import OOMReweightedMSM as _OOM_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
 
@@ -1288,6 +1289,295 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
+def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag, 
+                          count_mode='sliding',  connectivity='largest',
+                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
+                          score_method='VAMP2', score_k=10):
+    r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
+
+    Returns a :class:`AugmentedMarkovModel` that
+    contains the estimated transition matrix and allows to compute a
+    large number of quantities related to Markov models.
+
+    Parameters
+    ----------
+    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+        discrete trajectories, stored as integer ndarrays (arbitrary size)
+        or a single ndarray for only one trajectory.
+    ftrajs : 
+       
+        
+    m   : 
+        
+        
+    
+    w   : 
+        
+        
+
+    lag : int
+        lag time at which transitions are counted and the transition matrix is
+        estimated.
+    reversible : bool, optional
+        If true compute reversible MSM, else non-reversible MSM
+    statdist : (M,) ndarray, optional
+        Stationary vector on the full state-space. Transition matrix
+        will be estimated such that statdist is its equilibrium
+        distribution.
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
+          at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
+          at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+    connectivity : str, optional
+        Connectivity mode. Three methods are intended (currently only
+        'largest' is implemented)
+
+        * 'largest' : The active set is the largest reversibly
+          connected set. All estimation will be done on this subset
+          and all quantities (transition matrix, stationary
+          distribution, etc) are only defined on this subset and are
+          correspondingly smaller than the full set of states
+
+        * 'all' : The active set is the full set of states. Estimation
+          will be conducted on each reversibly connected set
+          separately. That means the transition matrix will decompose
+          into disconnected submatrices, the stationary vector is only
+          defined within subsets, etc. Currently not implemented.
+
+        * 'none' : The active set is the full set of
+          states. Estimation will be conducted on the full set of
+          states without ensuring connectivity. This only permits
+          nonreversible estimation. Currently not implemented.
+    dt_traj : str, optional
+        Description of the physical time corresponding to the lag. May
+        be used by analysis algorithms such as plotting tools to
+        pretty-print the axes. By default '1 step', i.e. there is no
+        physical time unit.  Specify by a number, whitespace and
+        unit. Permitted units are (* is an arbitrary string):
+
+        *  'fs',  'femtosecond*'
+        *  'ps',  'picosecond*'
+        *  'ns',  'nanosecond*'
+        *  'us',  'microsecond*'
+        *  'ms',  'millisecond*'
+        *  's',   'second*'
+
+    maxiter : int, optional
+        Optional parameter with specifies the maximum number of 
+        updates for Lagrange multiplier estimation.
+         
+    maxerr : float, optional
+        Optional parameter with reversible = True.  convergence
+        tolerance for transition matrix estimation.  This specifies
+        the maximum change of the Euclidean norm of relative
+        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The
+        relative stationary probability changes :math:`e_i =
+        (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in
+        order to track changes in small probabilities. The Euclidean
+        norm of the change vector, :math:`|e_i|_2`, is compared to
+        maxerr.
+
+    score_method : str, optional, default='VAMP2'
+        Score to be used with MSM score function. Available scores are
+        based on the variational approach for Markov processes [13]_ [14]_:
+
+        *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the sum of transition
+                    matrix eigenvalues, also called Rayleigh quotient [13]_ [15]_ .
+        *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the kinetic variance [16]_ .
+
+    score_k : int or None
+        The maximum number of eigenvalues or singular values used in the
+        score. If set to None, all available eigenvalues will be used.
+
+    Returns
+    -------
+    amm : :class:`AugmentedMarkovModel <pyemma.msm.AugmentedMarkovModel>`
+        Estimator object containing the AMM and estimation information.
+
+    See also
+    --------
+    AugmentedMarkovModel 
+        An AMM object that has been estimated from data
+
+
+    .. autoclass:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+            :attributes:
+
+
+    References
+    ----------
+    The mathematical theory of Markov (state) model estimation was introduced
+    in [1]_ . Further theoretical developments were made in [2]_ . The term
+    Markov state model was coined in [3]_ . Continuous-time Markov models
+    (Master equation models) were suggested in [4]_. Reversible Markov model
+    estimation was introduced in [5]_ , and further developed in [6]_ [7]_ [9]_ .
+    It was shown in [8]_ that the quality of Markov state models does in fact
+    not depend on memory loss, but rather on where the discretization is
+    suitable to approximate the eigenfunctions of the Markov operator (the
+    'reaction coordinates'). With a suitable choice of discretization and lag
+    time, MSMs can thus become very accurate. [9]_ introduced a number of
+    methodological improvements and gives a good overview of the methodological
+    basics of Markov state modeling today. [10]_ is a more extensive review
+    book of theory, methods and applications.
+
+    .. [1] Schuette, C. , A. Fischer, W. Huisinga and P. Deuflhard:
+        A Direct Approach to Conformational Dynamics based on Hybrid Monte
+        Carlo. J. Comput. Phys., 151, 146-168 (1999)
+
+    .. [2] Swope, W. C., J. W. Pitera and F. Suits: Describing protein
+        folding kinetics by molecular dynamics simulations: 1. Theory
+        J. Phys. Chem. B 108, 6571-6581 (2004)
+
+    .. [3] Singhal, N., C. D. Snow, V. S. Pande: Using path sampling to build
+        better Markovian state models: Predicting the folding rate and mechanism
+        of a tryptophan zipper beta hairpin. J. Chem. Phys. 121, 415 (2004).
+
+    .. [4] Sriraman, S., I. G. Kevrekidis and G. Hummer, G.
+        J. Phys. Chem. B 109, 6479-6484 (2005)
+
+    .. [5] Noe, F.: Probability Distributions of Molecular Observables computed
+        from Markov Models. J. Chem. Phys. 128, 244103 (2008)
+
+    .. [6] Buchete, N.-V. and Hummer, G.: Coarse master equations for peptide
+        folding dynamics. J. Phys. Chem. B 112, 6057--6069 (2008)
+
+    .. [7] Bowman, G. R., K. A. Beauchamp, G. Boxer and V. S. Pande:
+        Progress and challenges in the automated construction of Markov state
+        models for full protein systems. J. Chem. Phys. 131, 124101 (2009)
+
+    .. [8] Sarich, M., F. Noe and C. Schuette: On the approximation quality
+        of Markov state models. SIAM Multiscale Model. Simul. 8, 1154-1177 (2010)
+
+    .. [9] Prinz, J.-H., H. Wu, M. Sarich, B. Keller, M. Senne, M. Held,
+        J. D. Chodera, C. Schuette and F. Noe: Markov models of molecular
+        kinetics: Generation and Validation J. Chem. Phys. 134, 174105 (2011)
+
+    .. [10] Bowman, G. R., V. S. Pande and F. Noe:
+        An Introduction to Markov State Models and Their Application to Long
+        Timescale Molecular Simulation. Advances in Experimental Medicine and
+        Biology 797, Springer, Heidelberg (2014)
+
+    .. [11] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C. and Noe, F.:
+        Markov State Models from short non-Equilibrium Simulations - Analysis and
+         Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
+
+    .. [12] H. Wu and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+    .. [13] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+
+    .. [14] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+    .. [15] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015)
+
+    .. [16] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015)
+
+
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> import numpy as np
+    >>> np.set_printoptions(precision=3)
+    >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
+    >>> mm = msm.estimate_markov_model(dtrajs, 2)
+
+    Which is the active set of states we are working on?
+
+    >>> print(mm.active_set)
+    [0 1 2]
+
+    Show the count matrix
+
+
+    >>> print(mm.count_matrix_active)
+    [[ 7.  2.  1.]
+     [ 2.  0.  4.]
+     [ 2.  3.  9.]]
+
+    Show the estimated transition matrix
+
+    >>> print(mm.transition_matrix)
+    [[ 0.7    0.167  0.133]
+     [ 0.388  0.     0.612]
+     [ 0.119  0.238  0.643]]
+
+    Is this model reversible (i.e. does it fulfill detailed balance)?
+
+    >>> print(mm.is_reversible)
+    True
+
+    What is the equilibrium distribution of states?
+
+    >>> print(mm.stationary_distribution)
+    [ 0.393  0.17   0.437]
+
+    Relaxation timescales?
+
+    >>> print(mm.timescales())
+    [ 3.415  1.297]
+
+    Mean first passage time from state 0 to 2:
+
+    >>> print(mm.mfpt(0, 2))  # doctest: +ELLIPSIS
+    9.929...
+
+    """
+    import six
+    #TODO: 
+    # check input
+    if len(dtrajs) != len(ftrajs):
+      raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
+    elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
+      raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.") 
+    else:
+      # MAKE E matrix
+      dta = _np.concatenate(dtrajs)
+      fta = _np.concatenate(ftrajs)
+      all_markov_states = set(dta)
+      _E = _np.zero((len(all_markov_states), fta.shape[1]))
+      for i, s in enumerate(all_markov_states):
+        _E[i, :] = fta[np.where(dta == s)].mean(axis = 0)
+      # transition matrix estimator
+      mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
+                      connectivity=connectivity,
+                      dt_traj=dt_traj, maxiter=maxiter,
+                      maxerr=maxerr, score_method=score_method, score_k=score_k, 
+                      E=_E, w=w, m=m)
+      # estimate and return
+      return mlamm.estimate(dtrajs)
 
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)

@@ -97,35 +97,6 @@ class TestAMMSimple(unittest.TestCase):
         assert_allclose(self.mu_MSM, msm.stationary_distribution)
         assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
 
-class TestMSMRevPi(unittest.TestCase):
-    r"""Checks if the MLMSM correctly handles the active set computation
-    if a stationary distribution is given"""
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def test_valid_stationary_vector(self):
-        dtraj = np.array([0, 0, 1, 0, 1, 2])
-        pi_valid = np.array([0.1, 0.9, 0.0])
-        pi_invalid = np.array([0.1, 0.9])
-        active_set = np.array([0, 1])
-        msm = estimate_markov_model(dtraj, 1, statdist=pi_valid)
-        self.assertTrue(np.all(msm.active_set==active_set))
-        with self.assertRaises(ValueError):
-            msm = estimate_markov_model(dtraj, 1, statdist=pi_invalid)       
-        
-    def test_valid_trajectory(self):
-        pi = np.array([0.1, 0.0, 0.9])
-        dtraj_invalid = np.array([1, 1, 1, 1, 1, 1, 1])
-        dtraj_valid = np.array([0, 2, 0, 2, 2, 0, 1, 1])
-        msm = estimate_markov_model(dtraj_valid, 1, statdist=pi)
-        self.assertTrue(np.all(msm.active_set==np.array([0, 2])))
-        with self.assertRaises(ValueError):
-            msm = estimate_markov_model(dtraj_invalid, 1, statdist=pi)
-
 
 class TestMSMDoubleWell(unittest.TestCase):
 
