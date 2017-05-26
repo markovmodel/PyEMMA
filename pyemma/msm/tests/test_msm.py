@@ -1012,7 +1012,14 @@ class TestMSMMinCountConnectivity(unittest.TestCase):
         dtraj = np.zeros(100, dtype=int)
         dtraj[np.random.randint(0, 99, size=40)] = 1
         dtraj[np.random.randint(0, 99, size=5)] = 2
-        dtraj[np.random.randint(0, 99, size=20)] = 3
+
+        # do not overwrite state 2
+        ind = np.where(dtraj != 2)[0]
+        state_3 = np.random.choice(ind, size=20)
+        dtraj[state_3] = 3
+
+        assert (dtraj == 2).sum() == 5
+
         cls.dtraj = dtraj
         cls.active_set_unrestricted = np.array([0, 1, 2, 3])
         cls.active_set_restricted = np.array([0, 1, 3])
