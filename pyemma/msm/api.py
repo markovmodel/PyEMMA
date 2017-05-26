@@ -47,6 +47,7 @@ __all__ = ['markov_model',
            'bayesian_markov_model',
            'timescales_hmsm',
            'estimate_hidden_markov_model',
+           'estimate_augmented_markov_model',
            'bayesian_hidden_markov_model',
            'tpt']
 
