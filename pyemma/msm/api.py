@@ -61,7 +61,7 @@ __all__ = ['markov_model',
 # TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
-                   errors=None, nsamples=50, n_jobs=1, show_progress=True):
+                   errors=None, nsamples=50, n_jobs=1, show_progress=True, mincount_connectivity='1/n'):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
@@ -116,6 +116,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     n_jobs : int, optional
         how many subprocesses to start to estimate the models for each lag time.
+ 
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -213,6 +219,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     else:
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
+    if hasattr(estimator, 'mincount_connectivity'):
+        estimator.mincount_connectivity = mincount_connectivity
     # go
     itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs,
                                 show_progress=show_progress)
@@ -307,7 +315,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
-                          score_method='VAMP2', score_k=10):
+                          score_method='VAMP2', score_k=10, mincount_connectivity='1/n'):
     r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodMSM` that
@@ -425,6 +433,12 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     score_k : int or None
         The maximum number of eigenvalues or singular values used in the
         score. If set to None, all available eigenvalues will be used.
+
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -588,7 +602,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                         count_mode=count_mode,
                         sparse=sparse, connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter,
-                        maxerr=maxerr, score_method=score_method, score_k=score_k)
+                        maxerr=maxerr, score_method=score_method, score_k=score_k,
+                        mincount_connectivity=mincount_connectivity)
         # estimate and return
         return mlmsm.estimate(dtrajs)
     elif weights == 'oom':
@@ -597,7 +612,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
                            sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
-                           score_method=score_method, score_k=score_k)
+                           score_method=score_method, score_k=score_k,
+                           mincount_connectivity=mincount_connectivity)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 
@@ -606,7 +622,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
                           count_mode='effective',
                           nsamples=100, conf=0.95, dt_traj='1 step',
-                          show_progress=True):
+                          show_progress=True, mincount_connectivity='1/n'):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianMSM` that contains the
@@ -686,6 +702,12 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
         |  's',   'second*'
     show_progress : bool, default=True
         Show progressbars for calculation
+
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -791,7 +813,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
     # TODO: store_data=True
     bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
                                 count_mode=count_mode, sparse=sparse, connectivity=connectivity,
-                                dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
+                                dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress,
+                                mincount_connectivity=mincount_connectivity)
     return bmsm_estimator.estimate(dtrajs)
 
 
