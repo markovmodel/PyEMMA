@@ -1574,7 +1574,7 @@ class AugmentedMarkovModel(_MSMEstimator):
         expons = expons - expons.max()
 
         _ph_unnom = self.pi*_np.exp(expons)
-        self.pihat = _ph_unnom/_ph_unnom.sum()
+        self.pihat = (_ph_unnom/_ph_unnom.sum()).reshape(-1,)
 
     def _update_mhat(self): 
         """
@@ -1684,8 +1684,8 @@ class AugmentedMarkovModel(_MSMEstimator):
         self.E_active = self.E[self.active_set]
        
         if not self.sparse: 
-          self._C_active = self._C_active.toarray() 
-          self._C_full   = self._C_full.toarray() 
+            self._C_active = self._C_active.toarray() 
+            self._C_full   = self._C_full.toarray() 
         
         # reversibly counted 
         self._C2 = 0.5*(self._C_active + self._C_active.T)
@@ -1693,11 +1693,20 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._csum = _np.sum(self._C_active, axis=1)  # row sums C
 
         #get ranges of Markov model expectation values
-        self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
+        if self.support_ci == 1:
+            self.E_min = _np.min(self.E_active, axis=0)
+            self.E_max = _np.max(self.E_active, axis=0)
+        else:
+            # PyEMMA confidence interval calculation fails sometimes with conf=1.0
+            self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
 
         #dimensions of E matrix
         self.n_mstates_active, self.n_exp_active = _np.shape(self.E_active) 
         
+        assert self.n_exp_active == len(self.w)
+        assert self.n_exp_active == len(self.m)
+
+
         self.count_outside = []
         self.count_inside = []
         self._lls = []
@@ -1705,8 +1714,9 @@ class AugmentedMarkovModel(_MSMEstimator):
         i = 0
         # Determine which experimental values are outside the support as defined by the Confidence interval
         for emi,ema,mm,mw in zip(self.E_min, self.E_max, self.m, self.w):
+            print(emi,ema,mm,mw)
             if mm<(emi) or mm>(ema):
-                self.logger.info("Experimental value",mm,"is outside the support (%f,%f)"%(emi,ema))
+                self.logger.info("Experimental value %f is outside the support (%f,%f)"%(mm, emi, ema))
                 self.count_outside.append(i)
             else:
                 self.count_inside.append(i)
@@ -1716,7 +1726,6 @@ class AugmentedMarkovModel(_MSMEstimator):
 
         # A number of initializations
         self.P, self.pi = msmest.tmatrix(self._C_active, reversible = True, return_statdist = True)
-        
         self.lagrange = _np.zeros(self.m.shape)
         self.pihat = self.pi.copy()
         self._update_mhat()
@@ -1799,7 +1808,7 @@ class AugmentedMarkovModel(_MSMEstimator):
             if die:
                 break
             i = i + 1
-            if i == self.max_iter:
+            if i == self._max_iter:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter))
         
         _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
