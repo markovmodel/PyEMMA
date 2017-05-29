@@ -1681,7 +1681,9 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
         # slice out active states from E matrix
-        self.E_active = self.E[self.active_set]
+        _dset = list(set(_np.concatenate(dtrajs)))
+        _rras = [_dset.index(s) for s in self.active_set]
+        self.E_active = self.E[_rras]
        
         if not self.sparse: 
             self._C_active = self._C_active.toarray() 

@@ -38,7 +38,7 @@ import numpy as _np
 __docformat__ = "restructuredtext en"
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe", "Simon Olsson"]
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
@@ -1307,17 +1307,11 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
     dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
         discrete trajectories, stored as integer ndarrays (arbitrary size)
         or a single ndarray for only one trajectory.
-    ftrajs : 
-       
-        
-    m   : 
-        
-        
-    
-    w   : 
-        
-        
-
+    ftrajs : list of trajectories of microscopic observables. Has to have
+        a one-to-one correspondence with the dtrajs. 
+    m   : Experimental average. 
+    w   : Weight of each experimental observable. Equal to 1/(2s) where s is
+        standard error of the experimental. 
     lag : int
         lag time at which transitions are counted and the transition matrix is
         estimated.
@@ -1385,6 +1379,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         Optional parameter with specifies the maximum number of 
         updates for Lagrange multiplier estimation.
          
+
     score_method : str, optional, default='VAMP2'
         Score to be used with MSM score function. Available scores are
         based on the variational approach for Markov processes [13]_ [14]_:
@@ -1551,25 +1546,25 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
     #TODO: 
     # check input
     if len(dtrajs) != len(ftrajs):
-      raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
+        raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
     elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
-      raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.") 
+        raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.") 
     else:
-      # MAKE E matrix
-      dta = _np.concatenate(dtrajs)
-      fta = _np.concatenate(ftrajs)
-      all_markov_states = set(dta)
-      _E = _np.zeros((len(all_markov_states), fta.shape[1]))
-      for i, s in enumerate(all_markov_states):
-        _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
-      # transition matrix estimator
-      mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
-                      connectivity=connectivity,
-                      dt_traj=dt_traj, maxiter=maxiter,
-                      score_method=score_method, score_k=score_k, 
-                      E=_E, w=w, m=m)
-      # estimate and return
-      return mlamm.estimate(dtrajs)
+        # MAKE E matrix
+        dta = _np.concatenate(dtrajs)
+        fta = _np.concatenate(ftrajs)
+        all_markov_states = set(dta)
+        _E = _np.zeros((len(all_markov_states), fta.shape[1]))
+        for i, s in enumerate(all_markov_states):
+          _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
+        # transition matrix estimator
+        mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
+                        connectivity=connectivity,
+                        dt_traj=dt_traj, maxiter=maxiter,
+                        score_method=score_method, score_k=score_k, 
+                        E=_E, w=w, m=m)
+        # estimate and return
+        return mlamm.estimate(dtrajs)
 
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
