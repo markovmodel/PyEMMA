@@ -33,10 +33,12 @@ from .models import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
+import numpy as _np
+
 __docformat__ = "restructuredtext en"
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe", "Simon Olsson"]
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
@@ -1292,7 +1294,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
 def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag, 
                           count_mode='sliding',  connectivity='largest',
-                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
+                          dt_traj='1 step', maxiter=500,
                           score_method='VAMP2', score_k=10):
     r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
 
@@ -1383,17 +1385,6 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         Optional parameter with specifies the maximum number of 
         updates for Lagrange multiplier estimation.
          
-    maxerr : float, optional
-        Optional parameter with reversible = True.  convergence
-        tolerance for transition matrix estimation.  This specifies
-        the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The
-        relative stationary probability changes :math:`e_i =
-        (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in
-        order to track changes in small probabilities. The Euclidean
-        norm of the change vector, :math:`|e_i|_2`, is compared to
-        maxerr.
-
     score_method : str, optional, default='VAMP2'
         Score to be used with MSM score function. Available scores are
         based on the variational approach for Markov processes [13]_ [14]_:
@@ -1568,14 +1559,14 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
       dta = _np.concatenate(dtrajs)
       fta = _np.concatenate(ftrajs)
       all_markov_states = set(dta)
-      _E = _np.zero((len(all_markov_states), fta.shape[1]))
+      _E = _np.zeros((len(all_markov_states), fta.shape[1]))
       for i, s in enumerate(all_markov_states):
-        _E[i, :] = fta[np.where(dta == s)].mean(axis = 0)
+        _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
       # transition matrix estimator
       mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
                       connectivity=connectivity,
                       dt_traj=dt_traj, maxiter=maxiter,
-                      maxerr=maxerr, score_method=score_method, score_k=score_k, 
+                      score_method=score_method, score_k=score_k, 
                       E=_E, w=w, m=m)
       # estimate and return
       return mlamm.estimate(dtrajs)

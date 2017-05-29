@@ -34,7 +34,7 @@ from msmtools.estimation import count_matrix, largest_connected_set, largest_con
 from msmtools.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_markov_model, MaximumLikelihoodMSM
+from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel 
 from six.moves import range
 
 
@@ -44,7 +44,7 @@ class TestAMMSimple(unittest.TestCase):
         self.state = np.random.mtrand.get_state()
 
         """Reseed the rng to enforce 'deterministic' behavior"""
-        np.random.mtrand.seed(0xDEAD)
+        np.random.mtrand.seed(0xDEADBEEF)
 
         """Meta-stable birth-death chain"""
         b = 2
@@ -62,40 +62,33 @@ class TestAMMSimple(unittest.TestCase):
         self.dtraj = generate_traj(P, 10000, start=0)
         self.tau = 1
 
-        """Estimate MSM"""
-        self.C_MSM = count_matrix(self.dtraj, self.tau, sliding=True)
-        self.lcc_MSM = largest_connected_set(self.C_MSM)
-        self.Ccc_MSM = largest_connected_submatrix(self.C_MSM, lcc=self.lcc_MSM)
-        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True)
-        self.mu_MSM = stationary_distribution(self.P_MSM)
         self.k = 3
-        self.ts = timescales(self.P_MSM, k=self.k, tau=self.tau)
+        """ Predictions and experimental data """
+        self.E = np.vstack((np.linspace(-0.1, 1., 7), np.linspace(1.5, -0.1, 7))).T
+        self.m = np.array([0.0, 0.0])
+        self.w = np.array([2.0, 2.5])
+
+        """ Feature trajectory """
+        self.ftraj = self.E[dtraj, :]
+
+        self.AMM = AugmentedMarkovModel(E = self.E, m = self.m, w = self.w)
 
     def tearDown(self):
         """Revert the state of the rng"""
         np.random.mtrand.set_state(self.state)
 
-    def test_MSM(self):
-        msm = estimate_markov_model(self.dtraj, self.tau)
-        assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
-        self.assertEqual(self.tau, msm.lagtime)
-        assert_allclose(self.lcc_MSM, msm.largest_connected_set)
-        self.assertTrue(np.allclose(self.Ccc_MSM.toarray(), msm.count_matrix_active))
-        self.assertTrue(np.allclose(self.C_MSM.toarray(), msm.count_matrix_full))
-        self.assertTrue(np.allclose(self.P_MSM.toarray(), msm.transition_matrix))
-        assert_allclose(self.mu_MSM, msm.stationary_distribution)
-        assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
-
-    def test_MSM_sparse(self):
-        msm = estimate_markov_model(self.dtraj, self.tau, sparse=True)
-        assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
-        self.assertEqual(self.tau, msm.lagtime)
-        assert_allclose(self.lcc_MSM, msm.largest_connected_set)
-        self.assertTrue(np.allclose(self.Ccc_MSM.toarray(), msm.count_matrix_active.toarray()))
-        self.assertTrue(np.allclose(self.C_MSM.toarray(), msm.count_matrix_full.toarray()))
-        self.assertTrue(np.allclose(self.P_MSM.toarray(), msm.transition_matrix.toarray()))
-        assert_allclose(self.mu_MSM, msm.stationary_distribution)
-        assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
+    def test_AMM(self):
+        amm = estimate_markov_model(self.dtraj, self.ftraj, self.m, self.w, self.tau)
+        assert_allclose(self.dtraj, amm.discrete_trajectories_full[0])
+        self.assertEqual(self.tau, amm.lagtime)
+        self.assertEqual(self.E, amm.E)
+        self.assertEqual(self.m, amm.m)
+        self.assertEqual(self.w, amm.w)
+        self.assertTrue(np.allclose())
+        self.assertTrue(np.allclose())
+        self.assertTrue(np.allclose())
+        assert_allclose()
+        assert_allclose()
 
 
 class TestMSMDoubleWell(unittest.TestCase):

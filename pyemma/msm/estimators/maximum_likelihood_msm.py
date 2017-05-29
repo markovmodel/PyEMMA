@@ -1368,7 +1368,7 @@ class AugmentedMarkovModel(_MSMEstimator):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
-                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, eps=0.05, support_ci=1.00, max_iter=500, debug=False, max_cache = 3000):
+                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache = 3000):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -1454,7 +1454,7 @@ class AugmentedMarkovModel(_MSMEstimator):
         support_ci : float, default=1.00
           Confidence interval for determination whether experimental data are inside or outside Markov model support
 
-        max_iter : int, default=500
+        maxiter : int, default=500
           Maximum number of iterations
         
         debug : bool, default=False
@@ -1510,7 +1510,7 @@ class AugmentedMarkovModel(_MSMEstimator):
         self._converged = False
         # Convergence flag for hatpi
         self._estimated = False
-        self._max_iter = max_iter
+        self._max_iter = maxiter
         self.debug = debug
         self._max_cache = max_cache
         self._is_estimated = False
@@ -1714,7 +1714,6 @@ class AugmentedMarkovModel(_MSMEstimator):
         i = 0
         # Determine which experimental values are outside the support as defined by the Confidence interval
         for emi,ema,mm,mw in zip(self.E_min, self.E_max, self.m, self.w):
-            print(emi,ema,mm,mw)
             if mm<(emi) or mm>(ema):
                 self.logger.info("Experimental value %f is outside the support (%f,%f)"%(mm, emi, ema))
                 self.count_outside.append(i)
