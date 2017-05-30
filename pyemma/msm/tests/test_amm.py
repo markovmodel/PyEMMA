@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -30,14 +30,12 @@ import scipy.sparse
 import warnings
 
 from msmtools.generation import generate_traj
-from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
-from msmtools.analysis import stationary_distribution, timescales
-from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel, estimate_markov_model 
-from six.moves import range
-
+from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
 from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
+from pyemma.util.numeric import assert_allclose
+
+from six.moves import range
 
 class TestAMMSimple(unittest.TestCase):
     def setUp(self):
