@@ -130,12 +130,12 @@ class _MSMEstimator(_Estimator, _MSM):
         self.sparse = sparse
 
         # store counting mode (lowercase)
-        self.count_mode = str(count_mode).lower()
+        self.count_mode = count_mode
         if self.count_mode not in ('sliding', 'effective', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown.')
 
         # store connectivity mode (lowercase)
-        self.connectivity = connectivity.lower()
+        self.connectivity = connectivity
         if self.connectivity == 'largest':
             pass  # this is the current default. no need to do anything
         elif self.connectivity == 'all':
@@ -952,7 +952,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
                                                    sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
                                                    score_method=score_method, score_k=score_k)
-        
+
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize
             self.statdist_constraint /= self.statdist_constraint.sum()
