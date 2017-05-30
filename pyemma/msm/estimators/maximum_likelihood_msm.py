@@ -1364,7 +1364,7 @@ class OOMReweightedMSM(_MSMEstimator):
 
 @fix_docs
 @aliased
-class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
+class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
