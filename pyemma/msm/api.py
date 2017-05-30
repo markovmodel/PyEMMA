@@ -1440,7 +1440,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         all_markov_states = set(dta)
         _E = _np.zeros((len(all_markov_states), fta.shape[1]))
         for i, s in enumerate(all_markov_states):
-          _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
+            _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
         # transition matrix estimator
         mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
                         connectivity=connectivity,
