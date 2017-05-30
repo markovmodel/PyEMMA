@@ -7,16 +7,17 @@ Changelog
 **New features**:
 
 - msm: Added Augmented Markov Models. A way to include averaged experimental
-  data into estimation of Markov models from molecular simulations. The method is described in [1].
+  data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
 
 - References:
 
-  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining Experimental and Simulation Data 
+  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining Experimental and Simulation Data
       via Augmented Markov Models" In revision.
 
 **Fixes**:
 
 - datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
+- coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
 
 
 2.4 (05-19-2017)
