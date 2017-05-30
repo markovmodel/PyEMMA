@@ -1822,7 +1822,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
         
         self._dtrajs_full = dtrajs
-        self._connected_sets = msmest.connected_sets(self._C_active)
+        self._connected_sets = msmest.connected_sets(self._C_full)
         self.set_model_params(P=_P, pi=self.pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
@@ -1838,3 +1838,21 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
             return {"log-likelihoods": self._lls, "pihats": self._phs, "mhats": self._mhats, "lagrange-multipliers": self._ls, "rms": self._rmss}
         else:
             return {"log-likelihoods": self._lls}
+
+    @property
+    def largest_connected_set(self):
+        """
+        The largest reversible connected set of states
+
+        """
+        self._check_is_estimated()
+        return self._connected_sets[0]
+
+    @property
+    def connected_sets(self):
+        """
+        The reversible connected sets of states, sorted by size (descending)
+
+        """
+        self._check_is_estimated()
+        return self._connected_sets
