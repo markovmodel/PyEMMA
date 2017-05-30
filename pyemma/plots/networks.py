@@ -23,8 +23,13 @@ import warnings
 from pyemma.util import types as _types
 from six.moves import range
 from math import sqrt as _sqrt
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 __author__ = 'noe, marscher'
+__all__ = ['plot_flux', 'plot_network', 'plot_markov_model', 'NetworkPlot']
 
 
 class NetworkPlot(object):
@@ -181,10 +186,9 @@ class NetworkPlot(object):
         else:
             figsize = (Dx / Dy * max_height, max_height)
         if self.ax is None:
-            self.ax = _plt.gca()
-            fig = _plt.gcf()
-            fig.set_figwidth(figsize[0])
-            fig.set_figheight(figsize[1])
+            logger.debug("creating new figure")
+            fig = _plt.figure(None, figsize=figsize)
+            self.ax = fig.add_subplot(111)
         else:
             fig = self.ax.figure
             window_extend = self.ax.get_window_extent()
@@ -204,25 +208,26 @@ class NetworkPlot(object):
         # show or suppress frame
         self.ax.set_frame_on(show_frame)
         # set node labels
-        if state_labels is 'auto':
-            state_labels=[str(i) for i in _np.arange(n)]
+        if isinstance(state_labels, six.string_types) and state_labels == 'auto':
+            state_labels = [str(i) for i in _np.arange(n)]
         else:
-            assert len(state_labels) == n, \
-            "Mistmatch between nstates and nr. state_labels (%u vs %u)" % (n, len(state_labels))
+            if len(state_labels) != n:
+                raise ValueError("length of state_labels({}) has to match length of states({})."
+                                 .format(len(state_labels), n))
         # set node colors
         if state_colors is None:
             state_colors = '#ff5500'  # None is not acceptable
         if isinstance(state_colors, str):
             state_colors = [state_colors] * n
-        if isinstance(state_colors, list):
-            assert len(state_colors) == n, \
-            "Mistmatch between nstates and nr. state_colors (%u vs %u)" % (n, len(state_colors))
+        if isinstance(state_colors, list) and not len(state_colors) == n:
+            raise ValueError("Mistmatch between nstates and nr. state_colors (%u vs %u)" % (n, len(state_colors)))
         try:
             colorscales = _types.ensure_ndarray(state_colors, ndim=1, kind='numeric')
             colorscales /= colorscales.max()
             state_colors = [_plt.cm.binary(int(256.0 * colorscales[i])) for i in range(n)]
-        except:
-            pass  # assume we have a list of strings now.
+        except AssertionError:
+            # assume we have a list of strings now.
+            logger.debug("could not cast 'state_colors' to numeric values.")
 
         # set arrow labels
         if isinstance(arrow_labels, _np.ndarray):
@@ -456,6 +461,10 @@ def plot_flux(
     state_sizes : ndarray(n), optional, default=None
         User-defined areas of the discs drawn for each state. If not given, the
         stationary probability of P will be used
+    flux_scale : float, optional, default=1.0
+        scaling of the flux values
+    state_scale : float, optional, default=1.0
+        scaling of the state circles
     state_colors : string, ndarray(n), or list, optional, default='#ff5500' (orange)
         string :
             a Hex code for a single color used for all states
@@ -489,6 +498,8 @@ def plot_flux(
         The maximum figure height
     figpadding: float (default = 0.2)
         The relative figure size used for the padding
+    attribute_to_plot : str, optional, default='net_flux'
+        specify the attribute of the flux object to plot.
     show_frame: boolean (default=False)
         Draw a frame around the network.
     show_committor: boolean (default=False)
@@ -541,13 +552,15 @@ def plot_flux(
         I, J = _np.where(F < minflux)
         F[I, J] = 0.0
 
-    if state_labels == 'auto':
+    if isinstance(state_labels, six.string_types) and state_labels == 'auto':
         # the first and last element correspond to A and B in ReactiveFlux
-        n = _np.shape(F)[0]
-        state_labels = ['A']
-        if n > 2:
-            state_labels += list(str(i - 1) for i in range(1, n - 1))
-        state_labels += ['B']
+        state_labels = _np.array([str(i) for i in range(flux.nstates)])
+        state_labels[_np.array(flux.A)] = "A"
+        state_labels[_np.array(flux.B)] = "B"
+    elif isinstance(state_labels, (_np.ndarray, list, tuple)):
+        if len(state_labels) != flux.nstates:
+            raise ValueError("length of state_labels({}) has to match length of states({})."
+                             .format(len(state_labels), flux.nstates))
 
     fig = plot.plot_network(
         state_sizes=state_sizes, state_scale=state_scale, state_colors=state_colors,
