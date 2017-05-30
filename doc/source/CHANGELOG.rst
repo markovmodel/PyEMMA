@@ -1,6 +1,17 @@
 Changelog
 =========
 
+2.5 (??-??-????)
+----------------
+
+**New features**:
+
+- msm: Added Augmented Markov Models. A way to include averaged experimental
+  data into estimation of Markov models from molecular simulations. The method is described in [1].
+
+  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining Experimental and Simulation Data 
+      via Augmented Markov Models" In revision.
+
 2.4 (05-19-2017)
 ----------------
 
