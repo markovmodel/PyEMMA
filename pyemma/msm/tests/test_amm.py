@@ -1,0 +1,337 @@
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+r"""Unit test for the AMM module
+
+.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de> 
+
+"""
+
+from __future__ import absolute_import
+import unittest
+
+import numpy as np
+import scipy.sparse
+import warnings
+
+from msmtools.generation import generate_traj
+from pyemma.msm.tests.birth_death_chain import BirthDeathChain
+from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
+from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
+from pyemma.util.numeric import assert_allclose
+
+from six.moves import range
+
+class TestAMMSimple(unittest.TestCase):
+    def setUp(self):
+        """Store state of the rng"""
+        self.state = np.random.mtrand.get_state()
+
+        """Reseed the rng to enforce 'deterministic' behavior"""
+        np.random.mtrand.seed(0xDEADBEEF)
+
+        """Meta-stable birth-death chain"""
+        b = 2
+        q = np.zeros(7)
+        p = np.zeros(7)
+        q[1:] = 0.5
+        p[0:-1] = 0.5
+        q[2] = 1.0 - 10 ** (-b)
+        q[4] = 10 ** (-b)
+        p[2] = 10 ** (-b)
+        p[4] = 1.0 - 10 ** (-b)
+
+        bdc = BirthDeathChain(q, p)
+        P = bdc.transition_matrix()
+        self.dtraj = generate_traj(P, 10000, start=0)
+        self.tau = 1
+
+        self.k = 3
+        """ Predictions and experimental data """
+        self.E = np.vstack((np.linspace(-0.1, 1., 7), np.linspace(1.5, -0.1, 7))).T
+        self.m = np.array([0.0, 0.0])
+        self.w = np.array([2.0, 2.5])
+        self.sigmas = 1./np.sqrt(2)/np.sqrt(self.w)
+
+        """ Feature trajectory """
+        self.ftraj = self.E[self.dtraj, :]
+
+        self.AMM = AugmentedMarkovModel(E = self.E, m = self.m, w = self.w)
+        self.AMM.estimate([self.dtraj])
+
+    def tearDown(self):
+        """Revert the state of the rng"""
+        np.random.mtrand.set_state(self.state)
+
+    def test_AMM(self):
+        """ self-consistency, explicit class instantiation/estimation and convienence function """
+        amm = estimate_augmented_markov_model([self.dtraj], [self.ftraj], self.tau, self.m, self.sigmas)
+        assert_allclose(self.dtraj, amm.discrete_trajectories_full[0])
+        self.assertEqual(self.tau, amm.lagtime)
+        self.assertTrue(np.allclose(self.E, amm.E))
+        self.assertTrue(np.allclose(self.m, amm.m))
+        self.assertTrue(np.allclose(self.w, amm.w))
+        self.assertTrue(np.allclose(self.AMM.P, amm.P))
+        self.assertTrue(np.allclose(self.AMM.pi, amm.pi))
+        self.assertTrue(np.allclose(self.AMM.lagrange, amm.lagrange))
+
+class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        import pyemma.datasets
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)    
+        cls.m = np.array([1.9]) 
+        cls.w = np.array([2.0]) 
+        cls.sigmas = 1./np.sqrt(2)/np.sqrt(cls.w)
+        _sd = list(set(cls.dtraj))
+        
+        cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj], :]
+        cls.tau = 10
+        cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.tau, cls.m, cls.sigmas)
+        cls.msm = cls.amm
+
+    def test_reversible(cls):
+      pass
+
+    def test_score_cv(cls):
+      pass
+
+    def test_score(cls):
+      pass
+
+    def test_sparse(cls):
+      pass
+
+
+    # ---------------------------------
+    # BASIC PROPERTIES
+    # ---------------------------------
+
+    def test_lagtime(self):
+        self._lagtime(self.amm)
+
+    def test_active_set(self):
+        self._active_set(self.amm)
+
+    def test_largest_connected_set(self):
+        self._largest_connected_set(self.amm)
+
+    def test_nstates(self):
+        self._nstates(self.amm)
+
+    def test_connected_sets(self):
+        self._connected_sets(self.amm)
+
+    def test_connectivity(self):
+        self._connectivity(self.amm)
+
+    def test_count_matrix_active(self):
+        self._count_matrix_active(self.amm)
+
+    def test_count_matrix_full(self):
+        self._count_matrix_full(self.amm)
+
+    def test_discrete_trajectories_full(self):
+        self._discrete_trajectories_full(self.amm)
+
+    def test_discrete_trajectories_active(self):
+        self._discrete_trajectories_active(self.amm)
+
+    def test_timestep(self):
+        self._timestep(self.amm)
+
+    def test_transition_matrix(self):
+        self._transition_matrix(self.amm)
+
+    # ---------------------------------
+    # SIMPLE STATISTICS
+    # ---------------------------------
+
+    def test_active_count_fraction(self):
+        self._active_count_fraction(self.amm)
+
+    def test_active_state_fraction(self):
+        # should always be a fraction
+        self._active_state_fraction(self.amm)
+
+    def test_effective_count_matrix(self):
+        self._effective_count_matrix(self.amm)
+
+    # ---------------------------------
+    # EIGENVALUES, EIGENVECTORS
+    # ---------------------------------
+
+    def test_statdist(self):
+        self._statdist(self.amm)
+
+    def test_eigenvalues(self):
+        self._eigenvalues(self.amm)
+
+    def test_eigenvectors_left(self):
+        self._eigenvectors_left(self.amm)
+
+    def test_eigenvectors_right(self):
+        self._eigenvectors_right(self.amm)
+
+    def test_eigenvectors_RDL(self):
+        self._eigenvectors_RDL(self.amm)
+
+    def _timescales(self, amm):
+        if not amm.is_sparse:
+            if not amm.is_reversible:
+                with warnings.catch_warnings(record=True) as w:
+                    ts = amm.timescales()
+            else:
+                ts = amm.timescales()
+        else:
+            k = 4
+            if not amm.is_reversible:
+                with warnings.catch_warnings(record=True) as w:
+                    ts = amm.timescales(k)
+            else:
+                ts = amm.timescales(k)
+
+        # should be all positive
+        assert (np.all(ts > 0))
+        # REVERSIBLE: should be all real
+        if amm.is_reversible:
+            ts_ref = np.array([ 299.11,    8.58,    5.1 ])
+            assert (np.all(np.isreal(ts)))
+            # HERE:
+            np.testing.assert_almost_equal(ts[:3], ts_ref, decimal=2)
+        else:
+            ts_ref = np.array([ 299.11,    8.58,    5.1 ])
+            # HERE:
+            np.testing.assert_almost_equal(ts[:3], ts_ref, decimal=2)
+
+    def test_timescales(self):
+        self._timescales(self.amm)
+
+    # ---------------------------------
+    # FIRST PASSAGE PROBLEMS
+    # ---------------------------------
+
+    def test_committor(self):
+        self._committor(self.amm)
+
+    def _mfpt(self, amm):
+        a = 16
+        b = 48
+        t = amm.mfpt(a, b)
+        assert (t > 0)
+        # HERE:
+        np.testing.assert_allclose(t, 709.76, rtol=1e-3, atol=1e-6)
+
+    def test_mfpt(self):
+        self._mfpt(self.amm)
+
+    # ---------------------------------
+    # PCCA
+    # ---------------------------------
+
+    def test_pcca_assignment(self):
+        self._pcca_assignment(self.amm)
+
+    def test_pcca_distributions(self):
+        self._pcca_distributions(self.amm)
+
+    def test_pcca_memberships(self):
+        self._pcca_memberships(self.amm)
+
+    def test_pcca_sets(self):
+        self._pcca_sets(self.amm)
+
+    # ---------------------------------
+    # EXPERIMENTAL STUFF
+    # ---------------------------------
+
+    def _expectation(self, amm):
+        e = amm.expectation(list(range(amm.nstates)))
+        # approximately equal for both
+        assert (np.abs(e - 34.92) < 0.01)
+
+    def test_expectation(self):
+        self._expectation(self.amm)
+
+    def test_correlation(self):
+        self._correlation(self.amm)
+
+    def _relaxation(self, amm):
+        if amm.is_sparse:
+            k = 4
+        else:
+            k = amm.nstates            
+        pi_perturbed = (amm.stationary_distribution ** 2)
+        pi_perturbed /= pi_perturbed.sum()
+        a = list(range(amm.nstates))[::-1]
+        maxtime = 100000
+        times, rel1 = amm.relaxation(amm.stationary_distribution, a, maxtime=maxtime, k=k)
+        # should be constant because we are in equilibrium
+        assert (np.allclose(rel1 - rel1[0], np.zeros((np.shape(rel1)[0]))))
+        times, rel2 = amm.relaxation(pi_perturbed, a, maxtime=maxtime, k=k)
+        # should relax
+        assert (len(times) == maxtime / amm.lagtime)
+        assert (len(rel2) == maxtime / amm.lagtime)
+        assert (rel2[0] < rel2[-1])
+
+    def test_relaxation(self):
+        self._relaxation(self.amm)
+
+    def test_fingerprint_correlation(self):
+        self._fingerprint_correlation(self.amm)
+
+    def test_fingerprint_relaxation(self):
+        self._fingerprint_relaxation(self.amm)
+
+    # ---------------------------------
+    # STATISTICS, SAMPLING
+    # ---------------------------------
+
+    def test_active_state_indexes(self):
+        self._active_state_indexes(self.amm)
+
+    def test_generate_traj(self):
+        self._generate_traj(self.amm)
+
+    def test_sample_by_state(self):
+        self._sample_by_state(self.amm)
+
+    def test_trajectory_weights(self):
+        self._trajectory_weights(self.amm)
+
+    def test_simulate_MSM(self):
+        amm = self.amm
+        N=400
+        start=1
+        traj = amm.simulate(N=N, start=start)
+        assert (len(traj) <= N)
+        assert (len(np.unique(traj)) <= len(amm.transition_matrix))
+        assert (start == traj[0])
+
+    # ----------------------------------
+    # MORE COMPLEX TESTS / SANITY CHECKS
+    # ----------------------------------
+
+    def test_two_state_kinetics(self):
+        self._two_state_kinetics(self.amm)
+
+
+if __name__ == "__main__":
+    unittest.main()

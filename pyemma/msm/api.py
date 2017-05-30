@@ -25,12 +25,15 @@ from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from .estimators import BayesianMSM as _Bayes_MSM
 from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
+from .estimators import AugmentedMarkovModel as _ML_AMM
 from .estimators import OOMReweightedMSM as _OOM_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
 
 from .models import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
+
+import numpy as _np
 
 __docformat__ = "restructuredtext en"
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -46,6 +49,7 @@ __all__ = ['markov_model',
            'bayesian_markov_model',
            'timescales_hmsm',
            'estimate_hidden_markov_model',
+           'estimate_augmented_markov_model',
            'bayesian_hidden_markov_model',
            'tpt']
 
@@ -1288,6 +1292,149 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
+def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas, 
+                          count_mode='sliding',  connectivity='largest',
+                          dt_traj='1 step', maxiter=500, maxcache=3000):
+    r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
+
+    Returns a :class:`AugmentedMarkovModel` that
+    contains the estimated transition matrix and allows to compute a
+    large number of quantities related to Markov models.
+
+    Parameters
+    ----------
+    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+        discrete trajectories, stored as integer ndarrays (arbitrary size)
+        or a single ndarray for only one trajectory.
+    ftrajs : list of trajectories of microscopic observables. Has to have
+        the same shape (number of trajectories and timesteps) as dtrajs.
+        Each timestep in each trajectory should match the shape of m and sigma. 
+    lag : int
+        lag time at which transitions are counted and the transition matrix is
+        estimated.
+    m   : Experimental averages. 
+    sigmas : Standard error for each experimental observable, same shape as m,
+            number of experimental observables. 
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
+          at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
+          at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+    connectivity : str, optional
+        Connectivity mode. Three methods are intended (currently only
+        'largest' is implemented)
+
+        * 'largest' : The active set is the largest reversibly
+          connected set. All estimation will be done on this subset
+          and all quantities (transition matrix, stationary
+          distribution, etc) are only defined on this subset and are
+          correspondingly smaller than the full set of states
+
+        * 'all' : The active set is the full set of states. Estimation
+          will be conducted on each reversibly connected set
+          separately. That means the transition matrix will decompose
+          into disconnected submatrices, the stationary vector is only
+          defined within subsets, etc. Currently not implemented.
+
+        * 'none' : The active set is the full set of
+          states. Estimation will be conducted on the full set of
+          states without ensuring connectivity. This only permits
+          nonreversible estimation. Currently not implemented.
+    dt_traj : str, optional
+        Description of the physical time corresponding to the lag. May
+        be used by analysis algorithms such as plotting tools to
+        pretty-print the axes. By default '1 step', i.e. there is no
+        physical time unit.  Specify by a number, whitespace and
+        unit. Permitted units are (* is an arbitrary string):
+
+        *  'fs',  'femtosecond*'
+        *  'ps',  'picosecond*'
+        *  'ns',  'nanosecond*'
+        *  'us',  'microsecond*'
+        *  'ms',  'millisecond*'
+        *  's',   'second*'
+
+    maxiter : int, optional
+        Optional parameter with specifies the maximum number of 
+        updates for Lagrange multiplier estimation.
+
+    maxcache : int, optional
+        Parameter which specifies the maximum size of cache used
+        when performing estimation of AMM, in megabytes. 
+
+    Returns
+    -------
+    amm : :class:`AugmentedMarkovModel <pyemma.msm.AugmentedMarkovModel>`
+        Estimator object containing the AMM and estimation information.
+
+    See also
+    --------
+    AugmentedMarkovModel 
+        An AMM object that has been estimated from data
+
+
+    .. autoclass:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+            :attributes:
+
+
+    References
+    ----------
+    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining Experimental and Simulation
+        Data via Augmented Markov Models" PNAS is revision. 
+
+    """
+    import six
+    # check input
+    if _np.all(sigmas>0):
+      _w = 1./(2*sigmas**2.)
+    else:
+      raise ValueError('Zero or negative standard errors supplied. Please revise input')
+
+    if len(dtrajs) != len(ftrajs):
+        raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
+    elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
+        raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.") 
+    else:
+        # MAKE E matrix
+        dta = _np.concatenate(dtrajs)
+        fta = _np.concatenate(ftrajs)
+        all_markov_states = set(dta)
+        _E = _np.zeros((len(all_markov_states), fta.shape[1]))
+        for i, s in enumerate(all_markov_states):
+            _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
+        # transition matrix estimator
+        mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
+                        connectivity=connectivity,
+                        dt_traj=dt_traj, maxiter=maxiter, max_cache=maxcache,
+                        E=_E, w=_w, m=m)
+        # estimate and return
+        return mlamm.estimate(dtrajs)
 
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
