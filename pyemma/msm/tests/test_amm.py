@@ -160,8 +160,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         # LARGEST: identical to active set
         assert (np.all(lcs == msm.active_set))
 
-#    def test_largest_connected_set(self):
-#        self._largest_connected_set(self.amm)
+    def test_largest_connected_set(self):
+        self._largest_connected_set(self.amm)
 
     def _nstates(self, msm):
         # should always be <= full
@@ -178,8 +178,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         # MODE LARGEST:
         assert (np.all(cs[0] == msm.active_set))
 
-#    def test_connected_sets(self):
-#        self._connected_sets(self.amm)
+    def test_connected_sets(self):
+        self._connected_sets(self.amm)
 
     def _connectivity(self, msm):
         # HERE:
@@ -215,8 +215,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         # HERE: states are shifted down from the beginning, because early states are missing
         assert (dta[0][0] < self.dtraj[0])
 
-#    def test_discrete_trajectories_active(self):
-#        self._discrete_trajectories_active(self.amm)
+    def test_discrete_trajectories_active(self):
+        self._discrete_trajectories_active(self.amm)
 
     def _timestep(self, msm):
         assert (msm.timestep_model.startswith('1'))
@@ -269,8 +269,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         Ceff = msm.effective_count_matrix
         assert (np.all(Ceff.shape == (msm.nstates, msm.nstates)))
 
-#    def test_effective_count_matrix(self):
-#        self._effective_count_matrix(self.amm)
+    def test_effective_count_matrix(self):
+        self._effective_count_matrix(self.amm)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
@@ -527,7 +527,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ---------------------------------
 
     def _expectation(self, msm):
-        #FIX HC VALUES
         e = msm.expectation(list(range(msm.nstates)))
         # approximately equal for both
         assert (np.abs(e - 34.92) < 0.01)
@@ -716,8 +715,8 @@ class TestMSMDoubleWell(unittest.TestCase):
                 assert (row[0] == 0)  # right trajectory
                 assert (dtraj_active[row[1]] == i)
 
-#    def test_sample_by_state(self):
-#        self._sample_by_state(self.amm)
+    def test_sample_by_state(self):
+        self._sample_by_state(self.amm)
 
     def _trajectory_weights(self, msm):
         W = msm.trajectory_weights()

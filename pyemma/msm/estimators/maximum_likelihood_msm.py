@@ -1364,7 +1364,7 @@ class OOMReweightedMSM(_MSMEstimator):
 
 @fix_docs
 @aliased
-class AugmentedMarkovModel(_MSMEstimator):
+class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
@@ -1680,6 +1680,13 @@ class AugmentedMarkovModel(_MSMEstimator):
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
+        
+
+        # computed derived quantities
+        # back-mapping from full to lcs
+        self._full2active = -1 * _np.ones(dtrajstats.nstates, dtype=int)
+        self._full2active[self.active_set] = _np.arange(len(self.active_set))
+
         # slice out active states from E matrix
         _dset = list(set(_np.concatenate(dtrajs)))
         _rras = [_dset.index(s) for s in self.active_set]

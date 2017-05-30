@@ -1309,7 +1309,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         or a single ndarray for only one trajectory.
     ftrajs : list of trajectories of microscopic observables. Has to have
         a one-to-one correspondence with the dtrajs. 
-    m   : Experimental average. 
+    m   : Experimental averages. 
     w   : Weight of each experimental observable. Equal to 1/(2s) where s is
         standard error of the experimental. 
     lag : int
@@ -1422,124 +1422,8 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
 
     References
     ----------
-    The mathematical theory of Markov (state) model estimation was introduced
-    in [1]_ . Further theoretical developments were made in [2]_ . The term
-    Markov state model was coined in [3]_ . Continuous-time Markov models
-    (Master equation models) were suggested in [4]_. Reversible Markov model
-    estimation was introduced in [5]_ , and further developed in [6]_ [7]_ [9]_ .
-    It was shown in [8]_ that the quality of Markov state models does in fact
-    not depend on memory loss, but rather on where the discretization is
-    suitable to approximate the eigenfunctions of the Markov operator (the
-    'reaction coordinates'). With a suitable choice of discretization and lag
-    time, MSMs can thus become very accurate. [9]_ introduced a number of
-    methodological improvements and gives a good overview of the methodological
-    basics of Markov state modeling today. [10]_ is a more extensive review
-    book of theory, methods and applications.
-
-    .. [1] Schuette, C. , A. Fischer, W. Huisinga and P. Deuflhard:
-        A Direct Approach to Conformational Dynamics based on Hybrid Monte
-        Carlo. J. Comput. Phys., 151, 146-168 (1999)
-
-    .. [2] Swope, W. C., J. W. Pitera and F. Suits: Describing protein
-        folding kinetics by molecular dynamics simulations: 1. Theory
-        J. Phys. Chem. B 108, 6571-6581 (2004)
-
-    .. [3] Singhal, N., C. D. Snow, V. S. Pande: Using path sampling to build
-        better Markovian state models: Predicting the folding rate and mechanism
-        of a tryptophan zipper beta hairpin. J. Chem. Phys. 121, 415 (2004).
-
-    .. [4] Sriraman, S., I. G. Kevrekidis and G. Hummer, G.
-        J. Phys. Chem. B 109, 6479-6484 (2005)
-
-    .. [5] Noe, F.: Probability Distributions of Molecular Observables computed
-        from Markov Models. J. Chem. Phys. 128, 244103 (2008)
-
-    .. [6] Buchete, N.-V. and Hummer, G.: Coarse master equations for peptide
-        folding dynamics. J. Phys. Chem. B 112, 6057--6069 (2008)
-
-    .. [7] Bowman, G. R., K. A. Beauchamp, G. Boxer and V. S. Pande:
-        Progress and challenges in the automated construction of Markov state
-        models for full protein systems. J. Chem. Phys. 131, 124101 (2009)
-
-    .. [8] Sarich, M., F. Noe and C. Schuette: On the approximation quality
-        of Markov state models. SIAM Multiscale Model. Simul. 8, 1154-1177 (2010)
-
-    .. [9] Prinz, J.-H., H. Wu, M. Sarich, B. Keller, M. Senne, M. Held,
-        J. D. Chodera, C. Schuette and F. Noe: Markov models of molecular
-        kinetics: Generation and Validation J. Chem. Phys. 134, 174105 (2011)
-
-    .. [10] Bowman, G. R., V. S. Pande and F. Noe:
-        An Introduction to Markov State Models and Their Application to Long
-        Timescale Molecular Simulation. Advances in Experimental Medicine and
-        Biology 797, Springer, Heidelberg (2014)
-
-    .. [11] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C. and Noe, F.:
-        Markov State Models from short non-Equilibrium Simulations - Analysis and
-         Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
-
-    .. [12] H. Wu and F. Noe: Variational approach for learning Markov processes
-        from time series data (in preparation)
-
-    .. [13] Noe, F. and F. Nueske: A variational approach to modeling slow processes
-        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
-
-    .. [14] Wu, H and F. Noe: Variational approach for learning Markov processes
-        from time series data (in preparation)
-
-    .. [15] McGibbon, R and V. S. Pande: Variational cross-validation of slow
-        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015)
-
-    .. [16] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
-        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015)
-
-
-    Example
-    -------
-    >>> from pyemma import msm
-    >>> import numpy as np
-    >>> np.set_printoptions(precision=3)
-    >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
-    >>> mm = msm.estimate_markov_model(dtrajs, 2)
-
-    Which is the active set of states we are working on?
-
-    >>> print(mm.active_set)
-    [0 1 2]
-
-    Show the count matrix
-
-
-    >>> print(mm.count_matrix_active)
-    [[ 7.  2.  1.]
-     [ 2.  0.  4.]
-     [ 2.  3.  9.]]
-
-    Show the estimated transition matrix
-
-    >>> print(mm.transition_matrix)
-    [[ 0.7    0.167  0.133]
-     [ 0.388  0.     0.612]
-     [ 0.119  0.238  0.643]]
-
-    Is this model reversible (i.e. does it fulfill detailed balance)?
-
-    >>> print(mm.is_reversible)
-    True
-
-    What is the equilibrium distribution of states?
-
-    >>> print(mm.stationary_distribution)
-    [ 0.393  0.17   0.437]
-
-    Relaxation timescales?
-
-    >>> print(mm.timescales())
-    [ 3.415  1.297]
-
-    Mean first passage time from state 0 to 2:
-
-    >>> print(mm.mfpt(0, 2))  # doctest: +ELLIPSIS
-    9.929...
+    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining Experimental and Simulation
+        Data via Augmented Markov Models" PNAS is revision. 
 
     """
     import six
