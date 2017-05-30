@@ -1368,7 +1368,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
-                 dt_traj='1 step', score_method='VAMP2', score_k=10, E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache = 3000):
+                 dt_traj='1 step', 
+                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache = 3000):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -1427,18 +1428,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
             |  'ms',  'millisecond*'
             |  's',   'second*'
 
-
-        score_method : str, optional, default='VAMP2'
-            Score to be used with score function. Available are:
-
-            |  'VAMP1'  [1]_
-            |  'VAMP2'  [1]_
-            |  'VAMPE'  [1]_
-
-        score_k : int or None
-            The maximum number of eigenvalues or singular values used in the
-            score. If set to None, all available eigenvalues will be used.
-
         E : ndarray(n, k)
           Expectations by state. n Markov states, k experimental observables; each index is average over members of the Markov state. 
         
@@ -1474,7 +1463,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
 
-        super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=score_method, score_k=score_k)
+        super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=None, score_k=None)
         
         self.E = E
         if E is not None:
@@ -1516,25 +1505,24 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         self._is_estimated = False
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
-        """
-          Evaluate AMM likelihood.
-        """
+        """ Evaluate AMM likelihood. """
         ll_unbiased = msmest.log_likelihood(C, T)
         ll_bias = -_np.sum(ws*(mhat-E)**2.)
         return ll_unbiased + ll_bias
 
     def _update_G(self):
-        """
-          Update G, observable covariance.
-          See SI of [1].
+        """ Update G. 
+            Observable covariance.
+            See SI of [1].
+
         """
         _tmp = self.E_active*self.pihat[:, None]
         self._G = _np.dot(self.E_active.T, self.E_active*self.pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
 
     def _update_Q(self):
-        """
-          Compute Q, a weighted sum of the R-tensor.
-          See SI of [1].
+        """ Compute Q, a weighted sum of the R-tensor.
+            
+            See SI of [1].
         """
         self.Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
         for k in range(self.n_exp_active):
@@ -1542,12 +1530,13 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         self.Q = -2.*self.Q
 
     def _update_Rslices(self, i):
-        """
-          Computation of multiple slices of R tensor.
-          When _estimate(.) is called the R-tensor is split into segments whose maximum size is
-          specified by max_cache argument (see constructor).  
-          _Rsi specifies which of the segments are currently in cache.
-          For equations check SI of [1].
+        """ Computation of multiple slices of R tensor.
+          
+            When _estimate(.) is called the R-tensor is split into segments whose maximum size is
+            specified by max_cache argument (see constructor).  
+            _Rsi specifies which of the segments are currently in cache.
+             For equations check SI of [1].
+        
         """
         pek = self.pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
         pp = (self.pihat[:, None] + self.pihat[None, :])
@@ -1559,6 +1548,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         """
           Convienence function to get cached value of an Rk slice of the R tensor.
           If we are outside cache, update the cache and return appropriate slice.
+
         """
         if k>(self._Rsi+1)*self._slicesz or k<(self._Rsi)*self._slicesz:
           self._update_Rslices(_np.floor(k/self._slicesz).astype(int))
@@ -1567,9 +1557,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
           return self._Rs[k%self._slicesz]
 
     def _update_pihat(self):
-        """
-          Update stationary distribution estimate of Augmented Markov model (\hat pi) 
-        """ 
+        """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """ 
         expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
 
@@ -1577,16 +1565,12 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         self.pihat = (_ph_unnom/_ph_unnom.sum()).reshape(-1,)
 
     def _update_mhat(self): 
-        """
-          Updates mhat (expectation of observable of the Augmented Markov model) 
-        """ 
+        """ Updates mhat (expectation of observable of the Augmented Markov model) """ 
         self.mhat = _np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:]) 
         self._update_S() 
 
     def _update_S(self):
-        """
-          Computes slope in observable space.
-        """ 
+        """ Computes slope in observable space """ 
         self._S = self.mhat-self.m 
 
     def _update_X_and_pi(self):
@@ -1680,7 +1664,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
-        
 
         # computed derived quantities
         # back-mapping from full to lcs
@@ -1856,3 +1839,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM,_MSMEstimator):
         """
         self._check_is_estimated()
         return self._connected_sets
+
+    def score(self, dtrajs, score_method=None, score_k=None):
+        self.logger.info("Not Implemented.")
+

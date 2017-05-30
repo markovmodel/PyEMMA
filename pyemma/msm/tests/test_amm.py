@@ -67,6 +67,7 @@ class TestAMMSimple(unittest.TestCase):
         self.E = np.vstack((np.linspace(-0.1, 1., 7), np.linspace(1.5, -0.1, 7))).T
         self.m = np.array([0.0, 0.0])
         self.w = np.array([2.0, 2.5])
+        self.sigmas = 1./np.sqrt(2)/np.sqrt(self.w)
 
         """ Feature trajectory """
         self.ftraj = self.E[self.dtraj, :]
@@ -80,7 +81,7 @@ class TestAMMSimple(unittest.TestCase):
 
     def test_AMM(self):
         """ self-consistency, explicit class instantiation/estimation and convienence function """
-        amm = estimate_augmented_markov_model([self.dtraj], [self.ftraj], self.m, self.w, self.tau)
+        amm = estimate_augmented_markov_model([self.dtraj], [self.ftraj], self.tau, self.m, self.sigmas)
         assert_allclose(self.dtraj, amm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, amm.lagtime)
         self.assertTrue(np.allclose(self.E, amm.E))
@@ -99,38 +100,13 @@ class TestAMMDoubleWell(unittest.TestCase):
         cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)    
         cls.m = np.array([1.9]) 
         cls.w = np.array([2.0]) 
+        cls.sigmas = 1./np.sqrt(2)/np.sqrt(cls.w)
         _sd = list(set(cls.dtraj))
         
         cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj], :]
         cls.tau = 10
-        cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.m, cls.w, cls.tau)
+        cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.tau, cls.m, cls.sigmas)
 
-    # ---------------------------------
-    # SCORE
-    # ---------------------------------
-
-    def _score(self, amm):
-        dtrajs_test = self.dtraj[80000:]
-        s1 = amm.score(dtrajs_test, score_method='VAMP1', score_k=2)
-        assert 1.0 <= s1 <= 2.0
-        s2 = amm.score(dtrajs_test, score_method='VAMP2', score_k=2)
-        assert 1.0 <= s2 <= 2.0
-        # se = amm.score(dtrajs_test, score_method='VAMPE', score_k=2)
-        # se_inf = amm.score(dtrajs_test, score_method='VAMPE', score_k=None)
-
-    def test_score(self):
-        self._score(self.amm)
-
-    def _score_cv(self, estimator):
-        s1 = estimator.score_cv(self.dtraj, n=5, score_method='VAMP1', score_k=2).mean()
-        assert 1.0 <= s1 <= 2.0
-        s2 = estimator.score_cv(self.dtraj, n=5, score_method='VAMP2', score_k=2).mean()
-        assert 1.0 <= s2 <= 2.0
-        se = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=2).mean()
-        se_inf = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=None).mean()
-
-    def test_score_cv(self):
-        self._score_cv(AugmentedMarkovModel(E=self.E_, m=self.m, w=self.w, lag=10))
 
     # ---------------------------------
     # BASIC PROPERTIES

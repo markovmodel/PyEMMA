@@ -1292,10 +1292,9 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
-def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag, 
+def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas, 
                           count_mode='sliding',  connectivity='largest',
-                          dt_traj='1 step', maxiter=500,
-                          score_method='VAMP2', score_k=10):
+                          dt_traj='1 step', maxiter=500, maxcache=3000):
     r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
 
     Returns a :class:`AugmentedMarkovModel` that
@@ -1308,19 +1307,14 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         discrete trajectories, stored as integer ndarrays (arbitrary size)
         or a single ndarray for only one trajectory.
     ftrajs : list of trajectories of microscopic observables. Has to have
-        a one-to-one correspondence with the dtrajs. 
-    m   : Experimental averages. 
-    w   : Weight of each experimental observable. Equal to 1/(2s) where s is
-        standard error of the experimental. 
+        the same shape (number of trajectories and timesteps) as dtrajs.
+        Each timestep in each trajectory should match the shape of m and sigma. 
     lag : int
         lag time at which transitions are counted and the transition matrix is
         estimated.
-    reversible : bool, optional
-        If true compute reversible MSM, else non-reversible MSM
-    statdist : (M,) ndarray, optional
-        Stationary vector on the full state-space. Transition matrix
-        will be estimated such that statdist is its equilibrium
-        distribution.
+    m   : Experimental averages. 
+    sigmas : Standard error for each experimental observable, same shape as m,
+            number of experimental observables. 
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
@@ -1378,21 +1372,10 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
     maxiter : int, optional
         Optional parameter with specifies the maximum number of 
         updates for Lagrange multiplier estimation.
-         
 
-    score_method : str, optional, default='VAMP2'
-        Score to be used with MSM score function. Available scores are
-        based on the variational approach for Markov processes [13]_ [14]_:
-
-        *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [14]_ .
-                    If the MSM is reversible, this is equal to the sum of transition
-                    matrix eigenvalues, also called Rayleigh quotient [13]_ [15]_ .
-        *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [14]_ .
-                    If the MSM is reversible, this is equal to the kinetic variance [16]_ .
-
-    score_k : int or None
-        The maximum number of eigenvalues or singular values used in the
-        score. If set to None, all available eigenvalues will be used.
+    maxcache : int, optional
+        Parameter which specifies the maximum size of cache used
+        when performing estimation of AMM, in megabytes. 
 
     Returns
     -------
@@ -1427,8 +1410,12 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
 
     """
     import six
-    #TODO: 
     # check input
+    if _np.all(sigmas>0):
+      _w = 1./(2*sigmas**2.)
+    else:
+      raise ValueError('Zero or negative standard errors supplied. Please revise input')
+
     if len(dtrajs) != len(ftrajs):
         raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
     elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
@@ -1444,9 +1431,8 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, m, w, lag,
         # transition matrix estimator
         mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
                         connectivity=connectivity,
-                        dt_traj=dt_traj, maxiter=maxiter,
-                        score_method=score_method, score_k=score_k, 
-                        E=_E, w=w, m=m)
+                        dt_traj=dt_traj, maxiter=maxiter, max_cache=maxcache,
+                        E=_E, w=_w, m=m)
         # estimate and return
         return mlamm.estimate(dtrajs)
 
