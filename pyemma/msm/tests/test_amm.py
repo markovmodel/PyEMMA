@@ -249,23 +249,6 @@ class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
     def test_pcca_assignment(self):
         self._pcca_assignment(self.amm)
 
-    def _pcca_distributions(self, amm):
-        if amm.is_reversible:
-            amm.pcca(2)
-            pccadist = amm.metastable_distributions
-            # should be right size
-            assert (np.all(pccadist.shape == (2, amm.nstates)))
-            # should be nonnegative
-            assert (np.all(pccadist >= 0))
-            # should roughly add up to stationary:
-            # this will not hold for AMMs?
-            #ds = pccadist[0] + pccadist[1]
-            #ds /= ds.sum()
-            #assert (np.max(np.abs(ds - amm.stationary_distribution)) < 0.001)
-        else:
-            with self.assertRaises(ValueError):
-                amm.pcca(2)
-
     def test_pcca_distributions(self):
         self._pcca_distributions(self.amm)
 

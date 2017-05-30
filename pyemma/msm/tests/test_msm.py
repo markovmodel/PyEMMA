@@ -666,7 +666,8 @@ class TestMSMDoubleWell(unittest.TestCase):
             # should be nonnegative
             assert (np.all(pccadist >= 0))
             # should roughly add up to stationary:
-            ds = pccadist[0] + pccadist[1]
+            cgdist = np.array([amm.stationary_distribution[amm.metastable_sets[0]].sum(), amm.stationary_distribution[amm.metastable_sets[1]].sum()])
+            ds = cgdist[0]*pccadist[0] + cgdist[1]*pccadist[1]
             ds /= ds.sum()
             assert (np.max(np.abs(ds - msm.stationary_distribution)) < 0.001)
         else:
