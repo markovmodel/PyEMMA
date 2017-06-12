@@ -160,6 +160,9 @@ class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
     def test_transition_matrix(self):
         self._transition_matrix(self.amm)
 
+    def test_dt_model(self):
+        self._dt_model(self.amm)
+
     # ---------------------------------
     # SIMPLE STATISTICS
     # ---------------------------------
