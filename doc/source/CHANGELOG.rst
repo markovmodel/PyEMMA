@@ -18,7 +18,8 @@ Changelog
 
 - datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
 - coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
-
+- msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
+  correlation and relaxation times as well for timescales for this estimator. #1116
 
 2.4 (05-19-2017)
 ----------------
