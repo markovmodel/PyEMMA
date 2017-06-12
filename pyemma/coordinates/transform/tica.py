@@ -88,10 +88,11 @@ class TICA(StreamingEstimationTransformer):
             skip the first initial n frames per trajectory.
         reversible: bool, default=True
             symmetrize correlation matrices C_0, C_{\tau}.
-        weights: object, optional, default = None
-            An object that allows to compute re-weighting factors to estimate equilibrium means and correlations from
-            off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
-            trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)).
+        weights: object or list of ndarrays, optional, default = None
+            * An object that allows to compute re-weighting factors to estimate equilibrium means and correlations from
+              off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
+              trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)).
+            * A list of ndarrays (ndim=1) specifies the weights for each frame of each trajectory.
 
         Notes
         -----
