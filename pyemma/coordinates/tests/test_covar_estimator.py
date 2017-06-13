@@ -4,7 +4,6 @@ import numpy as np
 
 from pyemma.coordinates import covariance_lagged
 from pyemma.coordinates import source
-#from pyemma.coordinates.estimation.koopman import _Weights
 
 
 __author__ = 'noe'
@@ -283,6 +282,166 @@ class TestCovarEstimator(unittest.TestCase):
         assert np.allclose(cc.mean, self.m_c_sym_wobj)
         assert np.allclose(cc.cov, self.Mxx_c_sym_wobj)
         assert np.allclose(cc.cov_tau, self.Mxy_c_sym_wobj)
+
+
+class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
+    """ test covariance estimator with weights as ndarray"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.lag = 10
+        cls.data = np.random.rand(5000, 2)
+        cls.X = cls.data[:-cls.lag, :]
+        cls.Y = cls.data[cls.lag:, :]
+        cls.T = cls.X.shape[0]
+        # Generate iterable
+        cls.source_obj = source(cls.data)
+        # Chunk size:
+        cls.L = 1000
+        # Number of chunks:
+        cls.nchunks = 10
+        # Weights:
+        cls.wobj = np.random.randn(5000)
+        # Constant mean to be removed:
+        cls.mean_const = np.random.rand(2)
+        # Chunksize:
+        cls.chunksize = 500
+
+        # moments of X and Y
+        cls.w = np.shape(cls.X)[0]
+        cls.w_lag0 = np.shape(cls.data)[0]
+        cls.wsym = 2*np.shape(cls.X)[0]
+        cls.wsym_lag0 = 2*np.shape(cls.data)[0]
+        cls.sx = cls.X.sum(axis=0)
+        cls.sy = cls.Y.sum(axis=0)
+        cls.sx_lag0 = cls.data.sum(axis=0)
+        cls.Mxx = (1.0 / cls.w) * np.dot(cls.X.T, cls.X)
+        cls.Mxx_lag0 = (1.0 / cls.w_lag0) * np.dot(cls.data.T, cls.data)
+        cls.Mxy = (1.0 / cls.w) * np.dot(cls.X.T, cls.Y)
+        cls.mx = cls.sx / float(cls.w)
+        cls.mx_lag0 = cls.sx_lag0 / float(cls.w_lag0)
+        cls.my = cls.sy / float(cls.w)
+        cls.X0 = cls.X - cls.mx
+        cls.X0_lag0 = cls.data - cls.mx_lag0
+        cls.Y0 = cls.Y - cls.my
+        cls.Mxx0 = (1.0 / cls.w) * np.dot(cls.X0.T, cls.X0)
+        cls.Mxx0_lag0 = (1.0 / cls.w_lag0) * np.dot(cls.X0_lag0.T, cls.X0_lag0)
+        cls.Mxy0 = (1.0 / cls.w) * np.dot(cls.X0.T, cls.Y0)
+
+        # moments of x and y, constant mean:
+        cls.Xc = cls.X - cls.mean_const
+        cls.Xc_lag0 = cls.data - cls.mean_const
+        cls.Yc = cls.Y - cls.mean_const
+        cls.sx_c = np.sum(cls.Xc, axis=0)
+        cls.sx_c_lag0 = np.sum(cls.Xc_lag0, axis=0)
+        cls.sy_c = np.sum(cls.Yc, axis=0)
+        cls.mx_c = cls.sx_c / float(cls.w)
+        cls.mx_c_lag0 = cls.sx_c_lag0 / float(cls.w_lag0)
+        cls.my_c = cls.sy_c / float(cls.w)
+        cls.Mxx_c = (1.0 / cls.w) * np.dot(cls.Xc.T, cls.Xc)
+        cls.Mxx_c_lag0 = (1.0 / cls.w_lag0) * np.dot(cls.Xc_lag0.T, cls.Xc_lag0)
+        cls.Mxy_c = (1.0 / cls.w) * np.dot(cls.Xc.T, cls.Yc)
+
+        # symmetric moments
+        cls.s_sym = cls.sx + cls.sy
+        cls.Mxx_sym = (1.0 / cls.wsym) * (np.dot(cls.X.T, cls.X) + np.dot(cls.Y.T, cls.Y))
+        cls.Mxy_sym = (1.0 / cls.wsym) * (np.dot(cls.X.T, cls.Y) + np.dot(cls.Y.T, cls.X))
+        cls.m_sym = cls.s_sym / float(cls.wsym)
+        cls.X0_sym = cls.X - cls.m_sym
+        cls.Y0_sym = cls.Y - cls.m_sym
+        cls.Mxx0_sym = (1.0 / cls.wsym) * (np.dot(cls.X0_sym.T, cls.X0_sym) + np.dot(cls.Y0_sym.T, cls.Y0_sym))
+        cls.Mxy0_sym = (1.0 / cls.wsym) * (np.dot(cls.X0_sym.T, cls.Y0_sym) + np.dot(cls.Y0_sym.T, cls.X0_sym))
+
+        # symmetric moments, constant mean
+        cls.s_c_sym = cls.sx_c + cls.sy_c
+        cls.m_c_sym = cls.s_c_sym / float(cls.wsym)
+        cls.Mxx_c_sym = (1.0 / cls.wsym) * (np.dot(cls.Xc.T, cls.Xc) + np.dot(cls.Yc.T, cls.Yc))
+        cls.Mxy_c_sym = (1.0 / cls.wsym) * (np.dot(cls.Xc.T, cls.Yc) + np.dot(cls.Yc.T, cls.Xc))
+
+        # weighted moments, object case:
+        cls.weights_obj = cls.wobj[:-cls.lag]#.weights(cls.X)
+        cls.weights_obj_lag0 = cls.wobj#.weights(cls.data)
+        cls.wesum_obj = np.sum(cls.weights_obj)
+        cls.wesum_obj_sym = 2*np.sum(cls.weights_obj)
+        cls.wesum_obj_lag0 = np.sum(cls.weights_obj_lag0)
+        cls.sx_wobj = (cls.weights_obj[:, None] * cls.X).sum(axis=0)
+        cls.sx_wobj_lag0 = (cls.weights_obj_lag0[:, None] * cls.data).sum(axis=0)
+        cls.sy_wobj = (cls.weights_obj[:, None] * cls.Y).sum(axis=0)
+        cls.Mxx_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.X).T, cls.X)
+        cls.Mxx_wobj_lag0 = (1.0 / cls.wesum_obj_lag0) * np.dot((cls.weights_obj_lag0[:, None] * cls.data).T, cls.data)
+        cls.Mxy_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.X).T, cls.Y)
+        cls.mx_wobj = cls.sx_wobj / float(cls.wesum_obj)
+        cls.mx_wobj_lag0 = cls.sx_wobj_lag0 / float(cls.wesum_obj_lag0)
+        cls.my_wobj = cls.sy_wobj / float(cls.wesum_obj)
+        cls.X0_wobj = cls.X - cls.mx_wobj
+        cls.X0_wobj_lag0 = cls.data - cls.mx_wobj_lag0
+        cls.Y0_wobj = cls.Y - cls.my_wobj
+        cls.Mxx0_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.X0_wobj).T, cls.X0_wobj)
+        cls.Mxx0_wobj_lag0 = (1.0 / cls.wesum_obj_lag0) * np.dot((cls.weights_obj_lag0[:, None] * cls.X0_wobj_lag0).T
+                                                                 , cls.X0_wobj_lag0)
+        cls.Mxy0_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.X0_wobj).T, cls.Y0_wobj)
+
+        # weighted symmetric moments, object case:
+        cls.s_sym_wobj = cls.sx_wobj + cls.sy_wobj
+        cls.Mxx_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] * cls.X).T, cls.X)\
+                           + np.dot((cls.weights_obj[:, None] * cls.Y).T, cls.Y))
+        cls.Mxy_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] * cls.X).T, cls.Y)\
+                           + np.dot((cls.weights_obj[:, None] * cls.Y).T, cls.X))
+        cls.m_sym_wobj = cls.s_sym_wobj / float(2 * cls.wesum_obj)
+        cls.X0_sym_wobj = cls.X - cls.m_sym_wobj
+        cls.Y0_sym_wobj = cls.Y - cls.m_sym_wobj
+        cls.Mxx0_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] *cls.X0_sym_wobj).T,cls.X0_sym_wobj)\
+                            + np.dot((cls.weights_obj[:, None] *cls.Y0_sym_wobj).T, cls.Y0_sym_wobj))
+        cls.Mxy0_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] *cls.X0_sym_wobj).T, cls.Y0_sym_wobj)\
+                            + np.dot((cls.weights_obj[:, None] *cls.Y0_sym_wobj).T, cls.X0_sym_wobj))
+
+        # weighted moments, object case, constant mean
+        cls.sx_c_wobj = (cls.weights_obj[:, None] * cls.Xc).sum(axis=0)
+        cls.sx_c_wobj_lag0 = (cls.weights_obj_lag0[:, None] * cls.Xc_lag0).sum(axis=0)
+        cls.sy_c_wobj = (cls.weights_obj[:, None] * cls.Yc).sum(axis=0)
+        cls.Mxx_c_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.Xc).T, cls.Xc)
+        cls.Mxx_c_wobj_lag0 = (1.0 / cls.wesum_obj_lag0) * np.dot((cls.weights_obj_lag0[:, None] * cls.Xc_lag0).T,
+                                                                  cls.Xc_lag0)
+        cls.Mxy_c_wobj = (1.0 / cls.wesum_obj) * np.dot((cls.weights_obj[:, None] * cls.Xc).T, cls.Yc)
+        cls.mx_c_wobj = cls.sx_c_wobj / float(cls.wesum_obj)
+        cls.mx_c_wobj_lag0 = cls.sx_c_wobj_lag0 / float(cls.wesum_obj_lag0)
+        cls.my_c_wobj = cls.sy_c_wobj / float(cls.wesum_obj)
+
+        # weighted symmetric moments, object case:
+        cls.s_c_sym_wobj = cls.sx_c_wobj + cls.sy_c_wobj
+        cls.m_c_sym_wobj = cls.s_c_sym_wobj / float(cls.wesum_obj_sym)
+        cls.Mxx_c_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] * cls.Xc).T, cls.Xc)\
+                           + np.dot((cls.weights_obj[:, None] * cls.Yc).T, cls.Yc))
+        cls.Mxy_c_sym_wobj = (1.0 / cls.wesum_obj_sym) * (np.dot((cls.weights_obj[:, None] * cls.Xc).T, cls.Yc)\
+                           + np.dot((cls.weights_obj[:, None] * cls.Yc).T, cls.Xc))
+
+        return cls
+
+
+class TestCovarEstimatorWeightsList(unittest.TestCase):
+
+    def test(self):
+        n = 1000
+        data = [np.random.random(size=(n, 2)) for _ in range(5)]
+
+        # create some artificial correlations
+        data[0][:,0] *= np.random.randint(n)
+
+        weights = [np.ones(n, dtype=np.float32) for _ in range(5)]
+        # omit the first trajectory by setting a weight close to zero.
+        weights[0][:] = 1E-99
+
+        cov = covariance_lagged(data, lag=3, weights=weights, chunksize=10)
+        assert np.all(cov.cov < 1)
+
+    def test_non_matching_length(self):
+        n = 100
+        data = [np.random.random(size=(n, 2)) for _ in range(5)]
+        weights = [np.random.random(n) for _ in range(5)]
+        weights[0] = weights[0][:-3]
+        with self.assertRaises(ValueError):
+            covariance_lagged(data=data, weights=weights, lag=1)
+
 
 if __name__ == "__main__":
     unittest.main()
