@@ -149,7 +149,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
             if partial_fit:
                 self.logger.warn("Could not use data passed to partial_fit(), "
                                  "because no single data set [longest=%i] is longer than lag+skip [%i]",
-                                 (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip))
+                                 max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip)
                 return self
             else:
                 raise ValueError("None single dataset [longest=%i] is longer than"
