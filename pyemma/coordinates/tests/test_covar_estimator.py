@@ -8,19 +8,17 @@ from pyemma.coordinates import source
 
 __author__ = 'noe'
 
-class weight_object(object):
-    def __init__(self):
-        self.A = np.random.rand(2)
-    def weights(self, X):
-        return np.dot(X, self.A)
 
+data = np.random.rand(5000, 2)
+weights = np.random.randn(len(data))
+mean_const =  np.random.rand(2)
 
 class TestCovarEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.lag = 10
-        cls.data = np.random.rand(5000, 2)
+        cls.data = data
         cls.X = cls.data[:-cls.lag, :]
         cls.Y = cls.data[cls.lag:, :]
         cls.T = cls.X.shape[0]
@@ -30,10 +28,18 @@ class TestCovarEstimator(unittest.TestCase):
         cls.L = 1000
         # Number of chunks:
         cls.nchunks = 10
+
         # Weights:
+        class weight_object(object):
+            def __init__(self):
+                self.A = np.random.rand(2)
+
+            def weights(self, X):
+                return np.dot(X, self.A)
+
         cls.wobj = weight_object()
         # Constant mean to be removed:
-        cls.mean_const = np.random.rand(2)
+        cls.mean_const = mean_const
         # Chunksize:
         cls.chunksize = 500
 
@@ -150,138 +156,140 @@ class TestCovarEstimator(unittest.TestCase):
     def test_XX_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=False, bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_lag0)
-        assert np.allclose(cc.cov, self.Mxx_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx_lag0)
 
     def test_XX_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=True, bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_lag0)
-        assert np.allclose(cc.cov, self.Mxx0_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx0_lag0)
 
     def test_XX_weightobj_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=False, weights=self.wobj, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_wobj_lag0)
-        assert np.allclose(cc.cov, self.Mxx_wobj_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_wobj_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx_wobj_lag0)
 
     def test_XX_weightobj_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=True, weights=self.wobj, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_wobj_lag0)
-        assert np.allclose(cc.cov, self.Mxx0_wobj_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_wobj_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx0_wobj_lag0)
 
     def test_XXXY_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=False, c0t=True, lag=self.lag, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx)
-        assert np.allclose(cc.mean_tau, self.my)
-        assert np.allclose(cc.cov, self.Mxx)
-        assert np.allclose(cc.cov_tau, self.Mxy)
+        np.testing.assert_allclose(cc.mean, self.mx)
+        np.testing.assert_allclose(cc.mean_tau, self.my)
+        np.testing.assert_allclose(cc.cov, self.Mxx)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy)
 
     def test_XXXY_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=True, c0t=True, lag=self.lag, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx)
-        assert np.allclose(cc.mean_tau, self.my)
-        assert np.allclose(cc.cov, self.Mxx0)
-        assert np.allclose(cc.cov_tau, self.Mxy0)
+        np.testing.assert_allclose(cc.mean, self.mx)
+        np.testing.assert_allclose(cc.mean_tau, self.my)
+        np.testing.assert_allclose(cc.cov, self.Mxx0)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy0)
 
     def test_XXXY_weightobj_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=False, c0t=True, lag=self.lag, weights=self.wobj,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_wobj)
-        assert np.allclose(cc.mean_tau, self.my_wobj)
-        assert np.allclose(cc.cov, self.Mxx_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy_wobj)
+        np.testing.assert_allclose(cc.mean, self.mx_wobj)
+        np.testing.assert_allclose(cc.mean_tau, self.my_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_wobj)
 
     def test_XXXY_weightobj_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=True, c0t=True, lag=self.lag, weights=self.wobj,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_wobj)
-        assert np.allclose(cc.mean_tau, self.my_wobj)
-        assert np.allclose(cc.cov, self.Mxx0_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy0_wobj)
+        #out = cc.weights.get_output()
+
+        np.testing.assert_allclose(cc.mean, self.mx_wobj)
+        np.testing.assert_allclose(cc.mean_tau, self.my_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx0_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy0_wobj)
 
     def test_XXXY_sym_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=False, c0t=True, lag=self.lag, reversible=True,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_sym)
-        assert np.allclose(cc.cov, self.Mxx_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy_sym)
+        np.testing.assert_allclose(cc.mean, self.m_sym)
+        np.testing.assert_allclose(cc.cov, self.Mxx_sym)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_sym)
 
     def test_XXXY_sym_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=True, c0t=True, lag=self.lag, reversible=True,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_sym)
-        assert np.allclose(cc.cov, self.Mxx0_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy0_sym)
+        np.testing.assert_allclose(cc.mean, self.m_sym)
+        np.testing.assert_allclose(cc.cov, self.Mxx0_sym)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy0_sym)
 
     def test_XXXY_weightobj_sym_withmean(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=False, c0t=True, lag=self.lag, reversible=True,
                                bessel=False, weights=self.wobj, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_sym_wobj)
-        assert np.allclose(cc.cov, self.Mxx_sym_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy_sym_wobj)
+        np.testing.assert_allclose(cc.mean, self.m_sym_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx_sym_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_sym_wobj)
 
     def test_XXXY_weightobj_sym_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=True, c0t=True, lag=self.lag, reversible=True,
                                bessel=False, weights=self.wobj, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_sym_wobj)
-        assert np.allclose(cc.cov, self.Mxx0_sym_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy0_sym_wobj)
+        np.testing.assert_allclose(cc.mean, self.m_sym_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx0_sym_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy0_sym_wobj)
 
     def test_XX_meanconst(self):
         cc = covariance_lagged(data=self.data, c0t=False, remove_constant_mean=self.mean_const, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_c_lag0)
-        assert np.allclose(cc.cov, self.Mxx_c_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_c_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c_lag0)
 
     def test_XX_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, c0t=False, remove_constant_mean=self.mean_const, weights=self.wobj, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_c_wobj_lag0)
-        assert np.allclose(cc.cov, self.Mxx_c_wobj_lag0)
+        np.testing.assert_allclose(cc.mean, self.mx_c_wobj_lag0)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c_wobj_lag0)
 
     def test_XY_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, lag=self.lag, bessel=False,
                                chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_c)
-        assert np.allclose(cc.mean_tau, self.my_c)
-        assert np.allclose(cc.cov, self.Mxx_c)
-        assert np.allclose(cc.cov_tau, self.Mxy_c)
+        np.testing.assert_allclose(cc.mean, self.mx_c)
+        np.testing.assert_allclose(cc.mean_tau, self.my_c)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_c)
 
     def test_XY_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, weights=self.wobj, lag=self.lag,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.mx_c_wobj)
-        assert np.allclose(cc.mean_tau, self.my_c_wobj)
-        assert np.allclose(cc.cov, self.Mxx_c_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy_c_wobj)
+        np.testing.assert_allclose(cc.mean, self.mx_c_wobj)
+        np.testing.assert_allclose(cc.mean_tau, self.my_c_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_c_wobj)
 
     def test_XY_sym_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, reversible=True, lag=self.lag,
                                bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_c_sym)
-        assert np.allclose(cc.cov, self.Mxx_c_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy_c_sym)
+        np.testing.assert_allclose(cc.mean, self.m_c_sym)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c_sym)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_c_sym)
 
     def test_XY_sym_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, reversible=True, weights=self.wobj,
                                lag=self.lag, bessel=False, chunksize=self.chunksize)
-        assert np.allclose(cc.mean, self.m_c_sym_wobj)
-        assert np.allclose(cc.cov, self.Mxx_c_sym_wobj)
-        assert np.allclose(cc.cov_tau, self.Mxy_c_sym_wobj)
+        np.testing.assert_allclose(cc.mean, self.m_c_sym_wobj)
+        np.testing.assert_allclose(cc.cov, self.Mxx_c_sym_wobj)
+        np.testing.assert_allclose(cc.cov_tau, self.Mxy_c_sym_wobj)
 
 
 class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
@@ -290,7 +298,7 @@ class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
     @classmethod
     def setUpClass(cls):
         cls.lag = 10
-        cls.data = np.random.rand(5000, 2)
+        cls.data = data
         cls.X = cls.data[:-cls.lag, :]
         cls.Y = cls.data[cls.lag:, :]
         cls.T = cls.X.shape[0]
@@ -301,9 +309,9 @@ class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
         # Number of chunks:
         cls.nchunks = 10
         # Weights:
-        cls.wobj = np.random.randn(5000)
+        cls.wobj = weights
         # Constant mean to be removed:
-        cls.mean_const = np.random.rand(2)
+        cls.mean_const = mean_const
         # Chunksize:
         cls.chunksize = 500
 
@@ -358,9 +366,9 @@ class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
         cls.Mxx_c_sym = (1.0 / cls.wsym) * (np.dot(cls.Xc.T, cls.Xc) + np.dot(cls.Yc.T, cls.Yc))
         cls.Mxy_c_sym = (1.0 / cls.wsym) * (np.dot(cls.Xc.T, cls.Yc) + np.dot(cls.Yc.T, cls.Xc))
 
-        # weighted moments, object case:
-        cls.weights_obj = cls.wobj[:-cls.lag]#.weights(cls.X)
-        cls.weights_obj_lag0 = cls.wobj#.weights(cls.data)
+        # weighted moments, array case:
+        cls.weights_obj = cls.wobj[:-cls.lag]
+        cls.weights_obj_lag0 = cls.wobj
         cls.wesum_obj = np.sum(cls.weights_obj)
         cls.wesum_obj_sym = 2*np.sum(cls.weights_obj)
         cls.wesum_obj_lag0 = np.sum(cls.weights_obj_lag0)
@@ -429,7 +437,7 @@ class TestCovarEstimatorWeightsList(unittest.TestCase):
 
         weights = [np.ones(n, dtype=np.float32) for _ in range(5)]
         # omit the first trajectory by setting a weight close to zero.
-        weights[0][:] = 1E-99
+        weights[0][:] = 1E-44
 
         cov = covariance_lagged(data, lag=3, weights=weights, chunksize=10)
         assert np.all(cov.cov < 1)
