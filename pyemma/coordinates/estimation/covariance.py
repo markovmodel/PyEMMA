@@ -116,9 +116,12 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 def __init__(self, func):
                     super(compute_weights_streamer, self).__init__()
                     self.func = func
+                def dimension(self):
+                    return 1
                 def _transform_array(self, X):
                     return self.func.weights(X)
                 def describe(self): pass
+
             value = compute_weights_streamer(value)
 
         self._weights = value
@@ -132,7 +135,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 self.logger.info("adapting storage size")
                 self.nsave = nsave
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._logger.debug("using %s moments for %i chunks", nsave, n_chunks)
             self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
@@ -145,16 +148,16 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
             if partial_fit:
                 self.logger.warn("Could not use data passed to partial_fit(), "
-                                 "because no single data set [longest=%i] is longer than lag+skip [%i]"
-                                 % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip))
+                                 "because no single data set [longest=%i] is longer than lag+skip [%i]",
+                                 (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip))
                 return self
             else:
                 raise ValueError("None single dataset [longest=%i] is longer than"
                                  " lag+skip [%i]." % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)),
                                                       self.lag+self.skip))
 
-        self.logger.debug("will use {} total frames for {}".
-                          format(iterable.trajectory_lengths(self.stride, skip=self.skip), self.name))
+        self.logger.debug("will use %s total frames for %s",
+                          iterable.trajectory_lengths(self.stride, skip=self.skip), self.name)
 
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip,
                                chunk=self.chunksize if not partial_fit else 0)
@@ -181,9 +184,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                     X, Y = data, None
 
                 if weight is not None:
-                    # TODO: check if this truncation is valid...
-                    weight = weight[:len(X)].squeeze()
-
+                    weight = weight.squeeze()[:len(X)]
                 if self.remove_constant_mean is not None:
                     X = X - self.remove_constant_mean[np.newaxis, :]
                     if Y is not None:
