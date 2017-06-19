@@ -350,17 +350,17 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         script = 'import pyemma; pyemma.coordinates.source({files})' \
             .format(cfg_dir=self.work_dir, files=npy_files)
         failed = False
-        procs = [subprocess.Popen([sys.executable, '-c', script], env=env,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(10)]
+        procs = [subprocess.Popen([sys.executable, '-c', script], env=env) for _ in range(10)]
         error = None
         while procs:
             for proc in procs:
                 retcode = proc.poll()
                 if retcode is not None:
                     if retcode != 0:
-                        stdout = proc.stdout.read()
-                        stderr = proc.stderr.read()
-                        error = '{};;{}'.format(stdout, stderr)
+                        pass
+                        #stdout = proc.stdout.read()
+                        #stderr = proc.stderr.read()
+                        #error = '{};;{}'.format(stdout, stderr)
                     procs.remove(proc)
                     #break
                 else:  # No process is done, wait a bit and check again.
