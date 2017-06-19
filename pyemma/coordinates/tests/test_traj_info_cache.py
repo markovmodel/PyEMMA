@@ -20,7 +20,7 @@ Created on 30.04.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from tempfile import NamedTemporaryFile
 
@@ -347,18 +347,22 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         import subprocess
         import sys
         import time
-        script = 'import pyemma; assert pyemma.config.cfg_dir=="{cfg_dir}", pyemma.config.cfg_dir; pyemma.coordinates.source({files})' \
+        script = 'import pyemma; pyemma.coordinates.source({files})' \
             .format(cfg_dir=self.work_dir, files=npy_files)
         failed = False
-        procs = [subprocess.Popen([sys.executable, '-c', script], env=env) for _ in range(10)]
+        procs = [subprocess.Popen([sys.executable, '-c', script], env=env,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(10)]
         error = None
         while procs:
             for proc in procs:
                 retcode = proc.poll()
                 if retcode is not None:
-                    error = '{}\n{}'.format(proc.stderr, proc.stdout)
+                    if retcode != 0:
+                        stdout = proc.stdout.read()
+                        stderr = proc.stderr.read()
+                        error = '{};;{}'.format(stdout, stderr)
                     procs.remove(proc)
-                    break
+                    #break
                 else:  # No process is done, wait a bit and check again.
                     time.sleep(.1)
                     continue
