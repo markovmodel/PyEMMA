@@ -351,10 +351,12 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             .format(cfg_dir=self.work_dir, files=npy_files)
         failed = False
         procs = [subprocess.Popen([sys.executable, '-c', script], env=env) for _ in range(10)]
+        error = None
         while procs:
             for proc in procs:
                 retcode = proc.poll()
-                if retcode != None:
+                if retcode is not None:
+                    error = '{}\n{}'.format(proc.stderr, proc.stdout)
                     procs.remove(proc)
                     break
                 else:  # No process is done, wait a bit and check again.
@@ -367,7 +369,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 failed = True
                 break
 
-        self.assertTrue(not failed)
+        self.assertTrue(not failed, msg=error)
 
 if __name__ == "__main__":
     unittest.main()
