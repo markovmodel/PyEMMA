@@ -1745,6 +1745,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         if _np.size(self.active_set) == 0:
             raise RuntimeError('Active set is empty. Cannot estimate AMM.')
 
+        from pyemma.util.discrete_trajectories import index_states
+        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
+
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
