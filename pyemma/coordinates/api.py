@@ -1416,7 +1416,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
                       reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None,
-                      ncov_max=float('inf')):
+                      ncov_max=float('inf'), column_selection=None, diag_only=False):
     r"""Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
     number of time steps and N the number of dimensions, this function can compute lagged covariances like
 
@@ -1468,6 +1468,10 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     ncov_max : int, default=infinity
         limit the memory usage of the algorithm from [2]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
+    column_selection: ndarray(k, dtype=int) or None
+        Indices of those columns that are to be computed. If None, all columns are computed.
+    diag_only: bool
+        If True, the computation is restricted to the diagonal entries (autocorrelations) only.
 
     Returns
     -------
@@ -1504,7 +1508,8 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
+                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max,
+                          column_selection=column_selection, diag_only=diag_only)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
     else:
