@@ -1220,7 +1220,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=1000):
     """
         Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
         number of time steps and N the number of dimensions, this function can compute lagged covariances like
