@@ -302,10 +302,10 @@ class RunningCovar(object):
                 s0k = s[0]
                 s1k = s[1]
             if self.compute_XX:
-                self.storage_XX.store(Moments(w, s[0], s0k, C[0, 0]))
+                self.storage_XX.store(Moments(w, s[0], s0k, C[0][0]))
             if self.compute_XY:
-                self.storage_XY.store(Moments(w, s[0], s1k, C[0, 1]))
-            self.storage_YY.store(Moments(w, s[1], s1k, C[1, 1]))
+                self.storage_XY.store(Moments(w, s[0], s1k, C[0][1]))
+            self.storage_YY.store(Moments(w, s[1], s1k, C[1][1]))
 
     def sum_X(self):
         if self.compute_XX:
