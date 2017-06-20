@@ -31,6 +31,8 @@ from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 from pyemma.msm.estimators._OOM_MSM import *
 from pyemma.util.statistics import confidence_interval as _ci
+
+
 @fix_docs
 @aliased
 class _MSMEstimator(_Estimator, _MSM):
@@ -1135,7 +1137,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         """
         self._check_is_estimated()
-        import msmtools.estimation as msmest
         Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
         from pyemma.util.linalg import submatrix
         Ceff = submatrix(Ceff_full, self.active_set)
