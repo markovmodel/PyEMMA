@@ -110,7 +110,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
             value = DataInMemory(value)
         elif isinstance(value, (list, tuple)):
             value = DataInMemory(value)
-        elif numbers.Integral:
+        elif isinstance(value, numbers.Integral):
             value = float(value) if value is not None else 1.0
         elif hasattr(value, 'weights') and type(getattr(value, 'weights')) == types.MethodType:
             from pyemma.coordinates.data._base.transformer import StreamingTransformer
