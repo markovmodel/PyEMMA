@@ -110,6 +110,8 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
             value = DataInMemory(value)
         elif isinstance(value, (list, tuple)):
             value = DataInMemory(value)
+        elif numbers.Integral:
+            value = float(value) if value is not None else 1.0
         elif hasattr(value, 'weights') and type(getattr(value, 'weights')) == types.MethodType:
             from pyemma.coordinates.data._base.transformer import StreamingTransformer
             class compute_weights_streamer(StreamingTransformer):
@@ -167,6 +169,9 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 self.weights.data_producer = iterable
             it_weights = self.weights.iterator(lag=0, return_trajindex=False, stride=self.stride, skip=self.skip,
                                                chunk=self.chunksize if not partial_fit else 0)
+            if it_weights.number_of_trajectories() != iterable.number_of_trajectories():
+                raise ValueError("number of weight arrays did not match number of input data sets. {} vs. {}"
+                                 .format(it_weights.number_of_trajectories(), iterable.number_of_trajectories()))
         else:
             # if we only have a scalar, repeat it.
             import itertools
@@ -174,6 +179,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
 
         # TODO: we could possibly optimize the case lag>0 and c0t=False using skip.
         # Access how much iterator hassle this would be.
+        #self.skipped=0
         with it:
             self._progress_register(it.n_chunks, "calculate covariances", 0)
             self._init_covar(partial_fit, it.n_chunks)
@@ -184,7 +190,14 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                     X, Y = data, None
 
                 if weight is not None:
-                    weight = weight.squeeze()[:len(X)]
+                    if isinstance(weight, np.ndarray):
+                        weight = weight.squeeze()[:len(X)]
+                        # TODO: if the weight is exactly zero it makes not sense to add the chunk to running moments.
+                        # however doing so, leads to wrong results...
+                        # if np.all(np.abs(weight) < np.finfo(np.float).eps):
+                        #     #print("skip")
+                        #     self.skipped += len(X)
+                        #     continue
                 if self.remove_constant_mean is not None:
                     X = X - self.remove_constant_mean[np.newaxis, :]
                     if Y is not None:
@@ -244,6 +257,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
 
     @nsave.setter
     def nsave(self, ns):
+        # potential bug? set nsave between partial fits?
         if self.c00:
             if self._rc.storage_XX.nsave <= ns:
                 self._rc.storage_XX.nsave = ns

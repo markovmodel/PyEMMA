@@ -428,7 +428,7 @@ class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
 
 class TestCovarEstimatorWeightsList(unittest.TestCase):
 
-    def test(self):
+    def test_weights_close_to_zero(self):
         n = 1000
         data = [np.random.random(size=(n, 2)) for _ in range(5)]
 
@@ -442,14 +442,47 @@ class TestCovarEstimatorWeightsList(unittest.TestCase):
         cov = covariance_lagged(data, lag=3, weights=weights, chunksize=10)
         assert np.all(cov.cov < 1)
 
+    @unittest.skip("zero weights known to be broken #1117")
+    def test_weights_equal_to_zero(self):
+        n = 1000
+        data = [np.random.random(size=(n, 2)) for _ in range(5)]
+
+        # create some artificial correlations
+        data[0][:,0] *= np.random.randint(n)
+
+        weights = [np.ones(n, dtype=np.float32) for _ in range(5)]
+        # omit the first trajectory by setting a weight close to zero.
+        weights[0][:] = 0
+        weights[0][800:850] = 1
+
+        cov = covariance_lagged(data, lag=3, weights=weights, chunksize=5)
+        zeros = sum((sum (w==0) for w in weights))
+        assert np.all(cov.cov < 1), cov.cov
+        assert np.all(cov.cov > 0), cov.cov
+
+        #from statsmodels.stats.weightstats import DescrStatsW
+        #ds = DescrStatsW(data, weights=weights)
+        #np.testing.assert_allclose(cov.cov, ds.cov)
+
     def test_non_matching_length(self):
         n = 100
-        data = [np.random.random(size=(n, 2)) for _ in range(5)]
-        weights = [np.random.random(n) for _ in range(5)]
+        data = [np.random.random(size=(n, 2)) for _ in range(3)]
+        weights = [np.random.random(n) for _ in range(3)]
         weights[0] = weights[0][:-3]
         with self.assertRaises(ValueError):
             covariance_lagged(data=data, weights=weights, lag=1)
 
+        with self.assertRaises(ValueError):
+            covariance_lagged(data, weights=weights[:2])
+
+    def test_re_estimate_weight_types(self):
+        # check different types are allowed and re-estimation works
+        x = np.random.random((100, 2))
+        c = covariance_lagged(lag=1)
+        c.estimate(x, weights=1)
+        c.estimate(x, weights=1.0)
+        c.estimate(x, weights=None)
+        c.estimate(x, weights=x[:,0])
 
 if __name__ == "__main__":
     unittest.main()
