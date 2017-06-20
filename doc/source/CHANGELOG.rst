@@ -18,7 +18,7 @@ Changelog
 
 - datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
 - coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
-
+- coordinates: made TrajectoryInfoCache more fail-safe in case of concurrent processes. #1122
 
 2.4 (05-19-2017)
 ----------------
