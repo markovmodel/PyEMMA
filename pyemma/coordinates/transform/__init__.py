@@ -35,4 +35,5 @@ transform - Transformation Utilities (:mod:`pyemma.coordinates.transform`)
 
 from .pca import *
 from .tica import *
+from .nystroem_tica import *
 from .vamp import *
