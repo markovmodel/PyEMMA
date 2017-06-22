@@ -115,7 +115,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             For more details see :func:`thermotools.cset.compute_csets_TRAM`.
         nstates_full : int, optional, default=None
             Number of cluster centers, i.e., the size of the full set of states.
-        equilibrium : list of booleans, optional 
+        equilibrium : list of booleans, optional
             For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
             whether to assume global equilibrium. If true, the triple is not used
             for computing kinetic quantities (but only thermodynamic quantities).
@@ -290,13 +290,16 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         else:
             self.equilibrium_state_counts_full = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.float64)
 
-        self.csets, pcset = _cset.compute_csets_TRAM(
-            self.connectivity, state_counts_full, count_matrices_full,
-            equilibrium_state_counts=self.equilibrium_state_counts_full,
-            ttrajs=ttrajs+equilibrium_ttrajs, dtrajs=dtrajs_full+equilibrium_dtrajs_full, bias_trajs=self.btrajs+self.equilibrium_btrajs,
-            nn=self.nn, factor=self.connectivity_factor,
-            callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
-        self.active_set = pcset
+        try:
+            self.csets, pcset = _cset.compute_csets_TRAM(
+                self.connectivity, state_counts_full, count_matrices_full,
+                equilibrium_state_counts=self.equilibrium_state_counts_full,
+                ttrajs=ttrajs+equilibrium_ttrajs, dtrajs=dtrajs_full+equilibrium_dtrajs_full, bias_trajs=self.btrajs+self.equilibrium_btrajs,
+                nn=self.nn, factor=self.connectivity_factor,
+                callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
+            self.active_set = pcset
+        finally:
+            self._progress_force_finish(stage='cset', description='finding connected set')
 
         # check for empty states
         for k in range(self.nthermo):
