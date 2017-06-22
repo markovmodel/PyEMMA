@@ -1415,8 +1415,8 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     return res
 
 
-def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, dim=-1,
-                  var_cutoff=0.95, epsilon=1e-6,
+def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=None,
+                  dim=-1, var_cutoff=0.95, epsilon=1e-6,
                   stride=1, skip=0, reversible=True,
                   ncov_max=float('inf')):
     r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
@@ -1438,6 +1438,9 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, dim=-1,
     nsel : int, optional, default 1
         Number of columns to select and add per iteration and pass through the data.
         Larger values provide for better pass-efficiency.
+    neig : int or None, optional, default None
+        Number of eigenvalues to be optimized by the selection process.
+        If None, use the whole available eigenspace.
     dim : int, optional, default -1
         Maximum number of significant independent components to use to reduce dimension of input data. -1 means
         all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
@@ -1506,8 +1509,8 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, dim=-1,
 
     """
     from pyemma.coordinates.transform.nystroem_tica import NystroemTICA
-    res = NystroemTICA(lag, max_columns, initial_columns=initial_columns, nsel=nsel, dim=dim,
-                       var_cutoff=var_cutoff, epsilon=epsilon,
+    res = NystroemTICA(lag, max_columns, initial_columns=initial_columns, nsel=nsel, neig=neig,
+                       dim=dim, var_cutoff=var_cutoff, epsilon=epsilon,
                        stride=stride, skip=skip, reversible=reversible,
                        ncov_max=ncov_max)
     return _param_stage(data, res, stride=stride)

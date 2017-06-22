@@ -56,8 +56,8 @@ def _lazy_estimation(func, *args, **kw):
 class NystroemTICA(StreamingEstimationTransformer):
     r""" Sparse sampling implementation of time-lagged independent component analysis (TICA)"""
 
-    def __init__(self, lag, max_columns, initial_columns=None, nsel=1, dim=-1,
-                 var_cutoff=0.95, epsilon=1e-6,
+    def __init__(self, lag, max_columns, initial_columns=None, nsel=1, neig=None,
+                 dim=-1, var_cutoff=0.95, epsilon=1e-6,
                  stride=1, skip=0, reversible=True,
                  ncov_max=float('inf')):
         r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
@@ -76,6 +76,9 @@ class NystroemTICA(StreamingEstimationTransformer):
         nsel : int, optional, default 1
             Number of columns to select and add per iteration and pass through the data.
             Larger values provide for better pass-efficiency.
+        neig : int or None, optional, default None
+            Number of eigenvalues to be optimized by the selection process.
+            If None, use the whole available eigenspace
         dim : int, optional, default -1
             Maximum number of significant independent components to use to reduce dimension of input data. -1 means
             all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
@@ -158,7 +161,7 @@ class NystroemTICA(StreamingEstimationTransformer):
 
         # empty dummy model instance
         self._model = NystroemTICAModel()
-        self.set_params(lag=lag, max_columns=max_columns, initial_columns=initial_columns, nsel=nsel,
+        self.set_params(lag=lag, max_columns=max_columns, initial_columns=initial_columns, nsel=nsel, neig=neig,
                         dim=dim, var_cutoff=var_cutoff,
                         epsilon=epsilon, reversible=reversible, stride=stride, skip=skip,
                         ncov_max=ncov_max)
@@ -236,19 +239,22 @@ class NystroemTICA(StreamingEstimationTransformer):
         self._model.update_model_params(cov_tau=self._covar.cov_tau)
 
         self._oasis = oASIS_Nystroem(self._diag.cov, self._covar.cov, self.initial_columns)
-        self._oasis.set_selection_strategy(strategy='spectral-oasis', nsel=self.nsel)
+        self._oasis.set_selection_strategy(strategy='spectral-oasis', nsel=self.nsel, neig=self.neig)
 
         while len(self._oasis.column_indices) < self.max_columns:
             cols = self._oasis.select_columns()
             if cols is None:
                 break
-            if len(cols) == 0:
+            if len(cols) == 0 or np.all(np.in1d(cols, self._oasis.column_indices)):
                 self._logger.warning("oASIS iteration ended prematurely: No more columns to select.")
                 break
             self._covar.column_selection = cols
             self._covar.estimate(iterable, **kw)
-            self._model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, self._covar.cov_tau), axis=1))
-            self._oasis.add_columns(self._covar.cov, cols)
+            ix = self._oasis.add_columns(self._covar.cov, cols)
+            ix = np.in1d(cols, ix)
+            if np.any(ix):
+                added_columns = self._covar.cov_tau[:, ix]
+                self._model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, added_columns), axis=1))
 
         self._model.update_model_params(mean=self._covar.mean,
                                         diag=self._diag.cov,
@@ -525,7 +531,7 @@ class oASIS_Nystroem:
         """ Absolute error of the Nystroem approximation by column """
         return self._err
 
-    def set_selection_strategy(self, strategy='spectral-oasis', nsel=1):
+    def set_selection_strategy(self, strategy='spectral-oasis', nsel=1, neig=None):
         """ Defines the column selection strategy
 
         Parameters
@@ -537,9 +543,12 @@ class oASIS_Nystroem:
             spectral-oasis : selects the nsel columns that are most distanced in the oASIS-error-scaled dominant eigenspace
         nsel : int
             number of columns to be selected in each round
+        neig : int or None, optional, default None
+            Number of eigenvalues to be optimized by the selection process.
+            If None, use the whole available eigenspace
 
         """
-        self._selection_strategy = selection_strategy(self, strategy, nsel)
+        self._selection_strategy = selection_strategy(self, strategy, nsel, neig)
 
     def select_columns(self):
         """ Selects new columns of :math:`A` using the given selection strategy
@@ -746,31 +755,36 @@ class oASIS_Nystroem:
         # normalize eigenvectors
         ncol = V.shape[1]
         for i in range(ncol):
-            V[:, i] /= np.sqrt(np.dot(V[:, i], V[:, i]))
+            if not np.allclose(V[:, i], 0):
+                V[:, i] /= np.sqrt(np.dot(V[:, i], V[:, i]))
 
         return s, V
 
 
 class SelectionStrategy:
-    def __init__(self, oasis_obj, strategy, nsel):
+    def __init__(self, oasis_obj, strategy='spectral-oasis', nsel=1, neig=None):
         """ Abstract selection strategy class
 
         Parameters
         ----------
         oasis_obj : oASIS_Nystroem
             The associated oASIS_Nystroem object.
-        strategy : str
+        strategy : str, optional, default 'spectral-oasis'
             One of the following strategies to select new columns:
             random : randomly choose from non-selected columns
             oasis : maximal approximation error in the diagonal of :math:`A`
             spectral-oasis : selects the nsel columns that are most distance in the oASIS-error-scaled dominant eigenspace
-        nsel : int
-            number of columns to be selected in each round
+        nsel : int, optional, default 1
+            Number of columns to be selected in each round
+        neig : int or None, optional, default None
+            Number of eigenvalues to be optimized by the selection process. Only used in 'spectral-oasis'.
+            If None, use the whole available eigenspace
 
         """
         self._oasis_obj = oasis_obj
         self._strategy = strategy
         self._nsel = nsel
+        self._neig = neig
 
     @property
     def strategy(self):
@@ -859,7 +873,7 @@ class SelectionStrategySpectralOasis(SelectionStrategy):
             for k in range(nsel):
                 d_to_i = np.minimum(d_to_i, np.linalg.norm(W - W[sel[k], :], axis=1))
             sel[i] = np.argmax(d_to_i)
-        return sel
+        return np.unique(sel)
 
     def _fix_constant_evec(self, evecs):
         # test if first vector is trying to approximate constant vector
@@ -871,7 +885,7 @@ class SelectionStrategySpectralOasis(SelectionStrategy):
         return evecs
 
 
-def selection_strategy(oasis_obj, strategy='spectral-oasis', nsel=1):
+def selection_strategy(oasis_obj, strategy='spectral-oasis', nsel=1, neig=None):
     """ Factory for selection strategy object
 
     Returns
@@ -882,10 +896,10 @@ def selection_strategy(oasis_obj, strategy='spectral-oasis', nsel=1):
     """
     strategy = strategy.lower()
     if strategy == 'random':
-        return SelectionStrategyRandom(oasis_obj, strategy, nsel=nsel)
+        return SelectionStrategyRandom(oasis_obj, strategy, nsel=nsel, neig=neig)
     elif strategy == 'oasis':
-        return SelectionStrategyOasis(oasis_obj, strategy, nsel=nsel)
+        return SelectionStrategyOasis(oasis_obj, strategy, nsel=nsel, neig=neig)
     elif strategy == 'spectral-oasis':
-        return SelectionStrategySpectralOasis(oasis_obj, strategy, nsel=nsel)
+        return SelectionStrategySpectralOasis(oasis_obj, strategy, nsel=nsel, neig=neig)
     else:
         raise ValueError('Selected strategy is unknown: '+str(strategy))
