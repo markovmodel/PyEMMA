@@ -1198,6 +1198,9 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
+    elif isinstance(weights, (list, tuple)) and all(isinstance(w, _np.ndarray) for w in weights):
+        if data is not None and len(data) != len(weights):
+            raise ValueError("len of weights({}) must match len of data({}).".format(len(weights), len(data)))
     else:
         raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
@@ -1217,7 +1220,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=1000):
     """
         Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
         number of time steps and N the number of dimensions, this function can compute lagged covariances like
@@ -1290,7 +1293,9 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         else:
             raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
-        weights = weights
+        pass
+    elif isinstance(weights, (list, tuple, _np.ndarray)):
+        pass
     else:
         raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
