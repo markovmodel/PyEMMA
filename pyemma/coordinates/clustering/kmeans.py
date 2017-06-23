@@ -198,10 +198,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                 converged_in_max_iter = True
                 self._logger.info("Cluster centers converged after %i steps."
                                   % (it + 1))
-                self._progress_force_finish(stage=1)
                 break
-            else:
-                self._progress_update(1, stage=1)
             it += 1
         if not converged_in_max_iter:
             self._logger.info("Algorithm did not reach convergence criterion"
