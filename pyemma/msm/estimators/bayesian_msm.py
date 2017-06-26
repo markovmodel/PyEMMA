@@ -51,7 +51,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         nsteps : int, optional, default=None
             number of Gibbs sampling steps for each transition matrix used.
             If None, nstep will be determined automatically
-        
+
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
 
@@ -62,7 +62,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
             that the resulting ensemble of transition matrices is
             defined on the intersection of the states with positive
             stationary vector and the largest connected set
-            (undirected). 
+            (undirected).
 
         count_mode : str, optional, default='effective'
             mode to obtain count matrices from discrete trajectories. Should be one of:
@@ -125,7 +125,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
 
         show_progress : bool, default=True
             Show progressbars for calculation?
- 
+
         mincount_connectivity : float or '1/n'
             minimum number of counts to consider a connection between two states.
             Counts lower than that will count zero in the connectivity check and

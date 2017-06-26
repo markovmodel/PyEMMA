@@ -167,7 +167,7 @@ class DiscreteTrajectoryStats(object):
     @staticmethod
     def _compute_connected_sets(C, mincount_connectivity, strong=True):
         """ Computes the connected sets of C.
-    
+
         C : count matrix
         mincount_connectivity : float
             Minimum count which counts as a connection.

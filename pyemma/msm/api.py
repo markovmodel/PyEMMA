@@ -99,7 +99,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
         * 'bayes' for Bayesian sampling of the posterior
 
-        Attention: 
+        Attention:
         * The Bayes mode will use an estimate for the effective count matrix
           that may produce somewhat different estimates than the
           'sliding window' estimate used with ``errors=None`` by default.
@@ -116,7 +116,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     n_jobs : int, optional
         how many subprocesses to start to estimate the models for each lag time.
- 
+
     mincount_connectivity : float or '1/n'
         minimum number of counts to consider a connection between two states.
         Counts lower than that will count zero in the connectivity check and
@@ -1315,7 +1315,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
-def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas, 
+def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
                           count_mode='sliding',  connectivity='largest',
                           dt_traj='1 step', maxiter=500, maxcache=3000):
     r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
@@ -1331,13 +1331,13 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         or a single ndarray for only one trajectory.
     ftrajs : list of trajectories of microscopic observables. Has to have
         the same shape (number of trajectories and timesteps) as dtrajs.
-        Each timestep in each trajectory should match the shape of m and sigma. 
+        Each timestep in each trajectory should match the shape of m and sigma.
     lag : int
         lag time at which transitions are counted and the transition matrix is
         estimated.
-    m   : Experimental averages. 
+    m   : Experimental averages.
     sigmas : Standard error for each experimental observable, same shape as m,
-            number of experimental observables. 
+            number of experimental observables.
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
@@ -1393,12 +1393,12 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         *  's',   'second*'
 
     maxiter : int, optional
-        Optional parameter with specifies the maximum number of 
+        Optional parameter with specifies the maximum number of
         updates for Lagrange multiplier estimation.
 
     maxcache : int, optional
         Parameter which specifies the maximum size of cache used
-        when performing estimation of AMM, in megabytes. 
+        when performing estimation of AMM, in megabytes.
 
     Returns
     -------
@@ -1407,7 +1407,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
 
     See also
     --------
-    AugmentedMarkovModel 
+    AugmentedMarkovModel
         An AMM object that has been estimated from data
 
 
@@ -1429,7 +1429,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
     References
     ----------
     .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining Experimental and Simulation
-        Data via Augmented Markov Models" PNAS is revision. 
+        Data via Augmented Markov Models" PNAS is revision.
 
     """
     import six
@@ -1440,9 +1440,9 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
       raise ValueError('Zero or negative standard errors supplied. Please revise input')
 
     if len(dtrajs) != len(ftrajs):
-        raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.") 
+        raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.")
     elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
-        raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.") 
+        raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.")
     else:
         # MAKE E matrix
         dta = _np.concatenate(dtrajs)
@@ -1513,11 +1513,11 @@ def tpt(msmobj, A, B):
     algorithms. In this function, the equations described in [3]_ are applied.
 
     .. [1] W. E and E. Vanden-Eijnden.
-        Towards a theory of transition paths. 
+        Towards a theory of transition paths.
         J. Stat. Phys. 123: 503-523 (2006)
 
     .. [2] P. Metzner, C. Schuette and E. Vanden-Eijnden.
-        Transition Path Theory for Markov Jump Processes. 
+        Transition Path Theory for Markov Jump Processes.
         Multiscale Model Simul 7: 1192-1219 (2009)
 
     .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
