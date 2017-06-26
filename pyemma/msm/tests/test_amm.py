@@ -90,7 +90,7 @@ class TestAMMSimple(unittest.TestCase):
         self.assertTrue(np.allclose(self.AMM.pi, amm.pi))
         self.assertTrue(np.allclose(self.AMM.lagrange, amm.lagrange))
 
-class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
+class TestAMMDoubleWell(_tmsm):
 
     @classmethod
     def setUpClass(cls):
@@ -147,9 +147,6 @@ class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
 
     def test_count_matrix_full(self):
         self._count_matrix_full(self.amm)
-
-    def test_discrete_trajectories_full(self):
-        self._discrete_trajectories_full(self.amm)
 
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.amm)

@@ -41,8 +41,10 @@ class Moments(object):
         w1 = self.w
         w2 = other.w
         w = w1 + w2
-        dsx = (w2/w1) * self.sx - other.sx
-        dsy = (w2/w1) * self.sy - other.sy
+        # TODO: fix this div by zero error
+        q = w2 / w1
+        dsx = q * self.sx - other.sx
+        dsy = q * self.sy - other.sy
         # update
         self.w = w1 + w2
         self.sx = self.sx + other.sx
@@ -239,9 +241,10 @@ class RunningCovar(object):
                 weights = weights * np.ones(T, dtype=float)
             # Check appropriate length if weights is an array:
             elif isinstance(weights, np.ndarray):
-                assert weights.shape[0] == T, 'weights and X must have equal length'
+                if len(weights) != T:
+                    raise ValueError('weights and X must have equal length. Was {} and {} respectively.'.format(len(weights), len(X)))
             else:
-                raise TypeError('weights is of type %s, must be a number or ndarray'%(type(weights)))
+                raise TypeError('weights is of type %s, must be a number or ndarray' % (type(weights)))
         # estimate and add to storage
         if self.compute_XX and not self.compute_XY:
             w, s_X, C_XX = moments_XX(X, remove_mean=self.remove_mean, weights=weights, sparse_mode=self.sparse_mode, modify_data=self.modify_data)
