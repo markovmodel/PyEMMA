@@ -406,6 +406,11 @@ class TestMLHMM(unittest.TestCase):
         assert (len(traj) <= N)
         assert (len(np.unique(traj)) <= len(hmsm.transition_matrix))
 
+    def test_dt_model(self):
+        from pyemma.util.units import TimeUnit
+        tu = TimeUnit("1 step").get_scaled(self.hmsm_lag10.lag)
+        self.assertEqual(self.hmsm_lag10.dt_model, tu)
+
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------

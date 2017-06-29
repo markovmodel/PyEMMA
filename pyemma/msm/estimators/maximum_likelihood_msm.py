@@ -149,6 +149,7 @@ class _MSMEstimator(_Estimator, _MSM):
         # time step
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
+        self.dt_model = self.dt_traj
 
         # score
         self.score_method = score_method

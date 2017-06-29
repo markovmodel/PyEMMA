@@ -342,6 +342,19 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._timestep(self.msmrevpi_sparse)
         self._timestep(self.msm_sparse)
 
+    def _dt_model(self, msm):
+        from pyemma.util.units import TimeUnit
+        tu = TimeUnit("1 step").get_scaled(self.msm.lag)
+        self.assertEqual(msm.dt_model, tu)
+
+    def test_dt_model(self):
+        self._dt_model(self.msmrev)
+        self._dt_model(self.msmrevpi)
+        self._dt_model(self.msm)
+        self._dt_model(self.msmrev_sparse)
+        self._dt_model(self.msmrevpi_sparse)
+        self._dt_model(self.msm_sparse)
+
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
         # should be ndarray by default
