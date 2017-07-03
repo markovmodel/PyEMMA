@@ -8,7 +8,7 @@ Contains various metrics for ranking kinetic models
 """
 
 
-def _svd_sym_koopman(K, C00_train, Ctt_train):
+def _svd_sym_koopman(K, C00_train, Ctt_train, k):
     """ Computes the SVD of the symmetrized Koopman operator in the empirical distribution.
     """
     from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
@@ -16,7 +16,11 @@ def _svd_sym_koopman(K, C00_train, Ctt_train):
     C0t_re = mdot(C00_train, K)
     # symmetrized operator and SVD
     K_sym = mdot(spd_inv_sqrt(C00_train), C0t_re, spd_inv_sqrt(Ctt_train))
-    U, S, Vt = np.linalg.svd(K_sym, compute_uv=True, full_matrices=False)
+    if k is not None:
+        from scipy.sparse.linalg import svds
+        U, S, Vt = svds(K_sym, k=k)
+    else:
+        U, S, Vt = np.linalg.svd(K_sym, compute_uv=True, full_matrices=False)
     # projects back to singular functions of K
     U = mdot(spd_inv_sqrt(C00_train), U)
     Vt = mdot(Vt,spd_inv_sqrt(Ctt_train))
@@ -77,11 +81,7 @@ def vamp_1_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_tes
     from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 
     # SVD of symmetrized operator in empirical distribution
-    U, S, V = _svd_sym_koopman(K, C00_train, Ctt_train)
-    if k is not None:
-        U = U[:, :k]
-        # S = S[:k][:, :k]
-        V = V[:, :k]
+    U, S, V = _svd_sym_koopman(K, C00_train, Ctt_train, k=k)
     A = spd_inv_sqrt(mdot(U.T, C00_test, U))
     B = mdot(U.T, C0t_test, V)
     C = spd_inv_sqrt(mdot(V.T, Ctt_test, V))
@@ -145,11 +145,7 @@ def vamp_2_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_tes
     from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 
     # SVD of symmetrized operator in empirical distribution
-    U, S, V = _svd_sym_koopman(K, C00_train, Ctt_train)
-    if k is not None:
-        U = U[:, :k]
-        # S = S[:k][:, :k]
-        V = V[:, :k]
+    U, S, V = _svd_sym_koopman(K, C00_train, Ctt_train, k=k)
     A = spd_inv_sqrt(mdot(U.T, C00_test, U))
     B = mdot(U.T, C0t_test, V)
     C = spd_inv_sqrt(mdot(V.T, Ctt_test, V))
@@ -211,11 +207,8 @@ def vamp_e_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_tes
 
     """
     # SVD of symmetrized operator in empirical distribution
-    U, s, V = _svd_sym_koopman(K, C00_train, Ctt_train)
-    if k is not None:
-        U = U[:, :k]
-        S = np.diag(s[:k])
-        V = V[:, :k]
+    U, s, V = _svd_sym_koopman(K, C00_train, Ctt_train, k=k)
+    S = np.diag(s[:k])
     score = np.trace(2.0 * mdot(V, S, U.T, C0t_test) - mdot(V, S, U.T, C00_test, U, S, V.T, Ctt_test))
     return score
 
