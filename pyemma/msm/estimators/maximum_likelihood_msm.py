@@ -222,10 +222,10 @@ class _MSMEstimator(_Estimator, _MSM):
             test data (discrete trajectories).
         score_method : str
             Overwrite scoring method if desired. If `None`, the estimators scoring
-            method will be used. See __init__ for documention.
+            method will be used. See __init__ for documentation.
         score_k : str
             Overwrite scoring rank if desired. If `None`, the estimators scoring
-            rank will be used. See __init__ for documention.
+            rank will be used. See __init__ for documentation.
         score_method : str, optional, default='VAMP2'
             Overwrite scoring method to be used if desired. If `None`, the estimators scoring
             method will be used.
