@@ -641,6 +641,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             ass = msm.metastable_assignments
             # test: number of states
             assert (len(ass) == msm.nstates)
+            assert msm.n_metastable == 2
             # test: should be 0 or 1
             assert (np.all(ass >= 0))
             assert (np.all(ass <= 1))
