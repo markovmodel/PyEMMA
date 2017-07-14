@@ -23,6 +23,15 @@ import numpy as _np
 __author__ = 'noe'
 
 
+def _get_cmap(cmap):
+    # matplotlib 2.0 deprecated 'spectral' colormap, renamed to nipy_spectral.
+    from matplotlib import __version__
+    version = tuple(map(int, __version__.split('.')))
+    if cmap == 'spectral' and version >= (2, ):
+        cmap = 'nipy_spectral'
+    return cmap
+
+
 def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='linear', zlim=None, cmap=None):
     import matplotlib.pylab as _plt
     from scipy.interpolate import griddata as gd
@@ -32,6 +41,8 @@ def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='l
             ax = _plt.gca()
         else:
             ax = fig.gca()
+
+    cmap = _get_cmap(cmap)
 
     # grid data
     points = _np.hstack([x[:,None],y[:,None]])
@@ -147,7 +158,7 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
     """
     import matplotlib.pylab as _plt
     import warnings
-
+    cmap = _get_cmap(cmap)
     # check input
     if offset != -1:
         warnings.warn("Parameter offset is deprecated and will be ignored", DeprecationWarning)
