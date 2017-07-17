@@ -44,7 +44,7 @@ def mdot(*args):
     elif len(args) == 1:
         return args[0]
     elif len(args) == 2:
-        return np.dot(args[0],args[1])
+        return np.dot(args[0], args[1])
     else:
         return np.dot(args[0], mdot(*args[1:]))
 
@@ -111,4 +111,4 @@ def _sort_by_norm(evals, evecs):
     evals2 = evals[I]
     evecs2 = evecs[:, I]
     # done
-    return (evals2, evecs2)
+    return evals2, evecs2

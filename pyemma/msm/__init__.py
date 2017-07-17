@@ -88,6 +88,7 @@ from msmtools.analysis.dense.pcca import PCCA
 from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import OOMReweightedMSM
+from .estimators import AugmentedMarkovModel 
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 

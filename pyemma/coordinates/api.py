@@ -1068,6 +1068,9 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     skip : int, default=0
         skip the first initial n frames per trajectory.
 
+    reversible: bool, default=True
+            symmetrize correlation matrices C_0, C_{\tau}.
+
     ncov_max : int, default=infinity
         limit the memory usage of the algorithm from [7]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
@@ -1184,6 +1187,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         if weights == "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
+            if not reversible:
+                raise ValueError("Koopman re-weighting is designed for reversible processes, set reversible=True")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
             _param_stage(data, koop, stride=stride)
             weights = koop.weights
@@ -1193,6 +1198,9 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
+    elif isinstance(weights, (list, tuple)) and all(isinstance(w, _np.ndarray) for w in weights):
+        if data is not None and len(data) != len(weights):
+            raise ValueError("len of weights({}) must match len of data({}).".format(len(weights), len(data)))
     else:
         raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
@@ -1212,7 +1220,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=1000):
     """
         Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
         number of time steps and N the number of dimensions, this function can compute lagged covariances like
@@ -1285,7 +1293,9 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         else:
             raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
-        weights = weights
+        pass
+    elif isinstance(weights, (list, tuple, _np.ndarray)):
+        pass
     else:
         raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
@@ -1393,8 +1403,9 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         determines if the initial cluster centers are chosen according to the kmeans++-algorithm
         or drawn uniformly distributed from the provided data set
 
-    fixed_seed : bool
-        if set to true, the random seed gets fixed resulting in deterministic behavior; default is false
+    fixed_seed : bool or (positive) integer 
+        if set to true, the random seed gets fixed resulting in deterministic behavior; default is false.
+        If an integer >= 0 is given, use this to initialize the random generator.
 
     n_jobs : int or None, default None
         Number of threads to use during assignment of the data.

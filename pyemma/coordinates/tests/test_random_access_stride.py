@@ -61,27 +61,31 @@ def _test_ra_with_format(format, stride):
             except EnvironmentError:
                 pass
 
+
 class TestRandomAccessStride(TestCase):
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp('test_random_access')
-        self.dim = 5
-        self.data = [np.random.random((100, self.dim)).astype(np.float32),
-                     np.random.random((20, self.dim)).astype(np.float32),
-                     np.random.random((20, self.dim)).astype(np.float32)]
-        self.stride = np.asarray([
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmpdir = tempfile.mkdtemp('test_random_access')
+        cls.dim = 5
+        cls.data = [np.random.random((100, cls.dim)).astype(np.float32),
+                     np.random.random((20, cls.dim)).astype(np.float32),
+                     np.random.random((20, cls.dim)).astype(np.float32)]
+        cls.stride = np.asarray([
             [0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7],
             [2, 1], [2, 1]
         ])
-        self.stride2 = np.asarray([[2, 0]])
-        self.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
-        trajfile1, xyz1, n_frames1 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=100)
-        trajfile2, xyz2, n_frames2 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
-        trajfile3, xyz3, n_frames3 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
-        self.data_feature_reader = [trajfile1, trajfile2, trajfile3]
+        cls.stride2 = np.asarray([[2, 0]])
+        cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
+        trajfile1, xyz1, n_frames1 = create_traj(cls.topfile, dir=cls.tmpdir, format=".binpos", length=100)
+        trajfile2, xyz2, n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir, format=".binpos", length=20)
+        trajfile3, xyz3, n_frames3 = create_traj(cls.topfile, dir=cls.tmpdir, format=".binpos", length=20)
+        cls.data_feature_reader = [trajfile1, trajfile2, trajfile3]
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         import shutil
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        shutil.rmtree(cls.tmpdir, ignore_errors=True)
 
     def _get_reader_instance(self, instance_number):
         if instance_number == 0:
@@ -454,6 +458,37 @@ class TestRandomAccessStride(TestCase):
                                                 traj.xyz[
                                                     np.array(self.stride[self.stride[:, 0] == i][:, 1])
                                                 ], err_msg="not equal for chunksize=%s" % chunksize)
+
+    def test_RA_high_stride(self):
+        """ ensure we use a random access pattern for high strides chunksize combinations to avoid memory issues."""
+        n=int(1e5)
+        n_bytes = 3*3*8*n # ~8Mb
+        savable_formats_mdtra_18 = (
+            '.xtc', '.trr',  '.dcd', '.h5', '.binpos', '.nc', '.netcdf',
+             '.ncdf', '.tng')
+        for ext in savable_formats_mdtra_18:
+            traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
+
+            from mock import patch
+            # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
+            with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
+                r = coor.source(traj, top=get_top())
+                it = r.iterator(stride=1000, chunk=100000)
+                assert it._mditer.is_ra_iter
+
+                out_ra = r.get_output(stride=1000, chunk=10000)
+            it = r.iterator(stride=1)
+            assert not it._mditer.is_ra_iter
+            out = r.get_output(stride=1000)
+            np.testing.assert_equal(out_ra, out)
+
+            # check max stride exceeding
+            from pyemma.coordinates.util.patches import iterload
+            it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA+1)
+            assert it._mditer.is_ra_iter
+
+            it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA)
+            assert not it._mditer.is_ra_iter
 
 if __name__ == '__main__':
     unittest.main()

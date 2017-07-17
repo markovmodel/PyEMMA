@@ -29,6 +29,66 @@ from pyemma.util.discrete_trajectories import visited_set
 __author__ = 'noe'
 
 
+# TODO: this could me moved to msmtools.dtraj
+def blocksplit_dtrajs(dtrajs, lag=1, sliding=True, shift=None):
+    """ Splits the discrete trajectories into approximately uncorrelated fragments
+
+    Will split trajectories into fragments of lengths lag or longer. These fragments
+    are overlapping in order to conserve the transition counts at given lag.
+    If sliding=True, the resulting trajectories will lead to exactly the same count
+    matrix as when counted from dtrajs. If sliding=False (sampling at lag), the
+    count matrices are only equal when also setting shift=0.
+
+    Parameters
+    ----------
+    dtrajs : list of ndarray(int)
+        Discrete trajectories
+    lag : int
+        Lag time at which counting will be done. If sh
+    sliding : bool
+        True for splitting trajectories for sliding count, False if lag-sampling will be applied
+    shift : None or int
+        Start of first full tau-window. If None, shift will be randomly generated
+
+    """
+    dtrajs_new = []
+    for dtraj in dtrajs:
+        if len(dtraj) <= lag:
+            continue
+        if shift is None:
+            s = np.random.randint(min(lag, dtraj.size-lag))
+        else:
+            s = shift
+        if sliding:
+            if s > 0:
+                dtrajs_new.append(dtraj[0:lag+s])
+            for t0 in range(s, dtraj.size-lag, lag):
+                dtrajs_new.append(dtraj[t0:t0+2*lag])
+        else:
+            for t0 in range(s, dtraj.size-lag, lag):
+                dtrajs_new.append(dtraj[t0:t0+lag+1])
+    return dtrajs_new
+
+
+# TODO: this could me moved to msmtools.dtraj
+def cvsplit_dtrajs(dtrajs):
+    """ Splits the trajectories into a training and test set with approximately equal number of trajectories
+
+    Parameters
+    ----------
+    dtrajs : list of ndarray(int)
+        Discrete trajectories
+
+    """
+    if len(dtrajs) == 1:
+        raise ValueError('Only have a single trajectory. Cannot be split into train and test set')
+    I0 = np.random.choice(len(dtrajs), int(len(dtrajs)/2), replace=False)
+    I1 = np.array(list(set(list(np.arange(len(dtrajs)))) - set(list(I0))))
+    dtrajs_train = [dtrajs[i] for i in I0]
+    dtrajs_test = [dtrajs[i] for i in I1]
+    return dtrajs_train, dtrajs_test
+
+
 @aliased
 class DiscreteTrajectoryStats(object):
     r""" Statistics, count matrices and connectivity from discrete trajectories
@@ -153,7 +213,7 @@ class DiscreteTrajectoryStats(object):
             # set size
             self._connected_set_sizes[i] = len(self._connected_sets[i])
             # submatrix
-            self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
+            # self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
 
         # largest connected set
         self._lcs = self._connected_sets[0]
@@ -273,7 +333,7 @@ class DiscreteTrajectoryStats(object):
             self._assert_subset(subset)
             C = submatrix(self._C, subset)
         elif connected_set is not None:
-            C = self._C_sub[connected_set]
+            C = submatrix(self._C, self._connected_sets[connected_set])
         else: # full matrix wanted
             C = self._C
 

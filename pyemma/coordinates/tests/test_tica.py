@@ -38,6 +38,7 @@ from pyemma.coordinates.transform import TICA as _internal_tica
 from pyemma.util.contexts import numpy_random_seed
 from pyemma.coordinates.estimation.koopman import _KoopmanWeights
 from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma._ext.variational.util import ZeroRankError
 from logging import getLogger
 import pyemma.util.types as types
@@ -87,7 +88,6 @@ class TestTICA_Basic(unittest.TestCase):
         with numpy_random_seed(0):
             data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
-        tica_obj.parametrize()
         Y = tica_obj._transform_array(data)
         # right shape
         assert types.is_float_matrix(Y)
@@ -164,12 +164,10 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_in_memory(self):
         data = np.random.random((100, 10))
-        tica_obj = api.tica(lag=10, dim=1)
         reader = api.source(data)
-        tica_obj.data_producer = reader
+        tica_obj = api.tica(reader, lag=10, dim=1)
 
         tica_obj.in_memory = True
-        tica_obj.parametrize()
         tica_obj.get_output()
 
     def test_too_short_trajs(self):
@@ -213,10 +211,27 @@ class TestTICAExtensive(unittest.TestCase):
                 s = dtraj[t]
                 cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
                 cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
+            # Set the lag time:
             cls.lag = 10
+            # Compute mean free data:
+            mref = (np.sum(cls.X[:-cls.lag, :], axis=0) +
+                    np.sum(cls.X[cls.lag:, :], axis=0)) / float(2*(cls.T-cls.lag))
+            mref_nr = np.sum(cls.X[:-cls.lag, :], axis=0) / float(cls.T-cls.lag)
+            cls.X_mf = cls.X - mref[None, :]
+            cls.X_mf_nr = cls.X - mref_nr[None, :]
+            # Compute correlation matrices:
+            cls.cov_ref = (np.dot(cls.X_mf[:-cls.lag, :].T, cls.X_mf[:-cls.lag, :]) +\
+                  np.dot(cls.X_mf[cls.lag:, :].T, cls.X_mf[cls.lag:, :])) / float(2*(cls.T-cls.lag))
+            cls.cov_ref_nr = np.dot(cls.X_mf_nr[:-cls.lag, :].T, cls.X_mf_nr[:-cls.lag, :]) / float(cls.T - cls.lag)
+            cls.cov_tau_ref = (np.dot(cls.X_mf[:-cls.lag, :].T, cls.X_mf[cls.lag:, :]) +\
+                  np.dot(cls.X_mf[cls.lag:, :].T, cls.X_mf[:-cls.lag, :])) / float(2*(cls.T-cls.lag))
+            cls.cov_tau_ref_nr = np.dot(cls.X_mf_nr[:-cls.lag, :].T, cls.X_mf_nr[cls.lag:, :]) / float(cls.T - cls.lag)
+
             # do unscaled TICA
             reader=api.source(cls.X, chunk_size=0)
             cls.tica_obj = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False)
+            # non-reversible TICA
+            cls.tica_obj_nr = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False, reversible=False)
 
     def setUp(self):
         pass
@@ -224,8 +239,11 @@ class TestTICAExtensive(unittest.TestCase):
     def test_variances(self):
         # test unscaled TICA:
         O = self.tica_obj.get_output()[0]
+        Onr = self.tica_obj_nr.get_output()[0]
         vars = np.var(O, axis=0)
+        vars_nr = np.var(Onr, axis=0)
         assert np.max(np.abs(vars - 1.0)) < 0.01
+        assert np.max(np.abs(vars_nr - 1.0)) < 0.01
 
     def test_kinetic_map(self):
         # test kinetic map variances:
@@ -238,20 +256,19 @@ class TestTICAExtensive(unittest.TestCase):
     def test_cumvar(self):
         assert len(self.tica_obj.cumvar) == 2
         assert np.allclose(self.tica_obj.cumvar[-1], 1.0)
+        assert len(self.tica_obj_nr.cumvar) == 2
+        assert np.allclose(self.tica_obj_nr.cumvar[-1], 1.0)
 
     def test_chunksize(self):
         assert types.is_int(self.tica_obj.chunksize)
 
     def test_cov(self):
-        cov_ref = np.dot(self.X.T, self.X) / float(self.T)
-        assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        np.testing.assert_allclose(self.tica_obj.cov, cov_ref, atol=5e-2)
+        np.testing.assert_allclose(self.tica_obj.cov, self.cov_ref)
+        np.testing.assert_allclose(self.tica_obj_nr.cov, self.cov_ref_nr)
 
     def test_cov_tau(self):
-        cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
-        cov_tau_ref = 0.5 * (cov_tau_ref + cov_tau_ref.T)
-        assert (np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
-        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 5e-2)
+        np.testing.assert_allclose(self.tica_obj_nr.cov_tau , self.cov_tau_ref_nr)
+        np.testing.assert_allclose(self.tica_obj.cov_tau, self.cov_tau_ref)
 
     def test_data_producer(self):
         assert self.tica_obj.data_producer is not None
@@ -274,13 +291,25 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_eigenvalues(self):
         eval = self.tica_obj.eigenvalues
+        eval_ref, _ = eig_corr(self.cov_ref, self.cov_tau_ref)
         assert len(eval) == 2
         assert np.max(np.abs(eval) < 1)
+        np.testing.assert_allclose(eval_ref, eval)
+        eval_nr = self.tica_obj_nr.eigenvalues
+        eval_ref, _ = eig_corr(self.cov_ref_nr, self.cov_tau_ref_nr)
+        assert len(eval_nr) == 2
+        assert np.max(np.abs(eval_nr) < 1)
+        np.testing.assert_allclose(eval_ref, eval_nr)
 
     def test_eigenvectors(self):
         evec = self.tica_obj.eigenvectors
+        _, evec_ref = eig_corr(self.cov_ref, self.cov_tau_ref, sign_maxelement=True)
         assert (np.all(evec.shape == (2, 2)))
-        assert np.max(np.abs(evec[:, 0]) - np.array([1, 0]) < 0.05)
+        np.testing.assert_allclose(evec, evec_ref)
+        evec_nr = self.tica_obj_nr.eigenvectors
+        _, evec_ref = eig_corr(self.cov_ref_nr, self.cov_tau_ref_nr, sign_maxelement=True)
+        assert (np.all(evec_nr.shape == (2, 2)))
+        np.testing.assert_allclose(evec_ref, evec_nr)
 
     def test_get_output(self):
         O = self.tica_obj.get_output()
@@ -333,10 +362,6 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_output_type(self):
         assert self.tica_obj.output_type() == np.float32
-
-    def test_parametrize(self):
-        # nothing should happen
-        self.tica_obj.parametrize()
 
     def test_trajectory_length(self):
         assert self.tica_obj.trajectory_length(0) == self.T
@@ -569,10 +594,6 @@ class TestKoopman(unittest.TestCase):
         out_traj_eq = self.koop_eq.get_output()[0]
         np.testing.assert_allclose(out_traj_rev, ev_traj_rev)
         np.testing.assert_allclose(out_traj_eq, ev_traj_eq)
-
-    def test_error_reversible(self):
-        with self.assertRaises(NotImplementedError):
-            tica(self.data, lag=self.tau, reversible=False, kinetic_map=False)
 
 
 class TestTICAErrors(unittest.TestCase):

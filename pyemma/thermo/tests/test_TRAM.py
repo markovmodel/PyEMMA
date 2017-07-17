@@ -139,7 +139,7 @@ class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
         self.run_5_state_model(True)
 
     def run_5_state_model(self, direct_space):
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=1, init='mbar')
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=1, init='mbar', connectivity='reversible_pathways')
         tram.estimate(self.trajs)
 
         log_pi_K_i = tram.biased_conf_energies.copy()
@@ -184,7 +184,7 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         self.reversible_msm(True)
 
     def reversible_msm(self, direct_space):
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1.E-12, save_convergence_info=10, direct_space=direct_space, nn=None)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1.E-12, save_convergence_info=10, direct_space=direct_space, nn=None, connectivity='reversible_pathways')
         tram.estimate(self.tram_trajs)
         assert np.allclose(self.T_ref,  tram.models[0].transition_matrix, atol=1.E-4)
 
@@ -313,7 +313,7 @@ class TRAMandTRAMMBARBaseClass(object):
 
     def with_TRAM_model(self, direct_space):
         # run TRAM
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar', equilibrium=self.eq)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar', equilibrium=self.eq, connectivity='reversible_pathways')
         if not self.test_trammbar:
             tram.estimate((self.ttrajs, self.dtrajs, self.btrajs))
         else:

@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016, 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -97,10 +97,12 @@ class ThermoMSM(_MSM, _SubSet):
     
     @_map_to_full_state(default_arg=_np.inf)
     def eigenvectors_right(self, k=None):
+        r'''Get the first k (all all) right eigenvectors.'''
         return super(ThermoMSM, self).eigenvectors_right(k=k)
     
     @_map_to_full_state(default_arg=_np.inf, extend_along_axis=1)
     def eigenvectors_left(self, k=None):
+        r'''Get the first k (all all) left eigenvectors.'''
         return super(ThermoMSM, self).eigenvectors_left(k=k)
 
 
@@ -139,6 +141,7 @@ class MEMM(_MultiThermModel):
     # THIS CLASS EXTENDS MultiThermModel AND JUST ADDS ANOTHER GETTER
     @property
     def msm(self):
+        r'''MSM of the unbiased thermodynamic state; only present when unbiased data available.'''
         if self.unbiased_state is None:
             return None
         return self.models[self.unbiased_state]

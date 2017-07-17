@@ -152,6 +152,30 @@ class TestConfig(unittest.TestCase):
         self.config_inst.traj_info_max_entries = 1
         self.assertEqual(self.config_inst.traj_info_max_entries, 1)
 
+    def test_mute_logging(self):
+        self.config_inst.mute = False
+
+        import logging
+        logger = logging.getLogger('pyemma')
+        old_level = logger.level
+
+        self.config_inst.mute = True
+        assert logger.level >= 50
+
+        # unmute again and check level got restored
+        self.config_inst.mute = False
+        self.assertEqual(logger.level, old_level)
+
+    def test_mute_progress(self):
+        """ switch mute on shall turn off progress bars"""
+        from pyemma._base.progress import ProgressReporter
+        import mock
+        rp = ProgressReporter()
+
+        self.config_inst.mute = True
+        with mock.patch('pyemma.config', self.config_inst):
+            assert not rp.show_progress
+
 
 if __name__ == "__main__":
     unittest.main()
