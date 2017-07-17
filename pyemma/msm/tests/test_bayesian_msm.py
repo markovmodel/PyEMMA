@@ -51,9 +51,9 @@ class TestBMSM(unittest.TestCase):
         cls.nsamples = 100
 
         cls.lag = 100
-        cls.bmsm_rev = bayesian_markov_model(obs_macro, cls.lag,
+        cls.bmsm_rev = bayesian_markov_model(obs_macro, cls.lag, dt_traj='4 fs',
                                              reversible=True, nsamples=cls.nsamples)
-        cls.bmsm_revpi = bayesian_markov_model(obs_macro, cls.lag,
+        cls.bmsm_revpi = bayesian_markov_model(obs_macro, cls.lag, dt_traj='4 fs',
                                                reversible=True, statdist=pi_macro,
                                                     nsamples=cls.nsamples)
 
@@ -309,6 +309,11 @@ class TestBMSM(unittest.TestCase):
 
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
+
+    def test_dt_model(self):
+        from pyemma.util.units import TimeUnit
+        tu = TimeUnit("4 fs").get_scaled(self.bmsm_rev.lag)
+        self.assertEqual(self.bmsm_rev.dt_model, tu)
     
 if __name__ == "__main__":
     unittest.main()

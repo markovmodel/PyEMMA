@@ -916,12 +916,21 @@ class MSM(_Model):
 
         # set metastable properties
         self._metastable_computed = True
+        self._n_metastable = self._pcca.n_metastable
         self._metastable_memberships = copy.deepcopy(self._pcca.memberships)
         self._metastable_distributions = copy.deepcopy(self._pcca.output_probabilities)
         self._metastable_sets = copy.deepcopy(self._pcca.metastable_sets)
         self._metastable_assignments = copy.deepcopy(self._pcca.metastable_assignment)
 
         return self._pcca
+
+    @property
+    def n_metastable(self):
+        """ Number of states chosen for PCCA++ computation.
+        """
+        # are we ready?
+        self._assert_metastable()
+        return self._n_metastable
 
     @property
     def metastable_memberships(self):
