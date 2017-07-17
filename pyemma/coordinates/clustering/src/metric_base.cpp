@@ -2,7 +2,7 @@
 // Created by marscher on 4/3/17.
 //
 
-#include <metric.h>
+#include <metric_base.h>
 // for mdtrajs minRMSD impl
 #include <theobald_rmsd.h>
 #include <center.h>

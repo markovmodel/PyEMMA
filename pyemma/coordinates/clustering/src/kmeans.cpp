@@ -16,9 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <clustering.h>
-#include <metric.h>
-#include <kmeans.h>
+#include <Clustering.h>
 
 #include <pybind11/pybind11.h>
 
@@ -78,6 +76,7 @@ static char INIT_CENTERS_USAGE[] = "init_centers(data, metric, k)\n"\
 PYBIND11_PLUGIN(kmeans_clustering) {
         py::module m("kmeans_clustering", MOD_USAGE);
 
+        /*
        // typedef metric::min_rmsd_metric minRMSD_f;
         typedef metric::euclidean_metric<float> euclidean_f;
 
@@ -95,6 +94,11 @@ PYBIND11_PLUGIN(kmeans_clustering) {
         m.def("cost_function_euclidean_f", &costFunction<float, euclidean_f> );
 
         m.def("set_callback", &c_set_callback, "For setting a callback.");
+         */
+        typedef KMeans<double> KMeans_d;
+        py::class_<KMeans_d>(m, "kmeans")
+            .def(py::init<int, const std::string&, size_t>)
+            .def("cluster", &KMeans_d::cluster);
 
         return m.ptr();
 }
