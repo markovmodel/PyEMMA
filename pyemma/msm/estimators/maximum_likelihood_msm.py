@@ -23,6 +23,7 @@ import warnings
 from msmtools import estimation as msmest
 
 from pyemma.util.annotators import alias, aliased, fix_docs, deprecated
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
@@ -470,7 +471,7 @@ class _MSMEstimator(_Estimator, _MSM):
             s = inspect.stack(context=3)
             method = s[1][3]
             warnings.warn("The dtrajs argument will be mandatory in the future for method {method}."
-                          .format(method=method), stacklevel=3)
+                          .format(method=method), stacklevel=3, category=PyEMMA_DeprecationWarning)
             dtrajs = self._dtrajs_full
         return dtrajs
 
