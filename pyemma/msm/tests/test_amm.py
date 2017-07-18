@@ -18,7 +18,7 @@
 
 r"""Unit test for the AMM module
 
-.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de> 
+.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de>
 
 """
 
@@ -95,16 +95,16 @@ class TestAMMDoubleWell(_tmsm):
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
-        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)    
-        cls.m = np.array([1.9]) 
-        cls.w = np.array([2.0]) 
+        cls.dtraj = [pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10]
+        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)
+        cls.m = np.array([1.9])
+        cls.w = np.array([2.0])
         cls.sigmas = 1./np.sqrt(2)/np.sqrt(cls.w)
-        _sd = list(set(cls.dtraj))
-        
-        cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj], :]
+        _sd = list(set(cls.dtraj[0]))
+
+        cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj[0]], :]
         cls.tau = 10
-        cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.tau, cls.m, cls.sigmas)
+        cls.amm = estimate_augmented_markov_model(cls.dtraj, [cls.ftraj], cls.tau, cls.m, cls.sigmas)
         cls.msm = cls.amm
 
     def test_reversible(cls):
@@ -277,7 +277,7 @@ class TestAMMDoubleWell(_tmsm):
         if amm.is_sparse:
             k = 4
         else:
-            k = amm.nstates            
+            k = amm.nstates
         pi_perturbed = (amm.stationary_distribution ** 2)
         pi_perturbed /= pi_perturbed.sum()
         a = list(range(amm.nstates))[::-1]
