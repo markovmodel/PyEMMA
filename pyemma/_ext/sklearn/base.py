@@ -70,6 +70,13 @@ def clone(estimator, safe=True):
     new_object = klass(**new_object_params)
     params_set = new_object.get_params(deep=False)
 
+    # TODO: this is a brute force method to make things work for parameter studies. #1135
+    # But this can potentially use a lot of memory in case of large input data, which is also copied then.
+    # we need a way to distinguish input parameters from derived model parameters, which is currently only ensured for
+    # estimators in the coordinates package.
+    if hasattr(estimator, '_estimated') and estimator._estimated:
+        return copy.deepcopy(estimator)
+
     # quick sanity check of the parameters of the clone
     for name in new_object_params:
         param1 = new_object_params[name]
