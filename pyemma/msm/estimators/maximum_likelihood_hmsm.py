@@ -184,8 +184,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # INIT HMM
         from bhmm import init_discrete_hmm
-        from pyemma.msm.estimators import MaximumLikelihoodMSM
-        from pyemma.msm.estimators import OOMReweightedMSM
+        from pyemma.msm.estimators import MaximumLikelihoodMSM, OOMReweightedMSM
         if self.msm_init=='largest-strong':
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
@@ -194,8 +193,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
                                          method='spectral', separate=self.separate)
-        elif issubclass(self.msm_init.__class__, MaximumLikelihoodMSM) or \
-                issubclass(self.msm_init.__class__, OOMReweightedMSM):  # initial MSM given.
+        elif isinstance(self.msm_init, (MaximumLikelihoodMSM, OOMReweightedMSM)):  # initial MSM given.
             from bhmm.init.discrete import init_discrete_hmm_spectral
             p0, P0, pobs0 = init_discrete_hmm_spectral(self.msm_init.count_matrix_full, self.nstates,
                                                        reversible=self.reversible, stationary=True,
@@ -256,6 +254,16 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         # return submodel (will return self if all None)
         return self.submodel(states=states_subset, obs=observe_subset, mincount_connectivity=self.mincount_connectivity)
 
+    @property
+    def msm_init(self):
+        return self._msm_init
+
+    @msm_init.setter
+    def msm_init(self, value):
+        from pyemma.msm.estimators import MaximumLikelihoodMSM, OOMReweightedMSM
+        if (isinstance(value, (MaximumLikelihoodMSM, OOMReweightedMSM)) and not value._estimated):
+            raise ValueError('Given initial msm has not been estimated. Input was {}'.format(value))
+        self._msm_init = value
 
     @property
     def lagtime(self):
