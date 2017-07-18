@@ -425,6 +425,13 @@ class TestMLHMM(unittest.TestCase):
         k2 = 1.0 / t2
         assert np.abs(k2 - ksum) < 1e-4
 
+    def test_cktest_simple(self):
+        import pyemma
+        dtraj = np.random.randint(0, 10, 100)
+        oom = pyemma.msm.estimate_markov_model(dtraj, 1)
+        hmm = oom.coarse_grain(2)
+        hmm.cktest()
+
 
 class TestHMMSpecialCases(unittest.TestCase):
 
