@@ -16,19 +16,27 @@ namespace py = pybind11;
 template <typename dtype>
 class ClusteringBase {
 public:
-    ClusteringBase(const std::string& metric_s, std::size_t input_dimension) {
+    using metric_ref = std::unique_ptr<metric_base<dtype>>;
+    ClusteringBase(const std::string& metric_s, std::size_t input_dimension) : input_dimension(input_dimension) {
         if (metric_s == "euclidean") {
-            metric = new metric::euclidean_metric<dtype>(input_dimension);
+            metric = metric_ref(new euclidean_metric<dtype>(input_dimension));
         } else if(metric_s == "minRMSD") {
-            metric = new metric::min_rmsd_metric<float>(input_dimension);
+            // TODO: repair this polymorphism stuff...
+            metric = metric_ref(new min_rmsd_metric<float>(input_dimension));
         } else {
             throw std::runtime_error("metric is not of {'euclidean', 'minRMSD'}");
         }
     }
 
-    ~ClusteringBase() { delete metric; }
+    ~ClusteringBase() = default;
+    ClusteringBase(const ClusteringBase&) = delete;
+    ClusteringBase&operator=(const ClusteringBase&) = delete;
+    ClusteringBase(ClusteringBase&&) = default;
+    ClusteringBase&operator=(ClusteringBase&&) = default;
+
     py::array_t<unsigned int> assign(...) {}
-    metric::metric_base<dtype>* metric;
+    metric_ref metric;
+    std::size_t input_dimension;
 };
 
 

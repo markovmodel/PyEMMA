@@ -12,7 +12,6 @@
 
 #include <vector>
 
-namespace metric {
 /**
  *
  * @tparam dtype eg. float, double
@@ -22,6 +21,7 @@ class metric_base {
 
 public:
     metric_base(std::size_t dim) : dim(dim) {}
+    virtual ~metric_base() = default;
 
     // overload operator()?
     template<typename ... Params>
@@ -35,6 +35,7 @@ template<class dtype>
 class euclidean_metric : public metric_base<dtype> {
 public:
     euclidean_metric(size_t dim) : metric_base<dtype>(dim) {}
+    ~euclidean_metric() = default;
 
     template<typename ... Params>
     dtype compute(dtype *a, dtype *b) {
@@ -47,14 +48,18 @@ public:
 
 };
 
-template <typename dummy>
-class min_rmsd_metric : public metric_base<dummy> {
+template<typename dtype>
+class min_rmsd_metric : public metric_base<dtype> {
+
+    static_assert(std::is_same<dtype, float>::value, "only implemented for floats");
+
 public:
 
     min_rmsd_metric(std::size_t dim, float *precalc_trace_centers = nullptr)
             : metric_base<float>(dim), buffer_a(dim), buffer_b(dim) {
         trace_a_precalc = precalc_trace_centers != nullptr;
     }
+    ~min_rmsd_metric() = default;
 
     // TODO: actually a generic type argument makes no sense, because rmsd in mdtraj is only impled for float...
     float compute(float *a, float *b);
@@ -93,5 +98,4 @@ private:
     }
 };
 
-}
 #endif //PYEMMA_METRIC_H
