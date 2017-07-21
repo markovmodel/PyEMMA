@@ -31,7 +31,6 @@ public:
     size_t dim;
 };
 
-#include <iostream>
 template<class dtype>
 class euclidean_metric : public metric_base<dtype> {
 public:
@@ -61,29 +60,7 @@ public:
     }
     ~min_rmsd_metric() = default;
 
-    dtype compute(const dtype *a, const dtype *b);/* {
-        float msd;
-        float trace_a, trace_b;
-        size_t n = parent_t::dim;
-        float* buffer_a_ptr = buffer_a.data();
-        float* buffer_b_ptr = buffer_b.data();
-
-        if (! has_trace_a_been_precalculated) {
-            memcpy(buffer_a_ptr, a, n*sizeof(float));
-            memcpy(buffer_b_ptr, b, n*sizeof(float));
-
-            inplace_center_and_trace_atom_major(buffer_a_ptr, &trace_a, 1, n/3);
-            inplace_center_and_trace_atom_major(buffer_b_ptr, &trace_b, 1, n/3);
-        } else {
-            // only copy b, since a has been pre-centered,
-            memcpy(buffer_b_ptr, b, n*sizeof(float));
-            inplace_center_and_trace_atom_major(buffer_b_ptr, &trace_b, 1, n/3);
-            trace_a = trace_a_precentered;
-        }
-
-        msd = msd_atom_major(n/3, n/3, a, buffer_b_ptr, trace_a, trace_b, 0, NULL);
-        return std::sqrt(msd);
-    }*/
+    dtype compute(const dtype *a, const dtype *b);
     /**
      * TODO: this can only be used during assignment?! so it should be moved to ClusteringBase::assign
      * @param original_centers

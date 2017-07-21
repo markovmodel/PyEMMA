@@ -25,8 +25,9 @@ inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
         buffer_a.assign(a, a + parent_t::dim * sizeof(float));
         buffer_b.assign(b, b + parent_t::dim * sizeof(float));
 
-        // assert(parent_t::dim % 3 == 0);
+        assert(parent_t::dim % 3 == 0);
 
+        inplace_center_and_trace_atom_major(buffer_a.data(), &trace_a, 1, parent_t::dim / 3);
         inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, parent_t::dim / 3);
 
     } else {
