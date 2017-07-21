@@ -12,6 +12,9 @@
 
 #include <vector>
 
+#include <theobald_rmsd.h>
+#include <center.h>
+
 /**
  *
  * @tparam dtype eg. float, double
@@ -51,15 +54,43 @@ class min_rmsd_metric : public metric_base<dtype> {
     static_assert(std::is_same<dtype, float>::value, "only implemented for floats");
 
 public:
-
+    using parent_t = metric_base<dtype>;
     min_rmsd_metric(std::size_t dim, float *precalc_trace_centers = nullptr)
             : metric_base<float>(dim), buffer_a(dim), buffer_b(dim) {
-        trace_a_precalc = precalc_trace_centers != nullptr;
+        has_trace_a_been_precalculated = precalc_trace_centers != nullptr;
     }
     ~min_rmsd_metric() = default;
 
-    // TODO: actually a generic type argument makes no sense, because rmsd in mdtraj is only impled for float...
-    dtype compute(const dtype *a, const dtype *b) {}
+    dtype compute(const dtype *a, const dtype *b);/* {
+        float msd;
+        float trace_a, trace_b;
+        size_t n = parent_t::dim;
+        float* buffer_a_ptr = buffer_a.data();
+        float* buffer_b_ptr = buffer_b.data();
+
+        if (! has_trace_a_been_precalculated) {
+            memcpy(buffer_a_ptr, a, n*sizeof(float));
+            memcpy(buffer_b_ptr, b, n*sizeof(float));
+
+            inplace_center_and_trace_atom_major(buffer_a_ptr, &trace_a, 1, n/3);
+            inplace_center_and_trace_atom_major(buffer_b_ptr, &trace_b, 1, n/3);
+        } else {
+            // only copy b, since a has been pre-centered,
+            memcpy(buffer_b_ptr, b, n*sizeof(float));
+            inplace_center_and_trace_atom_major(buffer_b_ptr, &trace_b, 1, n/3);
+            trace_a = trace_a_precentered;
+        }
+
+        msd = msd_atom_major(n/3, n/3, a, buffer_b_ptr, trace_a, trace_b, 0, NULL);
+        return std::sqrt(msd);
+    }*/
+    /**
+     * TODO: this can only be used during assignment?! so it should be moved to ClusteringBase::assign
+     * @param original_centers
+     * @param N_centers
+     * @return
+     */
+    float *precenter_centers(float *original_centers, std::size_t N_centers);
 
 private:
     std::vector<float> buffer_a, buffer_b;
@@ -68,31 +99,10 @@ private:
      */
     std::vector<float> centers_precentered;
     std::vector<float> trace_centers;
-    bool trace_a_precalc;
-
-    float *precenter_centers(float *original_centers, std::size_t N_centers) {
-        /*
-        distance = minRMSD_distance;
-        centers_precentered.reserve(N_centers*dim*sizeof(float));
-        trace_centers.reserve(N_centers*sizeof(float));
-        dists = malloc(N_centers*sizeof(float));
-        if(!centers_precentered || !dists || !trace_centers_p) {
-            ret = ASSIGN_ERR_NO_MEMORY;
-        }
-
-        if (ret == ASSIGN_SUCCESS) {
-            memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
-
-            // Parallelize centering of cluster generators
-            // Note that this is already OpenMP-enabled
-            for (j = 0; j < N_centers; ++j) {
-                inplace_center_and_trace_atom_major(&centers_precentered[j*dim],
-                                                    &trace_centers_p[j], 1, dim/3);
-            }
-            centers = centers_precentered;
-        }
-    */
-    }
+    bool has_trace_a_been_precalculated;
+    float trace_a_precentered;
 };
+
+#include "bits/metric_base_bits.h"
 
 #endif //PYEMMA_METRIC_H

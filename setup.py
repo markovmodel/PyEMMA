@@ -97,28 +97,27 @@ def extensions():
 
     exts = []
 
-    if sys.platform.startswith('win'):
-        lib_prefix = 'lib'
-    else:
-        lib_prefix = ''
+    lib_prefix = 'lib' if sys.platform.startswith('win') else ''
+
     regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspatial',
+        Extension('pyemma.coordinates.clustering.regspace_clustering',
                   sources=[
-                      'pyemma/coordinates/clustering/src/regspatial.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
+                      'pyemma/coordinates/clustering/src/regspace_module.cpp',
+                      ],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
                       pybind11.get_include(),
                       'pyemma/coordinates/clustering/include',
                   ],
+                  language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99', '-g', '-O3'])
+                  extra_compile_args=['-std=c++14', '-g', '-O3'])
     kmeans_module = \
         Extension('pyemma.coordinates.clustering.kmeans_clustering',
                   sources=[
-                      'pyemma/coordinates/clustering/src/kmeans.cpp',
+                      #'pyemma/coordinates/clustering/src/kmeans.cpp',
                       'pyemma/coordinates/clustering/src/clustering.c'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
@@ -150,7 +149,7 @@ def extensions():
                   extra_compile_args=['-O3'])
 
     exts += [regspatial_module,
-             kmeans_module,
+             #kmeans_module,
              covar_module,
              eig_qr_module,
              orderedset
