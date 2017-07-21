@@ -8,11 +8,17 @@
 
 #include <Clustering.h>
 
-
 template<typename dtype>
 class RegularSpaceClustering : public ClusteringBase<dtype> {
-    using hustnuschel = ClusteringBase<dtype>;
+    using parent_t = ClusteringBase<dtype>;
 public:
+    /**
+     *
+     * @param dmin
+     * @param max_clusters
+     * @param metric
+     * @param input_dimension
+     */
     RegularSpaceClustering(dtype dmin, std::size_t max_clusters,
                            const std::string &metric,
                            size_t input_dimension) :
@@ -27,7 +33,7 @@ public:
      * @param chunk array shape(n, d)
      * @param py_centers python list containing found centers.
      */
-    void cluster(py::array_t <dtype, py::array::c_style> &chunk, py::list py_centers) {
+    void cluster(const py::array_t <dtype, py::array::c_style> &chunk, py::list& py_centers) {
         // this checks for ndim == 2
         const auto& data = chunk.template unchecked< 2 >();
 
@@ -39,9 +45,9 @@ public:
             dtype mindist = std::numeric_limits<dtype>::max();
 
             for (std::size_t j = 0; j < N_centers; ++j) {
+                // TODO avoid the cast in inner loop?
                 auto point = py_centers[j].cast < py::array_t < dtype >> ();
-                // TODO: fix
-                dtype d = hustnuschel::metric.get()->compute(&data(i, 0), point);
+                dtype d = parent_t::metric.get()->compute(&data(i, 0), point.data());
                 if (d < mindist) mindist = d;
             }
             if (mindist > dmin) {
@@ -50,9 +56,12 @@ public:
                             "Maximum number of cluster centers reached. Consider increasing max_clusters "
                                     "or choose a larger minimum distance, dmin.");
                 }
-
                 // add newly found center
-                py_centers.append(chunk.at(i)); //py::array_t<dtype>(sizeof(dtype) * dim, &data[i * dim]));
+                std::vector<size_t> shape = {1, dim};
+                py::array_t<dtype> new_center(shape, nullptr);
+                std::memcpy(new_center.mutable_data(), &data(i,0), sizeof(dtype)*dim);
+
+                py_centers.append(new_center);
                 N_centers++;
             }
         }

@@ -10,7 +10,7 @@
 #include <pybind11/numpy.h>
 
 #include "metric_base.h"
-
+#include <iostream>
 namespace py = pybind11;
 
 template <typename dtype>
@@ -21,10 +21,9 @@ public:
         if (metric_s == "euclidean") {
             metric = metric_ref(new euclidean_metric<dtype>(input_dimension));
         } else if(metric_s == "minRMSD") {
-            // TODO: repair this polymorphism stuff...
             metric = metric_ref(new min_rmsd_metric<float>(input_dimension));
         } else {
-            throw std::runtime_error("metric is not of {'euclidean', 'minRMSD'}");
+            throw std::invalid_argument("metric is not of {'euclidean', 'minRMSD'}");
         }
     }
 

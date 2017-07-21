@@ -23,22 +23,19 @@ public:
     metric_base(std::size_t dim) : dim(dim) {}
     virtual ~metric_base() = default;
 
-    // overload operator()?
-    template<typename ... Params>
-    dtype compute(Params...) { return dtype(); }
+    virtual dtype compute(const dtype *, const dtype *) = 0;
 
     size_t dim;
 };
 
-
+#include <iostream>
 template<class dtype>
 class euclidean_metric : public metric_base<dtype> {
 public:
     euclidean_metric(size_t dim) : metric_base<dtype>(dim) {}
     ~euclidean_metric() = default;
 
-    template<typename ... Params>
-    dtype compute(dtype *a, dtype *b) {
+    dtype compute(const dtype * const a, const dtype * const b) {
         dtype sum = 0.0;
         for (size_t i = 0; i < metric_base<dtype>::dim; ++i) {
             sum += (a[i] - b[i]) * (a[i] - b[i]);
@@ -62,7 +59,7 @@ public:
     ~min_rmsd_metric() = default;
 
     // TODO: actually a generic type argument makes no sense, because rmsd in mdtraj is only impled for float...
-    float compute(float *a, float *b);
+    dtype compute(const dtype *a, const dtype *b) {}
 
 private:
     std::vector<float> buffer_a, buffer_b;
