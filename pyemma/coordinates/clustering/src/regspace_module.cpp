@@ -8,11 +8,17 @@
 PYBIND11_PLUGIN(regspace_clustering) {
     py::module m("regspace_clustering");
 
-    typedef RegularSpaceClustering<float> regspace_d;
-    py::class_<regspace_d, ClusteringBase<float>>(m, "Regspace_d_euclid")
+    typedef ClusteringBase<float> cbase_f;
+    typedef RegularSpaceClustering<float> regspace_f;
+
+    // we need to pass RegspaceClusterings base to pybind.
+    py::class_<cbase_f>(m, "")
+            .def(py::init<const std::string&, std::size_t>());
+
+    py::class_<regspace_f, cbase_f>(m, "Regspace_f")
             .def(py::init<double, std::size_t,
                     const std::string &, size_t>())
-            .def("cluster", &regspace_d::cluster);
+            .def("cluster", &regspace_f::cluster);
 
     return m.ptr();
 }
