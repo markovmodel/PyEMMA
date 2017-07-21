@@ -49,6 +49,7 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
             /* Parallelize distance calculations to cluster centers to avoid cache misses */
             #pragma omp for
             for(size_t j = 0; j < centers.size(); ++j) {
+                // todo: fix indexing.
                 dists[j] = compute(&chunk_buff(i, 0), &centers_buff(j, 0));
                 //std::cout << dists[j] << std::endl;
             }
