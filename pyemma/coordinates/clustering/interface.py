@@ -30,7 +30,7 @@ import numpy as np
 from pyemma._base.model import Model
 from pyemma._base.parallel import NJobsMixIn
 from pyemma._ext.sklearn.base import ClusterMixin
-from pyemma.coordinates.clustering import regspatial
+#from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, aliased, alias
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state

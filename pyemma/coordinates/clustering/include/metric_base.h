@@ -9,32 +9,37 @@
 #include <cstring>
 #include <stdexcept>
 #include <cmath>
-
 #include <vector>
 
-#include <theobald_rmsd.h>
-#include <center.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+
+namespace py = pybind11;
 
 /**
- *
+ * Base type for all metrics.
  * @tparam dtype eg. float, double
  */
 template<typename dtype>
 class metric_base {
+    //using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
 
 public:
-    metric_base(std::size_t dim) : dim(dim) {}
+    explicit metric_base(std::size_t dim) : dim(dim) {}
     virtual ~metric_base() = default;
 
     virtual dtype compute(const dtype *, const dtype *) = 0;
 
+    py::array_t<int> assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
+                                             const py::array_t<dtype, py::array::c_style>& centers,
+                                             unsigned int n_threads);
     size_t dim;
 };
 
 template<class dtype>
 class euclidean_metric : public metric_base<dtype> {
 public:
-    euclidean_metric(size_t dim) : metric_base<dtype>(dim) {}
+    explicit euclidean_metric(size_t dim) : metric_base<dtype>(dim) {}
     ~euclidean_metric() = default;
 
     dtype compute(const dtype * const a, const dtype * const b) {

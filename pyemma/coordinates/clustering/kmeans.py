@@ -37,7 +37,7 @@ from pyemma.util.contexts import conditional, random_seed
 from six.moves import range
 import numpy as np
 
-from . import kmeans_clustering
+#from . import kmeans_clustering
 
 
 __all__ = ['KmeansClustering']

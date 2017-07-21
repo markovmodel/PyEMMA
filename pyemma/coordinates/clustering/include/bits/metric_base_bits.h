@@ -7,6 +7,74 @@
 
 #include "../metric_base.h"
 
+#include <center.h>
+#include <theobald_rmsd.h>
+
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
+#include <iostream>
+/**
+ * assign a given chunk to given centers using encapsuled metric.
+ * @tparam dtype
+ * @param chunk
+ * @param centers
+ * @param n_threads
+ * @return
+ */
+template <typename dtype>
+inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
+                                                                    const py::array_t<dtype, py::array::c_style>& centers,
+                                                                    unsigned int n_threads) {
+    dtype d, mindist, trace_centers;
+    int argmin;
+    std::vector<dtype> dists(chunk.size());
+    std::vector<size_t> shape = {chunk.size()};
+    py::array_t<int> dtraj(shape);
+    auto dtraj_buff = dtraj.template mutable_unchecked<1>();
+    auto chunk_buff = chunk.template unchecked<2>();
+    auto centers_buff = centers.template unchecked<2>();
+
+#ifdef USE_OPENMP
+    /* Create a parallel thread block. */
+    omp_set_num_threads(n_threads);
+    assert(omp_get_num_threads() == n_threads);
+#endif
+    std::cout << "metric dim: " << dim << std::endl;
+
+    #pragma omp parallel private(mindist, argmin)
+    {
+        for(size_t i = 0; i < chunk.size(); ++i) {
+            /* Parallelize distance calculations to cluster centers to avoid cache misses */
+            #pragma omp for
+            for(size_t j = 0; j < centers.size(); ++j) {
+                dists[j] = compute(&chunk_buff(i, 0), &centers_buff(j, 0));
+                //std::cout << dists[j] << std::endl;
+            }
+            #pragma omp flush(dists)
+
+            /* Only one thread can make actual assignment */
+            #pragma omp single
+            {
+                mindist = std::numeric_limits<dtype>::max();
+                argmin = -1;
+                for (size_t j = 0; j < centers.size(); ++j) {
+                    if (dists[j] < mindist) {
+                        mindist = dists[j];
+                        argmin = (int) j;
+                    }
+                }
+                dtraj_buff(i) = argmin;
+            }
+
+            /* Have all threads synchronize in progress through cluster assignments */
+        #pragma omp barrier
+        }
+    }
+    return dtraj;
+}
+
 /*
  * minRMSD distance function
  * a: centers

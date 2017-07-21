@@ -24,8 +24,9 @@ namespace py = pybind11;
 template <typename dtype>
 class KMeans : public ClusteringBase<dtype> {
 public:
-    KMeans(int k, const std::string& metric, size_t input_dimension) :
-            ClusteringBase<dtype>(metric, input_dimension), k(k), callback(nullptr, nullptr, nullptr) {
+    KMeans(int k, const std::string& metric, size_t input_dimension,
+           py::function& callback, const std::string& init_method) :
+            ClusteringBase<dtype>(metric, input_dimension), k(k), callback(callback) {
 
     }
     /**
@@ -49,8 +50,6 @@ public:
         if(dim == 0) {
             throw std::runtime_error("chunk dimension must be larger than zero.");
         }
-        // TODO: use this later from kmeans class
-        metric_t metric(dim);
 
         dtype* chunk = np_chunk.mutable_data();
         if(debug) printf("done with N_frames=%zd, dim=%zd\n", N_frames, dim);

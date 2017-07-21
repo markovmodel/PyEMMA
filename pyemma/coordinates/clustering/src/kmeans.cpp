@@ -1,6 +1,6 @@
 /* * This file is part of PyEMMA.
  *
- * Copyright (c) 2015, 2014 Computational Molecular Biology Group
+ * Copyright (c) 2017 Computational Molecular Biology Group
  *
  * PyEMMA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,12 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Clustering.h>
-
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
+#include <kmeans.h>
 
 static char MOD_USAGE[] = "kmeans clustering";
 

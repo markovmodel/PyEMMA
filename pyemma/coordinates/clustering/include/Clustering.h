@@ -10,13 +10,15 @@
 #include <pybind11/numpy.h>
 
 #include "metric_base.h"
-#include <iostream>
+
 namespace py = pybind11;
 
 template <typename dtype>
 class ClusteringBase {
 public:
     using metric_ref = std::unique_ptr<metric_base<dtype>>;
+    using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
+
     ClusteringBase(const std::string& metric_s, std::size_t input_dimension) : input_dimension(input_dimension) {
         if (metric_s == "euclidean") {
             metric = metric_ref(new euclidean_metric<dtype>(input_dimension));
@@ -33,9 +35,14 @@ public:
     ClusteringBase(ClusteringBase&&) = default;
     ClusteringBase&operator=(ClusteringBase&&) = default;
 
-    py::array_t<unsigned int> assign(...) {}
     metric_ref metric;
     std::size_t input_dimension;
+
+    py::array_t<int> assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
+                                             const py::array_t<dtype, py::array::c_style>& centers,
+                                             unsigned int n_threads) {
+        return metric->assign_chunk_to_centers(chunk, centers, n_threads);
+    }
 };
 
 
