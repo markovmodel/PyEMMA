@@ -94,7 +94,7 @@ public:
         for (i = 0; i < N_frames; i++) {
             mindist = std::numeric_limits<dtype>::max();
             for(j = 0; j < N_centers; ++j) {
-                d = metric.compute(&chunk[i*dim], centers[j]);
+                d = metric->compute(&chunk[i*dim], centers[j]);
                 if(d < mindist) {
                     mindist = d;
                     closest_center_index = j;
@@ -158,7 +158,7 @@ public:
     // TODO: this could be static, in order to get an initial guess for the centers.
     py::array_t<dtype, py::array::c_style>
     initCentersKMpp(py::array_t<dtype, py::array::c_style|py::array::forcecast> np_data, int k, bool use_random_seed) {
-        ize_t centers_found, first_center_index, n_trials;
+        size_t centers_found, first_center_index, n_trials;
         int some_not_done;
         dtype d;
         dtype dist_sum;
@@ -211,8 +211,6 @@ public:
         next_center_candidates.reserve(n_trials);
         next_center_candidates_rand.reserve(n_trials);
         next_center_candidates_potential.reserve(n_trials);
-        //TODO: use from class
-        metric_t metric(dim);
 
         /* pick first center randomly */
         first_center_index = rand() % n_frames;
@@ -225,15 +223,15 @@ public:
         /* increase number of found centers */
         centers_found++;
         /* perform callback */
-        if(set_callback) {
-            set_callback();
+        if(callback) {
+            callback();
         }
 
         /* iterate over all data points j, measuring the squared distance between j and the initial center i: */
         /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
         for(i = 0; i < n_frames; i++) {
             if(i != first_center_index) {
-                d = pow(metric.compute(&data[i*dim], &data[first_center_index*dim]), 2);
+                d = pow(metric->compute(&data[i*dim], &data[first_center_index*dim]), 2);
                 squared_distances[i] = d;
                 /* build up dist_sum which keeps the sum of all squared distances */
                 dist_sum += d;
@@ -275,7 +273,7 @@ public:
                     for(j = 0; j < n_trials; j++) {
                         if(next_center_candidates[j] == -1) break;
                         if(next_center_candidates[j] != i) {
-                            d = pow(metric.compute(&data[i*dim], &data[next_center_candidates[j]*dim]), 2);
+                            d = pow(metric->compute(&data[i*dim], &data[next_center_candidates[j]*dim]), 2);
                             if(d < squared_distances[i]) {
                                 next_center_candidates_potential[j] += d;
                             } else {
@@ -331,7 +329,7 @@ public:
                     /* the new one. */
                     for(i = 0; i < n_frames; i++) {
                         if(!taken_points[i]) {
-                            d = pow(metric.compute(&data[i*dim], &data[best_candidate*dim]), 2);
+                            d = pow(metric->compute(&data[i*dim], &data[best_candidate*dim]), 2);
                             if(d < squared_distances[i]) {
                                 dist_sum += d - squared_distances[i];
                                 squared_distances[i] = d;
@@ -345,9 +343,7 @@ public:
         }
 
         /* create the output objects */
-        std::vector<size_t> shape;
-        shape.push_back(k);
-        shape.push_back(dim);
+        std::vector<size_t> shape = {k, dim};
         py::array_t<dtype, py::array::c_style> ret_init_centers(shape);
 
         memcpy(ret_init_centers.mutable_data(), arr_data.data(), arr_data.size());
@@ -359,8 +355,6 @@ public:
 protected:
     int k;
     py::function callback;
-
-    // TODO: use a unique_ptr or something, anyhow it should be a ptr for polymorphism?
 
 };
 
