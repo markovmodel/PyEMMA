@@ -151,14 +151,16 @@ class RegularSpaceClustering(AbstractClustering):
             self._logger.warning(msg)
             warnings.warn(msg)
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
-            clustercenters = np.array(clustercenters)
+            new_shape = (len(clustercenters), iterable.ndim)
+            clustercenters = np.array(clustercenters).reshape(new_shape)
             self.update_model_params(clustercenters=clustercenters,
                                      n_cluster=len(clustercenters))
             # pass amount of processed data
             used_data = used_frames / float(it.n_frames_total()) * 100.0
             raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
 
-        clustercenters = np.array(clustercenters)
+        new_shape = (len(clustercenters), iterable.ndim)
+        clustercenters = np.array(clustercenters).reshape(new_shape)
         self.update_model_params(clustercenters=clustercenters,
                                  n_clusters=len(clustercenters))
 
