@@ -76,6 +76,24 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
     return dtraj;
 }
 
+/**
+ * euclidean distance method
+ * @tparam dtype
+ * @param a
+ * @param b
+ * @return
+ */
+template <typename dtype>
+inline dtype euclidean_metric<dtype>::compute(const dtype *a, const dtype *b) {
+    dtype sum = 0.0;
+    #pragma omp simd reduction(+:sum)
+    for (size_t i = 0; i < metric_base<dtype>::dim; ++i) {
+        auto const d = a[i] - b[i];
+        sum += d * d;
+    }
+    return std::sqrt(sum);
+}
+
 /*
  * minRMSD distance function
  * a: centers

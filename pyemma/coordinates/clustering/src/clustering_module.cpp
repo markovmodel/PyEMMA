@@ -3,7 +3,7 @@
 //
 
 #include "regspace.h"
-//#include "kmeans.h"
+#include "kmeans.h"
 
 
 PYBIND11_PLUGIN(_ext) {
@@ -21,13 +21,17 @@ PYBIND11_PLUGIN(_ext) {
             .def("assign", &cbase_f::assign_chunk_to_centers);
 
     py::class_<regspace_f, cbase_f>(regspace_mod, "Regspace_f")
-            .def(py::init<double, std::size_t,
-                    const std::string &, size_t>())
+            .def(py::init<double, std::size_t, const std::string&, size_t>())
             .def("cluster", &regspace_f::cluster)
                     .def("assign", &regspace_f::assign_chunk_to_centers);
-    //typedef KMeans<float> kmeans_f;
-//    py::class_<kmeans_f, cbase_f>(kmeans, "Kmeans_f")
-//            .def(py::init<>())
-//                    .def("cluster", &kmeans_f.cluster);
+    // kmeans
+    typedef KMeans<float> kmeans_f;
+    py::class_<kmeans_f, cbase_f>(kmeans_mod, "Kmeans_f")
+            .def(py::init<int, const std::string&, size_t, py::object&>(),
+            py::arg("k"), py::arg("metric"), py::arg("dim"), py::arg("callback") = nullptr)
+            .def("cluster", &kmeans_f::cluster)
+            .def("init_centers_KMpp", &kmeans_f::initCentersKMpp)
+            .def("set_callback", &kmeans_f::set_callback)
+            .def("cost_function", &kmeans_f::costFunction);
     return m.ptr();
 }

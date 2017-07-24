@@ -176,28 +176,19 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                 first_chunk = False
 
         # run k-means with all the data
-        self._logger.debug("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
+        self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
         it = 0
         converged_in_max_iter = False
         prev_cost = 0
         while it < self.max_iter:
-            self._cluster_centers_iter = kmeans_clustering.cluster_euclidean_f(
-                                                self._in_memory_chunks,
-                                                self._cluster_centers_iter,
-                                                )
-            # TODO: this is not needed at all?
-            #self._cluster_centers_iter = [row for row in self._cluster_centers_iter]
-
-            cost = kmeans_clustering.cost_function_euclidean_f(self._in_memory_chunks,
-                                                   self._cluster_centers_iter,
-                                                   self.n_clusters)
+            self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters)
+            cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters)
             rel_change = np.abs(cost - prev_cost) / cost
             prev_cost = cost
 
             if rel_change <= self.tolerance:
                 converged_in_max_iter = True
-                self._logger.info("Cluster centers converged after %i steps."
-                                  % (it + 1))
+                self._logger.info("Cluster centers converged after %i steps.", it + 1)
                 self._progress_force_finish(stage=1)
                 break
             else:
@@ -205,12 +196,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             it += 1
         if not converged_in_max_iter:
             self._logger.info("Algorithm did not reach convergence criterion"
-                              " of %g in %i iterations. Consider increasing max_iter."
-                              % (self.tolerance, self.max_iter))
+                              " of %g in %i iterations. Consider increasing max_iter.",
+                              self.tolerance, self.max_iter)
         # set centers
-        self.clustercenters = np.array(self._cluster_centers_iter)
-        del self._cluster_centers_iter
-
         self._finish_estimate()
 
         return self
@@ -233,15 +221,16 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         # mini-batch sets stride to None
         stride = self.stride if self.stride else 1
         ###### init
-        self._cluster_centers_iter = []
         self._init_centers_indices = {}
         self._t_total = 0
         traj_lengths = self.trajectory_lengths(stride=stride, skip=self.skip)
         total_length = sum(traj_lengths)
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
+            assert isinstance(self.n_clusters, int)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        self.n_clusters = int(self.n_clusters)
         if self.init_strategy == 'kmeans++':
             self._progress_register(self.n_clusters,
                                     description="initialize kmeans++ centers", stage=0)
@@ -259,19 +248,22 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                     self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
+        from ._ext import kmeans as kmeans_mod
+        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim, None)
+
         return stride
 
     def _initialize_centers(self, X, itraj, t, last_chunk):
         if self.init_strategy == 'uniform':
             if itraj in list(self._init_centers_indices.keys()):
+                tmp = []
                 for l in range(len(X)):
                     if len(self._cluster_centers_iter) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
-                        self._cluster_centers_iter.append(X[l].astype(np.float32, order='C'))
+                        tmp.append(X[l].astype(np.float32, order='C'))
+                self.clustercenters = np.array(tmp)
         elif last_chunk and self.init_strategy == 'kmeans++':
-            kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
-            cc = kmeans_clustering.init_centers_euclidean_f(self._in_memory_chunks,
-                                                self.n_clusters, self.fixed_seed)
-            self._cluster_centers_iter = [c for c in cc]
+            self._inst.set_callback(self.kmeanspp_center_assigned)
+            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed)
 
     def _collect_data(self, X, first_chunk):
         # beginning - compute
@@ -297,7 +289,6 @@ class MiniBatchKmeansClustering(KmeansClustering):
             raise ValueError("batch_size should be less or equal to 1, but was %s" % batch_size)
 
         self._cluster_centers_iter = None
-        self._centers_iter_list = []
 
         super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric,
                                                         tolerance, init_strategy, False,
@@ -365,23 +356,15 @@ class MiniBatchKmeansClustering(KmeansClustering):
                     first_chunk = False
 
                 # one pass over data completed
-                self._cluster_centers_iter = kmeans_clustering.cluster(self._in_memory_chunks,
-                                                                       self._cluster_centers_iter,
-                                                                       self.metric)
-                self._cluster_centers_iter = [row for row in self._cluster_centers_iter]
-
-                cost = kmeans_clustering.cost_function(self._in_memory_chunks,
-                                                       self._cluster_centers_iter,
-                                                       self.metric,
-                                                       self.n_clusters)
+                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters)
+                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters)
 
                 rel_change = np.abs(cost - prev_cost) / cost
                 prev_cost = cost
-                self._cluster_centers = np.array(self._cluster_centers_iter)
 
                 if rel_change <= self.tolerance:
                     converged_in_max_iter = True
-                    self._logger.info("Cluster centers converged after %i steps." % (i_pass + 1))
+                    self._logger.info("Cluster centers converged after %i steps.", i_pass + 1)
                     self._progress_force_finish(stage=1)
                 else:
                     self._progress_update(1, stage=1)
@@ -390,10 +373,5 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         if not converged_in_max_iter:
             self._logger.info("Algorithm did not reach convergence criterion"
-                              " of %g in %i iterations. Consider increasing max_iter."
-                              % (self.tolerance, self.max_iter))
-        # set centers
-        self.clustercenters = np.array(self._cluster_centers_iter)
-        del self._cluster_centers_iter
-
+                              " of %g in %i iterations. Consider increasing max_iter.", self.tolerance, self.max_iter)
         return self

@@ -50,13 +50,7 @@ public:
     euclidean_metric(euclidean_metric&&) = default;
     euclidean_metric&operator=(euclidean_metric&&) = default;
 
-    dtype compute(const dtype * const a, const dtype * const b) {
-        dtype sum = 0.0;
-        for (size_t i = 0; i < metric_base<dtype>::dim; ++i) {
-            sum += (a[i] - b[i]) * (a[i] - b[i]);
-        }
-        return std::sqrt(sum);
-    }
+    dtype compute(const dtype *, const dtype *);
 
 };
 

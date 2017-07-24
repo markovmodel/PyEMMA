@@ -99,11 +99,9 @@ def extensions():
 
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
 
-    regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspace_clustering',
-                  sources=[
-                      'pyemma/coordinates/clustering/src/regspace_module.cpp',
-                      ],
+    clustering_module = \
+        Extension('pyemma.coordinates.clustering._ext',
+                  sources=['pyemma/coordinates/clustering/src/clustering_module.cpp'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
@@ -113,19 +111,7 @@ def extensions():
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c++14', '-O3'])
-    kmeans_module = \
-        Extension('pyemma.coordinates.clustering.kmeans_clustering',
-                  sources=[
-                      #'pyemma/coordinates/clustering/src/kmeans.cpp',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
-                  include_dirs=[
-                      mdtraj.capi()['include_dir'],
-                      np_inc,
-                      'pyemma/coordinates/clustering/include'],
-                  libraries=[lib_prefix+'theobald'],
-                  library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c++14', '-O0', '-ggdb'])
+                  extra_compile_args=['-std=c++14', '-O3', '-fvisibility=hidden'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
@@ -148,8 +134,7 @@ def extensions():
                   include_dirs=[np_inc],
                   extra_compile_args=['-O3'])
 
-    exts += [regspatial_module,
-             #kmeans_module,
+    exts += [clustering_module,
              covar_module,
              eig_qr_module,
              orderedset
