@@ -35,27 +35,6 @@ py::array_t <dtype> KMeans<dtype>::cluster(const py::array_t <dtype, py::array::
 
     auto centers = np_centers.template unchecked<2>();
 
-    // TODO: check centers should have shape (k, ndim)
-    // FIXME: access pattern to centers is based on [][], but now its linear...
-    //dtype* centers = (dtype*)np_centers.mutable_data();
-
-//    for(i = 0; i < N_centers; ++i) {
-//        auto py_item = np_centers[i].ptr();
-//        if (! py::isinstance<py::array>(py_item)) {
-//            throw std::runtime_error("np_centers does not exclusively contain numpy arrays.");
-//        }
-//        auto np_item = py::reinterpret_borrow<py::array>(py_item);
-//        //PyArrayObject* np_item = (PyArrayObject*)py_item;
-//        if(np_item.dtype() != py::dtype("float")) { throw std::runtime_error("dtype of cluster center isn\'t float (32).");  };
-//        //if(!PyArray_ISBEHAVED_RO(np_item) ) { throw std::runtime_error("cluster center isn\'t behaved.");  };
-//        //if(PyArray_NDIM(np_item)!=1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1.");   };
-//        if (np_item.shape(1) != 1) { throw std::runtime_error("Number of dimensions of cluster centers must be 1."); }
-//        if(np_item.shape(0) != dim) {
-//            throw std::runtime_error("Dimension of cluster centers doesn\'t match dimension of frames.");
-//        }
-//        centers[i] = (float*)PyArray_DATA(np_item);
-//    }
-
     if (debug) printf("done, k=%zd\n", N_centers);
     /* initialize centers_counter and new_centers with zeros */
     std::vector<int> centers_counter(N_centers, 0);
@@ -101,6 +80,7 @@ py::array_t <dtype> KMeans<dtype>::cluster(const py::array_t <dtype, py::array::
     py::array_t <dtype> return_new_centers(shape);
     void *arr_data = return_new_centers.mutable_data();
     if (debug) printf("done\n");
+    // TODO: this is not needed anymore, because we could modify the centers in place?
     /* Need to copy the data of the malloced buffer to the PyObject
        since the malloced buffer will disappear after the C extension is called. */
     if (debug) printf("KMEANS: attempting memcopy...");
@@ -161,10 +141,8 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
         throw std::bad_alloc();
     }
     /* allocate space for the array holding the cluster centers to be returned */
-    //if(!(init_centers = (float*) calloc(k * dim, sizeof(float)))) { PyErr_NoMemory();  }
     init_centers.resize(k * dim);
     /* allocate space for the array holding the squared distances to the assigned cluster centers */
-    //if(!(squared_distances = (float*) calloc(n_frames, sizeof(float)))) { PyErr_NoMemory(); }
     squared_distances.resize(n_frames);
 
     /* candidates allocations */
