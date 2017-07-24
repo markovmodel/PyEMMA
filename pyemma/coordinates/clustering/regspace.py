@@ -135,8 +135,8 @@ class RegularSpaceClustering(AbstractClustering):
         used_frames = 0
         it = iterable.iterator(return_trajindex=False, stride=self.stride,
                                chunk=self.chunksize, skip=self.skip)
-        from . import regspace_clustering
-        inst = regspace_clustering.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
+        from ._ext import regspace
+        inst = regspace.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
         try:
             with it:
                 for X in it:

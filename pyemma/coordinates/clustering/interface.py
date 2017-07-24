@@ -145,9 +145,9 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
-        from . import regspace_clustering
+        from ._ext import ClusteringBase_f
         # avoid re-instantiation this every call
-        inst = regspace_clustering.ClusteringBase_f(self.metric, X.shape[1])
+        inst = ClusteringBase_f(self.metric, X.shape[1])
         dtraj = inst.assign(X.astype(np.float32, order='C', copy=False),
                             self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function
