@@ -27,10 +27,14 @@ template <typename dtype>
 inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
                                                                     const py::array_t<dtype, py::array::c_style>& centers,
                                                                     unsigned int n_threads) {
-    dtype d, mindist, trace_centers;
-    int argmin;
-    std::vector<dtype> dists(chunk.size());
-    std::vector<size_t> shape = {chunk.size()};
+    size_t N_centers = centers.shape(0);
+    size_t N_frames = chunk.shape(0);
+    size_t input_dim = chunk.shape(1);
+    if ((input_dim != dim) || (input_dim != centers.shape(1))) {
+        throw std::invalid_argument("input dimension mismatch");
+    }
+    std::vector<dtype> dists(chunk.shape(0));
+    std::vector<size_t> shape = {chunk.shape(0)};
     py::array_t<int> dtraj(shape);
     auto dtraj_buff = dtraj.template mutable_unchecked<1>();
     auto chunk_buff = chunk.template unchecked<2>();
@@ -41,26 +45,23 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
     omp_set_num_threads(n_threads);
     assert(omp_get_num_threads() == n_threads);
 #endif
-    std::cout << "metric dim: " << dim << std::endl;
 
-    #pragma omp parallel private(mindist, argmin)
+    #pragma omp parallel
     {
-        for(size_t i = 0; i < chunk.size(); ++i) {
+        for(size_t i = 0; i < N_frames; ++i) {
             /* Parallelize distance calculations to cluster centers to avoid cache misses */
             #pragma omp for
-            for(size_t j = 0; j < centers.size(); ++j) {
-                // todo: fix indexing.
+            for(size_t j = 0; j < N_centers; ++j) {
                 dists[j] = compute(&chunk_buff(i, 0), &centers_buff(j, 0));
-                //std::cout << dists[j] << std::endl;
             }
             #pragma omp flush(dists)
 
             /* Only one thread can make actual assignment */
             #pragma omp single
             {
-                mindist = std::numeric_limits<dtype>::max();
-                argmin = -1;
-                for (size_t j = 0; j < centers.size(); ++j) {
+                dtype mindist = std::numeric_limits<dtype>::max();
+                int argmin = -1;
+                for (size_t j = 0; j < N_centers; ++j) {
                     if (dists[j] < mindist) {
                         mindist = dists[j];
                         argmin = (int) j;
@@ -68,7 +69,6 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
                 }
                 dtraj_buff(i) = argmin;
             }
-
             /* Have all threads synchronize in progress through cluster assignments */
         #pragma omp barrier
         }
@@ -87,33 +87,35 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
  */
 template <typename dtype>
 inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
-    float msd;
     float trace_a, trace_b;
+    const int dim3 =  parent_t::dim / 3;
+    std::vector<float> buffer_a, buffer_b;
 
     if (!has_trace_a_been_precalculated) {
+        buffer_a.resize(parent_t::dim*sizeof(float));
+        buffer_b.resize(parent_t::dim*sizeof(float));
+
         buffer_a.assign(a, a + parent_t::dim * sizeof(float));
         buffer_b.assign(b, b + parent_t::dim * sizeof(float));
 
-        assert(parent_t::dim % 3 == 0);
-
-        inplace_center_and_trace_atom_major(buffer_a.data(), &trace_a, 1, parent_t::dim / 3);
-        inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, parent_t::dim / 3);
+        inplace_center_and_trace_atom_major(buffer_a.data(), &trace_a, 1, dim3);
+        inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
 
     } else {
         // only copy b, since a has been pre-centered,
         buffer_b.assign(b, b + parent_t::dim * sizeof(float));
 
-        inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, parent_t::dim / 3);
+        inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
         trace_a = *trace_centers.data();
     }
 
-    msd = msd_atom_major(parent_t::dim / 3, parent_t::dim / 3, a, buffer_b.data(), trace_a, trace_b, 0, NULL);
+    float msd = msd_atom_major(dim3, dim3, a, buffer_b.data(), trace_a, trace_b, 0, nullptr);
     return std::sqrt(msd);
 }
 
 template<typename dtype>
 inline float * min_rmsd_metric<dtype>::precenter_centers(float *original_centers, std::size_t N_centers) {
-    centers_precentered.reserve(N_centers*parent_t::dim);
+    centers_precentered.resize(N_centers*parent_t::dim);
     centers_precentered.assign(original_centers, original_centers + (N_centers * parent_t::dim));
     trace_centers.reserve(N_centers);
     float *trace_centers_p = trace_centers.data();

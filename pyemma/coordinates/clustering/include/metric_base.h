@@ -27,6 +27,10 @@ class metric_base {
 public:
     explicit metric_base(std::size_t dim) : dim(dim) {}
     virtual ~metric_base() = default;
+    metric_base(const metric_base&) = delete;
+    metric_base&operator=(const metric_base&) = delete;
+    metric_base(metric_base&&) = default;
+    metric_base&operator=(metric_base&&) = default;
 
     virtual dtype compute(const dtype *, const dtype *) = 0;
 
@@ -41,6 +45,10 @@ class euclidean_metric : public metric_base<dtype> {
 public:
     explicit euclidean_metric(size_t dim) : metric_base<dtype>(dim) {}
     ~euclidean_metric() = default;
+    euclidean_metric(const euclidean_metric&) = delete;
+    euclidean_metric&operator=(const euclidean_metric&) = delete;
+    euclidean_metric(euclidean_metric&&) = default;
+    euclidean_metric&operator=(euclidean_metric&&) = default;
 
     dtype compute(const dtype * const a, const dtype * const b) {
         dtype sum = 0.0;
@@ -60,11 +68,17 @@ class min_rmsd_metric : public metric_base<dtype> {
 public:
     using parent_t = metric_base<dtype>;
     min_rmsd_metric(std::size_t dim, float *precalc_trace_centers = nullptr)
-            : metric_base<float>(dim), buffer_a(dim), buffer_b(dim) {
+            : metric_base<float>(dim) {
+        if (dim % 3 != 0) {
+            throw std::range_error("min_rmsd_metric is only implemented for input data with a dimension dividable by 3.");
+        }
         has_trace_a_been_precalculated = precalc_trace_centers != nullptr;
     }
     ~min_rmsd_metric() = default;
-
+    min_rmsd_metric(const min_rmsd_metric&) = delete;
+    min_rmsd_metric&operator=(const min_rmsd_metric&) = delete;
+    min_rmsd_metric(min_rmsd_metric&&) = default;
+    min_rmsd_metric&operator=(min_rmsd_metric&&) = default;
     dtype compute(const dtype *a, const dtype *b);
     /**
      * TODO: this can only be used during assignment?! so it should be moved to ClusteringBase::assign
@@ -75,7 +89,6 @@ public:
     float *precenter_centers(float *original_centers, std::size_t N_centers);
 
 private:
-    std::vector<float> buffer_a, buffer_b;
     /**
      * only used during cluster assignment. Avoids precentering the centers in every step.
      */

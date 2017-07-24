@@ -30,7 +30,6 @@ import numpy as np
 from pyemma._base.model import Model
 from pyemma._base.parallel import NJobsMixIn
 from pyemma._ext.sklearn.base import ClusterMixin
-#from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, aliased, alias
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
@@ -146,9 +145,11 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
-        dtraj = np.empty(X.shape[0], dtype=self.output_type())
-        regspatial.assign(X.astype(np.float32, order='C', copy=False),
-                          self.clustercenters, dtraj, self.metric, self.n_jobs)
+        from . import regspace_clustering
+        # avoid re-instantiation this every call
+        inst = regspace_clustering.ClusteringBase_f(self.metric, X.shape[1])
+        dtraj = inst.assign(X.astype(np.float32, order='C', copy=False),
+                            self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function
         return res
 
