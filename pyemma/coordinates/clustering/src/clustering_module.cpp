@@ -32,6 +32,7 @@ PYBIND11_PLUGIN(_ext) {
             .def("cluster", &kmeans_f::cluster)
             .def("init_centers_KMpp", &kmeans_f::initCentersKMpp)
             .def("set_callback", &kmeans_f::set_callback)
-            .def("cost_function", &kmeans_f::costFunction);
+            .def("cost_function", &kmeans_f::costFunction)
+            .def("assign", &kmeans_f::assign_chunk_to_centers);
     return m.ptr();
 }
