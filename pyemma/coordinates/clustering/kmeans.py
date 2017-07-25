@@ -105,6 +105,17 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._centers_iter_list = []
 
     @property
+    def init_strategy(self):
+        """Strategy to get an initial guess for the centers."""
+        return self._init_strategy
+
+    @init_strategy.setter
+    def init_strategy(self, value):
+        valid = ('kmeans++', 'uniform')
+        if value not in valid:
+            raise ValueError('invalid parameter "{}" for init_strategy. Should be one of {}'.format(value, valid))
+
+    @property
     def fixed_seed(self):
         """ seed for random choice of initial cluster centers. Fix this to get reproducible results."""
         return self._fixed_seed
