@@ -33,14 +33,12 @@ from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
 
-from pyemma.util.contexts import conditional, random_seed
+from pyemma.util.contexts import random_seed
 from six.moves import range
 import numpy as np
 
-#from . import kmeans_clustering
 
-
-__all__ = ['KmeansClustering']
+__all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
 
 @fix_docs
