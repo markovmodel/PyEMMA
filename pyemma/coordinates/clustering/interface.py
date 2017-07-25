@@ -145,11 +145,17 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
-        from ._ext import ClusteringBase_f
-        # avoid re-instantiation this every call
-        inst = ClusteringBase_f(self.metric, X.shape[1])
-        dtraj = inst.assign(X.astype(np.float32, order='C', copy=False),
-                            self.clustercenters, self.n_jobs)
+        if hasattr(self, '_inst'):
+            self.logger.debug("reusing c clustering extension instance")
+            dtraj = self._inst.assign(np.require(X, dtype=np.float32, requirements='C'),
+                                      self.clustercenters, self.n_jobs)
+        else:
+            self.logger.debug("create new clustering instance to assign.")
+            from ._ext import ClusteringBase_f
+            # avoid re-instantiation this every call
+            inst = ClusteringBase_f(self.metric, X.shape[1])
+            dtraj = inst.assign(X.astype(np.float32, order='C', copy=False),
+                                self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function
         return res
 
