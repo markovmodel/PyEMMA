@@ -25,9 +25,9 @@ public:
      * @param py_centers
      * @return updated centers.
      */
-    np_array cluster(const np_array&, const np_array&);
+    np_array cluster(const np_array&, const np_array&) const;
 
-    dtype costFunction(const np_array&, const np_array&);
+    dtype costFunction(const np_array&, const np_array&) const;
 
     /**
      * kmeans++ initialisation
@@ -35,7 +35,7 @@ public:
      * @param random_seed
      * @return
      */
-    np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed);
+    np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed) const;
 
 
     /**

@@ -11,7 +11,7 @@
 #include <iostream>
 template<typename dtype>
 typename KMeans<dtype>::np_array
-KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) {
+KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) const {
     size_t i, j;
 
     if (np_chunk.ndim() != 2) { throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
@@ -73,7 +73,7 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) {
 }
 
 template<typename dtype>
-dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers) {
+dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers) const {
     std::size_t n_frames;
     auto data = np_data.template unchecked<2>();
     auto centers = np_centers.template unchecked<2>();
@@ -89,50 +89,47 @@ dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_ce
     return value;
 }
 
+#include <random>
 
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
-initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
+initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const {
     size_t centers_found = 0, first_center_index;
-    int some_not_done;
+    bool some_not_done;
     dtype d;
     dtype dist_sum = 0.0;
     dtype sum;
-    size_t dim, n_frames;
     size_t i, j;
-    int *taken_points = nullptr;
-    std::vector<int> next_center_candidates;
-    std::vector<dtype> next_center_candidates_rand;
-    std::vector<dtype> next_center_candidates_potential;
-    std::vector<dtype> init_centers, squared_distances;
-    std::vector<dtype> arr_data;
+    size_t dim = parent_t::metric->dim;
 
-    /* set random seed */
-    //printf("initkmpp: set seed to %u\n", random_seed);
-    srand(random_seed);
+    if (np_data.ndim() != 2) {
+        throw std::invalid_argument("input data does not have two dimensions.");
+    }
 
-    n_frames = np_data.shape(0);
-    dim = np_data.shape(1);
-    auto data = np_data.template unchecked<2>();
+    size_t n_frames = np_data.shape(0);
+    size_t input_dim = np_data.shape(1);
+
     /* number of trials before choosing the data point with the best potential */
-    size_t n_trials = 2 + (int) log(k);
+    size_t n_trials = 2 + (size_t) log(k);
 
     /* allocate space for the index giving away which point has already been used as a cluster center */
-    if (!(taken_points = (int *) calloc(n_frames, sizeof(int)))) {
-        throw std::bad_alloc();
-    }
-    /* allocate space for the array holding the cluster centers to be returned */
-    init_centers.resize(k * dim);
-    /* allocate space for the array holding the squared distances to the assigned cluster centers */
-    squared_distances.resize(n_frames);
-
+    std::vector<int> taken_points(n_frames);
     /* candidates allocations */
-    next_center_candidates.resize(n_trials);
-    next_center_candidates_rand.resize(n_trials);
-    next_center_candidates_potential.resize(n_trials);
+    std::vector<int> next_center_candidates(n_trials);
+    std::vector<dtype> next_center_candidates_rand(n_trials);
+    std::vector<dtype> next_center_candidates_potential(n_trials);
+    /* allocate space for the array holding the cluster centers to be returned */
+    std::vector<dtype> init_centers(this->k*dim);
+    /* allocate space for the array holding the squared distances to the assigned cluster centers */
+    std::vector<dtype> squared_distances(n_frames);
+    std::vector<dtype> arr_data;
 
-    /* pick first center randomly */
-    first_center_index = rand() % n_frames;
+    auto data = np_data.template unchecked<2>();
+
+    /* initialize random device and pick first center randomly */
+    std::mt19937 generator(random_seed);
+    std::uniform_int_distribution<size_t> uniform_dist(0, n_frames - 1);
+    first_center_index = uniform_dist(generator);
     /* and mark it as assigned */
     taken_points[first_center_index] = 1;
     /* write its coordinates into the init_centers array */
@@ -163,7 +160,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
         /* initialize the trials random values by the D^2-weighted distribution */
         for (j = 0; j < n_trials; j++) {
             next_center_candidates[j] = -1;
-            next_center_candidates_rand[j] = dist_sum * ((dtype) rand() / (dtype) RAND_MAX);
+            next_center_candidates_rand[j] = dist_sum * uniform_dist(generator);
             next_center_candidates_potential[j] = 0.0;
         }
 
