@@ -22,9 +22,10 @@ namespace py = pybind11;
  */
 template<typename dtype>
 class metric_base {
-    //using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
 
 public:
+    using np_array = py::array_t<dtype, py::array::c_style>;
+
     explicit metric_base(std::size_t dim) : dim(dim) {}
     virtual ~metric_base() = default;
     metric_base(const metric_base&) = delete;
@@ -34,8 +35,8 @@ public:
 
     virtual dtype compute(const dtype *, const dtype *) = 0;
 
-    py::array_t<int> assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
-                                             const py::array_t<dtype, py::array::c_style>& centers,
+    py::array_t<int> assign_chunk_to_centers(const np_array& chunk,
+                                             const np_array& centers,
                                              unsigned int n_threads);
     size_t dim;
 };

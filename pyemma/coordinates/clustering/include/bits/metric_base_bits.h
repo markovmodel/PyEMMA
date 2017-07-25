@@ -14,7 +14,6 @@
 #include <omp.h>
 #endif
 
-#include <iostream>
 /**
  * assign a given chunk to given centers using encapsuled metric.
  * @tparam dtype
@@ -24,18 +23,27 @@
  * @return
  */
 template <typename dtype>
-inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::array_t<dtype, py::array::c_style>& chunk,
-                                                                    const py::array_t<dtype, py::array::c_style>& centers,
+inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_array& chunk,
+                                                                    const np_array& centers,
                                                                     unsigned int n_threads) {
+    if (chunk.ndim() != 2) {
+        throw std::invalid_argument("provided chunk does not have two dimensions.");
+    }
+
+    if (centers.ndim() != 2) {
+        throw std::invalid_argument("provided centers does not have two dimensions.");
+    }
     size_t N_centers = centers.shape(0);
     size_t N_frames = chunk.shape(0);
     size_t input_dim = chunk.shape(1);
+
     if ((input_dim != dim) || (input_dim != centers.shape(1))) {
         throw std::invalid_argument("input dimension mismatch");
     }
-    std::vector<dtype> dists(chunk.shape(0));
-    std::vector<size_t> shape = {chunk.shape(0)};
+    std::vector<dtype> dists(N_centers);
+    std::vector<size_t> shape = {N_frames};
     py::array_t<int> dtraj(shape);
+
     auto dtraj_buff = dtraj.template mutable_unchecked<1>();
     auto chunk_buff = chunk.template unchecked<2>();
     auto centers_buff = centers.template unchecked<2>();
@@ -70,7 +78,7 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const py::ar
                 dtraj_buff(i) = argmin;
             }
             /* Have all threads synchronize in progress through cluster assignments */
-        #pragma omp barrier
+            #pragma omp barrier
         }
     }
     return dtraj;

@@ -101,9 +101,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         fixed_seed=fixed_seed, stride=stride, skip=skip
                         )
 
-        self._cluster_centers_iter = None
-        self._centers_iter_list = []
-
     @property
     def init_strategy(self):
         """Strategy to get an initial guess for the centers."""
@@ -114,6 +111,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         valid = ('kmeans++', 'uniform')
         if value not in valid:
             raise ValueError('invalid parameter "{}" for init_strategy. Should be one of {}'.format(value, valid))
+        self._init_strategy = value
 
     @property
     def fixed_seed(self):
@@ -222,7 +220,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         if fh:
             os.unlink(fh)
         if self.init_strategy == 'uniform':
-            del self._centers_iter_list
             del self._init_centers_indices
         if self.init_strategy == 'kmeans++':
             self._progress_force_finish(0)
@@ -241,6 +238,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             assert isinstance(self.n_clusters, int)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        # TODO: this should not be needed.
         self.n_clusters = int(self.n_clusters)
         if self.init_strategy == 'kmeans++':
             self._progress_register(self.n_clusters,
@@ -269,7 +267,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             if itraj in list(self._init_centers_indices.keys()):
                 tmp = []
                 for l in range(len(X)):
-                    if len(self._cluster_centers_iter) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
+                    if len(tmp) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
                         tmp.append(X[l].astype(np.float32, order='C'))
                 self.clustercenters = np.array(tmp)
         elif last_chunk and self.init_strategy == 'kmeans++':
@@ -298,8 +296,6 @@ class MiniBatchKmeansClustering(KmeansClustering):
             raise ValueError("stride is a dummy value in MiniBatch Kmeans")
         if batch_size > 1:
             raise ValueError("batch_size should be less or equal to 1, but was %s" % batch_size)
-
-        self._cluster_centers_iter = None
 
         super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric,
                                                         tolerance, init_strategy, False,

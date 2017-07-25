@@ -12,10 +12,7 @@
 template<typename dtype>
 typename KMeans<dtype>::np_array
 KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) {
-    int debug;
-
     size_t i, j;
-    debug = 0;
 
     if (np_chunk.ndim() != 2) { throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
 
@@ -104,8 +101,6 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
     size_t dim, n_frames;
     size_t i, j;
     int *taken_points = nullptr;
-    int best_candidate = -1;
-    dtype best_potential = std::numeric_limits<dtype>::max();
     std::vector<int> next_center_candidates;
     std::vector<dtype> next_center_candidates_rand;
     std::vector<dtype> next_center_candidates_potential;
@@ -210,8 +205,8 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
         }
 
         /* ... and select the best candidate by the minimum value of the maximum squared distances */
-        best_candidate = -1;
-        best_potential = std::numeric_limits<dtype>::max();
+        int best_candidate = -1;
+        auto best_potential = std::numeric_limits<dtype>::max();
         for (j = 0; j < n_trials; j++) {
             if (next_center_candidates[j] != -1 && next_center_candidates_potential[j] < best_potential) {
                 best_potential = next_center_candidates_potential[j];
