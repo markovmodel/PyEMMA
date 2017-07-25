@@ -25,7 +25,7 @@ public:
      * @param py_centers
      * @return updated centers.
      */
-    py::array_t<dtype> cluster(const np_array&, const np_array&);
+    np_array cluster(const np_array&, const np_array&);
 
     dtype costFunction(const np_array&, const np_array&);
 
@@ -38,6 +38,10 @@ public:
     np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed);
 
 
+    /**
+     * call back function to inform about progress
+     * @param callback None or Python function.
+     */
     void set_callback(const py::object& callback) { this->callback = callback; }
 protected:
     unsigned int k;

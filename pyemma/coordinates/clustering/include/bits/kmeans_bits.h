@@ -8,10 +8,10 @@
 
 #include "kmeans.h"
 #include <pybind11/pytypes.h>
-
+#include <iostream>
 template<typename dtype>
-py::array_t <dtype> KMeans<dtype>::cluster(const py::array_t <dtype, py::array::c_style> &np_chunk,
-                                           const py::array_t <dtype, py::array::c_style> &np_centers) {
+typename KMeans<dtype>::np_array
+KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) {
     int debug;
 
     size_t i, j;
@@ -27,30 +27,22 @@ py::array_t <dtype> KMeans<dtype>::cluster(const py::array_t <dtype, py::array::
     }
 
     auto chunk = np_chunk.template unchecked<2>();
-    if (debug) printf("done with N_frames=%zd, dim=%zd\n", N_frames, dim);
-
-    /* import list of cluster centers */
-    if (debug) printf("KMEANS: importing list of cluster centers...");
     size_t N_centers = np_centers.shape(0);
-
     auto centers = np_centers.template unchecked<2>();
 
-    if (debug) printf("done, k=%zd\n", N_centers);
     /* initialize centers_counter and new_centers with zeros */
     std::vector<int> centers_counter(N_centers, 0);
     std::vector<dtype> new_centers(N_centers * dim, 0.0);
 
     /* do the clustering */
-    if (debug) printf("KMEANS: performing the clustering...");
     int *centers_counter_p = centers_counter.data();
     dtype *new_centers_p = new_centers.data();
-    dtype mindist;
     size_t closest_center_index = 0;
-    dtype d;
+
     for (i = 0; i < N_frames; i++) {
-        mindist = std::numeric_limits<dtype>::max();
+        auto mindist = std::numeric_limits<dtype>::max();
         for (j = 0; j < N_centers; ++j) {
-            d = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
+            auto d = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
             if (d < mindist) {
                 mindist = d;
                 closest_center_index = j;
@@ -73,19 +65,13 @@ py::array_t <dtype> KMeans<dtype>::cluster(const py::array_t <dtype, py::array::
             }
         }
     }
-    if (debug) printf("done\n");
-
-    if (debug) printf("KMEANS: creating return_new_centers...");
     std::vector<size_t> shape = {N_centers, dim};
     py::array_t <dtype> return_new_centers(shape);
     void *arr_data = return_new_centers.mutable_data();
-    if (debug) printf("done\n");
-    // TODO: this is not needed anymore, because we could modify the centers in place?
+     // TODO: this copy is not needed anymore, because we could modify the centers in place?
     /* Need to copy the data of the malloced buffer to the PyObject
        since the malloced buffer will disappear after the C extension is called. */
-    if (debug) printf("KMEANS: attempting memcopy...");
     memcpy(arr_data, new_centers_p, return_new_centers.itemsize() * N_centers * dim);
-    if (debug) printf("done\n");
     return return_new_centers;
 }
 
@@ -110,7 +96,7 @@ dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_ce
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
 initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
-    size_t centers_found = 0, first_center_index, n_trials;
+    size_t centers_found = 0, first_center_index;
     int some_not_done;
     dtype d;
     dtype dist_sum = 0.0;
@@ -134,7 +120,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) {
     dim = np_data.shape(1);
     auto data = np_data.template unchecked<2>();
     /* number of trials before choosing the data point with the best potential */
-    n_trials = 2 + (int) log(k);
+    size_t n_trials = 2 + (int) log(k);
 
     /* allocate space for the index giving away which point has already been used as a cluster center */
     if (!(taken_points = (int *) calloc(n_frames, sizeof(int)))) {
