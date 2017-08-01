@@ -264,7 +264,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
     std::vector<size_t> shape = {k, dim};
     py::array_t <dtype, py::array::c_style> ret_init_centers(shape);
 
-    memcpy(ret_init_centers.mutable_data(), arr_data.data(), arr_data.size());
+    memcpy(ret_init_centers.mutable_data(), arr_data.data(), arr_data.size() * sizeof(dtype));
     return ret_init_centers;
 }
 
