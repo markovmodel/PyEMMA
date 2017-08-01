@@ -40,11 +40,6 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
     py::array_t <dtype> return_new_centers(shape);
     auto new_centers = return_new_centers.template mutable_unchecked();
     std::fill(return_new_centers.mutable_data(), return_new_centers.mutable_data() + return_new_centers.size(), 0.0);
-    for(size_t i = 0; i < return_new_centers.shape(0); ++i) {
-        for(size_t j = 0; j < return_new_centers.shape(1); j++) {
-            assert(return_new_centers.at(i, j) == 0.0);
-        }
-    }
 
     /* initialize centers_counter and new_centers with zeros */
     std::vector<int> centers_counter(N_centers, 0);
@@ -63,18 +58,18 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
             }
         }
         (*(centers_counter_p + closest_center_index))++;
-        for (j = 0; j < dim; j++) {
+        for (j = 0; j < dim; ++j) {
             new_centers(closest_center_index, j) += chunk(i, j);
         }
     }
 
-    for (i = 0; i < N_centers; i++) {
+    for (i = 0; i < N_centers; ++i) {
         if (*(centers_counter_p + i) == 0) {
-            for (j = 0; j < dim; j++) {
-                new_centers(i, j) += centers(i, j);
+            for (j = 0; j < dim; ++j) {
+                new_centers(i, j) = centers(i, j);
             }
         } else {
-            for (j = 0; j < dim; j++) {
+            for (j = 0; j < dim; ++j) {
                 new_centers(i, j) /= (*(centers_counter_p + i));
             }
         }
@@ -84,12 +79,11 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
 
 template<typename dtype>
 dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers) const {
-    std::size_t n_frames;
     auto data = np_data.template unchecked<2>();
     auto centers = np_centers.template unchecked<2>();
 
     dtype value = 0.0;
-    n_frames = np_data.shape(0);
+    std::size_t n_frames = np_data.shape(0);
 
     for (size_t r = 0; r < np_centers.shape(0); r++) {
         for (size_t i = 0; i < n_frames; i++) {
@@ -129,11 +123,8 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     std::vector<int> next_center_candidates(n_trials);
     std::vector<dtype> next_center_candidates_rand(n_trials);
     std::vector<dtype> next_center_candidates_potential(n_trials);
-    /* allocate space for the array holding the cluster centers to be returned */
-    //std::vector<dtype> init_centers(this->k*dim);
     /* allocate space for the array holding the squared distances to the assigned cluster centers */
     std::vector<dtype> squared_distances(n_frames);
-    std::vector<dtype> arr_data;
 
     /* create the output objects */
     std::vector<size_t> shape = {k, dim};
@@ -143,16 +134,14 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     auto data = np_data.template unchecked<2>();
 
     /* initialize random device and pick first center randomly */
-    std::mt19937 generator(random_seed);
+    std::default_random_engine generator(random_seed);
     std::uniform_int_distribution<size_t> uniform_dist(0, n_frames - 1);
     first_center_index = uniform_dist(generator);
-    assert(first_center_index >=0 && first_center_index < n_frames);
     /* and mark it as assigned */
     taken_points[first_center_index] = true;
     /* write its coordinates into the init_centers array */
     for (j = 0; j < dim; j++) {
-        //(*(init_centers.data() + centers_found * dim + j)) = data(first_center_index, j);
-        init_centers(0, j) = data(first_center_index, j);
+        init_centers(centers_found, j) = data(first_center_index, j);
     }
     /* increase number of found centers */
     centers_found++;
@@ -180,8 +169,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
         for (j = 0; j < n_trials; j++) {
             next_center_candidates[j] = -1;
             auto point_index = uniform_dist(generator);
-            assert(point_index >= 0 && point_index <= n_frames);
-            next_center_candidates_rand[j] = dist_sum * point_index;
+            next_center_candidates_rand[j] = dist_sum * ((dtype) point_index / (dtype) uniform_dist.max());
             next_center_candidates_potential[j] = 0.0;
         }
 
