@@ -111,7 +111,7 @@ def extensions():
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
+                  extra_compile_args=['-std=c++14', '-O3', '-fvisibility=hidden'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
