@@ -20,9 +20,11 @@ public:
 
     ClusteringBase(const std::string& metric_s, std::size_t input_dimension) : input_dimension(input_dimension) {
         if (metric_s == "euclidean") {
-            metric = std::make_unique<euclidean_metric<dtype>>(input_dimension);
+            typedef euclidean_metric<dtype> eucl;
+            metric = std::unique_ptr<eucl>( new eucl(input_dimension));
         } else if(metric_s == "minRMSD") {
-            metric = std::make_unique<min_rmsd_metric<float>>(input_dimension);
+            typedef min_rmsd_metric<float> min_rmsd_t;
+            metric = std::unique_ptr<min_rmsd_t>(new min_rmsd_t(input_dimension));
         } else {
             throw std::invalid_argument("metric is not of {'euclidean', 'minRMSD'}");
         }
