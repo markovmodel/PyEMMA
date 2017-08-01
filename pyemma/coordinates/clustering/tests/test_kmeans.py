@@ -64,19 +64,23 @@ class TestKmeans(unittest.TestCase):
              np.random.randn(100),
              np.random.randn(100)+2.0]
         X = np.hstack(X)
-
+        k = 10
         for init_strategy in ['kmeans++', 'uniform']:
             kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy)
             cc = kmeans.clustercenters
+            self.assertTrue(np.all(np.isfinite(cc)), "cluster centers borked for strat %s" % init_strategy)
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
             assert (np.any((cc > -1.0) * (cc < 1.0))), "failed for init_strategy=%s" % init_strategy
             assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
 
             # test fixed seed
-            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=True)
-            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=True)
+            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True)
+            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True)
+            self.assertEqual(len(km1.clustercenters), k)
+            self.assertEqual(len(km2.clustercenters), k)
+            self.assertEqual(km1.fixed_seed, km2.fixed_seed)
             np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
-                                          "should yield same centers with fixed seed")
+                                          "should yield same centers with fixed seed for strategy %s" % init_strategy)
 
             # check a user defined seed
             seed = random.randint(0, 2**32-1)

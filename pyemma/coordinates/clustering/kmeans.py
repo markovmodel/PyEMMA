@@ -98,6 +98,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         init_strategy=init_strategy, oom_strategy=oom_strategy,
                         fixed_seed=fixed_seed, stride=stride, skip=skip
                         )
+        # TODO: this could be an input parameter for estimation to resume the kmeans iteration.
+        self.clustercenters = []
 
     @property
     def init_strategy(self):
@@ -207,6 +209,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                               self.tolerance, self.max_iter)
         # set centers
         self._finish_estimate()
+        self.logger.debug("len centers after iteration: %s", len(self.clustercenters))
 
         return self
 
@@ -262,12 +265,15 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
     def _initialize_centers(self, X, itraj, t, last_chunk):
         if self.init_strategy == 'uniform':
+            # needed for concatenation
+            if len(self.clustercenters) == 0:
+                self.clustercenters = np.empty((0, X.shape[1]))
+
             if itraj in list(self._init_centers_indices.keys()):
-                tmp = []
                 for l in range(len(X)):
-                    if len(tmp) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
-                        tmp.append(X[l].astype(np.float32, order='C'))
-                self.clustercenters = np.array(tmp)
+                    if len(self.clustercenters) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
+                        new = np.vstack((self.clustercenters, X[l]))
+                        self.clustercenters = new
         elif last_chunk and self.init_strategy == 'kmeans++':
             self._inst.set_callback(self.kmeanspp_center_assigned)
             self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed)

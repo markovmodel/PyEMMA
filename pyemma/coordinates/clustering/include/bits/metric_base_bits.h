@@ -94,15 +94,19 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
 template <typename dtype>
 inline dtype euclidean_metric<dtype>::compute(const dtype *a, const dtype *b) {
     dtype sum = 0.0;
-    #pragma omp simd reduction(+:sum)
+    //#pragma omp simd reduction(+:sum)
     for (size_t i = 0; i < metric_base<dtype>::dim; ++i) {
+        assert(std::isfinite(a[i]));
+        assert(std::isfinite(b[i]));
+
         auto const d = a[i] - b[i];
         sum += d * d;
     }
+    assert(std::isfinite(sum));
     return std::sqrt(sum);
 }
 
-/*
+/**
  * minRMSD distance function
  * a: centers
  * b: frames
@@ -114,7 +118,7 @@ inline dtype euclidean_metric<dtype>::compute(const dtype *a, const dtype *b) {
 template <typename dtype>
 inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
     float trace_a, trace_b;
-    const int dim3 =  parent_t::dim / 3;
+    const int dim3 = (int) parent_t::dim / 3;
     std::vector<float> buffer_a, buffer_b;
 
     if (!has_trace_a_been_precalculated) {

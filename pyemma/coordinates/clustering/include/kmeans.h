@@ -14,7 +14,7 @@ template <typename dtype>
 class KMeans : public ClusteringBase<dtype> {
 public:
     using parent_t = ClusteringBase<dtype>;
-    using np_array = py::array_t<dtype, py::array::c_style>;
+    using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
     KMeans(unsigned int k,
            const std::string& metric,
            size_t input_dimension,
@@ -27,6 +27,11 @@ public:
      */
     np_array cluster(const np_array&, const np_array&) const;
 
+    /**
+     * evaluate the quality of the centers
+     *
+     * @return
+     */
     dtype costFunction(const np_array&, const np_array&) const;
 
     /**

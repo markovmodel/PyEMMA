@@ -8,13 +8,22 @@
 
 #include "kmeans.h"
 #include <pybind11/pytypes.h>
-#include <iostream>
+#include <random>
+
+#undef NDEBUG
+#include <cassert>
+
 template<typename dtype>
 typename KMeans<dtype>::np_array
 KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) const {
     size_t i, j;
 
-    if (np_chunk.ndim() != 2) { throw std::runtime_error("Number of dimensions of \"chunk\" isn\'t 2."); }
+    if (np_chunk.ndim() != 2) {
+        throw std::runtime_error("Number of dimensions of \"chunk\" ain\'t 2.");
+    }
+    if (np_centers.ndim() != 2) {
+        throw std::runtime_error("Number of dimensions of \"centers\" ain\'t 2.");
+    }
 
     size_t N_frames = np_chunk.shape(0);
     size_t dim = np_chunk.shape(1);
@@ -27,16 +36,19 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
     size_t N_centers = np_centers.shape(0);
     auto centers = np_centers.template unchecked<2>();
 
+    std::vector<size_t> shape = {N_centers, dim};
+    py::array_t <dtype> return_new_centers(shape);
+    auto new_centers = return_new_centers.template mutable_unchecked();
+    std::fill(return_new_centers.mutable_data(), return_new_centers.mutable_data() + return_new_centers.size(), 0.0);
+
     /* initialize centers_counter and new_centers with zeros */
     std::vector<int> centers_counter(N_centers, 0);
-    std::vector<dtype> new_centers(N_centers * dim, 0.0);
 
     /* do the clustering */
     int *centers_counter_p = centers_counter.data();
-    dtype *new_centers_p = new_centers.data();
     size_t closest_center_index = 0;
 
-    for (i = 0; i < N_frames; i++) {
+    for (i = 0; i < N_frames; ++i) {
         auto mindist = std::numeric_limits<dtype>::max();
         for (j = 0; j < N_centers; ++j) {
             auto d = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
@@ -46,40 +58,32 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
             }
         }
         (*(centers_counter_p + closest_center_index))++;
-        for (j = 0; j < dim; j++) {
-            new_centers[closest_center_index * dim + j] += chunk(i, j);
+        for (j = 0; j < dim; ++j) {
+            new_centers(closest_center_index, j) += chunk(i, j);
         }
     }
 
-    for (i = 0; i < N_centers; i++) {
+    for (i = 0; i < N_centers; ++i) {
         if (*(centers_counter_p + i) == 0) {
-            for (j = 0; j < dim; j++) {
-                (*(new_centers_p + i * dim + j)) = centers(i, j);
+            for (j = 0; j < dim; ++j) {
+                new_centers(i, j) = centers(i, j);
             }
         } else {
-            for (j = 0; j < dim; j++) {
-                (*(new_centers_p + i * dim + j)) /= (*(centers_counter_p + i));
+            for (j = 0; j < dim; ++j) {
+                new_centers(i, j) /= (*(centers_counter_p + i));
             }
         }
     }
-    std::vector<size_t> shape = {N_centers, dim};
-    py::array_t <dtype> return_new_centers(shape);
-    void *arr_data = return_new_centers.mutable_data();
-     // TODO: this copy is not needed anymore, because we could modify the centers in place?
-    /* Need to copy the data of the malloced buffer to the PyObject
-       since the malloced buffer will disappear after the C extension is called. */
-    memcpy(arr_data, new_centers_p, return_new_centers.itemsize() * N_centers * dim);
     return return_new_centers;
 }
 
 template<typename dtype>
 dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers) const {
-    std::size_t n_frames;
     auto data = np_data.template unchecked<2>();
     auto centers = np_centers.template unchecked<2>();
 
     dtype value = 0.0;
-    n_frames = np_data.shape(0);
+    std::size_t n_frames = np_data.shape(0);
 
     for (size_t r = 0; r < np_centers.shape(0); r++) {
         for (size_t i = 0; i < n_frames; i++) {
@@ -89,11 +93,9 @@ dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_ce
     return value;
 }
 
-#include <random>
-
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
-initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const {
+initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     size_t centers_found = 0, first_center_index;
     bool some_not_done;
     dtype d;
@@ -106,35 +108,40 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
         throw std::invalid_argument("input data does not have two dimensions.");
     }
 
+    if (np_data.shape(1) != dim) {
+        throw std::invalid_argument("input dimension of data does not match the requested metric ones.");
+    }
+
     size_t n_frames = np_data.shape(0);
-    size_t input_dim = np_data.shape(1);
 
     /* number of trials before choosing the data point with the best potential */
     size_t n_trials = 2 + (size_t) log(k);
 
     /* allocate space for the index giving away which point has already been used as a cluster center */
-    std::vector<int> taken_points(n_frames);
+    std::vector<bool> taken_points(n_frames);
     /* candidates allocations */
     std::vector<int> next_center_candidates(n_trials);
     std::vector<dtype> next_center_candidates_rand(n_trials);
     std::vector<dtype> next_center_candidates_potential(n_trials);
-    /* allocate space for the array holding the cluster centers to be returned */
-    std::vector<dtype> init_centers(this->k*dim);
     /* allocate space for the array holding the squared distances to the assigned cluster centers */
     std::vector<dtype> squared_distances(n_frames);
-    std::vector<dtype> arr_data;
+
+    /* create the output objects */
+    std::vector<size_t> shape = {k, dim};
+    py::array_t <dtype, py::array::c_style> ret_init_centers(shape);
+    auto init_centers = ret_init_centers.template mutable_unchecked();
 
     auto data = np_data.template unchecked<2>();
 
     /* initialize random device and pick first center randomly */
-    std::mt19937 generator(random_seed);
+    std::default_random_engine generator(random_seed);
     std::uniform_int_distribution<size_t> uniform_dist(0, n_frames - 1);
     first_center_index = uniform_dist(generator);
     /* and mark it as assigned */
-    taken_points[first_center_index] = 1;
+    taken_points[first_center_index] = true;
     /* write its coordinates into the init_centers array */
     for (j = 0; j < dim; j++) {
-        (*(init_centers.data() + centers_found * dim + j)) = data(first_center_index, j);
+        init_centers(centers_found, j) = data(first_center_index, j);
     }
     /* increase number of found centers */
     centers_found++;
@@ -147,10 +154,11 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
     /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
     for (i = 0; i < n_frames; i++) {
         if (i != first_center_index) {
-            auto value = parent_t::metric->compute(&data(i, dim), &data(first_center_index, 0));
-            squared_distances[i] = value * value;
+            auto value = parent_t::metric->compute(&data(i, 0), &data(first_center_index, 0));
+            value *= value;
+            squared_distances[i] = value;
             /* build up dist_sum which keeps the sum of all squared distances */
-            dist_sum += d;
+            dist_sum += value;
         }
     }
 
@@ -160,7 +168,8 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
         /* initialize the trials random values by the D^2-weighted distribution */
         for (j = 0; j < n_trials; j++) {
             next_center_candidates[j] = -1;
-            next_center_candidates_rand[j] = dist_sum * uniform_dist(generator);
+            auto point_index = uniform_dist(generator);
+            next_center_candidates_rand[j] = dist_sum * ((dtype) point_index / (dtype) uniform_dist.max());
             next_center_candidates_potential[j] = 0.0;
         }
 
@@ -175,7 +184,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
                         if (sum >= next_center_candidates_rand[j]) {
                             next_center_candidates[j] = i;
                         } else {
-                            some_not_done = 1;
+                            some_not_done = true;
                         }
                     }
                 }
@@ -225,7 +234,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
         if (best_candidate >= 0) {
             /* write the best_candidate's components into the init_centers array */
             for (j = 0; j < dim; j++) {
-                (*(init_centers.data() + centers_found * dim + j)) = data(best_candidate, j);
+                init_centers(centers_found, j) = data(best_candidate, j);
             }
             /* increase centers_found */
             centers_found++;
@@ -234,7 +243,7 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
                 callback();
             }
             /* mark the data point as assigned center */
-            taken_points[best_candidate] = 1;
+            taken_points[best_candidate] = true;
             /* update the sum of squared distances by removing the assigned center */
             dist_sum -= squared_distances[best_candidate];
 
@@ -260,11 +269,6 @@ initCentersKMpp(const KMeans::np_array& np_data, unsigned int random_seed) const
         }
     }
 
-    /* create the output objects */
-    std::vector<size_t> shape = {k, dim};
-    py::array_t <dtype, py::array::c_style> ret_init_centers(shape);
-
-    memcpy(ret_init_centers.mutable_data(), arr_data.data(), arr_data.size() * sizeof(dtype));
     return ret_init_centers;
 }
 
