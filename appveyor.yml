@@ -5,16 +5,10 @@ environment:
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
-    CONDA_NPY: "111"
+    CONDA_NPY: "112"
     PYTHONHASHSEED: "0"
 
   matrix:
-    - MINICONDA_PYTHON: "C:\\Miniconda"
-      CONDA_PY: "27"
-    
-    - MINICONDA_PYTHON: "C:\\Miniconda-x64"
-      CONDA_PY: "27" 
-      ARCH: "64"
 
     - MINICONDA_PYTHON: "C:\\Miniconda3"
       CONDA_PY: "35"

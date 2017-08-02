@@ -4,6 +4,9 @@ Changelog
 2.5 (??-??-????)
 ----------------
 
+As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
+your Python installation to at least version 3.5.
+
 **New features**:
 
 - msm: Added Augmented Markov Models. A way to include averaged experimental
