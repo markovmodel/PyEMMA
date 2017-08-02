@@ -38,7 +38,7 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
 
     std::vector<size_t> shape = {N_centers, dim};
     py::array_t <dtype> return_new_centers(shape);
-    auto new_centers = return_new_centers.template mutable_unchecked();
+    auto new_centers = return_new_centers.mutable_unchecked();
     std::fill(return_new_centers.mutable_data(), return_new_centers.mutable_data() + return_new_centers.size(), 0.0);
 
     /* initialize centers_counter and new_centers with zeros */
