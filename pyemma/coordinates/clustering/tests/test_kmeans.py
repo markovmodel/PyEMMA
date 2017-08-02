@@ -90,6 +90,14 @@ class TestKmeans(unittest.TestCase):
             np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
                                           "should yield same centers with fixed seed")
 
+            # check a user defined seed
+            seed = random.randint(0, 2**32-1)
+            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
+            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
+            self.assertEqual(km1.fixed_seed, km2.fixed_seed)
+            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
+                                          "should yield same centers with fixed seed")
+
             # test that not-fixed seed yields different results
             km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
             self.assertNotEqual(km3.fixed_seed, 42)
