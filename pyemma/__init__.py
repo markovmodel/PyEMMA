@@ -73,6 +73,7 @@ def _version_check(current, testing=False):
         testing = True
 
     def _impl():
+        import warnings
         try:
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
@@ -85,10 +86,13 @@ def _version_check(current, testing=False):
             latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
             latest = parse(latest_json)
             if parse(current) < latest:
-                import warnings
                 warnings.warn("You are not using the latest release of PyEMMA."
                               " Latest is {latest}, you have {current}."
                               .format(latest=latest, current=current), category=UserWarning)
+            if sys.version_info[0] < 3:
+                warnings.warn("Python 2.7 usage is deprecated. "
+                              "Future versions of PyEMMA will not support it. "
+                              "Please upgrade your Python installation.", category=UserWarning)
         except Exception:
             import logging
             logging.getLogger('pyemma').debug("error during version check", exc_info=True)
