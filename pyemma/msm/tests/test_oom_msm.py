@@ -309,8 +309,9 @@ class TestMSMFiveState(unittest.TestCase):
         self._count_matrix_full(self.msmrev_eff)
 
     def _discrete_trajectories_full(self, msm):
-        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
-        assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
+        pass
+        #assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
+        #assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
 
     def test_discrete_trajectories_full(self):
         self._discrete_trajectories_full(self.msmrev)
@@ -320,8 +321,9 @@ class TestMSMFiveState(unittest.TestCase):
         self._discrete_trajectories_full(self.msmrev_eff)
 
     def _discrete_trajectories_active(self, msm):
-        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_active[0]))
-        assert len(self.dtrajs) == len(msm.discrete_trajectories_active)
+        dta = msm.compute_discrete_trajectories_active(self.dtrajs)
+        assert (np.all(self.dtrajs[0] == dta[0]))
+        assert len(self.dtrajs) == len(dta)
 
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.msmrev)
@@ -389,9 +391,10 @@ class TestMSMFiveState(unittest.TestCase):
 
     def _active_count_fraction(self, msm):
         # should always be a fraction
-        assert (0.0 <= msm.active_count_fraction <= 1.0)
+        active_count_fraction = msm.compute_active_count_fraction(self.dtrajs)
+        assert (0.0 <= active_count_fraction <= 1.0)
         # special case for this data set:
-        assert (msm.active_count_fraction == 1.0)
+        assert (active_count_fraction == 1.0)
 
     def test_active_count_fraction(self):
         self._active_count_fraction(self.msmrev)
@@ -820,7 +823,7 @@ class TestMSMFiveState(unittest.TestCase):
         assert (len(I) == msm.nstates)
         # compare to histogram
         import pyemma.util.discrete_trajectories as dt
-        hist = dt.count_states(msm.discrete_trajectories_full)
+        hist = dt.count_states(self.dtrajs)
         # number of frames should match on active subset
         A = msm.active_set
         for i in range(A.shape[0]):
@@ -855,7 +858,7 @@ class TestMSMFiveState(unittest.TestCase):
         # must have the right size
         assert (len(ss) == msm.nstates)
         # must be correctly assigned
-        dtrajs_active = msm.discrete_trajectories_active
+        dtrajs_active = msm.compute_discrete_trajectories_active(self.dtrajs)
         for i, samples in enumerate(ss):
             # right shape
             assert (np.all(samples.shape == (nsample, 2)))
@@ -870,7 +873,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._sample_by_state(self.msmrev_eff)
 
     def _trajectory_weights(self, msm):
-        W = msm.trajectory_weights()
+        W = msm.trajectory_weights(self.dtrajs)
         # should sum to 1
         wsum = 0
         for w in W:
@@ -1092,8 +1095,9 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._count_matrix_full(self.msm_sparse, sparse=True)
 
     def _discrete_trajectories_full(self, msm):
-        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
-        assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
+        pass
+        #assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
+        #assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
 
     def test_discrete_trajectories_full(self):
         self._discrete_trajectories_full(self.msmrev)
@@ -1580,7 +1584,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         assert (len(I) == msm.nstates)
         # compare to histogram
         import pyemma.util.discrete_trajectories as dt
-        hist = dt.count_states(msm.discrete_trajectories_full)
+        hist = dt.count_states(self.dtrajs)
         # number of frames should match on active subset
         A = msm.active_set
         for i in range(A.shape[0]):

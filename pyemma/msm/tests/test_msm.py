@@ -79,7 +79,7 @@ class TestMSMSimple(unittest.TestCase):
 
     def test_MSM(self):
         msm = estimate_markov_model(self.dtraj, self.tau)
-        assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
+        #assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
         self.assertTrue(np.allclose(self.Ccc_MSM.toarray(), msm.count_matrix_active))
@@ -90,7 +90,7 @@ class TestMSMSimple(unittest.TestCase):
 
     def test_MSM_sparse(self):
         msm = estimate_markov_model(self.dtraj, self.tau, sparse=True)
-        assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
+        #assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
         self.assertTrue(np.allclose(self.Ccc_MSM.toarray(), msm.count_matrix_active.toarray()))
@@ -134,8 +134,9 @@ class TestMSMDoubleWell(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
-        nu = 1.*np.bincount(cls.dtraj)
+        cls.dtraj = [pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10]
+        #assert isinstance(cls.dtraj, list)
+        nu = 1.*np.bincount(cls.dtraj[0])
         cls.statdist = nu/nu.sum()
 
         cls.tau = 10
@@ -156,7 +157,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ---------------------------------
 
     def _score(self, msm):
-        dtrajs_test = self.dtraj[80000:]
+        dtrajs_test = self.dtraj[0][80000:]
         s1 = msm.score(dtrajs_test, score_method='VAMP1', score_k=2)
         assert 1.0 <= s1 <= 2.0
         s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
@@ -319,7 +320,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # HERE
         self.assertEqual(len(dta), 1)
         # HERE: states are shifted down from the beginning, because early states are missing
-        assert (dta[0][0] < self.dtraj[0])
+        assert (dta[0][0] < self.dtraj[0][0])
 
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.msmrev)
@@ -953,9 +954,9 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._sample_by_state(self.msm_sparse)
 
     def _trajectory_weights(self, msm):
-        W = msm.trajectory_weights()
-        # should sum to 1
-        assert (np.abs(np.sum(W[0]) - 1.0) < 1e-6)
+        W = msm.trajectory_weights(self.dtraj)
+        # should sum to
+        self.assertLess(np.abs(np.sum(W[0]) - 1.0), 1e-6)
 
     def test_trajectory_weights(self):
         self._trajectory_weights(self.msmrev)
