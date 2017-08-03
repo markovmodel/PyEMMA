@@ -129,7 +129,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     /* create the output objects */
     std::vector<size_t> shape = {k, dim};
     py::array_t <dtype, py::array::c_style> ret_init_centers(shape);
-    auto init_centers = ret_init_centers.template mutable_unchecked();
+    auto init_centers = ret_init_centers.mutable_unchecked();
 
     auto data = np_data.template unchecked<2>();
 
