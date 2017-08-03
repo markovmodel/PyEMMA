@@ -209,7 +209,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                               self.tolerance, self.max_iter)
         # set centers
         self._finish_estimate()
-        self.logger.debug("len centers after iteration: %s", len(self.clustercenters))
 
         return self
 
