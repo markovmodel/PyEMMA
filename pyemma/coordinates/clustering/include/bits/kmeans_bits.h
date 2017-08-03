@@ -146,7 +146,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     /* increase number of found centers */
     centers_found++;
     /* perform callback */
-    if (not py::isinstance<py::none>(callback)) {
+    if (! py::isinstance<py::none>(callback)) {
         callback();
     }
 
@@ -239,7 +239,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
             /* increase centers_found */
             centers_found++;
             /* perform the callback */
-            if (not py::isinstance<py::none>(callback)) {
+            if (! py::isinstance<py::none>(callback)) {
                 callback();
             }
             /* mark the data point as assigned center */
