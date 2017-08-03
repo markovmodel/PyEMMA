@@ -260,5 +260,15 @@ class TestKmeansResume(unittest.TestCase):
 
         assert not hasattr(cl, '_in_memory_chunks')
 
+    def test_non_converged_keep_memory(self):
+        k = 3
+        initial_centers = np.atleast_2d(self.X[np.random.choice(1000, size=k)]).T
+
+        cl = cluster_kmeans(self.X, clustercenters=initial_centers, k=k, max_iter=1, keep_data=True)
+
+        cl.estimate(self.X, clustercenters=cl.clustercenters, max_iter=1)
+        assert not cl.converged
+        assert hasattr(cl, '_in_memory_chunks')
+
 if __name__ == "__main__":
     unittest.main()
