@@ -43,7 +43,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     """
     provides a common interface for cluster algorithms.
-    
+
     Parameters
     ----------
 

@@ -194,7 +194,7 @@ class TestKmeans(unittest.TestCase):
         self.assertGreaterEqual(np.inner(np.array([0, 0, -10000], dtype=float), res) + 17321, 0)
 
     def test_with_n_jobs_minrmsd(self):
-        kmeans = cluster_kmeans(np.random.rand(500,3), 10, metric='minRMSD')
+        kmeans = cluster_kmeans(np.random.rand(500, 3), 10, metric='minRMSD')
 
     def test_skip(self):
         cluster_kmeans(np.random.rand(100, 3), skip=42)
@@ -204,6 +204,61 @@ class TestKmeans(unittest.TestCase):
         with settings(show_progress_bars=True):
             cluster_kmeans(np.random.rand(100, 3))
 
+
+class TestKmeansResume(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(32):
+            # three gaussians
+            X = [np.random.randn(1000)-2.0,
+                 np.random.randn(1000),
+                 np.random.randn(1000)+2.0]
+            cls.X = np.hstack(X)
+
+    def test_resume(self):
+        """ check that we can continue with the iteration by passing centers"""
+        initial_centers = np.array([[20, 42, -29]]).T
+        cl = cluster_kmeans(self.X, clustercenters=initial_centers,
+                            max_iter=1, k=3, keep_data=True)
+
+        resume_centers = cl.clustercenters
+        cl.estimate(self.X, clustercenters=resume_centers, max_iter=50)
+        new_centers = cl.clustercenters
+
+        true = np.array([-2, 0, 2])
+        d0 = true - resume_centers
+        d1 = true - new_centers
+
+        diff = np.linalg.norm(d0)
+        diff_next = np.linalg.norm(d1)
+
+        self.assertLess(diff_next, diff, 'resume_centers=%s, new_centers=%s' % (resume_centers, new_centers))
+
+    @unittest.skip('not impled')
+    def test_inefficient_args_log(self):
+        from pyemma.util.testing_tools import MockLoggingHandler
+        m = MockLoggingHandler()
+        cl = cluster_kmeans(self.X, max_iter=1, keep_data=False)
+        cl.logger.addHandler(m)
+        cl.estimate(self.X, max_iter=1, clustercenters=cl.clustercenters)
+        found = False
+        for msg in m.messages['warning']:
+            if 'inefficient' in msg: found=True
+
+        assert found
+
+    def test_converged_memory_freed(self):
+        k = 3
+        initial_centers = np.atleast_2d(self.X[np.random.choice(1000, size=k)]).T
+
+        cl = cluster_kmeans(self.X, clustercenters=initial_centers, k=k, max_iter=1, keep_data=True)
+
+        while not cl.converged:
+            cl.estimate(self.X, clustercenters=cl.clustercenters, max_iter=5)
+
+        assert not hasattr(cl, '_in_memory_chunks')
 
 if __name__ == "__main__":
     unittest.main()
