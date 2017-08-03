@@ -192,7 +192,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         while it < self.max_iter:
             self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters)
             cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters)
-            rel_change = np.abs(cost - prev_cost) / cost
+            rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
             prev_cost = cost
 
             if rel_change <= self.tolerance:
