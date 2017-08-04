@@ -300,9 +300,11 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
         from ._ext import kmeans as kmeans_mod
-        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim,
-                                         (lambda: self._progress_update(1, stage=0))
-                                         if self.init_strategy == 'kmeans++' else None)
+        if self.init_strategy == 'kmeans++' and self.show_progress:
+            callback = lambda: self._progress_update(1, stage=0)
+        else:
+            callback = None
+        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim, callback)
 
         return stride
 
