@@ -22,25 +22,27 @@ public:
     /**
      * performs kmeans clustering on the given data chunk, provided a list of centers.
      * @param np_chunk
-     * @param py_centers
+     * @param np_centers
+     * @param n_threads
      * @return updated centers.
      */
-    np_array cluster(const np_array&, const np_array&) const;
+    np_array cluster(const np_array&, const np_array&, int) const;
 
     /**
      * evaluate the quality of the centers
      *
      * @return
      */
-    dtype costFunction(const np_array&, const np_array&) const;
+    dtype costFunction(const np_array&, const np_array&, int) const;
 
     /**
      * kmeans++ initialisation
      * @param np_data
      * @param random_seed
-     * @return
+     * @param n_threads
+     * @return init centers.
      */
-    np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed) const;
+    np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed, int) const;
 
 
     /**

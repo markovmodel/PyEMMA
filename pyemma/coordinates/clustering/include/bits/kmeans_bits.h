@@ -15,7 +15,7 @@
 
 template<typename dtype>
 typename KMeans<dtype>::np_array
-KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) const {
+KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers, int n_threads) const {
     size_t i, j;
 
     if (np_chunk.ndim() != 2) {
@@ -64,6 +64,7 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
         }
     }
 #else
+    omp_set_num_threads(n_threads);
     std::vector<dtype> dists(N_centers);
     #pragma omp parallel
     {
@@ -109,16 +110,25 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
 }
 
 template<typename dtype>
-dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers) const {
+dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_centers, int n_threads) const {
     auto data = np_data.template unchecked<2>();
     auto centers = np_centers.template unchecked<2>();
 
     dtype value = 0.0;
     std::size_t n_frames = np_data.shape(0);
+    #ifdef USE_OPENMP
+    omp_set_num_threads(n_threads);
+    #endif
 
+    // TODO: seems not worth the effort for small systems.
+    //#pragma omp parallel for
     for (size_t r = 0; r < np_centers.shape(0); r++) {
         for (size_t i = 0; i < n_frames; i++) {
-            value += parent_t::metric->compute(&data(i, 0), &centers(r, 0));
+            auto l = parent_t::metric->compute(&data(i, 0), &centers(r, 0));
+            #pragma omp critical
+            {
+                value += l;
+            }
         }
     }
     return value;
@@ -126,10 +136,9 @@ dtype KMeans<dtype>::costFunction(const np_array& np_data, const np_array& np_ce
 
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
-initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
+initCentersKMpp(const np_array& np_data, unsigned int random_seed, int n_threads) const {
     size_t centers_found = 0, first_center_index;
     bool some_not_done;
-    dtype d;
     dtype sum;
     size_t i, j;
     size_t dim = parent_t::metric->dim;
@@ -180,17 +189,24 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     if (! py::isinstance<py::none>(callback)) {
         callback();
     }
+#ifdef USE_OPENMP
+    omp_set_num_threads(n_threads);
+#endif
 
     /* iterate over all data points j, measuring the squared distance between j and the initial center i: */
     /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
     dtype dist_sum = 0.0;
+    #pragma omp parallel for
     for (i = 0; i < n_frames; i++) {
         if (i != first_center_index) {
             auto value = parent_t::metric->compute(&data(i, 0), &data(first_center_index, 0));
             value = value * value;
             squared_distances[i] = value;
             /* build up dist_sum which keeps the sum of all squared distances */
-            dist_sum += value;
+            #pragma omp critical
+            {
+                dist_sum += value;
+            }
         }
     }
 
@@ -225,13 +241,14 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
         }
 
         /* now find the maximum squared distance for each trial... */
-        for (i = 0; i < n_frames; i++) {
+        #pragma omp parallel for
+        for (size_t i = 0; i < n_frames; i++) {
             if (!taken_points[i]) {
-                for (j = 0; j < n_trials; j++) {
+                for (size_t j = 0; j < n_trials; ++j) {
                     if (next_center_candidates[j] == -1) break;
                     if (next_center_candidates[j] != i) {
                         auto value = parent_t::metric->compute(&data(i, 0), &data(next_center_candidates[j], 0));
-                        d = value * value;
+                        auto d = value * value;
                         if (d < squared_distances[i]) {
                             next_center_candidates_potential[j] += d;
                         } else {
@@ -285,13 +302,17 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
                 /* the squared distance to the previously picked centers. If so, update the squared_distances */
                 /* array by the new value and also update the dist_sum value by removing the old value and adding */
                 /* the new one. */
-                for (i = 0; i < n_frames; i++) {
+                #pragma omp parallel for
+                for (size_t i = 0; i < n_frames; ++i) {
                     if (!taken_points[i]) {
                         auto value = parent_t::metric->compute(&data(i, 0), &data(best_candidate, 0));
-                        d = value * value;
-                        if (d < squared_distances[i]) {
-                            dist_sum += d - squared_distances[i];
-                            squared_distances[i] = d;
+                        auto d = value * value;
+                        #pragma omp critical
+                        {
+                            if (d < squared_distances[i]) {
+                                dist_sum += d - squared_distances[i];
+                                squared_distances[i] = d;
+                            }
                         }
                     }
                 }
