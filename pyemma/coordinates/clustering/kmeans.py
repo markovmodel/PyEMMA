@@ -217,8 +217,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
                     first_chunk = False
             from matplotlib import pyplot as plt
-            plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='o', linewidth=0, color='red', markersize=0.7)
-            assert np.all(self.clustercenters < 1000)
+            # plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='x', linewidth=0, color='red', markersize=10)
 
             self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
@@ -230,12 +229,12 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
         # run k-means with all the data
         it = 0
-        converged_in_max_iter = False
         prev_cost = 0
         while it < self.max_iter:
-            self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters)
-            cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters)
-            rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
+            self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
+            cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
+            self.logger.debug('cost: %s', cost)
+            rel_change = np.abs(cost - prev_cost) / cost #if cost != 0.0 else 0.0
             prev_cost = cost
 
             if rel_change <= self.tolerance:
@@ -319,7 +318,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         new = np.vstack((self.clustercenters, X[l]))
                         self.clustercenters = new
         elif last_chunk and self.init_strategy == 'kmeans++':
-            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed)
+            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs)
 
     def _collect_data(self, X, first_chunk, last_chunk):
         # beginning - compute
@@ -417,8 +416,8 @@ class MiniBatchKmeansClustering(KmeansClustering):
                     first_chunk = False
 
                 # one pass over data completed
-                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters)
-                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters)
+                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
+                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
 
                 rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
                 prev_cost = cost
