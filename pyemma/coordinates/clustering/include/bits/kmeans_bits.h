@@ -10,7 +10,7 @@
 #include <pybind11/pytypes.h>
 #include <random>
 
-//#undef NDEBUG
+#undef NDEBUG
 #include <cassert>
 
 template<typename dtype>
@@ -48,6 +48,22 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
     int *centers_counter_p = centers_counter.data();
     size_t closest_center_index = 0;
     dtype min = std::numeric_limits<dtype>::max();
+#ifndef USE_OPENMP
+    for (i = 0; i < N_frames; i++) {
+        dtype mindist = std::numeric_limits<dtype>::max();
+        for(j = 0; j < N_centers; ++j) {
+            auto d = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
+            if(d < mindist) {
+                mindist = d;
+                closest_center_index = j;
+            }
+        }
+        (*(centers_counter_p + closest_center_index))++;
+        for (j = 0; j < dim; j++) {
+            new_centers(closest_center_index, j) += chunk(i, j);
+        }
+    }
+#else
     #pragma omp parallel
     {
         size_t local_index = 0;
@@ -77,6 +93,7 @@ KMeans<dtype>::cluster(const np_array& np_chunk, const np_array& np_centers) con
             }
         }
     }
+#endif
     for (i = 0; i < N_centers; ++i) {
         if (*(centers_counter_p + i) == 0) {
             for (j = 0; j < dim; ++j) {
@@ -131,18 +148,19 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     size_t n_trials = 2 + (size_t) log(k);
 
     /* allocate space for the index giving away which point has already been used as a cluster center */
-    std::vector<bool> taken_points(n_frames);
+    std::vector<bool> taken_points(n_frames, false);
     /* candidates allocations */
-    std::vector<int> next_center_candidates(n_trials);
-    std::vector<dtype> next_center_candidates_rand(n_trials);
-    std::vector<dtype> next_center_candidates_potential(n_trials);
+    std::vector<int> next_center_candidates(n_trials, -1);
+    std::vector<dtype> next_center_candidates_rand(n_trials, 0);
+    std::vector<dtype> next_center_candidates_potential(n_trials, 0);
     /* allocate space for the array holding the squared distances to the assigned cluster centers */
-    std::vector<dtype> squared_distances(n_frames);
+    std::vector<dtype> squared_distances(n_frames, 0);
 
     /* create the output objects */
     std::vector<size_t> shape = {k, dim};
-    py::array_t <dtype, py::array::c_style> ret_init_centers(shape);
+    np_array ret_init_centers(shape);
     auto init_centers = ret_init_centers.mutable_unchecked();
+    std::memset(init_centers.mutable_data(), 0, init_centers.size() * init_centers.itemsize());
 
     auto data = np_data.template unchecked<2>();
 
@@ -167,16 +185,17 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
     /* iterate over all data points j, measuring the squared distance between j and the initial center i: */
     /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
     dtype dist_sum = 0.0;
+    printf("first center: %f, %f \n", data(first_center_index, 0), data(first_center_index, 1));
     for (i = 0; i < n_frames; i++) {
         if (i != first_center_index) {
             auto value = parent_t::metric->compute(&data(i, 0), &data(first_center_index, 0));
-            value *= value;
+            value = value * value;
             squared_distances[i] = value;
             /* build up dist_sum which keeps the sum of all squared distances */
             dist_sum += value;
         }
     }
-    printf("dist sum: %d\n", dist_sum);
+    printf("dist sum: %f\n", dist_sum);
 
     /* keep picking centers while we do not have enough of them... */
     while (centers_found < k) {
@@ -185,11 +204,15 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
         for (j = 0; j < n_trials; j++) {
             next_center_candidates[j] = -1;
             auto point_index = uniform_dist(generator);
-            //printf("trial=%d, random point=%d\n", j, point_index);
+            printf("trial=%d, random point=%d\n", j, point_index);
+            assert (point_index != 0);
             next_center_candidates_rand[j] = dist_sum * ((dtype) point_index / (dtype) uniform_dist.max());
             next_center_candidates_potential[j] = 0.0;
         }
-
+        for (int count = 0; count < n_trials; ++count) {
+            //printf("next_center_candidates_rand: %f\n", next_center_candidates_rand[count]);
+            //printf("next_center_candidates: %f\n", next_center_candidates[count]);
+        }
         /* pick candidate data points corresponding to their random value */
         sum = 0.0;
         for (i = 0; i < n_frames; i++) {
@@ -199,13 +222,16 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
                 for (j = 0; j < n_trials; j++) {
                     if (next_center_candidates[j] == -1) {
                         if (sum >= next_center_candidates_rand[j]) {
+                            assert(i < std::numeric_limits<int>::max());
                             next_center_candidates[j] = i;
                         } else {
-                            some_not_done = true;
+                            some_not_done = 1;
                         }
                     }
                 }
-                if (!some_not_done) break;
+                if (!some_not_done) {
+                    break;
+                }
             }
         }
 
@@ -228,7 +254,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
         }
 
         /* ... and select the best candidate by the minimum value of the maximum squared distances */
-        int best_candidate = -1;
+        long best_candidate = -1;
         auto best_potential = std::numeric_limits<dtype>::max();
         for (j = 0; j < n_trials; j++) {
             if (next_center_candidates[j] != -1 && next_center_candidates_potential[j] < best_potential) {
@@ -285,7 +311,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed) const {
             break;
         }
     }
-
+    assert(centers_found == k);
     return ret_init_centers;
 }
 

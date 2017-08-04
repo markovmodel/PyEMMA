@@ -216,6 +216,10 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         # initialize cluster centers
                         self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
                     first_chunk = False
+            from matplotlib import pyplot as plt
+            plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='o', linewidth=0, color='red', markersize=0.7)
+            assert np.all(self.clustercenters < 1000)
+
             self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
         else:
