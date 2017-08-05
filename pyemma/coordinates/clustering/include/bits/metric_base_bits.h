@@ -53,7 +53,7 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
     omp_set_num_threads(n_threads);
     assert(omp_get_num_threads() == n_threads);
 #endif
-
+    omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
         for(size_t i = 0; i < N_frames; ++i) {
