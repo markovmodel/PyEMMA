@@ -321,7 +321,7 @@ initCentersKMpp(const np_array& np_data, unsigned int random_seed, int n_threads
             break;
         }
     }
-    assert(centers_found == k);
+    if (centers_found != k) { throw std::runtime_error("kmeans++ failed to initialize all desired centers"); }
     return ret_init_centers;
 }
 
