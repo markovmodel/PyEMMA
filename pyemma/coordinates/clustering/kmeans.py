@@ -217,7 +217,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                         self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
                     first_chunk = False
             from matplotlib import pyplot as plt
-            # plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='x', linewidth=0, color='red', markersize=10)
+            #plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='x', linewidth=0, color='red', markersize=10)
 
             self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
@@ -227,6 +227,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                 raise RuntimeError('Passed clustercenters do not match n_clusters: {} vs. {}'.
                                    format(len(self.clustercenters), self.n_clusters))
 
+
+       # return
         # run k-means with all the data
         it = 0
         prev_cost = 0

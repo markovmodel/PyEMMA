@@ -60,13 +60,16 @@ class TestKmeans(unittest.TestCase):
 
     def test_3gaussian_1d_singletraj(self):
         # generate 1D data from three gaussians
-        X = [np.random.randn(100)-2.0,
-             np.random.randn(100),
-             np.random.randn(100)+2.0]
+
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(42):
+            X = [np.random.randn(100)-2.0,
+                 np.random.randn(100),
+                 np.random.randn(100)+2.0]
         X = np.hstack(X)
         k = 10
-        for init_strategy in ['kmeans++', 'uniform']:
-            kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy)
+        for init_strategy in ['uniform', 'kmeans++']:
+            kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy, n_jobs=1)
             cc = kmeans.clustercenters
             self.assertTrue(np.all(np.isfinite(cc)), "cluster centers borked for strat %s" % init_strategy)
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
@@ -74,29 +77,22 @@ class TestKmeans(unittest.TestCase):
             assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
 
             # test fixed seed
-            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True)
-            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True)
+            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True, n_jobs=1)
+            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True, n_jobs=16)
             self.assertEqual(len(km1.clustercenters), k)
             self.assertEqual(len(km2.clustercenters), k)
             self.assertEqual(km1.fixed_seed, km2.fixed_seed)
-            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
-                                          "should yield same centers with fixed seed for strategy %s" % init_strategy)
+            np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
+                                       err_msg="should yield same centers with fixed seed for strategy %s" % init_strategy, atol=1e-6)
 
             # check a user defined seed
             seed = random.randint(0, 2**32-1)
-            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
-            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
+            seed = 42312
+            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed, n_jobs=1)
+            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed, n_jobs=1)
             self.assertEqual(km1.fixed_seed, km2.fixed_seed)
-            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
-                                          "should yield same centers with fixed seed")
-
-            # check a user defined seed
-            seed = random.randint(0, 2**32-1)
-            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
-            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed)
-            self.assertEqual(km1.fixed_seed, km2.fixed_seed)
-            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
-                                          "should yield same centers with fixed seed")
+            np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
+                                       err_msg="should yield same centers with fixed seed for strategy %s" % init_strategy)
 
             # test that not-fixed seed yields different results
             km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
@@ -126,7 +122,7 @@ class TestKmeans(unittest.TestCase):
         assert(np.any(cc > -1.0))
 
     def test_kmeans_equilibrium_state(self):
-        initial_centers_equilibrium = [np.array([0, 0, 0])]
+        initial_centers_equilibrium = np.array([0, 0, 0])
         X = np.array([
             np.array([1, 1, 1], dtype=np.float32), np.array([1, 1, -1], dtype=np.float32),
             np.array([1, -1, -1], dtype=np.float32), np.array([-1, -1, -1], dtype=np.float32),
@@ -137,7 +133,8 @@ class TestKmeans(unittest.TestCase):
         self.assertEqual(1, len(kmeans.clustercenters), 'If k=1, there should be only one output center.')
         msg = 'Type=' + str(type(kmeans)) + '. ' + \
               'In an equilibrium state the resulting centers should not be different from the initial centers.'
-        self.assertTrue(np.array_equal(initial_centers_equilibrium[0], kmeans.clustercenters[0]), msg)
+        np.testing.assert_equal(initial_centers_equilibrium.squeeze(), kmeans.clustercenters.squeeze())
+  #      self.assertTrue(np.array_equal(initial_centers_equilibrium[0], kmeans.clustercenters[0]), msg)
 
     def test_kmeans_convex_hull(self):
         points = [
@@ -195,6 +192,7 @@ class TestKmeans(unittest.TestCase):
 
     def test_with_n_jobs_minrmsd(self):
         kmeans = cluster_kmeans(np.random.rand(500, 3), 10, metric='minRMSD')
+        kmeans.dtrajs
 
     def test_skip(self):
         cluster_kmeans(np.random.rand(100, 3), skip=42)

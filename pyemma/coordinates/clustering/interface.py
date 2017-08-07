@@ -64,16 +64,20 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         self._index_states = []
         self.n_jobs = n_jobs
 
+    class _centers_wrapper(object):
+        def __init__(self, arr):
+            self.centers = np.asarray(arr, dtype='float32', order='C')
+            self.pre_centered = False
+
     @property
     @alias('labels_')  # sk-learn compat.
     def clustercenters(self):
         """ Array containing the coordinates of the calculated cluster centers. """
-        return self._clustercenters
+        return self._clustercenters.centers
 
     @clustercenters.setter
     def clustercenters(self, val):
-        val = np.asarray(val, dtype='float32', order='C')
-        self._clustercenters = val
+        self._clustercenters = AbstractClustering._centers_wrapper(val)
 
     @property
     def overwrite_dtrajs(self):
@@ -150,6 +154,13 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self.logger.debug("new cluster inst")
             from ._ext import ClusteringBase_f
             self._inst = ClusteringBase_f(self.metric, X.shape[1])
+
+        # for performance reasons we pre-center the cluster centers for minRMSD.
+        if self.metric == 'minRMSD':
+            if not self._clustercenters.pre_centered:
+                self.logger.debug("precentering cluster centers for minRMSD.")
+                self._inst.precenter_centers(self.clustercenters)
+                self._clustercenters.pre_centered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function

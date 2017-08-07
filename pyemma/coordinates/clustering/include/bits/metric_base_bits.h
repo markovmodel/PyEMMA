@@ -9,6 +9,7 @@
 
 #include <center.h>
 #include <theobald_rmsd.h>
+#include <omp.h>
 
 #ifdef USE_OPENMP
 #include <omp.h>
@@ -33,9 +34,9 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
     if (centers.ndim() != 2) {
         throw std::invalid_argument("provided centers does not have two dimensions.");
     }
-    size_t N_centers = centers.shape(0);
-    size_t N_frames = chunk.shape(0);
-    size_t input_dim = chunk.shape(1);
+    size_t N_centers = static_cast<size_t>(centers.shape(0));
+    size_t N_frames = static_cast<size_t>(chunk.shape(0));
+    size_t input_dim = static_cast<size_t>(chunk.shape(1));
 
     if ((input_dim != dim) || (input_dim != centers.shape(1))) {
         throw std::invalid_argument("input dimension mismatch");
@@ -72,7 +73,7 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
                 for (size_t j = 0; j < N_centers; ++j) {
                     if (dists[j] < mindist) {
                         mindist = dists[j];
-                        argmin = (int) j;
+                        argmin = static_cast<int>(j);
                     }
                 }
                 dtraj_buff(i) = argmin;
@@ -118,22 +119,23 @@ inline dtype euclidean_metric<dtype>::compute(const dtype *a, const dtype *b) {
 template <typename dtype>
 inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
     float trace_a, trace_b;
-    const int dim3 = (int) parent_t::dim / 3;
-    std::vector<float> buffer_a, buffer_b;
+    auto dim3 = static_cast<const int>(parent_t::dim / 3);
+    std::vector<float> buffer_b (b, b + parent_t::dim);
 
     if (!has_trace_a_been_precalculated) {
-        buffer_a.resize(parent_t::dim*sizeof(float));
-        buffer_b.resize(parent_t::dim*sizeof(float));
+        std::vector<float> buffer_a (a, a + parent_t::dim);
+        //buffer_a.resize(parent_t::dim);
+        //buffer_b.resize(parent_t::dim);
 
-        buffer_a.assign(a, a + parent_t::dim * sizeof(float));
-        buffer_b.assign(b, b + parent_t::dim * sizeof(float));
+        //buffer_a.assign(a, a + parent_t::dim);
+        //buffer_b.assign(b, b + parent_t::dim);
 
         inplace_center_and_trace_atom_major(buffer_a.data(), &trace_a, 1, dim3);
         inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
 
     } else {
         // only copy b, since a has been pre-centered,
-        buffer_b.assign(b, b + parent_t::dim * sizeof(float));
+        //buffer_b.assign(b, b + parent_t::dim);
 
         inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
         trace_a = *trace_centers.data();
@@ -147,12 +149,12 @@ template<typename dtype>
 inline float * min_rmsd_metric<dtype>::precenter_centers(float *original_centers, std::size_t N_centers) {
     centers_precentered.resize(N_centers*parent_t::dim);
     centers_precentered.assign(original_centers, original_centers + (N_centers * parent_t::dim));
-    trace_centers.reserve(N_centers);
+    trace_centers.resize(N_centers);
     float *trace_centers_p = trace_centers.data();
 
     /* Parallelize centering of cluster generators */
     /* Note that this is already OpenMP-enabled */
-    for (int j = 0; j < N_centers; ++j) {
+    for (std::size_t j = 0; j < N_centers; ++j) {
         inplace_center_and_trace_atom_major(&centers_precentered[j * parent_t::dim],
                                             &trace_centers_p[j], 1, parent_t::dim / 3);
     }

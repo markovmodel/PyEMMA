@@ -18,7 +18,7 @@ public:
     KMeans(unsigned int k,
            const std::string& metric,
            size_t input_dimension,
-           py::object& callback) : ClusteringBase<dtype>(metric, input_dimension), k(k), callback(callback) {}
+           const py::function& callback) : ClusteringBase<dtype>(metric, input_dimension), k(k), callback(callback) {}
     /**
      * performs kmeans clustering on the given data chunk, provided a list of centers.
      * @param np_chunk
@@ -52,7 +52,7 @@ public:
     void set_callback(const py::object& callback) { this->callback = callback; }
 protected:
     unsigned int k;
-    py::object callback;
+    py::function callback;
 
 };
 

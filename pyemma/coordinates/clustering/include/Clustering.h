@@ -15,16 +15,23 @@ namespace py = pybind11;
 
 template <typename dtype>
 class ClusteringBase {
+
 public:
+    enum MetricType {
+        EUCLIDEAN, MINRMSD
+    };
+
     using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
 
     ClusteringBase(const std::string& metric_s, std::size_t input_dimension) : input_dimension(input_dimension) {
         if (metric_s == "euclidean") {
             typedef euclidean_metric<dtype> eucl;
             metric = std::unique_ptr<eucl>( new eucl(input_dimension));
+            _metric_type = MetricType::EUCLIDEAN;
         } else if(metric_s == "minRMSD") {
             typedef min_rmsd_metric<float> min_rmsd_t;
             metric = std::unique_ptr<min_rmsd_t>(new min_rmsd_t(input_dimension));
+            _metric_type = MetricType::MINRMSD;
         } else {
             throw std::invalid_argument("metric is not of {'euclidean', 'minRMSD'}");
         }
@@ -33,8 +40,8 @@ public:
     virtual ~ClusteringBase()= default;
     ClusteringBase(const ClusteringBase&) = delete;
     ClusteringBase&operator=(const ClusteringBase&) = delete;
-    ClusteringBase(ClusteringBase&&) = default;
-    ClusteringBase&operator=(ClusteringBase&&) = default;
+    ClusteringBase(ClusteringBase&&) noexcept = default;
+    ClusteringBase&operator=(ClusteringBase&&) noexcept = default;
 
     std::unique_ptr<metric_base<dtype>> metric;
     std::size_t input_dimension;
@@ -44,6 +51,25 @@ public:
                                              unsigned int n_threads) const {
         return metric->assign_chunk_to_centers(chunk, centers, n_threads);
     }
+
+    /**
+     *
+     * @param centers
+     * @return
+     */
+    void precenter_centers(np_array& centers) const {
+        switch (_metric_type) {
+            case MetricType::MINRMSD: {
+                auto ptr = dynamic_cast<min_rmsd_metric<dtype>*>(metric.get());
+                ptr->precenter_centers(centers.mutable_data(0), centers.shape(1));
+                break;
+            }
+            case EUCLIDEAN:break;
+        }
+    }
+
+private:
+    MetricType _metric_type;
 };
 
 
