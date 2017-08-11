@@ -5,20 +5,25 @@
 #ifndef PYEMMA_KMEANS_H
 #define PYEMMA_KMEANS_H
 
+#include <utility>
+
 #include "Clustering.h"
 
 namespace py = pybind11;
 
 
-template <typename dtype>
+template<typename dtype>
 class KMeans : public ClusteringBase<dtype> {
 public:
     using parent_t = ClusteringBase<dtype>;
     using np_array = py::array_t<dtype, py::array::c_style | py::array::forcecast>;
+
     KMeans(unsigned int k,
-           const std::string& metric,
+           const std::string &metric,
            size_t input_dimension,
-           const py::function& callback) : ClusteringBase<dtype>(metric, input_dimension), k(k), callback(callback) {}
+           py::function callback) : ClusteringBase<dtype>(metric, input_dimension), k(k),
+                                    callback(std::move(callback)) {}
+
     /**
      * performs kmeans clustering on the given data chunk, provided a list of centers.
      * @param np_chunk
@@ -26,14 +31,14 @@ public:
      * @param n_threads
      * @return updated centers.
      */
-    np_array cluster(const np_array&, const np_array&, int) const;
+    np_array cluster(const np_array & /*np_chunk*/, const np_array & /*np_centers*/, int /*n_threads*/) const;
 
     /**
      * evaluate the quality of the centers
      *
      * @return
      */
-    dtype costFunction(const np_array&, const np_array&, int) const;
+    dtype costFunction(const np_array & /*np_data*/, const np_array & /*np_centers*/, int /*n_threads*/) const;
 
     /**
      * kmeans++ initialisation
@@ -42,14 +47,15 @@ public:
      * @param n_threads
      * @return init centers.
      */
-    np_array initCentersKMpp(const np_array& np_data, unsigned int random_seed, int) const;
+    np_array initCentersKMpp(const np_array& /*np_data*/, unsigned int /*random_seed*/, int /*n_threads*/) const;
 
 
     /**
      * call back function to inform about progress
      * @param callback None or Python function.
      */
-    void set_callback(const py::object& callback) { this->callback = callback; }
+    void set_callback(const py::function &callback) { this->callback = callback; }
+
 protected:
     unsigned int k;
     py::function callback;
