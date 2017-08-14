@@ -218,6 +218,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                     first_chunk = False
             from matplotlib import pyplot as plt
             #plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='x', linewidth=0, color='red', markersize=10)
+            self.initial_centers_ = self.clustercenters[:]
 
             self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
@@ -235,7 +236,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         while it < self.max_iter:
             self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
             cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-            self.logger.debug('cost: %s', cost)
+            #self.logger.debug('cost: %s', cost)
             rel_change = np.abs(cost - prev_cost) / cost #if cost != 0.0 else 0.0
             prev_cost = cost
 
