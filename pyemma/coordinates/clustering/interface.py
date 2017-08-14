@@ -70,7 +70,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self.pre_centered = False
 
     @property
-    @alias('labels_')  # sk-learn compat.
+    @alias('cluster_centers_')  # sk-learn compat.
     def clustercenters(self):
         """ Array containing the coordinates of the calculated cluster centers. """
         return self._clustercenters.centers
@@ -91,6 +91,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         self._overwrite_dtrajs = value
 
     @property
+    #@alias('labels_') # TODO: for fully sklearn-compat this would have to be a flat array!
     def dtrajs(self):
         """Discrete trajectories (assigned data to cluster centers)."""
         if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
