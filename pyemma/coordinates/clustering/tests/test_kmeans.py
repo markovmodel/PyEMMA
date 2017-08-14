@@ -26,12 +26,13 @@ import os
 import random
 import unittest
 
+import pyemma
 from pyemma.coordinates.api import cluster_kmeans
 from pyemma.util.files import TemporaryDirectory
 
 from six.moves import range
 import numpy as np
-
+pyemma.config.show_progress_bars= False
 
 class TestKmeans(unittest.TestCase):
 
@@ -63,12 +64,16 @@ class TestKmeans(unittest.TestCase):
 
         from pyemma.util.contexts import numpy_random_seed
         with numpy_random_seed(42):
-            X = [np.random.randn(100)-2.0,
-                 np.random.randn(100),
-                 np.random.randn(100)+2.0]
+            X = [np.random.randn(200)-2.0,
+                 np.random.randn(200),
+                 np.random.randn(200)+2.0]
         X = np.hstack(X)
-        k = 10
-        for init_strategy in ['uniform', 'kmeans++']:
+        k = 50
+        from pyemma._base.estimator import param_grid
+        grid = param_grid({'init_strategy': ['uniform', 'kmeans++'], 'fixed_seed': [True, 463498]})
+        for param in grid:
+            init_strategy = param['init_strategy']
+            fixed_seed = param['fixed_seed']
             kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy, n_jobs=1)
             cc = kmeans.clustercenters
             self.assertTrue(np.all(np.isfinite(cc)), "cluster centers borked for strat %s" % init_strategy)
@@ -76,27 +81,26 @@ class TestKmeans(unittest.TestCase):
             assert (np.any((cc > -1.0) * (cc < 1.0))), "failed for init_strategy=%s" % init_strategy
             assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
 
-            # test fixed seed
-            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True, n_jobs=1)
-            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=True, n_jobs=16)
+            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)  # serial
+            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=2)  # parallel
             self.assertEqual(len(km1.clustercenters), k)
             self.assertEqual(len(km2.clustercenters), k)
             self.assertEqual(km1.fixed_seed, km2.fixed_seed)
-            np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
-                                       err_msg="should yield same centers with fixed seed for strategy %s" % init_strategy, atol=1e-6)
 
-            # check a user defined seed
-            seed = random.randint(0, 2**32-1)
-            seed = 42312
-            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed, n_jobs=1)
-            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=seed, n_jobs=1)
-            self.assertEqual(km1.fixed_seed, km2.fixed_seed)
-            np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
-                                       err_msg="should yield same centers with fixed seed for strategy %s" % init_strategy)
+            # check initial centers (after kmeans++, uniform init) are equal.
+            np.testing.assert_equal(km1.initial_centers_, km2.initial_centers_)
 
-            # test that not-fixed seed yields different results
-            km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
-            self.assertNotEqual(km3.fixed_seed, 42)
+            while not km1.converged:
+                km1.estimate(X=X, clustercenters=km1.clustercenters)
+            assert km1.converged
+            while not km2.converged:
+                km2.estimate(X=X, clustercenters=km2.clustercenters)
+            assert km2.converged
+
+            assert np.linalg.norm(km1.clustercenters - km1.initial_centers_) > 0
+            np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
+                                       err_msg="should yield same centers with fixed seed=%s for strategy %s, Initial centers=%s"
+                                               % (fixed_seed, init_strategy, km2.initial_centers_), atol=1e-6)
 
     def test_negative_seed(self):
         """ ensure negative seeds converted to something positive"""
@@ -133,8 +137,21 @@ class TestKmeans(unittest.TestCase):
         self.assertEqual(1, len(kmeans.clustercenters), 'If k=1, there should be only one output center.')
         msg = 'Type=' + str(type(kmeans)) + '. ' + \
               'In an equilibrium state the resulting centers should not be different from the initial centers.'
-        np.testing.assert_equal(initial_centers_equilibrium.squeeze(), kmeans.clustercenters.squeeze())
-  #      self.assertTrue(np.array_equal(initial_centers_equilibrium[0], kmeans.clustercenters[0]), msg)
+        np.testing.assert_equal(initial_centers_equilibrium.squeeze(), kmeans.clustercenters.squeeze(), err_msg=msg)
+
+    def test_kmeans_converge_outlier_to_equilibrium_state(self):
+        initial_centers_equilibrium = np.array([[2, 0, 0], [-2, 0, 0]])
+        X = np.array([
+            np.array([1, 1.5, 1], dtype=np.float32), np.array([1, 1, -1], dtype=np.float32),
+            np.array([1, -1, -1], dtype=np.float32), np.array([-1, -1, -1], dtype=np.float32),
+            np.array([-1, 1, 1], dtype=np.float32), np.array([-1, -1, 1], dtype=np.float32),
+            np.array([-1, 1, -1], dtype=np.float32), np.array([1, -1, 1], dtype=np.float32)
+        ])
+        kmeans = cluster_kmeans(X, k=2, clustercenters=initial_centers_equilibrium, max_iter=500, n_jobs=1)
+
+        cl = kmeans.clustercenters
+        print(cl)
+        assert np.all(np.abs(cl) <= 1)
 
     def test_kmeans_convex_hull(self):
         points = [
@@ -267,6 +284,23 @@ class TestKmeansResume(unittest.TestCase):
         cl.estimate(self.X, clustercenters=cl.clustercenters, max_iter=1)
         assert not cl.converged
         assert hasattr(cl, '_in_memory_chunks')
+
+    def test_syntetic_trivial(self):
+        test_data = np.zeros((40000, 4))
+        test_data[0:10000, :] = 30.0
+        test_data[10000:20000, :] = 60.0
+        test_data[20000:30000, :] = 90.0
+        test_data[30000:, :] = 120.0
+
+        expected = np.array([30.0]*4), np.array([60.]*4), np.array([90.]*4), np.array([120.]*4)
+        cl = cluster_kmeans(test_data, k=4)
+        found = [False]*4
+        for center in cl.clustercenters:
+            for i, e in enumerate(expected):
+                if np.all( center == e):
+                    found[i] = True
+
+        assert np.all(found)
 
 if __name__ == "__main__":
     unittest.main()
