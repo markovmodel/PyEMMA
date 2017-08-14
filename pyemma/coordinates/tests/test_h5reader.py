@@ -65,3 +65,8 @@ class TestH5Reader(unittest.TestCase):
         out = self.reader.get_output()
         np.testing.assert_equal(out, [self.data]*2)
 
+    def test_source(self):
+        from pyemma.coordinates import source
+        reader = source(self.f1, selection='/.*/test_ds')
+        self.assertIsInstance(reader, H5Reader)
+        self.assertEqual(reader.ntraj, 2)
