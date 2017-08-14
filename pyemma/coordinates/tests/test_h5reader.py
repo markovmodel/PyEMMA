@@ -32,6 +32,11 @@ class TestH5Reader(unittest.TestCase):
 
         cls.reader = H5Reader(cls.f1, selection='/.*/test_ds')
 
+    @classmethod
+    def tearDownClass(cls):
+        import shutil
+        shutil.rmtree(cls.directory)
+
     def test_ndim(self):
         assert self.reader.ndim == self.shape[1]
         assert self.reader.filenames == [self.f1]
@@ -54,6 +59,7 @@ class TestH5Reader(unittest.TestCase):
             self.assertIn('did not match', h.messages['warning'])
             assert r.ndim == -1
             assert r.n_frames_total() == 0
+            assert r.ntraj == 0
 
     def test_output(self):
         out = self.reader.get_output()
