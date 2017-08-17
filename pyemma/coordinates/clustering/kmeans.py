@@ -206,18 +206,16 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         if not self._check_resume_iteration() or not self._in_memory_chunks_set:
             resume_centers = self._check_resume_iteration()
             with iterable.iterator(return_trajindex=True, stride=self.stride,
-                                   chunk=self.chunksize, skip=self.skip) as iter:
+                                   chunk=self.chunksize, skip=self.skip) as it:
                 # first pass: gather data and run k-means
                 first_chunk = True
-                for itraj, X in iter:
+                for itraj, X in it:
                     # collect data
-                    self._collect_data(X, first_chunk, iter.last_chunk)
+                    self._collect_data(X, first_chunk, it.last_chunk)
                     if not resume_centers:
                         # initialize cluster centers
-                        self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
+                        self._initialize_centers(X, itraj, it.pos, it.last_chunk)
                     first_chunk = False
-            from matplotlib import pyplot as plt
-            #plt.plot(self.clustercenters[:, 0], self.clustercenters[:, 1], marker='x', linewidth=0, color='red', markersize=10)
             self.initial_centers_ = self.clustercenters[:]
 
             self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
@@ -228,16 +226,13 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                 raise RuntimeError('Passed clustercenters do not match n_clusters: {} vs. {}'.
                                    format(len(self.clustercenters), self.n_clusters))
 
-
-       # return
         # run k-means with all the data
         it = 0
         prev_cost = 0
         while it < self.max_iter:
             self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
             cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-            #self.logger.debug('cost: %s', cost)
-            rel_change = np.abs(cost - prev_cost) / cost #if cost != 0.0 else 0.0
+            rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
             prev_cost = cost
 
             if rel_change <= self.tolerance:
