@@ -38,7 +38,7 @@ public:
     py::array_t<int> assign_chunk_to_centers(const np_array& chunk,
                                              const np_array& centers,
                                              unsigned int n_threads);
-    const size_t dim;
+    size_t dim;
 };
 
 template<class dtype>
