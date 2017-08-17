@@ -74,15 +74,15 @@ class TestKmeans(unittest.TestCase):
         for param in grid:
             init_strategy = param['init_strategy']
             fixed_seed = param['fixed_seed']
-            kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy, n_jobs=1)
+            kmeans = cluster_kmeans(X, k=k, init_strategy=init_strategy, n_jobs=0, fixed_seed=fixed_seed)
             cc = kmeans.clustercenters
             self.assertTrue(np.all(np.isfinite(cc)), "cluster centers borked for strat %s" % init_strategy)
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
             assert (np.any((cc > -1.0) * (cc < 1.0))), "failed for init_strategy=%s" % init_strategy
             assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
 
-            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)  # serial
-            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=2)  # parallel
+            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)
+            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)
             self.assertEqual(len(km1.clustercenters), k)
             self.assertEqual(len(km2.clustercenters), k)
             self.assertEqual(km1.fixed_seed, km2.fixed_seed)
@@ -102,6 +102,32 @@ class TestKmeans(unittest.TestCase):
                                        err_msg="should yield same centers with fixed seed=%s for strategy %s, Initial centers=%s"
                                                % (fixed_seed, init_strategy, km2.initial_centers_), atol=1e-6)
 
+    def test_check_convergence_serial_parallel(self):
+        """ check serial and parallel version of kmeans converge to the same centers.
+
+        Artificial data set is created with 6 disjoint point blobs, to ensure the parallel and the serial version
+        converge to the same result. If the blobs would overlap we can not guarantee this, because the parallel version
+        can potentially converge to a closer point, which is chosen in a non-deterministic way (multiple threads).
+        """
+        k = 6
+        max_iter = 50
+        from pyemma.coordinates.clustering.tests.util import make_blobs
+        data = make_blobs(n_samples=500, random_state=45, centers=k, cluster_std=0.5, shuffle=False)[0]
+        repeat = True
+        it = 0
+        # since this can fail in like one of 100 runs, we repeat until success.
+        while repeat and it < 3:
+            for strat in ('uniform', 'kmeans++'):
+                seed = random.randint(0, 2**32-1)
+                cl_serial = cluster_kmeans(data, k=k, n_jobs=0, fixed_seed=seed, max_iter=max_iter, init_strategy=strat)
+                cl_parallel = cluster_kmeans(data, k=k, n_jobs=2, fixed_seed=seed, max_iter=max_iter, init_strategy=strat)
+                try:
+                    np.testing.assert_allclose(cl_serial.clustercenters, cl_parallel.clustercenters, atol=1e-4)
+                    repeat = False
+                except AssertionError:
+                    repeat = True
+                    it += 1
+
     def test_negative_seed(self):
         """ ensure negative seeds converted to something positive"""
         km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=-1)
@@ -109,6 +135,7 @@ class TestKmeans(unittest.TestCase):
 
     def test_seed_too_large(self):
         km = cluster_kmeans(np.random.random((10, 3)), k=2, fixed_seed=2**32)
+        assert km.fixed_seed < 2**32
 
     def test_3gaussian_2d_multitraj(self):
         # generate 1D data from three gaussians
@@ -150,7 +177,6 @@ class TestKmeans(unittest.TestCase):
         kmeans = cluster_kmeans(X, k=2, clustercenters=initial_centers_equilibrium, max_iter=500, n_jobs=1)
 
         cl = kmeans.clustercenters
-        print(cl)
         assert np.all(np.abs(cl) <= 1)
 
     def test_kmeans_convex_hull(self):
@@ -212,7 +238,8 @@ class TestKmeans(unittest.TestCase):
         kmeans.dtrajs
 
     def test_skip(self):
-        cluster_kmeans(np.random.rand(100, 3), skip=42)
+        cl = cluster_kmeans(np.random.rand(100, 3), skip=42)
+        assert len(cl.dtrajs[0]) == 100 - 42
 
     def test_with_pg(self):
         from pyemma.util.contexts import settings
@@ -260,7 +287,9 @@ class TestKmeansResume(unittest.TestCase):
         cl.estimate(self.X, max_iter=1, clustercenters=cl.clustercenters)
         found = False
         for msg in m.messages['warning']:
-            if 'inefficient' in msg: found=True
+            if 'inefficient' in msg:
+                found = True
+                break
 
         assert found
 
