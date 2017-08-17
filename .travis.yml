@@ -20,6 +20,7 @@ env:
   matrix:
     - CONDA_PY=3.5 CONDA_NPY=1.11
     - CONDA_PY=3.6 CONDA_NPY=1.12
+    - CONDA_PY=3.6 CONDA_NPY=1.13
 
 before_install:
 - devtools/ci/travis/install_miniconda.sh
