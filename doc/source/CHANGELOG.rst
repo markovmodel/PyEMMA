@@ -25,6 +25,7 @@ your Python installation to at least version 3.5.
 - msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
   correlation and relaxation times as well for timescales for this estimator. #1116
 - coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
+- coordinates: clustering code modernized in C++ with pybind11 interface. #
 
 2.4 (05-19-2017)
 ----------------

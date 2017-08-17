@@ -93,37 +93,25 @@ def extensions():
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
 
+    import pybind11
+
     exts = []
 
-    if sys.platform.startswith('win'):
-        lib_prefix = 'lib'
-    else:
-        lib_prefix = ''
-    regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspatial',
-                  sources=[
-                      'pyemma/coordinates/clustering/src/regspatial.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
+    lib_prefix = 'lib' if sys.platform.startswith('win') else ''
+
+    clustering_module = \
+        Extension('pyemma.coordinates.clustering._ext',
+                  sources=['pyemma/coordinates/clustering/src/clustering_module.cpp'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
+                      pybind11.get_include(),
                       'pyemma/coordinates/clustering/include',
                   ],
+                  language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99', '-g', '-O3'])
-    kmeans_module = \
-        Extension('pyemma.coordinates.clustering.kmeans_clustering',
-                  sources=[
-                      'pyemma/coordinates/clustering/src/kmeans.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
-                  include_dirs=[
-                      mdtraj.capi()['include_dir'],
-                      np_inc,
-                      'pyemma/coordinates/clustering/include'],
-                  libraries=[lib_prefix+'theobald'],
-                  library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99'])
+                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
@@ -146,8 +134,7 @@ def extensions():
                   include_dirs=[np_inc],
                   extra_compile_args=['-O3'])
 
-    exts += [regspatial_module,
-             kmeans_module,
+    exts += [clustering_module,
              covar_module,
              eig_qr_module,
              orderedset
@@ -270,6 +257,7 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
+                                  'pybind11>=2.1.0',
                                   ]
 
     metadata['package_data'] = {

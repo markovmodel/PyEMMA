@@ -11,7 +11,7 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="conda-build=2.1.4"
+    - common_py_deps="conda-build=2"
     - PACKAGENAME=pyemma
     - ORGNAME=omnia
     - PYTHONHASHSEED=0
@@ -20,6 +20,7 @@ env:
   matrix:
     - CONDA_PY=3.5 CONDA_NPY=1.11
     - CONDA_PY=3.6 CONDA_NPY=1.12
+    - CONDA_PY=3.6 CONDA_NPY=1.13
 
 before_install:
 - devtools/ci/travis/install_miniconda.sh

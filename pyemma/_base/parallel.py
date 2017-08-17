@@ -79,14 +79,13 @@ class NJobsMixIn(object):
 
         """
         if val is None:
-            import psutil
             import os
+            import psutil
             # TODO: aint it better to use a distinct variable for this use case eg. PYEMMA_NJOBS in order to avoid multiplying OMP threads with njobs?
             omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
-            n_cpus = psutil.cpu_count()
             if omp_threads_from_env:
                 try:
-                    self._n_jobs = int(omp_threads_from_env)
+                    val = int(omp_threads_from_env)
                     if hasattr(self, 'logger'):
                         self.logger.info("number of threads obtained from env variable"
                                          " 'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
@@ -94,9 +93,9 @@ class NJobsMixIn(object):
                     if hasattr(self, 'logger'):
                         self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'."
                                             " Value='{}'. Error={}. Will use {} jobs."
-                                            .format(omp_threads_from_env, ve, n_cpus))
-                    self._n_jobs = n_cpus
+                                            .format(omp_threads_from_env, ve, val))
+                    val = psutil.cpu_count()
             else:
-                self._n_jobs = n_cpus
-        else:
-            self._n_jobs = int(val)
+                val = psutil.cpu_count()
+
+        self._n_jobs = int(val)
