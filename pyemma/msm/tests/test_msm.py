@@ -1013,18 +1013,13 @@ class TestMSMMinCountConnectivity(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        dtraj = np.zeros(100, dtype=int)
-        dtraj[np.random.randint(0, 99, size=40)] = 1
-        dtraj[np.random.randint(0, 99, size=5)] = 2
-
-        # do not overwrite state 2
-        ind = np.where(dtraj != 2)[0]
-        state_3 = np.random.choice(ind, size=20)
-        dtraj[state_3] = 3
-
-        assert (dtraj == 2).sum() == 5
-
+        dtraj = np.array(
+            [0, 3, 0, 1, 2, 3, 0, 0, 1, 0, 1, 0, 3, 1, 0, 0, 0, 0, 0, 0, 1, 2, 0, 3, 0, 0, 3, 3, 0, 0, 1, 1, 3, 0,
+             1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 1, 0, 3, 2, 1, 0, 3, 1, 0, 1, 0, 1, 0, 3, 0, 0, 3, 0, 0, 0, 2, 0, 0, 3,
+             0, 1, 0, 0, 0, 0, 3, 3, 3, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 3, 3, 1, 0, 0, 0, 2, 1, 3, 0, 0])
+        assert (dtraj == 2).sum() == 5 # state 2 has only 5 counts,
         cls.dtraj = dtraj
+        cls.mincount_connectivity = 6 # state 2 will be kicked out by this choice.
         cls.active_set_unrestricted = np.array([0, 1, 2, 3])
         cls.active_set_restricted = np.array([0, 1, 3])
 
@@ -1034,14 +1029,14 @@ class TestMSMMinCountConnectivity(unittest.TestCase):
 
     def test_msm(self):
         msm_one_over_n = estimate_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
-        # we now restrict the connectivity to have at least 6 counts, so we will loose state 2
-        msm_restrict_connectivity = estimate_markov_model(self.dtraj, lag=1, mincount_connectivity=6)
+        msm_restrict_connectivity = estimate_markov_model(self.dtraj, lag=1,
+                                                          mincount_connectivity=self.mincount_connectivity)
         self._test_connectivity(msm_one_over_n, msm_restrict_connectivity)
 
     def test_bmsm(self):
         from pyemma.msm import bayesian_markov_model
         msm = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
-        msm_restricted = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity=6)
+        msm_restricted = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity=self.mincount_connectivity)
         self._test_connectivity(msm, msm_restricted)
 
     @unittest.skip("""
