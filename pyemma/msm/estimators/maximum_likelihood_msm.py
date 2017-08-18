@@ -22,7 +22,8 @@ import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
-from pyemma.util.annotators import alias, aliased, fix_docs, deprecated
+
+from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
@@ -174,8 +175,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`DiscreteTrajectoryStats <pyemma.msm.estimators._dtraj_stats.DiscreteTrajectoryStats>`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
 
@@ -431,7 +431,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @property
     @alias('dtrajs_full')
-    @deprecated("This attribute will be removed in the future!")
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
@@ -442,7 +441,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @property
     @alias('dtrajs_active')
-    @deprecated("This attribute will be removed in the future!")
     def discrete_trajectories_active(self):
         """
         A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
@@ -451,39 +449,11 @@ class _MSMEstimator(_Estimator, _MSM):
         """
         self._check_is_estimated()
         # compute connected dtrajs
-        dtrajs_active = [self._full2active[dtraj] for dtraj in self._dtrajs_full]
-        return dtrajs_active
+        self._dtrajs_active = []
+        for dtraj in self._dtrajs_full:
+            self._dtrajs_active.append(self._full2active[dtraj])
 
-    @alias('compute_dtrajs_active')
-    def compute_discrete_trajectories_active(self, dtrajs):
-        """
-        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
-        For example, for connectivity='largest', the indexes will be given within the connected set.
-        Frames that are not in the connected set will be -1.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
-
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # compute connected dtrajs
-        dtrajs_active = [self._full2active[dtraj] for dtraj in dtrajs]
-        return dtrajs_active
-
-    def _check_dtrajs_arg(self, dtrajs):
-        # ensure dtrajs is given, otherwise warn the user.
-        if dtrajs is None:
-            import inspect
-            s = inspect.stack(context=3)
-            method = s[1][3]
-            warnings.warn("The dtrajs argument will be mandatory in the future for method {method}."
-                          .format(method=method), stacklevel=3)
-            dtrajs = self._dtrajs_full
-        return dtrajs
+        return self._dtrajs_active
 
     @property
     def count_matrix_active(self):
@@ -533,7 +503,6 @@ class _MSMEstimator(_Estimator, _MSM):
         return float(self._nstates) / float(self._nstates_full)
 
     @property
-    @deprecated('use compute_active_count_fraction')
     def active_count_fraction(self):
         """The fraction of counts in the largest connected set.
 
@@ -542,17 +511,6 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.util.discrete_trajectories import count_states
 
         hist = count_states(self._dtrajs_full)
-        hist_active = hist[self.active_set]
-        return float(_np.sum(hist_active)) / float(_np.sum(hist))
-
-    def compute_active_count_fraction(self, dtrajs):
-        """The fraction of counts in the largest connected set.
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        from pyemma.util.discrete_trajectories import count_states
-
-        hist = count_states(dtrajs)
         hist_active = hist[self.active_set]
         return float(_np.sum(hist_active)) / float(_np.sum(hist))
 
@@ -686,7 +644,7 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
     # For general statistics
     ################################################################################
-    def trajectory_weights(self, dtrajs=None):
+    def trajectory_weights(self):
         r"""Uses the MSM to assign a probability weight to each trajectory frame.
 
         This is a powerful function for the calculation of arbitrary observables in the trajectories one has
@@ -733,18 +691,16 @@ class _MSMEstimator(_Estimator, _MSM):
 
         """
         self._check_is_estimated()
-        dtrajs = self._check_dtrajs_arg(dtrajs)
-
         # compute stationary distribution, expanded to full set
         statdist_full = _np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
         # histogram observed states
         import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(dtrajs)
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
-        for dtraj in dtrajs:
+        for dtraj in self.discrete_trajectories_full:
             w = statdist_full[dtraj] / hist[dtraj]
             W.append(w)
             wtot += _np.sum(w)
@@ -758,17 +714,13 @@ class _MSMEstimator(_Estimator, _MSM):
     # HMM-based coarse graining
     ################################################################################
 
-    def hmm(self, nhidden, dtrajs=None):
+    def hmm(self, nhidden):
         """Estimates a hidden Markov state model as described in [1]_
 
         Parameters
         ----------
         nhidden : int
             number of hidden (metastable) states
-
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
 
         Returns
         -------
@@ -782,7 +734,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
         """
         self._check_is_estimated()
-        dtrajs = self._check_dtrajs_arg(dtrajs)
         # check if the time-scale separation is OK
         # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
         if self.nstates > nhidden:
@@ -802,7 +753,7 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nhidden, msm_init=self,
                                           reversible=self.is_reversible, dt_traj=self.dt_traj)
-        estimator.estimate(dtrajs)
+        estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
     def coarse_grain(self, ncoarse, method='hmm'):
@@ -838,7 +789,7 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
 
     def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False,
-               n_jobs=1, show_progress=True, dtrajs=None):
+               n_jobs=1, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -863,9 +814,7 @@ class _MSMEstimator(_Estimator, _MSM):
             how many jobs to use during calculation
         show_progress : bool, optional
             Show progress bars for calculation?
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
+
         Returns
         -------
         cktest : :class:`ChapmanKolmogorovValidator <pyemma.msm.ChapmanKolmogorovValidator>`
@@ -885,14 +834,13 @@ class _MSMEstimator(_Estimator, _MSM):
             134: 174105
 
         """
-        dtrajs = self._check_dtrajs_arg(dtrajs)
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
         if memberships is None:
             self.pcca(nsets)
             memberships = self.metastable_memberships
         ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf,
                                         n_jobs=n_jobs, err_est=err_est, show_progress=show_progress)
-        ck.estimate(dtrajs)
+        ck.estimate(self._dtrajs_full)
         return ck
 
 
@@ -1132,7 +1080,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        # TODO: remove in a future version.
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
         self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
@@ -1145,7 +1092,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
     # TODO: change to statistically effective count matrix!
     @property
-    @deprecated('Please use compute_effective_count_matrix in the future.')
     def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
 
@@ -1163,33 +1109,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         Ceff = submatrix(Ceff_full, self.active_set)
         return Ceff
         # return self._C_active / float(self.lag)
-
-    # TODO: change to statistically effective count matrix!
-    def compute_effective_count_matrix(self, dtrajs):
-        """Statistically uncorrelated transition counts within the active set of states
-
-        You can use this count matrix for Bayesian estimation or error perturbation.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
-
-        References
-        ----------
-        [1] Noe, F. (2015) Statistical inefficiency of Markov model count matrices
-            http://publications.mi.fu-berlin.de/1699/1/autocorrelation_counts.pdf
-
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        import msmtools.estimation as msmest
-        Ceff_full = msmest.effective_count_matrix(dtrajs, self.lag)
-        from pyemma.util.linalg import submatrix
-        Ceff = submatrix(Ceff_full, self.active_set)
-        return Ceff
-        # return self._C_active / float(self.l
 
 
 @fix_docs
@@ -1393,7 +1312,7 @@ class OOMReweightedMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        self._dtrajs_full = dtrajs  # TODO: remove this in a future version.
+        self._dtrajs_full = dtrajs
         from pyemma.util.discrete_trajectories import index_states
         self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
         self._connected_sets = msmest.connected_sets(self._C_full)

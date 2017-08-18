@@ -135,7 +135,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     def setUpClass(cls):
         import pyemma.datasets
         cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
-        #assert isinstance(cls.dtraj, list)
         nu = 1.*np.bincount(cls.dtraj)        
         cls.statdist = nu/nu.sum()
         
@@ -315,10 +314,21 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._count_matrix_full(self.msmrevpi_sparse)
         self._count_matrix_full(self.msm_sparse)
 
+    def _discrete_trajectories_full(self, msm):
+        assert (np.all(self.dtraj == msm.discrete_trajectories_full[0]))
+
+    def test_discrete_trajectories_full(self):
+        self._discrete_trajectories_full(self.msmrev)
+        self._discrete_trajectories_full(self.msmrevpi)
+        self._discrete_trajectories_full(self.msm)
+        self._discrete_trajectories_full(self.msmrev_sparse)
+        self._discrete_trajectories_full(self.msmrevpi_sparse)
+        self._discrete_trajectories_full(self.msm_sparse)
+
     def _discrete_trajectories_active(self, msm):
-        dta = msm.compute_discrete_trajectories_active(self.dtraj)
+        dta = msm.discrete_trajectories_active
         # HERE
-        self.assertEqual(len(dta), 1)
+        assert (len(dta) == 1)
         # HERE: states are shifted down from the beginning, because early states are missing
         assert (dta[0][0] < self.dtraj[0])
 
@@ -385,9 +395,9 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_count_fraction(self, msm):
         # should always be a fraction
-        assert (0.0 <= msm.compute_active_count_fraction(self.dtraj) <= 1.0)
+        assert (0.0 <= msm.active_count_fraction <= 1.0)
         # special case for this data set:
-        assert (msm.compute_active_count_fraction(self.dtraj) == 1.0)
+        assert (msm.active_count_fraction == 1.0)
 
     def test_active_count_fraction(self):
         self._active_count_fraction(self.msmrev)
@@ -411,7 +421,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._active_state_fraction(self.msm_sparse)
 
     def _effective_count_matrix(self, msm):
-        Ceff = msm.compute_effective_count_matrix(self.dtraj)
+        Ceff = msm.effective_count_matrix
         assert (np.all(Ceff.shape == (msm.nstates, msm.nstates)))
 
     def test_effective_count_matrix(self):
@@ -897,7 +907,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # compare to histogram
         import pyemma.util.discrete_trajectories as dt
 
-        hist = dt.count_states(self.dtraj)
+        hist = dt.count_states(msm.discrete_trajectories_full)
         # number of frames should match on active subset
         A = msm.active_set
         for i in range(A.shape[0]):
@@ -937,7 +947,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # must have the right size
         assert (len(ss) == msm.nstates)
         # must be correctly assigned
-        dtraj_active = msm.compute_discrete_trajectories_active(self.dtraj)[0]
+        dtraj_active = msm.discrete_trajectories_active[0]
         for i, samples in enumerate(ss):
             # right shape
             assert (np.all(samples.shape == (nsample, 2)))
