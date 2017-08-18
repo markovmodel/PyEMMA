@@ -1009,5 +1009,53 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._two_state_kinetics(self.msm_sparse)
 
 
+class TestMSMMinCountConnectivity(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        dtraj = np.array(
+            [0, 3, 0, 1, 2, 3, 0, 0, 1, 0, 1, 0, 3, 1, 0, 0, 0, 0, 0, 0, 1, 2, 0, 3, 0, 0, 3, 3, 0, 0, 1, 1, 3, 0,
+             1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 1, 0, 3, 2, 1, 0, 3, 1, 0, 1, 0, 1, 0, 3, 0, 0, 3, 0, 0, 0, 2, 0, 0, 3,
+             0, 1, 0, 0, 0, 0, 3, 3, 3, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 3, 3, 1, 0, 0, 0, 2, 1, 3, 0, 0])
+        assert (dtraj == 2).sum() == 5 # state 2 has only 5 counts,
+        cls.dtraj = dtraj
+        cls.mincount_connectivity = 6 # state 2 will be kicked out by this choice.
+        cls.active_set_unrestricted = np.array([0, 1, 2, 3])
+        cls.active_set_restricted = np.array([0, 1, 3])
+
+    def _test_connectivity(self, msm, msm_mincount):
+        np.testing.assert_equal(msm.active_set, self.active_set_unrestricted)
+        np.testing.assert_equal(msm_mincount.active_set, self.active_set_restricted)
+
+    def test_msm(self):
+        msm_one_over_n = estimate_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
+        msm_restrict_connectivity = estimate_markov_model(self.dtraj, lag=1,
+                                                          mincount_connectivity=self.mincount_connectivity)
+        self._test_connectivity(msm_one_over_n, msm_restrict_connectivity)
+
+    def test_bmsm(self):
+        from pyemma.msm import bayesian_markov_model
+        msm = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
+        msm_restricted = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity=self.mincount_connectivity)
+        self._test_connectivity(msm, msm_restricted)
+
+    @unittest.skip("""
+      File "/home/marscher/workspace/pyemma/pyemma/msm/estimators/_OOM_MSM.py", line 260, in oom_components
+    omega = np.real(R[:, 0])
+IndexError: index 0 is out of bounds for axis 1 with size 0
+    """)
+    def test_oom(self):
+        from pyemma import msm
+        msm_one_over_n = msm.estimate_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n', weights='oom')
+
+        # we now restrict the connectivity to have at least 6 counts, so we will loose state 2
+        msm_restrict_connectivity = msm.estimate_markov_model(self.dtraj, lag=1, mincount_connectivity=6, weights='oom')
+        self._test_connectivity(msm_one_over_n, msm_restrict_connectivity)
+
+    def test_timescales(self):
+        from pyemma.msm import timescales_msm
+        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
+        assert its.estimator.mincount_connectivity == 0
+
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,8 @@ class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
-                 connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10):
+                 connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -122,6 +123,12 @@ class _MSMEstimator(_Estimator, _MSM):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         """
         self.lag = lag
 
@@ -156,6 +163,9 @@ class _MSMEstimator(_Estimator, _MSM):
         self.score_method = score_method
         self.score_k = score_k
 
+        # connectivity
+        self.mincount_connectivity = mincount_connectivity
+
     ################################################################################
     # Generic functions
     ################################################################################
@@ -184,7 +194,8 @@ class _MSMEstimator(_Estimator, _MSM):
                                     'Consider using sparse=True.')
 
         # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
+                                mincount_connectivity=self.mincount_connectivity)
 
         # for other statistics
         return dtrajstats
@@ -894,7 +905,8 @@ class MaximumLikelihoodMSM(_MSMEstimator):
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', maxiter=1000000,
-                 maxerr=1e-8, score_method='VAMP2', score_k=10):
+                 maxerr=1e-8, score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -996,6 +1008,12 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1004,7 +1022,8 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         """
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
                                                    sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
-                                                   score_method=score_method, score_k=score_k)
+                                                   score_method=score_method, score_k=score_k,
+                                                   mincount_connectivity=mincount_connectivity)
 
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize
@@ -1181,7 +1200,8 @@ class OOMReweightedMSM(_MSMEstimator):
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
-                 score_method='VAMP2', score_k=10):
+                 score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -1272,6 +1292,12 @@ class OOMReweightedMSM(_MSMEstimator):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1287,7 +1313,8 @@ class OOMReweightedMSM(_MSMEstimator):
 
         super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                                                connectivity=connectivity, dt_traj=dt_traj,
-                                               score_method=score_method, score_k=score_k)
+                                               score_method=score_method, score_k=score_k,
+                                               mincount_connectivity=mincount_connectivity)
         self.nbs = nbs
         self.tol_rank = tol_rank
         self.rank_Ct = rank_Ct
@@ -1456,7 +1483,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
-                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache = 3000):
+                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache=3000,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -1539,6 +1567,13 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         max_cache : int, default=3000
           Maximum size (in megabytes) of cache when computing R tensor (Supporting information in [1]).
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
+
         References
         ----------
         .. [1] Olsson, Wu, Paul, Clementi and Noe "Combining Experimental and Simulation Data via Augmented Markov Models"
@@ -1590,6 +1625,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.debug = debug
         self._max_cache = max_cache
         self._is_estimated = False
+        self.mincount_connectivity = mincount_connectivity
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
         """ Evaluate AMM likelihood. """
