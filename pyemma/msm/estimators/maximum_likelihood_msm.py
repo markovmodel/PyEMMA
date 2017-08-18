@@ -123,6 +123,12 @@ class _MSMEstimator(_Estimator, _MSM):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         """
         self.lag = lag
 
@@ -151,10 +157,14 @@ class _MSMEstimator(_Estimator, _MSM):
         # time step
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
+        self.dt_model = self.dt_traj
 
         # score
         self.score_method = score_method
         self.score_k = score_k
+
+        # connectivity
+        self.mincount_connectivity = mincount_connectivity
 
     ################################################################################
     # Generic functions
@@ -165,8 +175,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`DiscreteTrajectoryStats <pyemma.msm.estimators._dtraj_stats.DiscreteTrajectoryStats>`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
 
@@ -184,29 +193,31 @@ class _MSMEstimator(_Estimator, _MSM):
                                     'Consider using sparse=True.')
 
         # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
+                                mincount_connectivity=self.mincount_connectivity)
 
         # for other statistics
         return dtrajstats
 
-    def estimate(self, dtrajs, **parms):
+    def estimate(self, dtrajs, **kwargs):
         """
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`DiscreteTrajectoryStats <pyemma.msm.estimators._dtraj_stats.DiscreteTrajectoryStats>`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
-        **params :
+        **kwargs :
             Other keyword parameters if different from the settings when this estimator was constructed
 
         Returns
         -------
-        MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
+        MSM : :class:`pyemma.msm.MSM`
+            Note that this class is specialized by the used estimator, eg. it has more functionality than the plain
+            MSM class.
 
         """
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
-        return super(_MSMEstimator, self).estimate(dtrajs, **parms)
+        return super(_MSMEstimator, self).estimate(dtrajs, **kwargs)
 
     def _check_is_estimated(self):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
@@ -222,10 +233,10 @@ class _MSMEstimator(_Estimator, _MSM):
             test data (discrete trajectories).
         score_method : str
             Overwrite scoring method if desired. If `None`, the estimators scoring
-            method will be used. See __init__ for documention.
+            method will be used. See __init__ for documentation.
         score_k : str
             Overwrite scoring rank if desired. If `None`, the estimators scoring
-            rank will be used. See __init__ for documention.
+            rank will be used. See __init__ for documentation.
         score_method : str, optional, default='VAMP2'
             Overwrite scoring method to be used if desired. If `None`, the estimators scoring
             method will be used.
@@ -420,7 +431,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @property
     @alias('dtrajs_full')
-    @deprecated("This attribute will be removed in the future!")
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
@@ -436,13 +446,6 @@ class _MSMEstimator(_Estimator, _MSM):
         A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
         For example, for connectivity='largest', the indexes will be given within the connected set.
         Frames that are not in the connected set will be -1.
-        """
-        self._check_is_estimated()
-        # compute connected dtrajs
-        dtrajs_active = [self._full2active[dtraj] for dtraj in self._dtrajs_full]
-        return dtrajs_active
-
-
         """
         self._check_is_estimated()
         # compute connected dtrajs
