@@ -39,20 +39,16 @@ class TestUniformTimeClustering(unittest.TestCase):
         reader = DataInMemory(x)
 
         k = 2
-        c = api.cluster_uniform_time(k=k)
-
-        c.data_producer = reader
-        c.parametrize()
+        c = api.cluster_uniform_time(reader, k=k)
 
     def test_2d(self):
         x = np.random.random((300, 3))
         reader = DataInMemory(x)
 
         k = 2
-        c = api.cluster_uniform_time(k=k)
+        c = api.cluster_uniform_time( k=k)
 
-        c.data_producer = reader
-        c.parametrize()
+        c.estimate(reader)
 
     def test_2d_skip(self):
         x = np.random.random((300, 3))
@@ -61,8 +57,7 @@ class TestUniformTimeClustering(unittest.TestCase):
         k = 2
         c = api.cluster_uniform_time(k=k, skip=100)
 
-        c.data_producer = reader
-        c.parametrize()
+        c.estimate(reader)
 
     def test_big_k(self):
         x = np.random.random((300, 3))
@@ -70,8 +65,7 @@ class TestUniformTimeClustering(unittest.TestCase):
         k=151
         c = api.cluster_uniform_time(k=k)
 
-        c.data_producer = reader
-        c.parametrize()
+        c.estimate(reader)
 
 
 if __name__ == "__main__":

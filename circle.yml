@@ -15,11 +15,11 @@ checkout:
 dependencies:
   override:
     - devtools/ci/circle/install_miniconda.sh
-    - conda config --add channels omnia 
+    - conda config --add channels conda-forge 
     - conda config --set always_yes true
     - conda install conda-build
 
 test:
   override:
-    - conda build devtools/conda-recipe --numpy=111 --python=3.5
+    - conda build devtools/conda-recipe --numpy=112 --python=3.6
 

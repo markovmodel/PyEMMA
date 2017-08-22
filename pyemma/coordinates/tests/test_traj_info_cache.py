@@ -20,7 +20,7 @@ Created on 30.04.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from tempfile import NamedTemporaryFile
 
@@ -57,7 +57,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         config.use_trajectory_lengths_cache = True
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp("traj_cache_test")
+        self.work_dir = tempfile.mkdtemp(prefix="traj_cache_test")
         self.tmpfile = tempfile.mktemp(dir=self.work_dir)
         self.db = TrajectoryInfoCache(self.tmpfile)
 
@@ -85,7 +85,8 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
-        my_conf = config()
+        from pyemma.util._config import Config
+        my_conf = Config()
         my_conf.cfg_dir = self.work_dir
         with mock.patch('pyemma.coordinates.data.util.traj_info_cache.config', my_conf):
             with NamedTemporaryFile(delete=False) as fh:
@@ -112,6 +113,15 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             with self.assertRaises(ValueError) as cm:
                 api.source(f.name)
                 assert f.name in cm.exception.message
+
+        # bogus files
+        with NamedTemporaryFile(suffix='.npy', delete=False) as f:
+            x = np.array([1, 2, 3])
+            np.save(f, x)
+            with open(f.name, 'wb') as f2:
+                f2.write(b'asdf')
+            with self.assertRaises(IOError) as cm:
+                api.source(f.name)
 
     def test_featurereader_xtc(self):
         # cause cache failures
@@ -327,6 +337,43 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 config.cfg_dir = old_cfg_dir
             except ConfigDirectoryException:
                 pass
+
+    def test_stress(self):
+        arrays = [np.empty((5, 2))] * 100
+        npy_files = [os.path.join(self.work_dir, '{}.npy'.format(i)) for i in range(len(arrays))]
+        [np.save(f, x) for f, x in zip(npy_files, arrays)]
+        env = os.environ.copy()
+        env['PYEMMA_CFG_DIR'] = self.work_dir
+        import subprocess
+        import sys
+        import time
+        script = 'import pyemma; pyemma.coordinates.source({files})' \
+            .format(cfg_dir=self.work_dir, files=npy_files)
+        failed = False
+        procs = [subprocess.Popen([sys.executable, '-c', script], env=env) for _ in range(10)]
+        error = None
+        while procs:
+            for proc in procs:
+                retcode = proc.poll()
+                if retcode is not None:
+                    if retcode != 0:
+                        pass
+                        #stdout = proc.stdout.read()
+                        #stderr = proc.stderr.read()
+                        #error = '{};;{}'.format(stdout, stderr)
+                    procs.remove(proc)
+                    #break
+                else:  # No process is done, wait a bit and check again.
+                    time.sleep(.1)
+                    continue
+
+            # Here, `proc` has finished with return code `retcode`
+            if retcode is not None and retcode != 0:
+                print('process failed with {}'.format(retcode))
+                failed = True
+                break
+
+        self.assertTrue(not failed, msg=error)
 
 if __name__ == "__main__":
     unittest.main()

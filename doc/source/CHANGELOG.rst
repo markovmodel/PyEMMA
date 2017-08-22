@@ -1,19 +1,99 @@
 Changelog
 =========
 
-2.3.2 (tba)
+2.5 (??-??-????)
+----------------
+
+As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
+your Python installation to at least version 3.5.
 
 **New features**:
 
-- thermo:
-   - Allow for periodicity in estimate_umbrella_sampling()
-   - Add *_full_state getter variants to access stationary properties on the full set of states
-     instead of the active set
+- msm: Added Augmented Markov Models. A way to include averaged experimental
+  data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
+- msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
+  a given threshold. #1106
+
+- References:
+
+  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining Experimental and Simulation Data
+      via Augmented Markov Models" In revision.
+
+**Fixes**:
+
+- datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
+- coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
+- coordinates: made TrajectoryInfoCache more fail-safe in case of concurrent processes. #1122
+- msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
+  correlation and relaxation times as well for timescales for this estimator. #1116
+- coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
+- coordinates: clustering code modernized in C++ with pybind11 interface. #
+
+2.4 (05-19-2017)
+----------------
+
+**New features**:
+
+- msm: variational scores for model selection of MSMs. The scores are based on the variational
+  approach for Markov processes [1, 2] and can be employed for both reversible and non-reversible
+  MSMs. Both the Rayleigh quotient as well as the kinetic variance [3] and their non-reversible
+  generalizations are available. The scores are implemented in the `score` method of the MSM
+  estimators `MaximumLikelihoodMSM` and `OOMReweightedMSM`. Rudimentary support for Cross-validation
+  similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
+  inefficient and will be improved in future versions. #1093
+
+- config: Added a lot of documentation and added `mute` option to silence PyEMMA (almost completely).
+
+- References:
+    [1] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+    [2] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation).
+    [4] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
+    [3] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015).
+
+- coordinates:
+   - kmeans: allow the random seed used for initializing the centers to be passed. The prior behaviour
+     was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #1091
+
+- datasets:
+   - added a multi-ensemble data generator for the 1D asymmetric double well. #1097
 
 **Fixes**:
 
 - coordinates:
-  - [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038 
+  - StreamingEstimators: If an exception occurred during flipping the `in_memory` property,
+    the state is not updated. #1096
+  - Removed deprecated method parametrize. Use estimate or fit for now. #1088
+  - Readers: nice error messages for file handling errors (which file caused the error). #1085
+  - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
+  - KMeans: Added progress bar for collecting the data in pre-clustering phase. #1084
+
+- msm:
+  - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
+
+- general:
+  - config: better documentation of the configuration parameters. #1095
+
+
+2.3.2 (2-19-2017)
+-----------------
+
+**New features**:
+
+thermo:
+
+- Allow for periodicity in estimate_umbrella_sampling().
+- Add *_full_state getter variants to access stationary properties on the full set of states
+  instead of the active set.
+
+**Fixes**:
+
+coordinates:
+
+- [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038
 
 2.3.1 (2-6-2017)
 ----------------

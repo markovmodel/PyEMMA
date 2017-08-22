@@ -27,7 +27,6 @@ from __future__ import absolute_import
 
 import warnings
 
-from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
@@ -135,15 +134,15 @@ class RegularSpaceClustering(AbstractClustering):
         # temporary list to store cluster centers
         clustercenters = []
         used_frames = 0
-        it = iterable.iterator(return_trajindex=False, stride=self.stride,
-                               chunk=self.chunksize, skip=self.skip)
+        from ._ext import regspace
+        self._inst = regspace.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
         try:
-            with it:
+            with iterable.iterator(return_trajindex=False, stride=self.stride,
+                                   chunk=self.chunksize, skip=self.skip) as it:
                 for X in it:
                     used_frames += len(X)
-                    regspatial.cluster(X.astype(np.float32, order='C', copy=False),
-                                       clustercenters, self.dmin,
-                                       self.metric, self.max_centers)
+                    self._inst.cluster(X.astype(np.float32, order='C', copy=False),
+                                       clustercenters)
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
@@ -151,14 +150,16 @@ class RegularSpaceClustering(AbstractClustering):
             self._logger.warning(msg)
             warnings.warn(msg)
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
-            clustercenters = np.array(clustercenters)
+            new_shape = (len(clustercenters), iterable.ndim)
+            clustercenters = np.array(clustercenters).reshape(new_shape)
             self.update_model_params(clustercenters=clustercenters,
                                      n_cluster=len(clustercenters))
             # pass amount of processed data
             used_data = used_frames / float(it.n_frames_total()) * 100.0
             raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
 
-        clustercenters = np.array(clustercenters)
+        new_shape = (len(clustercenters), iterable.ndim)
+        clustercenters = np.array(clustercenters).reshape(new_shape)
         self.update_model_params(clustercenters=clustercenters,
                                  n_clusters=len(clustercenters))
 

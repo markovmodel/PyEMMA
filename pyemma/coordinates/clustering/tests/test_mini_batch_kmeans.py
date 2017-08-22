@@ -51,5 +51,38 @@ class TestMiniBatchKmeans(TestCase):
         assert (np.any((cc > -1.0) * (cc < 1.0)))
         assert (np.any(cc > -1.0))
 
+
+class TestMiniBatchKmeansResume(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(32):
+            # three gaussians
+            X = [np.random.randn(1000)-2.0,
+                 np.random.randn(1000),
+                 np.random.randn(1000)+2.0]
+            cls.X = np.hstack(X)
+
+    def test_resume(self):
+        """ check that we can continue with the iteration by passing centers"""
+        # centers are far off
+        initial_centers = np.array([[1, 2, 3]]).T
+        cl = cluster_mini_batch_kmeans(self.X, clustercenters=initial_centers,
+                                       max_iter=1, k=3)
+
+        resume_centers = cl.clustercenters
+        cl.estimate(self.X, clustercenters=resume_centers, max_iter=50)
+        new_centers = cl.clustercenters
+
+        true = np.array([[-2, 0, 2]]).T
+        d0 = true - resume_centers
+        d1 = true - new_centers
+
+        diff = np.linalg.norm(d0)
+        diff_next = np.linalg.norm(d1)
+
+        self.assertLess(diff_next, diff, 'resume_centers=%s, new_centers=%s' % (resume_centers, new_centers))
+
 if __name__ == '__main__':
     unittest.main()

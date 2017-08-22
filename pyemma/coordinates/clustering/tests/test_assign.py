@@ -154,11 +154,6 @@ class TestClusterAssign(unittest.TestCase):
         c = self.ass
         assert c.output_type() == np.int32
 
-    def test_parametrize(self):
-        c = self.ass
-        # nothing should happen
-        c.parametrize()
-
     def test_save_dtrajs(self):
         c = self.ass
         prefix = "test"
@@ -241,10 +236,19 @@ class TestClusterAssign(unittest.TestCase):
 
     def test_assignment_multithread_minrsmd(self):
         # re-do assignment with multiple threads and compare results
+        import pyemma.datasets as data
+        d = data.get_bpti_test_data()
+        reader = coor.source(d['trajs'], top=d['top'])
+
+        N_centers = 9
+        centers = np.asarray((reader.ra_itraj_jagged[0, [0, 1, 7]],
+                              reader.ra_itraj_jagged[1, [32, 1, 23]],
+                              reader.ra_itraj_jagged[2, [17, 8, 15]])
+                             ).reshape((N_centers, -1))
         chunksize = 1000
 
-        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
-        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+        assignment_mp = coor.assign_to_centers(reader, centers, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(reader, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 

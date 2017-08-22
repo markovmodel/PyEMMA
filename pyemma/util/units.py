@@ -93,7 +93,7 @@ class TimeUnit(object):
             return str(self._factor)+' '+self._unit_names[self._unit]
 
     def __repr__(self):
-        return str(self)
+        return "[TimeUnit {}]".format(self)
 
     def __eq__(self, other):
         return isinstance(other, TimeUnit) and self.dt == other.dt and self.unit == other.unit

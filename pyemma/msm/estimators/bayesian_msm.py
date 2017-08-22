@@ -37,7 +37,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95,
-                 show_progress=True):
+                 show_progress=True, mincount_connectivity='1/n'):
         r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -51,7 +51,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         nsteps : int, optional, default=None
             number of Gibbs sampling steps for each transition matrix used.
             If None, nstep will be determined automatically
-        
+
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
 
@@ -62,7 +62,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
             that the resulting ensemble of transition matrices is
             defined on the intersection of the states with positive
             stationary vector and the largest connected set
-            (undirected). 
+            (undirected).
 
         count_mode : str, optional, default='effective'
             mode to obtain count matrices from discrete trajectories. Should be one of:
@@ -126,6 +126,12 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         show_progress : bool, default=True
             Show progressbars for calculation?
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         References
         ----------
         .. [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
@@ -136,7 +142,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         _MLMSM.__init__(self, lag=lag, reversible=reversible,
                         statdist_constraint=statdist_constraint,
                         count_mode=count_mode, sparse=sparse,
-                        connectivity=connectivity, dt_traj=dt_traj)
+                        connectivity=connectivity, dt_traj=dt_traj,
+                        mincount_connectivity=mincount_connectivity)
         self.nsamples = nsamples
         self.nsteps = nsteps
         self.conf = conf

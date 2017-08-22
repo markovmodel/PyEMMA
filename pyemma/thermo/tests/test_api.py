@@ -188,7 +188,7 @@ class TestUmbrellaSampling(unittest.TestCase):
         tram = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
-            maxiter=10000, maxerr=1e-10, estimator='tram', lag=10)
+            maxiter=10000, maxerr=1e-10, estimator='tram', lag=10, connectivity='reversible_pathways')
         validate_thermodynamics(self, tram)
         validate_kinetics(self, tram)
 
@@ -249,38 +249,6 @@ class TestMultiTemperature(unittest.TestCase):
         tram = estimate_multi_temperature(
             self.energy_trajs, self.temp_trajs, self.dtrajs,
             energy_unit='kT', temp_unit='kT',
-            maxiter=10000, maxerr=1.0E-10, estimator='tram', lag=10)
+            maxiter=10000, maxerr=1.0E-10, estimator='tram', lag=10, connectivity='reversible_pathways')
         validate_thermodynamics(self, tram)
         validate_kinetics(self, tram)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

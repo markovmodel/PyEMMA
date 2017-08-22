@@ -25,12 +25,15 @@ from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from .estimators import BayesianMSM as _Bayes_MSM
 from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
+from .estimators import AugmentedMarkovModel as _ML_AMM
 from .estimators import OOMReweightedMSM as _OOM_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
 
 from .models import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
+
+import numpy as _np
 
 __docformat__ = "restructuredtext en"
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -46,6 +49,7 @@ __all__ = ['markov_model',
            'bayesian_markov_model',
            'timescales_hmsm',
            'estimate_hidden_markov_model',
+           'estimate_augmented_markov_model',
            'bayesian_hidden_markov_model',
            'tpt']
 
@@ -53,10 +57,11 @@ __all__ = ['markov_model',
 # MARKOV STATE MODELS - flat Markov chains on discrete observation space
 # =============================================================================
 
-#TODO: show_progress is not documented
+
+# TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
-                   errors=None, nsamples=50, n_jobs=1, show_progress=True):
+                   errors=None, nsamples=50, n_jobs=1, show_progress=True, mincount_connectivity='1/n'):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
@@ -94,7 +99,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
         * 'bayes' for Bayesian sampling of the posterior
 
-        Attention: 
+        Attention:
         * The Bayes mode will use an estimate for the effective count matrix
           that may produce somewhat different estimates than the
           'sliding window' estimate used with ``errors=None`` by default.
@@ -111,6 +116,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     n_jobs : int, optional
         how many subprocesses to start to estimate the models for each lag time.
+
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -133,7 +144,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     ImpliedTimescales
         The object returned by this function.
     pyemma.plots.plot_implied_timescales
-        Implied timescales plotting function. Just call it with the :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>`
+        Implied timescales plotting function. Just call it with the
+        :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>`
         object produced by this function as an argument.
 
 
@@ -184,7 +196,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     else:
         raise ValueError("Weights must be either \'empirical\' or \'oom\'")
     # Set errors to None if weights==oom:
-    if weights=='oom' and (errors is not None):
+    if weights == 'oom' and (errors is not None):
         errors = None
 
     # format data
@@ -197,7 +209,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     # Choose estimator:
     if errors is None:
-        if weights=='empirical':
+        if weights == 'empirical':
             estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
         else:
             estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity)
@@ -207,6 +219,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     else:
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
+    if hasattr(estimator, 'mincount_connectivity'):
+        estimator.mincount_connectivity = mincount_connectivity
     # go
     itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs,
                                 show_progress=show_progress)
@@ -300,7 +314,8 @@ def markov_model(P, dt_model='1 step'):
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
-                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
+                          dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
+                          score_method='VAMP2', score_k=10, mincount_connectivity='1/n'):
     r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodMSM` that
@@ -325,7 +340,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
 
-        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
           at time indexes
 
               .. math::
@@ -335,7 +350,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         * 'effective' : Uses an estimate of the transition counts that are
           statistically uncorrelated. Recommended when used with a
           Bayesian MSM.
-        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
           at time indexes
 
               .. math::
@@ -376,21 +391,20 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
           states. Estimation will be conducted on the full set of
           states without ensuring connectivity. This only permits
           nonreversible estimation. Currently not implemented.
-    estimate : bool, optional
-        If true estimate the MSM when creating the MSM object.
-    dt : str, optional
+    dt_traj : str, optional
         Description of the physical time corresponding to the lag. May
         be used by analysis algorithms such as plotting tools to
         pretty-print the axes. By default '1 step', i.e. there is no
         physical time unit.  Specify by a number, whitespace and
         unit. Permitted units are (* is an arbitrary string):
 
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
+        *  'fs',  'femtosecond*'
+        *  'ps',  'picosecond*'
+        *  'ns',  'nanosecond*'
+        *  'us',  'microsecond*'
+        *  'ms',  'millisecond*'
+        *  's',   'second*'
+
     maxiter : int, optional
         Optional parameter with reversible = True.  maximum number of
         iterations before the transition matrix estimation method
@@ -405,6 +419,26 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         order to track changes in small probabilities. The Euclidean
         norm of the change vector, :math:`|e_i|_2`, is compared to
         maxerr.
+
+    score_method : str, optional, default='VAMP2'
+        Score to be used with MSM score function. Available scores are
+        based on the variational approach for Markov processes [13]_ [14]_:
+
+        *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the sum of transition
+                    matrix eigenvalues, also called Rayleigh quotient [13]_ [15]_ .
+        *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [14]_ .
+                    If the MSM is reversible, this is equal to the kinetic variance [16]_ .
+
+    score_k : int or None
+        The maximum number of eigenvalues or singular values used in the
+        score. If set to None, all available eigenvalues will be used.
+
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -435,10 +469,10 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     References
     ----------
     The mathematical theory of Markov (state) model estimation was introduced
-    in [1]_. Further theoretical developments were made in [2]_. The term
-    Markov state model was coined in [3]_. Continuous-time Markov models
+    in [1]_ . Further theoretical developments were made in [2]_ . The term
+    Markov state model was coined in [3]_ . Continuous-time Markov models
     (Master equation models) were suggested in [4]_. Reversible Markov model
-    estimation was introduced in [5]_, and further developed in [6]_,[7]_,[9]_.
+    estimation was introduced in [5]_ , and further developed in [6]_ [7]_ [9]_ .
     It was shown in [8]_ that the quality of Markov state models does in fact
     not depend on memory loss, but rather on where the discretization is
     suitable to approximate the eigenfunctions of the Markov operator (the
@@ -488,6 +522,22 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     .. [11] Nueske, F., Wu, H., Prinz, J.-H., Wehmeyer, C., Clementi, C. and Noe, F.:
         Markov State Models from short non-Equilibrium Simulations - Analysis and
          Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
+
+    .. [12] H. Wu and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+    .. [13] Noe, F. and F. Nueske: A variational approach to modeling slow processes
+        in stochastic dynamical systems. SIAM Multiscale Model. Simul. 11, 635-655 (2013).
+
+    .. [14] Wu, H and F. Noe: Variational approach for learning Markov processes
+        from time series data (in preparation)
+
+    .. [15] McGibbon, R and V. S. Pande: Variational cross-validation of slow
+        dynamical modes in molecular kinetics, J. Chem. Phys. 142, 124105 (2015)
+
+    .. [16] Noe, F. and C. Clementi: Kinetic distance and kinetic maps from molecular
+        dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015)
+
 
     Example
     -------
@@ -552,7 +602,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                         count_mode=count_mode,
                         sparse=sparse, connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter,
-                        maxerr=maxerr)
+                        maxerr=maxerr, score_method=score_method, score_k=score_k,
+                        mincount_connectivity=mincount_connectivity)
         # estimate and return
         return mlmsm.estimate(dtrajs)
     elif weights == 'oom':
@@ -560,7 +611,9 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
             import warnings
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
-                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+                           sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
+                           score_method=score_method, score_k=score_k,
+                           mincount_connectivity=mincount_connectivity)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 
@@ -569,7 +622,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
                           count_mode='effective',
                           nsamples=100, conf=0.95, dt_traj='1 step',
-                          show_progress=True):
+                          show_progress=True, mincount_connectivity='1/n'):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianMSM` that contains the
@@ -649,6 +702,12 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
         |  's',   'second*'
     show_progress : bool, default=True
         Show progressbars for calculation
+
+    mincount_connectivity : float or '1/n'
+        minimum number of counts to consider a connection between two states.
+        Counts lower than that will count zero in the connectivity check and
+        may thus separate the resulting transition matrix. The default
+        evaluates to 1/nstates.
 
     Returns
     -------
@@ -754,7 +813,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
     # TODO: store_data=True
     bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
                                 count_mode=count_mode, sparse=sparse, connectivity=connectivity,
-                                dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
+                                dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress,
+                                mincount_connectivity=mincount_connectivity)
     return bmsm_estimator.estimate(dtrajs)
 
 
@@ -1083,7 +1143,8 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
 
     """
     # initialize HMSM estimator
-    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, msm_init='largest-strong',
+    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, stationary=stationary,
+                              msm_init='largest-strong',
                               connectivity=connectivity, mincount_connectivity=mincount_connectivity, separate=separate,
                               observe_nonempty=observe_nonempty, stride=stride, dt_traj=dt_traj,
                               accuracy=accuracy, maxit=maxit)
@@ -1248,11 +1309,155 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, stride=stride, nsamples=nsamples, reversible=reversible,
+                                  stationary=stationary,
                                   connectivity=connectivity, mincount_connectivity=mincount_connectivity,
                                   separate=separate, observe_nonempty=observe_nonempty,
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
+def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
+                          count_mode='sliding',  connectivity='largest',
+                          dt_traj='1 step', maxiter=500, maxcache=3000):
+    r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
+
+    Returns a :class:`AugmentedMarkovModel` that
+    contains the estimated transition matrix and allows to compute a
+    large number of quantities related to Markov models.
+
+    Parameters
+    ----------
+    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+        discrete trajectories, stored as integer ndarrays (arbitrary size)
+        or a single ndarray for only one trajectory.
+    ftrajs : list of trajectories of microscopic observables. Has to have
+        the same shape (number of trajectories and timesteps) as dtrajs.
+        Each timestep in each trajectory should match the shape of m and sigma.
+    lag : int
+        lag time at which transitions are counted and the transition matrix is
+        estimated.
+    m   : Experimental averages.
+    sigmas : Standard error for each experimental observable, same shape as m,
+            number of experimental observables.
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
+          at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
+          at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+    connectivity : str, optional
+        Connectivity mode. Three methods are intended (currently only
+        'largest' is implemented)
+
+        * 'largest' : The active set is the largest reversibly
+          connected set. All estimation will be done on this subset
+          and all quantities (transition matrix, stationary
+          distribution, etc) are only defined on this subset and are
+          correspondingly smaller than the full set of states
+
+        * 'all' : The active set is the full set of states. Estimation
+          will be conducted on each reversibly connected set
+          separately. That means the transition matrix will decompose
+          into disconnected submatrices, the stationary vector is only
+          defined within subsets, etc. Currently not implemented.
+
+        * 'none' : The active set is the full set of
+          states. Estimation will be conducted on the full set of
+          states without ensuring connectivity. This only permits
+          nonreversible estimation. Currently not implemented.
+    dt_traj : str, optional
+        Description of the physical time corresponding to the lag. May
+        be used by analysis algorithms such as plotting tools to
+        pretty-print the axes. By default '1 step', i.e. there is no
+        physical time unit.  Specify by a number, whitespace and
+        unit. Permitted units are (* is an arbitrary string):
+
+        *  'fs',  'femtosecond*'
+        *  'ps',  'picosecond*'
+        *  'ns',  'nanosecond*'
+        *  'us',  'microsecond*'
+        *  'ms',  'millisecond*'
+        *  's',   'second*'
+
+    maxiter : int, optional
+        Optional parameter with specifies the maximum number of
+        updates for Lagrange multiplier estimation.
+
+    maxcache : int, optional
+        Parameter which specifies the maximum size of cache used
+        when performing estimation of AMM, in megabytes.
+
+    Returns
+    -------
+    amm : :class:`AugmentedMarkovModel <pyemma.msm.AugmentedMarkovModel>`
+        Estimator object containing the AMM and estimation information.
+
+    See also
+    --------
+    AugmentedMarkovModel
+        An AMM object that has been estimated from data
+
+
+    .. autoclass:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.estimators.maximum_likelihood_msm.AugmentedMarkovModel
+            :attributes:
+
+
+    References
+    ----------
+    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining Experimental and Simulation
+        Data via Augmented Markov Models" PNAS is revision.
+
+    """
+    import six
+    # check input
+    if _np.all(sigmas>0):
+      _w = 1./(2*sigmas**2.)
+    else:
+      raise ValueError('Zero or negative standard errors supplied. Please revise input')
+
+    if len(dtrajs) != len(ftrajs):
+        raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.")
+    elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
+        raise ValueError("One or more supplied dtraj-ftraj pairs do not have the same length.")
+    else:
+        # MAKE E matrix
+        dta = _np.concatenate(dtrajs)
+        fta = _np.concatenate(ftrajs)
+        all_markov_states = set(dta)
+        _E = _np.zeros((len(all_markov_states), fta.shape[1]))
+        for i, s in enumerate(all_markov_states):
+            _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
+        # transition matrix estimator
+        mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
+                        connectivity=connectivity,
+                        dt_traj=dt_traj, maxiter=maxiter, max_cache=maxcache,
+                        E=_E, w=_w, m=m)
+        # estimate and return
+        return mlamm.estimate(dtrajs)
 
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
@@ -1308,11 +1513,11 @@ def tpt(msmobj, A, B):
     algorithms. In this function, the equations described in [3]_ are applied.
 
     .. [1] W. E and E. Vanden-Eijnden.
-        Towards a theory of transition paths. 
+        Towards a theory of transition paths.
         J. Stat. Phys. 123: 503-523 (2006)
 
     .. [2] P. Metzner, C. Schuette and E. Vanden-Eijnden.
-        Transition Path Theory for Markov Jump Processes. 
+        Transition Path Theory for Markov Jump Processes.
         Multiscale Model Simul 7: 1192-1219 (2009)
 
     .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
@@ -1382,7 +1587,6 @@ def tpt(msmobj, A, B):
         raise ValueError('set A or B defines more states, than given transition matrix.')
 
     # forward committor
-    #msmobj.
     qplus = msmana.committor(T, A, B, forward=True)
     # backward committor
     if msmana.is_reversible(T, mu=mu):

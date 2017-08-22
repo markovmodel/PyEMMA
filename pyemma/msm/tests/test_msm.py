@@ -36,7 +36,7 @@ from msmtools.estimation import count_matrix, largest_connected_set, largest_con
 from msmtools.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_markov_model
+from pyemma.msm import estimate_markov_model, MaximumLikelihoodMSM
 from six.moves import range
 
 
@@ -127,9 +127,7 @@ class TestMSMRevPi(unittest.TestCase):
         self.assertTrue(np.all(msm.active_set==np.array([0, 2])))
         with self.assertRaises(ValueError):
             msm = estimate_markov_model(dtraj_invalid, 1, statdist=pi)
-        
-        
-        
+
 
 class TestMSMDoubleWell(unittest.TestCase):
 
@@ -152,6 +150,43 @@ class TestMSMDoubleWell(unittest.TestCase):
                                                     statdist=cls.statdist,
                                                     sparse=True)
         cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True)
+
+    # ---------------------------------
+    # SCORE
+    # ---------------------------------
+
+    def _score(self, msm):
+        dtrajs_test = self.dtraj[80000:]
+        s1 = msm.score(dtrajs_test, score_method='VAMP1', score_k=2)
+        assert 1.0 <= s1 <= 2.0
+        s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
+        assert 1.0 <= s2 <= 2.0
+        # se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
+        # se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
+
+    def test_score(self):
+        self._score(self.msmrev)
+        self._score(self.msmrevpi)
+        self._score(self.msm)
+        self._score(self.msmrev_sparse)
+        self._score(self.msmrevpi_sparse)
+        self._score(self.msm_sparse)
+
+    def _score_cv(self, estimator):
+        s1 = estimator.score_cv(self.dtraj, n=5, score_method='VAMP1', score_k=2).mean()
+        assert 1.0 <= s1 <= 2.0
+        s2 = estimator.score_cv(self.dtraj, n=5, score_method='VAMP2', score_k=2).mean()
+        assert 1.0 <= s2 <= 2.0
+        se = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=2).mean()
+        se_inf = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=None).mean()
+
+    def test_score_cv(self):
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True))
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True, statdist_constraint=self.statdist))
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=False))
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True, sparse=True))
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True, statdist_constraint=self.statdist, sparse=True))
+        self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=False, sparse=True))
 
     # ---------------------------------
     # BASIC PROPERTIES
@@ -317,6 +352,19 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._timestep(self.msmrevpi_sparse)
         self._timestep(self.msm_sparse)
 
+    def _dt_model(self, msm):
+        from pyemma.util.units import TimeUnit
+        tu = TimeUnit("1 step").get_scaled(self.msm.lag)
+        self.assertEqual(msm.dt_model, tu)
+
+    def test_dt_model(self):
+        self._dt_model(self.msmrev)
+        self._dt_model(self.msmrevpi)
+        self._dt_model(self.msm)
+        self._dt_model(self.msmrev_sparse)
+        self._dt_model(self.msmrevpi_sparse)
+        self._dt_model(self.msm_sparse)
+
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
         # should be ndarray by default
@@ -331,7 +379,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert (msmana.is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))    
+            assert (msmana.is_reversible(P))
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)
@@ -603,6 +651,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             ass = msm.metastable_assignments
             # test: number of states
             assert (len(ass) == msm.nstates)
+            assert msm.n_metastable == 2
             # test: should be 0 or 1
             assert (np.all(ass >= 0))
             assert (np.all(ass <= 1))
@@ -631,7 +680,8 @@ class TestMSMDoubleWell(unittest.TestCase):
             # should be nonnegative
             assert (np.all(pccadist >= 0))
             # should roughly add up to stationary:
-            ds = pccadist[0] + pccadist[1]
+            cgdist = np.array([msm.stationary_distribution[msm.metastable_sets[0]].sum(), msm.stationary_distribution[msm.metastable_sets[1]].sum()])
+            ds = cgdist[0]*pccadist[0] + cgdist[1]*pccadist[1]
             ds /= ds.sum()
             assert (np.max(np.abs(ds - msm.stationary_distribution)) < 0.001)
         else:
@@ -968,6 +1018,54 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._two_state_kinetics(self.msmrevpi_sparse)
         self._two_state_kinetics(self.msm_sparse)
 
+
+class TestMSMMinCountConnectivity(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        dtraj = np.array(
+            [0, 3, 0, 1, 2, 3, 0, 0, 1, 0, 1, 0, 3, 1, 0, 0, 0, 0, 0, 0, 1, 2, 0, 3, 0, 0, 3, 3, 0, 0, 1, 1, 3, 0,
+             1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 1, 0, 3, 2, 1, 0, 3, 1, 0, 1, 0, 1, 0, 3, 0, 0, 3, 0, 0, 0, 2, 0, 0, 3,
+             0, 1, 0, 0, 0, 0, 3, 3, 3, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 3, 3, 1, 0, 0, 0, 2, 1, 3, 0, 0])
+        assert (dtraj == 2).sum() == 5 # state 2 has only 5 counts,
+        cls.dtraj = dtraj
+        cls.mincount_connectivity = 6 # state 2 will be kicked out by this choice.
+        cls.active_set_unrestricted = np.array([0, 1, 2, 3])
+        cls.active_set_restricted = np.array([0, 1, 3])
+
+    def _test_connectivity(self, msm, msm_mincount):
+        np.testing.assert_equal(msm.active_set, self.active_set_unrestricted)
+        np.testing.assert_equal(msm_mincount.active_set, self.active_set_restricted)
+
+    def test_msm(self):
+        msm_one_over_n = estimate_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
+        msm_restrict_connectivity = estimate_markov_model(self.dtraj, lag=1,
+                                                          mincount_connectivity=self.mincount_connectivity)
+        self._test_connectivity(msm_one_over_n, msm_restrict_connectivity)
+
+    def test_bmsm(self):
+        from pyemma.msm import bayesian_markov_model
+        msm = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n')
+        msm_restricted = bayesian_markov_model(self.dtraj, lag=1, mincount_connectivity=self.mincount_connectivity)
+        self._test_connectivity(msm, msm_restricted)
+
+    @unittest.skip("""
+      File "/home/marscher/workspace/pyemma/pyemma/msm/estimators/_OOM_MSM.py", line 260, in oom_components
+    omega = np.real(R[:, 0])
+IndexError: index 0 is out of bounds for axis 1 with size 0
+    """)
+    def test_oom(self):
+        from pyemma import msm
+        msm_one_over_n = msm.estimate_markov_model(self.dtraj, lag=1, mincount_connectivity='1/n', weights='oom')
+
+        # we now restrict the connectivity to have at least 6 counts, so we will loose state 2
+        msm_restrict_connectivity = msm.estimate_markov_model(self.dtraj, lag=1, mincount_connectivity=6, weights='oom')
+        self._test_connectivity(msm_one_over_n, msm_restrict_connectivity)
+
+    def test_timescales(self):
+        from pyemma.msm import timescales_msm
+        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
+        assert its.estimator.mincount_connectivity == 0
 
 if __name__ == "__main__":
     unittest.main()

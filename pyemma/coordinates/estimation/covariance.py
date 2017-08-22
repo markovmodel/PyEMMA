@@ -66,6 +66,8 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
              * float :   all frames have the same specified weight.
              * object:   an object that possesses a .weight(X) function in order to assign weights to every
                          time step in a trajectory X.
+             * list of arrays: ....
+
      stride: int, optional, default = 1
          Use only every stride-th time step. By default, every time step is used.
      skip : int, optional, default=0
@@ -81,8 +83,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
 
         if (c0t or ctt) and lag == 0:
             raise ValueError("lag must be positive if c0t=True or ctt=True")
-        if is_float_vector(weights):
-            weights = ensure_float_vector(weights)
+
         if remove_constant_mean is not None and remove_data_mean:
             raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
@@ -96,13 +97,36 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         self._rc = None
         self._used_data = 0
 
-    def _compute_weight_series(self, X):
-        if self.weights is None:
-            return None
-        elif isinstance(self.weights, numbers.Real):
-            return self.weights
-        else:
-            return self.weights.weights(X)
+    @property
+    def weights(self):
+        return self._weights
+
+    @weights.setter
+    def weights(self, value):
+        from pyemma.coordinates.data import DataInMemory
+        import types
+
+        if is_float_vector(value):
+            value = DataInMemory(value)
+        elif isinstance(value, (list, tuple)):
+            value = DataInMemory(value)
+        elif isinstance(value, numbers.Integral):
+            value = float(value) if value is not None else 1.0
+        elif hasattr(value, 'weights') and type(getattr(value, 'weights')) == types.MethodType:
+            from pyemma.coordinates.data._base.transformer import StreamingTransformer
+            class compute_weights_streamer(StreamingTransformer):
+                def __init__(self, func):
+                    super(compute_weights_streamer, self).__init__()
+                    self.func = func
+                def dimension(self):
+                    return 1
+                def _transform_array(self, X):
+                    return self.func.weights(X)
+                def describe(self): pass
+
+            value = compute_weights_streamer(value)
+
+        self._weights = value
 
     def _init_covar(self, partial_fit, n_chunks):
         nsave = min(int(max(log(n_chunks, 2), 2)), self.ncov_max)
@@ -113,13 +137,12 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 self.logger.info("adapting storage size")
                 self.nsave = nsave
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._logger.debug("using %s moments for %i chunks", nsave, n_chunks)
             self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
 
-    def _estimate(self, iterable, **kw):
-        partial_fit = 'partial' in kw
+    def _estimate(self, iterable, partial_fit=False):
         indim = iterable.dimension()
         if not indim:
             raise ValueError("zero dimension from data source!")
@@ -127,39 +150,61 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
             if partial_fit:
                 self.logger.warn("Could not use data passed to partial_fit(), "
-                                 "because no single data set [longest=%i] is longer than lag+skip [%i]"
-                                 % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip))
+                                 "because no single data set [longest=%i] is longer than lag+skip [%i]",
+                                 max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip)
                 return self
             else:
                 raise ValueError("None single dataset [longest=%i] is longer than"
                                  " lag+skip [%i]." % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)),
                                                       self.lag+self.skip))
 
-        self.logger.debug("will use {} total frames for {}".
-                          format(iterable.trajectory_lengths(self.stride, skip=self.skip), self.name))
+        self.logger.debug("will use %s total frames for %s",
+                          iterable.trajectory_lengths(self.stride, skip=self.skip), self.name)
 
-        it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip, chunk = self.chunksize if not partial_fit else 0)
+        it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip,
+                               chunk=self.chunksize if not partial_fit else 0)
+        # iterator over input weights
+        if hasattr(self.weights, 'iterator'):
+            if hasattr(self.weights, '_transform_array'):
+                self.weights.data_producer = iterable
+            it_weights = self.weights.iterator(lag=0, return_trajindex=False, stride=self.stride, skip=self.skip,
+                                               chunk=self.chunksize if not partial_fit else 0)
+            if it_weights.number_of_trajectories() != iterable.number_of_trajectories():
+                raise ValueError("number of weight arrays did not match number of input data sets. {} vs. {}"
+                                 .format(it_weights.number_of_trajectories(), iterable.number_of_trajectories()))
+        else:
+            # if we only have a scalar, repeat it.
+            import itertools
+            it_weights = itertools.repeat(self.weights)
 
         # TODO: we could possibly optimize the case lag>0 and c0t=False using skip.
         # Access how much iterator hassle this would be.
+        #self.skipped=0
         with it:
             self._progress_register(it.n_chunks, "calculate covariances", 0)
             self._init_covar(partial_fit, it.n_chunks)
-            for data in it:
-                if self.lag!=0:
+            for data, weight in zip(it, it_weights):
+                if self.lag != 0:
                     X, Y = data
                 else:
                     X, Y = data, None
 
-                weight_series = self._compute_weight_series(X)
-
+                if weight is not None:
+                    if isinstance(weight, np.ndarray):
+                        weight = weight.squeeze()[:len(X)]
+                        # TODO: if the weight is exactly zero it makes not sense to add the chunk to running moments.
+                        # however doing so, leads to wrong results...
+                        # if np.all(np.abs(weight) < np.finfo(np.float).eps):
+                        #     #print("skip")
+                        #     self.skipped += len(X)
+                        #     continue
                 if self.remove_constant_mean is not None:
                     X = X - self.remove_constant_mean[np.newaxis, :]
                     if Y is not None:
                         Y = Y - self.remove_constant_mean[np.newaxis, :]
 
                 try:
-                    self._rc.add(X, Y, weights=weight_series)
+                    self._rc.add(X, Y, weights=weight)
                 except MemoryError:
                     raise MemoryError('Covariance matrix does not fit into memory. '
                                       'Input is too high-dimensional ({} dimensions). '.format(X.shape[1]))
@@ -178,7 +223,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         """
         from pyemma.coordinates import source
 
-        self._estimate(source(X), partial=True)
+        self._estimate(source(X), partial_fit=True)
         self._estimated = True
 
         return self
@@ -212,6 +257,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
 
     @nsave.setter
     def nsave(self, ns):
+        # potential bug? set nsave between partial fits?
         if self.c00:
             if self._rc.storage_XX.nsave <= ns:
                 self._rc.storage_XX.nsave = ns

@@ -75,12 +75,12 @@ class MSM(_Model):
             number, whitespace and unit. Permitted units are
             (* is an arbitrary string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+            *  'fs',  'femtosecond*'
+            *  'ps',  'picosecond*'
+            *  'ns',  'nanosecond*'
+            *  'us',  'microsecond*'
+            *  'ms',  'millisecond*'
+            *  's',   'second*'
 
         neig : int or None
             The number of eigenvalues / eigenvectors to be kept. If set to None,
@@ -125,12 +125,12 @@ class MSM(_Model):
             physical time unit. Specify by a number, whitespace and unit.
             Permitted units are (* is an arbitrary string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+            *  'fs',  'femtosecond*'
+            *  'ps',  'picosecond*'
+            *  'ns',  'nanosecond*'
+            *  'us',  'microsecond*'
+            *  'ms',  'millisecond*'
+            *  's',   'second*'
 
         neig : int or None
             The number of eigenvalues / eigenvectors to be kept. If set to
@@ -469,7 +469,7 @@ class MSM(_Model):
 
         """
         p0 = _types.ensure_ndarray(p0, ndim=1, size=self.nstates, kind='numeric')
-        assert _types.is_int(k) and k>=0, 'k must be a non-negative integer'
+        assert _types.is_int(k) and k >= 0, 'k must be a non-negative integer'
 
         if k == 0:  # simply return p0 normalized
             return p0 / p0.sum()
@@ -942,12 +942,21 @@ class MSM(_Model):
 
         # set metastable properties
         self._metastable_computed = True
+        self._n_metastable = self._pcca.n_metastable
         self._metastable_memberships = copy.deepcopy(self._pcca.memberships)
         self._metastable_distributions = copy.deepcopy(self._pcca.output_probabilities)
         self._metastable_sets = copy.deepcopy(self._pcca.metastable_sets)
         self._metastable_assignments = copy.deepcopy(self._pcca.metastable_assignment)
 
         return self._pcca
+
+    @property
+    def n_metastable(self):
+        """ Number of states chosen for PCCA++ computation.
+        """
+        # are we ready?
+        self._assert_metastable()
+        return self._n_metastable
 
     @property
     def metastable_memberships(self):
