@@ -114,13 +114,12 @@ def extensions():
                   extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     covar_module = \
-        Extension('pyemma._ext.variational.estimators.covar_c.covartools',
-                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.pyx',
-                           'pyemma/_ext/variational/estimators/covar_c/_covartools.c'],
+        Extension('pyemma._ext.variational.estimators.covar_c._covartools',
+                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.cpp'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
                                 ],
-                  extra_compile_args=['-std=c99', '-O3'])
+                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
