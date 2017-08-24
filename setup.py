@@ -274,6 +274,13 @@ else:
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
 
+        # init submodules
+        import subprocess
+        modules = ['pybind11', ]
+        cmd = "git submodule update --init {mod}"
+        for m in modules:
+            subprocess.check_call(cmd.format(mod=m).split(' '))
+
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
 
