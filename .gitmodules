@@ -1,3 +1,6 @@
 [submodule "ipython"]
 	path = pyemma-ipython
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
+[submodule "pybind11"]
+	path = pybind11
+	url = https://github.com/pybind/pybind11
