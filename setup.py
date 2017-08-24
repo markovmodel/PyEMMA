@@ -93,7 +93,8 @@ def extensions():
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
 
-    import pybind11
+    pybind_inc = os.path.join(os.path.dirname(__file__), 'pybind11', 'include')
+    assert os.path.exists(pybind_inc)
 
     exts = []
 
@@ -105,7 +106,7 @@ def extensions():
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
-                      pybind11.get_include(),
+                      pybind_inc,
                       'pyemma/coordinates/clustering/include',
                   ],
                   language='c++',
@@ -118,6 +119,7 @@ def extensions():
                   sources=['pyemma/_ext/variational/estimators/covar_c/covartools.cpp'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
+                                pybind_inc,
                                 ],
                   extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
