@@ -258,7 +258,6 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
-                                  'pybind11>=2.1.0',
                                   ]
 
     metadata['package_data'] = {
