@@ -75,7 +75,8 @@ from __future__ import absolute_import
 
 __author__ = 'noe'
 
-import math, sys, numbers, warnings
+import math
+import numbers
 import numpy as np
 from .covar_c import covartools
 
@@ -142,6 +143,8 @@ def _sparsify(X, remove_mean=False, modify_data=False, sparse_mode='auto', spars
                 min_const_col_number = X.shape[1] - (0.5 * X.shape[1] - 100)
             else:
                 min_const_col_number = X.shape[1] - (0.8 * X.shape[1] - 400)
+        # ensure we have an integer again.
+        min_const_col_number = int(min_const_col_number)
 
     if X.shape[1] > min_const_col_number:
         mask = covartools.variable_cols(X, tol=sparse_tol, min_constant=min_const_col_number)  # bool vector
@@ -177,7 +180,7 @@ def _sparsify_pair(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
 
 
 def _copy_convert(X, const=None, remove_mean=False, copy=True):
-    """ Makes a copy or converts the data type if needed
+    r""" Makes a copy or converts the data type if needed
 
     Copies the data and converts the data type if unsuitable for covariance
     calculation. The standard data type for covariance computations is
@@ -231,7 +234,7 @@ def _sum_sparse(xsum, mask_X, xconst, T):
 
 def _sum(X, xmask=None, xconst=None, Y=None, ymask=None, yconst=None, symmetric=False, remove_mean=False,
          weights=None):
-    """ Computes the column sums and centered column sums.
+    r""" Computes the column sums and centered column sums.
 
     If symmetric = False, the sums will be determined as
     .. math:
@@ -348,13 +351,10 @@ def _center(X, w, s, mask=None, const=None, inplace=True):
     """
     xmean = s / float(w)
     if mask is None:
-        X = covartools.subtract_row(X, xmean, inplace=inplace)
+        X = np.subtract(X, xmean, out=X if inplace else None)
     else:
-        X = covartools.subtract_row(X, xmean[mask], inplace=inplace)
-        if inplace:
-            const = np.subtract(const, xmean[~mask], const)
-        else:
-            const = np.subtract(const, xmean[~mask])
+        X = np.subtract(X, xmean[mask], out=X if inplace else None)
+        const = np.subtract(const, xmean[~mask], const if inplace else None)
 
     return X, const
 
@@ -376,7 +376,7 @@ def _M2_dense(X, Y, weights=None):
 
 
 def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weights=None):
-    """ Computes the unnormalized covariance matrix between X and Y, exploiting constant input columns
+    r""" Computes the unnormalized covariance matrix between X and Y, exploiting constant input columns
 
     Computes the unnormalized covariance matrix :math:`C = X^\top Y`
     (for symmetric=False) or :math:`C = \frac{1}{2} (X^\top Y + Y^\top X)`
@@ -539,7 +539,7 @@ def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0
 
 
 def moments_XX(X, remove_mean=False, modify_data=False, weights=None, sparse_mode='auto', sparse_tol=0.0):
-    """ Computes the first two unnormalized moments of X
+    r""" Computes the first two unnormalized moments of X
 
     Computes :math:`s = \sum_t x_t` and :math:`C = X^\top X` while exploiting
     zero or constant columns in the data matrix.
@@ -606,7 +606,7 @@ def moments_XX(X, remove_mean=False, modify_data=False, weights=None, sparse_mod
 
 def moments_XXXY(X, Y, remove_mean=False, symmetrize=False, weights=None,
                  modify_data=False, sparse_mode='auto', sparse_tol=0.0):
-    """ Computes the first two unnormalized moments of X and Y
+    r""" Computes the first two unnormalized moments of X and Y
 
     If symmetrize is False, computes
 

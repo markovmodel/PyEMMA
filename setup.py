@@ -54,8 +54,7 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import lazy_cythonize, init_submodules
-
+from setup_util import lazy_cythonize
 try:
     from setuptools import setup, Extension, find_packages
 except ImportError as ie:
@@ -94,7 +93,8 @@ def extensions():
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
 
-    import pybind11
+    pybind_inc = os.path.join(os.path.dirname(__file__), 'pybind11', 'include')
+    assert os.path.exists(pybind_inc)
 
     exts = []
 
@@ -106,7 +106,7 @@ def extensions():
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
-                      pybind11.get_include(),
+                      pybind_inc,
                       'pyemma/coordinates/clustering/include',
                   ],
                   language='c++',
@@ -120,8 +120,9 @@ def extensions():
                            'pyemma/_ext/variational/estimators/covar_c/_covartools.c'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
+                                pybind_inc,
                                 ],
-                  extra_compile_args=['-std=c99', '-O3'])
+                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
@@ -258,7 +259,6 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
-                                  'pybind11>=2.1.0',
                                   ]
 
     metadata['package_data'] = {
@@ -274,12 +274,15 @@ else:
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
 
+        # init submodules
+        import subprocess
+        modules = ['pybind11', ]
+        cmd = "git submodule update --init {mod}"
+        for m in modules:
+            subprocess.check_call(cmd.format(mod=m).split(' '))
+
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
-    init_submodules()
-
-    # packages are found if their folder contains an __init__.py,
-    metadata['packages'] = find_packages()
 
 setup(**metadata)
 

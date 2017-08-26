@@ -147,7 +147,6 @@ class TimeUnit(object):
         # nothing to do
         return times, self._unit
 
-
 def bytes_to_string(num, suffix='B'):
     """
     Returns the size of num (bytes) in a human readable form up to Yottabytes (YB).

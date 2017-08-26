@@ -27,15 +27,20 @@ from distutils.ccompiler import new_compiler
 
 # From http://stackoverflow.com/questions/
 # 7018879/disabling-output-when-compiling-with-distutils
-def hasfunction(cc, funcname):
+def hasfunction(cc, funcname, headers):
     tmpdir = tempfile.mkdtemp(prefix='hasfunction-')
     devnull = oldstderr = None
+    if not isinstance(headers, (tuple, list)):
+        headers = [headers]
     try:
         try:
             fname = os.path.join(tmpdir, 'funcname.c')
             f = open(fname, 'w')
+            for h in headers:
+                f.write('#include <%s>\n' % h)
             f.write('int main(void) {\n')
             f.write(' %s();\n' % funcname)
+            f.write('return 0;\n')
             f.write('}\n')
             f.close()
             # Redirect stderr to /dev/null to hide any error messages
@@ -60,11 +65,11 @@ def hasfunction(cc, funcname):
 
 def detect_openmp():
     compiler = new_compiler()
-    hasopenmp = hasfunction(compiler, 'omp_get_num_threads')
+    hasopenmp = hasfunction(compiler, 'omp_get_num_threads', headers=('omp.h', ))
     needs_gomp = hasopenmp
     if not hasopenmp:
         compiler.add_library('gomp')
-        hasopenmp = hasfunction(compiler, 'omp_get_num_threads')
+        hasopenmp = hasfunction(compiler, 'omp_get_num_threads', headers=('omp.h', ))
         needs_gomp = hasopenmp
     return hasopenmp, needs_gomp
 
