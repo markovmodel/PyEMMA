@@ -249,6 +249,11 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         return self._rc.cov_XY(bessel=self.bessel)
 
     @property
+    def cov_tau_tau(self):
+        self._check_estimated()
+        return self._rc.cov_YY(bessel=self.bessel)
+
+    @property
     def nsave(self):
         if self.c00:
             return self._rc.storage_XX.nsave
@@ -264,3 +269,6 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         if self.c0t:
             if self._rc.storage_XY.nsave <= ns:
                 self._rc.storage_XY.nsave = ns
+        if self.ctt:
+            if self._rc.storage_YY.nsave <= ns:
+                self._rc.storage_YY.nsave = ns
