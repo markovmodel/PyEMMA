@@ -32,7 +32,7 @@ class TestJoiner(unittest.TestCase):
 
         self.readers.append(source(arrays))
 
-    def _get_output_compare(self, joiner, stride, chunk, skip):
+    def _get_output_compare(self, joiner, stride=1, chunk=0, skip=0):
         j = joiner
         out = j.get_output(stride=stride, chunk=chunk, skip=skip)
         assert len(out) == 3
@@ -53,6 +53,12 @@ class TestJoiner(unittest.TestCase):
         self._get_output_compare(j, stride=2, chunk=5, skip=0)
         self._get_output_compare(j, stride=2, chunk=13, skip=3)
         self._get_output_compare(j, stride=3, chunk=2, skip=7)
+
+    def test_ra_stride(self):
+        ra_indices = np.array([[0,7], [0, 23], [1, 30], [2, 9]])
+        j = Joiner(self.readers)
+
+        self._get_output_compare(j, stride=ra_indices)
 
     def test_non_matching_lengths(self):
         data = self.readers[1].data
