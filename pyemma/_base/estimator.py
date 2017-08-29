@@ -311,11 +311,18 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                 if isinstance(a[0], SampledModel):
                     a[0].show_progress = False
 
-        def callback(_):
-            progress_reporter._progress_update(1, stage=0)
+            def callback(_):
+                progress_reporter._progress_update(1, stage=0)
+        else:
+            callback = None
+
+        def error_callback(*args, **kw):
+            if failfast:
+                raise Exception('something failed')
 
         with pool:
-            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback) for a in args]
+            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
+                                          error_callback=error_callback) for a in args]
             res = [x.get() for x in res_async]
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
