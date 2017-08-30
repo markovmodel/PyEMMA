@@ -9,7 +9,7 @@ from pyemma.coordinates.data.sources_merger import SourcesMerger
 from pyemma import config
 
 
-class TestJoiner(unittest.TestCase):
+class TestSourcesMerger(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         config.coordinates_check_output = True
@@ -67,3 +67,19 @@ class TestJoiner(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             SourcesMerger(self.readers)
         self.assertIn('matching', ctx.exception.args[0])
+
+    def test_fragmented_trajs(self):
+        """ build two fragmented readers consisting out of two fragments each and check if they are merged properly."""
+        segment_0 = np.arange(20)
+        segment_1 = np.arange(20, 40)
+
+        s1 = source([(segment_0, segment_1)])
+        s2 = source([(segment_0, segment_1)])
+
+        sm = SourcesMerger((s1, s2))
+
+        out = sm.get_output()
+        x = np.atleast_2d(np.arange(40))
+        expected = [np.concatenate((x, x), axis=0).T]
+
+        np.testing.assert_equal(out, expected)
