@@ -83,10 +83,10 @@ class _KoopmanEstimator(StreamingEstimator):
         return self
 
     def _finish_estimation(self):
-        R = spd_inv_split(self._covar.cov, epsilon=self.epsilon, canonical_signs=True)
+        R = spd_inv_split(self._covar.C00_, epsilon=self.epsilon, canonical_signs=True)
         # Set the new correlation matrix:
         M = R.shape[1]
-        K = np.dot(R.T, np.dot((self._covar.cov_tau), R))
+        K = np.dot(R.T, np.dot((self._covar.C0t_), R))
         K = np.vstack((K, np.dot((self._covar.mean_tau - self._covar.mean), R)))
         ex1 = np.zeros((M + 1, 1))
         ex1[M, 0] = 1.0

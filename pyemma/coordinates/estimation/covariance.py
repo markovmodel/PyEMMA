@@ -20,6 +20,8 @@ from __future__ import absolute_import
 import numpy as np
 import numbers
 from math import log
+
+from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma._base.progress import ProgressReporter
@@ -239,17 +241,32 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         return self._rc.mean_Y()
 
     @property
+    @deprecated('Please use the attribute "C00_".')
     def cov(self):
         self._check_estimated()
         return self._rc.cov_XX(bessel=self.bessel)
 
     @property
+    def C00_(self):
+        """ Instantaneous covariance matrix """
+        self._check_estimated()
+        return self._rc.cov_XX(bessel=self.bessel)
+
+    @property
+    @deprecated('Please use the attribute "C0t_".')
     def cov_tau(self):
         self._check_estimated()
         return self._rc.cov_XY(bessel=self.bessel)
 
     @property
-    def cov_tau_tau(self):
+    def C0t_(self):
+        """ Time-lagged covariance matrix """
+        self._check_estimated()
+        return self._rc.cov_XY(bessel=self.bessel)
+
+    @property
+    def Ctt_(self):
+        """ Covariance matrix of the time shifted data"""
         self._check_estimated()
         return self._rc.cov_YY(bessel=self.bessel)
 
