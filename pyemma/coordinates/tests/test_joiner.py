@@ -5,7 +5,7 @@ from glob import glob
 import numpy as np
 
 from pyemma.coordinates import source
-from pyemma.coordinates.data.joiner import Joiner
+from pyemma.coordinates.data.sources_merger import SourcesMerger
 from pyemma import config
 
 
@@ -48,7 +48,7 @@ class TestJoiner(unittest.TestCase):
         np.testing.assert_equal(out, combined)
 
     def test_combined_output(self):
-        j = Joiner(self.readers)
+        j = SourcesMerger(self.readers)
         self._get_output_compare(j, stride=1, chunk=0, skip=0)
         self._get_output_compare(j, stride=2, chunk=5, skip=0)
         self._get_output_compare(j, stride=2, chunk=13, skip=3)
@@ -56,7 +56,7 @@ class TestJoiner(unittest.TestCase):
 
     def test_ra_stride(self):
         ra_indices = np.array([[0,7], [0, 23], [1, 30], [2, 9]])
-        j = Joiner(self.readers)
+        j = SourcesMerger(self.readers)
 
         self._get_output_compare(j, stride=ra_indices)
 
@@ -65,5 +65,5 @@ class TestJoiner(unittest.TestCase):
         data = [data[0], data[1], data[2][:20]]
         self.readers.append(source(data))
         with self.assertRaises(ValueError) as ctx:
-            Joiner(self.readers)
+            SourcesMerger(self.readers)
         self.assertIn('matching', ctx.exception.args[0])
