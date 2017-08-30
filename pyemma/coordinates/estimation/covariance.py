@@ -40,10 +40,13 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
      ----------
      c00 : bool, optional, default=True
          compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+         Makes the C00_ attribute available.
      c0t : bool, optional, default=False
          compute lagged correlations. Does not work with lag==0.
+         Makes the C0t_ attribute available.
      ctt : bool, optional, default=False
-         compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+         compute instantaneous correlations over the time-shifted chunks of the data. Does not work with lag==0.
+         Makes the Ctt_ attribute available.
      remove_constant_mean : ndarray(N,), optional, default=None
          substract a constant vector of mean values from time series.
      remove_data_mean : bool, optional, default=False
