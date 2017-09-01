@@ -172,7 +172,8 @@ class TestMSMSerialization(unittest.TestCase):
                       [[0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
                        [0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0]],
                   'lag': 2,
-                  'nstates': 2
+                  'nstates': 2,
+                  'nsamples': 2,
                   }
         hmm = pyemma.msm.bayesian_hidden_markov_model(**params)
         hmm.save(self.f)
