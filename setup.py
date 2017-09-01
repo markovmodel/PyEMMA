@@ -116,8 +116,7 @@ def extensions():
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c.covartools',
-                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.pyx',
-                           'pyemma/_ext/variational/estimators/covar_c/_covartools.c'],
+                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.cpp'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
                                 pybind_inc,
