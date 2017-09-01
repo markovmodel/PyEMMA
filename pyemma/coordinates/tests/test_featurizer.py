@@ -20,13 +20,13 @@
 from __future__ import absolute_import
 import unittest
 import numpy as np
+import pyemma
 
 import os
 import mdtraj
 
 from itertools import combinations, product
 
-# from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
 from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
 from six.moves import range
@@ -136,14 +136,13 @@ class TestFeaturizer(unittest.TestCase):
             assert isinstance(a, MDFeaturizer)
             assert isinstance(b, MDFeaturizer)
             assert a.dimension() == b.dimension()
-            assert a.active_features == b.active_features
+            assert a.describe() == b.describe()
 
-        from io import BytesIO
-        buff = BytesIO()
-        self.feat.save(buff)
-        buff.seek(0)
-        import pyemma
-        restored = pyemma.load(buff)
+        from tempfile import NamedTemporaryFile
+        with NamedTemporaryFile() as ntf:
+            buff = ntf.name
+            self.feat.save(buff)
+            restored = pyemma.load(buff)
         feat_equal(restored, self.feat)
 
     def test_select_backbone(self):
