@@ -3,65 +3,57 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 
 @author: Martin K. Scherer
 """
-
-from io import BytesIO
-
 import numpy as np
 
 from pyemma._ext.jsonpickle import handlers
-from pyemma._ext.jsonpickle import util
 
 
 def register_ndarray_handler():
     """ Override jsonpickle handler for numpy arrays with compressed NPZ handler.
     First unregisters the default handler
     """
-    NumpyNPZHandler.handles(np.ndarray)
+    H5BackendLinkageHandler.handles(np.ndarray)
 
     for t in NumpyExtractedDtypeHandler.np_dtypes:
         NumpyExtractedDtypeHandler.handles(t)
 
 
-def register_datasources_handlers():
-    from pyemma.coordinates.data import FeatureReader, NumPyFileReader, PyCSVReader, FragmentedTrajectoryReader
-
-    # handle FeatureReaders serialization by the reduce protocol (invoke constructor with given arguments).
-    handlers.SimpleReduceHandler.handles(FeatureReader)
-    handlers.SimpleReduceHandler.handles(NumPyFileReader)
-    handlers.SimpleReduceHandler.handles(PyCSVReader)
-    handlers.SimpleReduceHandler.handles(FragmentedTrajectoryReader)
-
-def register_featurizer():
-    from pyemma.coordinates.data.featurization._base import Feature
-    handlers.SimpleReduceHandler.handles(Feature)
-
-
 def register_all_handlers():
     register_ndarray_handler()
-    register_datasources_handlers()
-    register_featurizer()
 
 
-class NumpyNPZHandler(handlers.BaseHandler):
-    """ stores NumPy array as a compressed NPZ file. """
+class H5BackendLinkageHandler(handlers.BaseHandler):
+    """ stores NumPy arrays in the backing hdf5 file contained in the context """
     def __init__(self, context):
-        super(NumpyNPZHandler, self).__init__(context=context)
+        super(H5BackendLinkageHandler, self).__init__(context=context)
+
+    @property
+    def file(self):
+        # obtain the current file handler
+        return self.context.h5_file
 
     def flatten(self, obj, data):
-        assert isinstance(obj, np.ndarray)
-        buff = BytesIO()
-        np.savez_compressed(buff, x=obj)
-        buff.seek(0)
-        flattened_bytes = util.b64encode(buff.read())
-        data['npz_file_bytes'] = flattened_bytes
+        if obj.dtype == np.object_:
+            raise NotImplementedError()
+            res = [self.context.flatten(x) for x in obj]
+
+            #raise Exception(str(obj))
+            # TODO: how to deal with obj dtype? eg. return list
+            #data.clear()
+
+            data['py/object'] = 'list'
+        else:
+            import uuid
+            array_id = '{group}/{id}'.format(group=self.file.name, id=uuid.uuid4())
+            self.file.create_dataset(name=array_id, data=obj,
+                                     chunks=True, compression='gzip', compression_opts=4, shuffle=True)
+            data['array_ref'] = array_id
         return data
 
     def restore(self, obj):
-        binary = util.b64decode(obj['npz_file_bytes'])
-        buff = BytesIO(binary)
-        with np.load(buff) as fh:
-            array = fh['x']
-        return array
+        array_ref = obj['array_ref']
+        # it is important to return a copy here, because h5 only creates views to the data.
+        return self.file[array_ref][:]
 
 
 class NumpyExtractedDtypeHandler(handlers.BaseHandler):
