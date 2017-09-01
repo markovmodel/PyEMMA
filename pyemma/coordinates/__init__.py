@@ -31,6 +31,7 @@ User API
    featurizer
    load
    source
+   combine_sources
    pipeline
    discretizer
    save_traj
