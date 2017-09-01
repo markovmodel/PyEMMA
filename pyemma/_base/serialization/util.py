@@ -31,6 +31,10 @@ class _ClassRenameRegistry(object):
         return self._new_to_old.get(klass, ())
 
     def upgrade_old_names_in_json(self, data):
+
+        if isinstance(data, bytes):
+            data = data.decode('ascii')
+
         for renamed in self._old_to_new:
             new = self._old_to_new[renamed]
             data = data.replace(renamed, new)
