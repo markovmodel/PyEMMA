@@ -5,7 +5,7 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 """
 import numpy as np
 
-from pyemma._ext.jsonpickle import handlers
+from pyemma._ext.jsonpickle import handlers, tags
 
 
 def register_ndarray_handler():
@@ -34,14 +34,9 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
 
     def flatten(self, obj, data):
         if obj.dtype == np.object_:
-            raise NotImplementedError()
-            res = [self.context.flatten(x) for x in obj]
-
-            #raise Exception(str(obj))
-            # TODO: how to deal with obj dtype? eg. return list
-            #data.clear()
-
-            data['py/object'] = 'list'
+            value = [self.context._flatten(v) for v in obj]
+            data.pop('py/object')
+            data[tags.SEQ] = value
         else:
             import uuid
             array_id = '{group}/{id}'.format(group=self.file.name, id=uuid.uuid4())
@@ -60,7 +55,7 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
     """
     if one extracts a value from a numpy array, the resulting type is numpy.int64 etc.
     We convert these values to Python primitives right here.
-    
+
     All float types up to float64 are mapped by builtin.float
     All integer (signed/unsigned) types up to int64 are mapped by builtin.int
     """
