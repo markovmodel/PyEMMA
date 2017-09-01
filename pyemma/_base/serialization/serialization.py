@@ -45,60 +45,100 @@ class OldVersionUnsupported(NotImplementedError):
     """ can not load recent models with old software versions. """
 
 
-def load(file_like):
+def load(file_name, version='latest'):
     """ loads a previously saved object of this class from a file.
 
-    Parameter
-    ---------
-    file_like : str or file like object (has to provide read method).
+    Parameters
+    ----------
+    file_name : str or file like object (has to provide read method).
         The file like object tried to be read for a serialized object.
+    version: int or str, default='latest'
+        if multiple versions are contained in the file, older versions can be accessed by
+        their index. The oldest model has index zero and so forth.
 
     Returns
     -------
     obj : the de-serialized object
     """
-    import bz2
-    if not hasattr(file_like, 'read'):
-        with contextlib.closing(bz2.BZ2File(file_like)) as fh:
-            inp = fh.read()
-    else:
-        inp = bz2.decompress(file_like.read())
 
-    if _debug:
-        logger.debug("type of input: %s", type(inp))
+    import h5py
+    with h5py.File(file_name, 'r') as f:
+        ds = f['/versions']
+        if version == 'latest':
+            inp = ds[len(ds) - 1]
+        else:
+            inp = ds[version]
+        inp = class_rename_registry.upgrade_old_names_in_json(inp[0])
+        if _debug: pass
+            #logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
+        global _handlers_registered
+        if not _handlers_registered:
+            _reg_all_handlers()
+            _handlers_registered = True
 
-    kw = {} if six.PY2 else {'encoding':'ascii'}
-    inp = str(inp, **kw)
-
-    inp = class_rename_registry.upgrade_old_names_in_json(inp)
-    if _debug: pass
-        #logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
-
-    if not _handlers_registered:
-        _reg_all_handlers()
-
-    obj = jsonpickle.loads(inp)
+        # we pass the hdf5 file handle to the unpickler by adding a known attribute...
+        from pyemma._ext.jsonpickle.unpickler import Unpickler
+        context = Unpickler()
+        context.h5_file = f
+        obj = jsonpickle.unpickler.decode(inp, context=context)
 
     return obj
 
 
-class _SerializableBase(object):
-    """ Base class of serializable classes.
+class SerializableMixIn(object):
+    """ Base class of serializable classes using get/set_state.
 
-       Derive from this class to make your class serializable via save and load methods.
+    Derive from this class to make your class serializable. Do not forget to
+    add a version number to your class to distinguish old and new copies of the
+    source code. The static attribute '_serialize_fields' is a iterable of names,
+    which are preserved during serialization.
+
+    To aid the process of loading old models in a new version of the software, there
+    is the the static field '_serialize_interpolation_map', which is a mapping from
+    old version number to a set of operations to transform the old class state to the
+    recent version of the class.
+
+    Valid operations are:
+    1. ('rm', 'name') -> delete the attribute with given name.
+    2. ('mv', 'old', 'new') -> rename the attribute from 'old' to 'new'.
+    3. ('set', 'name', value) -> set an attribute with name 'name' to given value.
+    4. ('map', 'name', func) -> apply the function 'func' to attribute 'name'. The function
+      should accept one argument, namely the attribute and return the new value for it.
+
+    Similar to map, there are two callbacks to hook into the serialization process:
+    5. ('set_state_hook', func) -> a function which may transform the state dictionary
+       before __getstate__ returns.
+
+    Example
+    -------
+
+    >>> import pyemma
+    >>> from tempfile import NamedTemporaryFile
+    >>> class MyClass(SerializableMixIn):
+    ...    _serialize_version = 0
+    ...    _serialize_fields = ['x']
+    ...    def __init__(self, x=42):
+    ...        self.x = x
+
+    >>> inst = MyClass()
+    >>> with NamedTemporaryFile() as ntf:
+    ...    file = ntf.name
+    ...    inst.save(file)
+    ...    inst_restored = pyemma.load(file)
+    >>> assert inst_restored.x == inst.x # doctest: +SKIP
+    # skipped because MyClass is not importable.
+
     """
 
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def save(self, filename_or_file, compression_level=9, save_streaming_chain=False):
+    def save(self, filename_or_file, save_streaming_chain=False):
         """
         Parameters
         -----------
-        filename_or_file: str or file like
-            path to desired output file or a type which implements the file protocol (accepting bytes as input).
-        compression_level : int
-            if given, must be a number between 1 and 9.
+        filename_or_file: str
+            path to desired output file
         save_streaming_chain : boolean, default=False
             if True, the data_producer(s) of this object will also be saved in the given file.
             
@@ -106,14 +146,40 @@ class _SerializableBase(object):
         --------
         TODO: write me
         """
+        import h5py
+        import time
+        from pyemma._ext.jsonpickle.pickler import Pickler
+
+        global _handlers_registered
         if not _handlers_registered:
             _reg_all_handlers()
+            _handlers_registered = True
         # if we are serializing a pipeline element, store whether to store the chain elements.
         old_flag = self._save_data_producer
         self._save_data_producer = save_streaming_chain
         assert self._save_data_producer == save_streaming_chain
         try:
-            flattened = jsonpickle.dumps(self)
+            with h5py.File(filename_or_file) as f:
+                if 'versions' not in f:
+                    dt = h5py.special_dtype(vlen=bytes)
+                    ds = f.create_dataset('versions', dtype=dt, shape=(1, 1), maxshape=(None, 1), compression='gzip')
+                    ind = 0
+                else:
+                    ds = f['versions']
+                    ds.resize(len(ds) + 1, axis=0)
+                    ind = len(ds) - 1
+                g = f.require_group(str(ind))
+                g.attrs['created'] = str(time.time())
+                g.attrs['created_readable'] = time.asctime()
+                g.attrs['class_str'] = str(self)
+                g.attrs['class_repr'] = repr(self)
+                # now encode the object (this will write all numpy arrays to current group).
+                context = Pickler()
+                context.h5_file = g
+                flattened = jsonpickle.pickler.encode(self, context=context)
+                # attach the json string in the H5 file.
+
+                ds[ind] = flattened
         except Exception as e:
             if isinstance(self, Loggable):
                 self.logger.exception('During saving the object ("{error}") '
@@ -123,36 +189,27 @@ class _SerializableBase(object):
             # restore old state.
             self._save_data_producer = old_flag
 
-        if six.PY3:
-            flattened = bytes(flattened, encoding='ascii')
-
-        import bz2
-        compressed = bz2.compress(flattened, compresslevel=compression_level)
-        if not hasattr(filename_or_file, 'write'):
-            with open(filename_or_file, mode='wb') as fh:
-                fh.write(compressed)
-        else:
-            filename_or_file.write(compressed)
-            filename_or_file.flush()
-
     @classmethod
-    def load(cls, file_like):
+    def load(cls, file_name, version='latest'):
         """ loads a previously saved object of this class from a file.
 
-        Parameter
-        ---------
-        file_like : str or file like object (has to provide read method).
+        Parameters
+        ----------
+        file_name : str or file like object (has to provide read method).
             The file like object tried to be read for a serialized object.
+        version: int or str, default='latest'
+            if multiple versions are contained in the file, older versions can be accessed by
+            their index. The oldest model has index zero and so forth.
 
         Returns
         -------
         obj : the de-serialized object
         """
-        obj = load(file_like)
+        obj = load(file_name, version)
 
         if obj.__class__ != cls:
             raise ValueError("Given file '%s' did not contain the right type:"
-                             " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
+                             " desired(%s) vs. actual(%s)" % (file_name, cls, obj.__class__))
         if not hasattr(cls, '_serialize_version'):
             raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
 
@@ -175,57 +232,8 @@ class _SerializableBase(object):
                 import warnings
                 warnings.warn("We refuse to save NumPy arrays wrapped with DataInMemory.")
                 return
-            assert isinstance(self.data_producer, _SerializableBase), self.data_producer
+            assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
             self.data_producer._save_data_producer = value
-
-
-class SerializableMixIn(_SerializableBase):
-    """ Base class of serializable classes using get/set_state.
-
-    Derive from this class to make your class serializable. Do not forget to
-    add a version number to your class to distinguish old and new copies of the
-    source code. The static attribute '_serialize_fields' is a iterable of names,
-    which are preserved during serialization.
-    
-    To aid the process of loading old models in a new version of the software, there
-    is the the static field '_serialize_interpolation_map', which is a mapping from
-    old version number to a set of operations to transform the old class state to the
-    recent version of the class.
-    
-    Valid operations are:
-    1. ('rm', 'name') -> delete the attribute with given name.
-    2. ('mv', 'old', 'new') -> rename the attribute from 'old' to 'new'.
-    3. ('set', 'name', value) -> set an attribute with name 'name' to given value.
-    4. ('map', 'name', func) -> apply the function 'func' to attribute 'name'. The function
-      should accept one argument, namely the attribute and return the new value for it.
-    
-    Similar to map, there are two callbacks to hook into the serialization process:
-    5. ('set_state_hook', func) -> a function which may transform the state dictionary
-       before __getstate__ returns.
-
-    Example
-    -------
-
-    >>> import pyemma
-    >>> from io import BytesIO
-    >>> class MyClass(SerializableMixIn):
-    ...    _serialize_version = 0
-    ...    _serialize_fields = ['x']
-    ...    def __init__(self, x=42):
-    ...        self.x = x
-
-    >>> inst = MyClass()
-    >>> file = BytesIO()
-    >>> inst.save(file)
-    >>> _= file.seek(0)
-    >>> inst_restored = pyemma.load(file)
-    >>> assert inst_restored.x == inst.x # doctest: +SKIP
-    # skipped because MyClass is not importable.
-
-    """
-
-    _serialize_fields = ()
-    """ attribute names to serialize """
 
     def _get_state_of_serializeable_fields(self, klass):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
@@ -370,7 +378,7 @@ class SerializableMixIn(_SerializableBase):
         # if we want to save the chain, do this now:
         if self._save_data_producer:
             assert hasattr(self, 'data_producer')
-            res['data_producer'] = dp = self.data_producer
+            res['data_producer'] = self.data_producer
 
         classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
                               and c != SerializableMixIn and c != object and c != Estimator and c != Model]
@@ -402,12 +410,6 @@ class SerializableMixIn(_SerializableBase):
         return res
 
     def __setstate__(self, state):
-        # no backward compatibility.
-        # TODO: is the child impl version sufficient to check this? Deleted classes could also trigger this...
-        #if self._get_version_for_class_from_state(state, klass=type(self)) > self._serialize_version:
-        #    raise OldVersionUnsupported("Can not load recent models with old version of PyEMMA."
-        #                                " You need at least {supported}".format(supported=state['_pyemma_version']))
-
         from pyemma._base.estimator import Estimator
         from pyemma._base.model import Model
 

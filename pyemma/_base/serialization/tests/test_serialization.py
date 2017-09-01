@@ -11,6 +11,20 @@ from pyemma._ext.jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
 
+class np_container(SerializableMixIn):
+    _serialize_version = 0
+    _serialize_fields = ('x', 'y', 'z')
+
+    def __init__(self, x):
+        self.x = x
+        self.y = x
+        self.z = [x, x]
+
+    def __eq__(self, other):
+        if not isinstance(other, np_container):
+            return False
+
+        return np.all(self.x == other.x) and np.all(self.y == other.y)
 
 def patch_old_location(faked_old_class, new_class):
     from pyemma._base.serialization.util import handle_old_classes
@@ -45,12 +59,21 @@ class TestSerialisation(unittest.TestCase):
         except:
             pass
 
-    def test_numpy(self):
-        x = np.random.randint(0, 1000, size=1000)
-        s = dumps(x)
-        actual = loads(s)
+    def test_numpy_container(self):
+        x = np.random.randint(0, 1000, size=10)
+        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
+        register_ndarray_handler()
+        inst = np_container(x)
+        inst.save(self.fn)
+        restored = inst.load(self.fn)
+        self.assertEqual(restored, inst)
 
-        np.testing.assert_equal(actual, x)
+    def test_numpy_container_object_array(self):
+        x = np.array([None, np.array([1,2,3]), False])
+        inst = np_container(x)
+        inst.save(self.fn)
+        restored = inst.load(self.fn)
+        self.assertEqual(restored, inst)
 
     def test_numpy_extracted_dtypes(self):
         """ scalar values extracted from a numpy array do not posses a python builtin type,
@@ -68,16 +91,6 @@ class TestSerialisation(unittest.TestCase):
         inst.save(self.fn)
         new = test_cls_v1.load(self.fn)
         self.assertEqual(new, inst)
-
-    def test_save_file_like(self):
-        from io import BytesIO
-        buff = BytesIO()
-        t = test_cls_v1()
-        t.save(buff)
-
-        buff.seek(0)
-        t2 = pyemma.load(buff)
-        self.assertEqual(t2, t)
 
     def test_updated_class_v1_to_v2(self):
         """ """
@@ -157,16 +170,14 @@ class TestSerialisation(unittest.TestCase):
 
     def test_renamed_class(self):
         """ ensure a removed class gets properly remapped to an existing one """
-        buff = BytesIO()
         old = _deleted_in_old_version()
-        old.save(buff)
-        buff.seek(0)
+        old.save(self.fn)
 
         # mark old_loc as being handled by test_cls_with_old_locations in newer versions.
         patch_old_location(_deleted_in_old_version, test_cls_with_old_locations)
 
         # now restore and check it got properly remapped to the new class
-        restored = pyemma.load(buff)
+        restored = pyemma.load(self.fn)
         # assert isinstance(restored, test_cls_with_old_locations)
         self.assertIsInstance(restored, test_cls_with_old_locations)
 
