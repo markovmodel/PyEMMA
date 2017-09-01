@@ -276,7 +276,7 @@ else:
         # init submodules
         import subprocess
         modules = ['pybind11',
-                   os.path.join('pyemma', '_ext', 'jsonpickle'),
+                   'jsonpickle',
                    ]
         cmd = "git submodule update --init {mod}"
         for m in modules:
