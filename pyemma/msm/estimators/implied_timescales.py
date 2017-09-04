@@ -58,7 +58,7 @@ def _generate_lags(maxlag, multiplier):
     while lag <= maxlag:
         lag = lag*multiplier
         # round up, like python 2
-        lag = int(decimal.Decimal(lag).quantize(decimal.Decimal('1'),    
+        lag = int(decimal.Decimal(lag).quantize(decimal.Decimal('1'),
                                                 rounding=decimal.ROUND_HALF_UP))
         if lag <= maxlag:
             ilag = int(lag)
@@ -190,9 +190,6 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         # construct all parameter sets for the estimator
         param_sets = tuple(param_grid({'lag': lags}))
-
-        if isinstance(self.estimator, SampledModel):
-            self.estimator.show_progress = False
 
         # run estimation on all lag times
         models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
@@ -348,7 +345,7 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         --------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
@@ -393,7 +390,7 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         -------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
@@ -435,7 +432,7 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         -------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time

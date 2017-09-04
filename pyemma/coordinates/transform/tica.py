@@ -243,8 +243,8 @@ class TICA(StreamingEstimationTransformer):
 
         self._covar.partial_fit(iterable)
         self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
-                                        cov=self._covar.cov,
-                                        cov_tau=self._covar.cov_tau)
+                                        cov=self._covar.C00_,
+                                        cov_tau=self._covar.C0t_)
 
         self._used_data = self._covar._used_data
         self._estimated = False
@@ -264,8 +264,8 @@ class TICA(StreamingEstimationTransformer):
 
         self._covar.estimate(iterable, **kw)
         self._model.update_model_params(mean=self._covar.mean,
-                                        cov=self._covar.cov,
-                                        cov_tau=self._covar.cov_tau)
+                                        cov=self._covar.C00_,
+                                        cov_tau=self._covar.C0t_)
         self._diagonalize()
 
         return self._model
@@ -292,7 +292,7 @@ class TICA(StreamingEstimationTransformer):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
         try:
-            eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
+            eigenvalues, eigenvectors = eig_corr(self._covar.C00_, self._covar.C0t_, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
             raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
         if self.kinetic_map and self.commute_map:

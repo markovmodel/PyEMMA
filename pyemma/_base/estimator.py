@@ -18,10 +18,10 @@
 
 from __future__ import absolute_import, print_function
 
-import warnings
 
-from six.moves import range
-import inspect, sys
+import inspect
+import sys
+import os
 
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
@@ -293,30 +293,45 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    if progress_reporter is not None:
-        from .parallel import _register_progress_bar
-        _register_progress_bar(show_progress, N=len(estimators),
-                               description="estimating %s" % str(estimator.__class__.__name__),
-                               progress_reporter=progress_reporter, n_jobs=n_jobs)
-
-    if n_jobs > 1:
+    if n_jobs > 1 and os.name == 'posix':
+        if hasattr(estimators[0], 'logger'):
+            estimators[0].logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
         # iterate over parameter settings
-        import joblib
-        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimator,
-                                                                 param_set, X,
-                                                                 evaluate,
-                                                                 evaluate_args,
-                                                                 failfast)
+        task_iter = ((estimator,
+                      param_set, X,
+                      evaluate,
+                      evaluate_args,
+                      failfast)
                      for estimator, param_set in zip(estimators, param_sets))
 
-        from .parallel import _init_pool
-        pool = _init_pool(n_jobs)
-        assert pool
-        # the ctx manager will close and remove the processes, so we have to start new ones every time...
+        from pathos.multiprocessing import Pool as Parallel
+        pool = Parallel(processes=n_jobs)
+        args = list(task_iter)
+        if progress_reporter is not None:
+            progress_reporter._progress_register(len(estimators), stage=0, description="estimating %s" % str(estimator.__class__.__name__))
+            from pyemma._base.model import SampledModel
+            for a in args:
+                if isinstance(a[0], SampledModel):
+                    a[0].show_progress = False
+
+            def callback(_):
+                progress_reporter._progress_update(1, stage=0)
+        else:
+            callback = None
+
+        def error_callback(*args, **kw):
+            if failfast:
+                raise Exception('something failed')
+
         with pool:
-            res = pool(task_iter)
+            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
+                                          error_callback=error_callback) for a in args]
+            res = [x.get() for x in res_async]
+
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
+        if hasattr(estimators[0], 'logger'):
+            estimators[0].logger.debug('estimating %s with n_jobs=1 or because you do not have a POSIX system', estimator)
         res = []
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,

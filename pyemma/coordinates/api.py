@@ -46,6 +46,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = ['featurizer',  # IO
            'load',
            'source',
+           'combine_sources',
            'histogram',
            'pipeline',
            'discretizer',
@@ -365,6 +366,35 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
     return reader
+
+
+def combine_sources(sources, chunksize=1000):
+    r""" Combines multiple data sources to stream from.
+
+    The given source objects (readers and transformers, eg. TICA) are concatenated in dimension axis during iteration.
+    This can be used to couple arbitrary features in order to pass them to an Estimator expecting only one source,
+    which is usually the case. All the parameters for iterator creation are passed to the actual sources, to ensure
+    consistent behaviour.
+
+    Parameters
+    ----------
+    sources : list, tuple
+        list of DataSources (Readers, StreamingTransformers etc.) to combine for streaming access.
+
+    chunksize: int
+        chunk size to use for underlying iterators.
+
+    Notes
+    -----
+    This is currently only implemented for matching lengths trajectories.
+
+    Returns
+    -------
+    merger : :class:`SourcesMerger <pyemma.coordinates.data.sources_merger.SourcesMerger>`
+
+    """
+    from pyemma.coordinates.data.sources_merger import SourcesMerger
+    return SourcesMerger(sources, chunk=chunksize)
 
 
 def pipeline(stages, run=True, stride=1, chunksize=1000):
