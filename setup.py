@@ -221,8 +221,6 @@ metadata = dict(
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     keywords='Markov State Model Algorithms',
-    # packages are found if their folder contains an __init__.py,
-    packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
@@ -284,6 +282,8 @@ else:
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
+    # packages are found if their folder contains an __init__.py,
+    metadata['packages'] = find_packages()
 
 setup(**metadata)
 
