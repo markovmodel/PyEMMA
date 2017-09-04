@@ -52,7 +52,7 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
             values = obj['values']
             result = np.empty(len(values), dtype=object)
             for i, e in enumerate(values):
-                result[i] = self.restore(e)
+                result[i] = self.context.restore(e, reset=False)
             return result
 
 
