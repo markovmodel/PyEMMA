@@ -5,18 +5,14 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 """
 import numpy as np
 
-from pyemma._ext.jsonpickle import handlers, tags
+from pyemma._ext.jsonpickle import handlers
 
 
 def register_ndarray_handler():
-    """ Override jsonpickle handler for numpy arrays with compressed NPZ handler.
-    First unregisters the default handler
-    """
     H5BackendLinkageHandler.handles(np.ndarray)
 
     for t in NumpyExtractedDtypeHandler.np_dtypes:
         NumpyExtractedDtypeHandler.handles(t)
-
 
 def register_all_handlers():
     register_ndarray_handler()
@@ -25,6 +21,8 @@ def register_all_handlers():
 class H5BackendLinkageHandler(handlers.BaseHandler):
     """ stores NumPy arrays in the backing hdf5 file contained in the context """
     def __init__(self, context):
+        if not hasattr(context, 'h5_file'):
+            raise ValueError('the given un/-pickler has to contain a hdf5 file reference.')
         super(H5BackendLinkageHandler, self).__init__(context=context)
 
     @property
@@ -34,9 +32,8 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
 
     def flatten(self, obj, data):
         if obj.dtype == np.object_:
-            value = [self.context._flatten(v) for v in obj]
-            data.pop('py/object')
-            data[tags.SEQ] = value
+            value = [self.context.flatten(v, reset=False) for v in obj]
+            data['values'] = value
         else:
             import uuid
             array_id = '{group}/{id}'.format(group=self.file.name, id=uuid.uuid4())
@@ -46,9 +43,15 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         return data
 
     def restore(self, obj):
-        array_ref = obj['array_ref']
-        # it is important to return a copy here, because h5 only creates views to the data.
-        return self.file[array_ref][:]
+        if 'array_ref' in obj:
+            array_ref = obj['array_ref']
+            # it is important to return a copy here, because h5 only creates views to the data.
+            return self.file[array_ref][:]
+        else:
+            result = np.empty(len(obj), dtype=object)
+            for i, e in enumerate(obj['values']):
+                result[i] = self.restore(e)
+            return result
 
 
 class NumpyExtractedDtypeHandler(handlers.BaseHandler):
