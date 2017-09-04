@@ -36,7 +36,7 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
             data['values'] = value
         else:
             import uuid
-            array_id = '{group}/{id}'.format(group=self.file.name, id=uuid.uuid4())
+            array_id = str(uuid.uuid4())
             self.file.create_dataset(name=array_id, data=obj,
                                      chunks=True, compression='gzip', compression_opts=4, shuffle=True)
             data['array_ref'] = array_id
@@ -46,10 +46,12 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         if 'array_ref' in obj:
             array_ref = obj['array_ref']
             # it is important to return a copy here, because h5 only creates views to the data.
-            return self.file[array_ref][:]
+            ds = self.file[array_ref]
+            return ds[:]
         else:
-            result = np.empty(len(obj), dtype=object)
-            for i, e in enumerate(obj['values']):
+            values = obj['values']
+            result = np.empty(len(values), dtype=object)
+            for i, e in enumerate(values):
                 result[i] = self.restore(e)
             return result
 
