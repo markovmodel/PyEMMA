@@ -60,6 +60,42 @@ def list_models(file_name):
                     } for k in f.keys()}
 
 
+def save(obj, file_name, model_name='latest', save_streaming_chain=False):
+    import h5py
+    import time
+    from pyemma._ext.jsonpickle.pickler import Pickler
+
+    global _handlers_registered
+    if not _handlers_registered:
+        _reg_all_handlers()
+        _handlers_registered = True
+    # if we are serializing a pipeline element, store whether to store the chain elements.
+    old_flag = obj._save_data_producer
+    obj._save_data_producer = save_streaming_chain
+    try:
+        with h5py.File(file_name) as f:
+            # TODO: rename the model, if is already there for sanity/backup?
+            g = f.require_group(str(model_name))
+            g.attrs['created'] = str(time.time())
+            g.attrs['created_readable'] = time.asctime()
+            g.attrs['class_str'] = str(obj)
+            g.attrs['class_repr'] = repr(obj)
+            # now encode the object (this will write all numpy arrays to current group).
+            context = Pickler()
+            context.h5_file = g
+            flattened = jsonpickle.pickler.encode(obj, context=context)
+            # attach the json string in the H5 file.
+            g.attrs['model'] = flattened
+    except Exception as e:
+        if isinstance(obj, Loggable):
+            obj.logger.exception('During saving the object ("{error}") '
+                                 'the following error occurred'.format(error=e))
+        raise
+    finally:
+        # restore old state.
+        obj._save_data_producer = old_flag
+
+
 def load(file_name, model_name='latest'):
     """ loads a previously saved object of this class from a file.
 
@@ -146,7 +182,7 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def save(self, filename, model_name='latest', save_streaming_chain=False):
+    def save(self, file_name, model_name='latest', save_streaming_chain=False):
         r"""
         Parameters
         -----------
@@ -173,40 +209,7 @@ class SerializableMixIn(object):
 
         >>> assert np.all(inst_restored.P == m.P)
         """
-        import h5py
-        import time
-        from pyemma._ext.jsonpickle.pickler import Pickler
-
-        global _handlers_registered
-        if not _handlers_registered:
-            _reg_all_handlers()
-            _handlers_registered = True
-        # if we are serializing a pipeline element, store whether to store the chain elements.
-        old_flag = self._save_data_producer
-        self._save_data_producer = save_streaming_chain
-        assert self._save_data_producer == save_streaming_chain
-        try:
-            with h5py.File(filename) as f:
-                # TODO: rename the model, if is already there for sanity/backup?
-                g = f.require_group(str(model_name))
-                g.attrs['created'] = str(time.time())
-                g.attrs['created_readable'] = time.asctime()
-                g.attrs['class_str'] = str(self)
-                g.attrs['class_repr'] = repr(self)
-                # now encode the object (this will write all numpy arrays to current group).
-                context = Pickler()
-                context.h5_file = g
-                flattened = jsonpickle.pickler.encode(self, context=context)
-                # attach the json string in the H5 file.
-                g.attrs['model'] = flattened
-        except Exception as e:
-            if isinstance(self, Loggable):
-                self.logger.exception('During saving the object ("{error}") '
-                                      'the following error occurred'.format(error=e))
-            raise
-        finally:
-            # restore old state.
-            self._save_data_producer = old_flag
+        return save(self, file_name, model_name, save_streaming_chain)
 
     @classmethod
     def load(cls, file_name, model_name='latest'):
