@@ -546,6 +546,9 @@ class _MSMEstimator(_Estimator, _MSM):
         Ensures that the connected states are indexed and returns the indices
         """
         self._check_is_estimated()
+        if not hasattr(self, '_active_state_indexes'):
+            from pyemma.util.discrete_trajectories import index_states
+            self._active_state_indexes = index_states(self.discrete_trajectories_active)
         return self._active_state_indexes
 
     def generate_traj(self, N, start=None, stop=None, stride=1):
@@ -1112,9 +1115,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
-        from pyemma.util.discrete_trajectories import index_states
-        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
-
         return self
 
     # TODO: change to statistically effective count matrix!
@@ -1346,8 +1346,6 @@ class OOMReweightedMSM(_MSMEstimator):
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
-        from pyemma.util.discrete_trajectories import index_states
-        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
         self._connected_sets = msmest.connected_sets(self._C_full)
         self._Xi = Xi
         self._omega = omega
@@ -1734,9 +1732,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         # if active set is empty, we can't do anything.
         if _np.size(self.active_set) == 0:
             raise RuntimeError('Active set is empty. Cannot estimate AMM.')
-
-        from pyemma.util.discrete_trajectories import index_states
-        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
 
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)

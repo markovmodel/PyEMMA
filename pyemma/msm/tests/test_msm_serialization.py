@@ -102,6 +102,15 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(new_obj.ncv, ml_msm.ncv)
         np.testing.assert_equal(new_obj.discrete_trajectories_full, ml_msm.discrete_trajectories_full)
 
+        # access
+        ml_msm.active_state_indexes
+        ml_msm.save(self.f, 'new')
+        restored = load(self.f, 'new')
+
+        assert len(ml_msm.active_state_indexes) == len(restored.active_state_indexes)
+        for x, y in zip(ml_msm.active_state_indexes, restored.active_state_indexes):
+            np.testing.assert_equal(x, y)
+
     def _compare_MLHMM(self, actual, desired):
         np.testing.assert_equal(actual.P, desired.P)
         from pyemma.msm import BayesianHMSM
