@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import contextlib
 import logging
 
 import six
@@ -45,16 +44,32 @@ class OldVersionUnsupported(NotImplementedError):
     """ can not load recent models with old software versions. """
 
 
-def load(file_name, version='latest'):
+def list_models(file_name):
+    """ list all stored models in given file.
+
+    Parameters
+    ----------
+    file_name: str
+        path to file to list models for
+
+    """
+    import h5py
+    with h5py.File(file_name, mode='r') as f:
+        return {k: {'repr':f[k].attrs['class_str'],
+                    'created': f[k].attrs['created_readable']
+                    } for k in f.keys()}
+
+
+def load(file_name, model_name='latest'):
     """ loads a previously saved object of this class from a file.
 
     Parameters
     ----------
     file_name : str or file like object (has to provide read method).
         The file like object tried to be read for a serialized object.
-    version: int or str, default='latest'
+    model_name: str, default='latest'
         if multiple versions are contained in the file, older versions can be accessed by
-        their index. The oldest model has index zero and so forth.
+        their name. Use func:`list_models` to get a representation of all stored models.
 
     Returns
     -------
@@ -63,26 +78,24 @@ def load(file_name, version='latest'):
 
     import h5py
     with h5py.File(file_name, 'r') as f:
-        ds = f['/versions']
-        if version == 'latest':
-            inp = ds[len(ds) - 1]
-        else:
-            inp = ds[version]
-        inp = class_rename_registry.upgrade_old_names_in_json(inp[0])
-        if _debug: pass
-            #logger.debug("replaced {renamed} with {new}".format(renamed=renamed, new=new))
+        if model_name not in f:
+            raise ValueError('Model with name "{model_name}" not found in given file {file_name}'
+                             .format(model_name=model_name, file_name=file_name))
+        group = f[model_name]
+        inp = group.attrs['model']
+        inp = class_rename_registry.upgrade_old_names_in_json(inp)
         global _handlers_registered
         if not _handlers_registered:
             _reg_all_handlers()
             _handlers_registered = True
 
-        # we pass the hdf5 file handle to the unpickler by adding a known attribute...
+        # we pass the hdf5 file handle to the unpickler by adding a known attribute.
         from pyemma._ext.jsonpickle.unpickler import Unpickler
         context = Unpickler()
-        context.h5_file = f
+        context.h5_file = group
         obj = jsonpickle.unpickler.decode(inp, context=context)
 
-    return obj
+        return obj
 
 
 class SerializableMixIn(object):
@@ -133,18 +146,32 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def save(self, filename_or_file, save_streaming_chain=False):
-        """
+    def save(self, filename, model_name='latest', save_streaming_chain=False):
+        r"""
         Parameters
         -----------
-        filename_or_file: str
+        filename: str
             path to desired output file
+        model_name: str, default=latest
+            creates a group named 'model_name' in the given file, which will contain all of the data.
+            If the name already exists,
         save_streaming_chain : boolean, default=False
             if True, the data_producer(s) of this object will also be saved in the given file.
-            
+
         Examples
         --------
-        TODO: write me
+        >>> import pyemma, numpy as np
+        >>> from tempfile import NamedTemporaryFile
+        >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
+
+        >>> with NamedTemporaryFile() as ntf: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
+        ...    file = ntf.name
+        ...    m.save(file, 'simple')
+        ...    print(list_models(file))
+        ...    inst_restored = pyemma.load(file, 'simple')
+        {'simple': {'repr': "MSM(P=array([[ 0.1,  0.9],\n       [ 0.9,  0.1]]), dt_model='1 step', neig=2,\n  pi=array([ 0.5,  0.5]), reversible=True)", 'created': '...'}}
+
+        >>> assert np.all(inst_restored.P == m.P)
         """
         import h5py
         import time
@@ -159,16 +186,9 @@ class SerializableMixIn(object):
         self._save_data_producer = save_streaming_chain
         assert self._save_data_producer == save_streaming_chain
         try:
-            with h5py.File(filename_or_file) as f:
-                if 'versions' not in f:
-                    dt = h5py.special_dtype(vlen=bytes)
-                    ds = f.create_dataset('versions', dtype=dt, shape=(1, 1), maxshape=(None, 1), compression='gzip')
-                    ind = 0
-                else:
-                    ds = f['versions']
-                    ds.resize(len(ds) + 1, axis=0)
-                    ind = len(ds) - 1
-                g = f.require_group(str(ind))
+            with h5py.File(filename) as f:
+                # TODO: rename the model, if is already there for sanity/backup?
+                g = f.require_group(str(model_name))
                 g.attrs['created'] = str(time.time())
                 g.attrs['created_readable'] = time.asctime()
                 g.attrs['class_str'] = str(self)
@@ -178,8 +198,7 @@ class SerializableMixIn(object):
                 context.h5_file = g
                 flattened = jsonpickle.pickler.encode(self, context=context)
                 # attach the json string in the H5 file.
-
-                ds[ind] = flattened
+                g.attrs['model'] = flattened
         except Exception as e:
             if isinstance(self, Loggable):
                 self.logger.exception('During saving the object ("{error}") '
@@ -190,22 +209,22 @@ class SerializableMixIn(object):
             self._save_data_producer = old_flag
 
     @classmethod
-    def load(cls, file_name, version='latest'):
+    def load(cls, file_name, model_name='latest'):
         """ loads a previously saved object of this class from a file.
 
         Parameters
         ----------
         file_name : str or file like object (has to provide read method).
             The file like object tried to be read for a serialized object.
-        version: int or str, default='latest'
+        model_name: str, default='latest'
             if multiple versions are contained in the file, older versions can be accessed by
-            their index. The oldest model has index zero and so forth.
+            their name. Use func:list_models to get a representation of all stored models.
 
         Returns
         -------
         obj : the de-serialized object
         """
-        obj = load(file_name, version)
+        obj = load(file_name, model_name)
 
         if obj.__class__ != cls:
             raise ValueError("Given file '%s' did not contain the right type:"

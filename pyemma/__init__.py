@@ -37,13 +37,17 @@ from . import util
 from . import plots
 from . import thermo
 
-def load(filename):
+
+def load(filename, model_name='latest'):
     """ Restores a previously saved model or estimator from disk.
 
     Parameters
     ----------
     filename : str
         path to filename, where the model has been stored.
+    model_name: str, default='latest'
+        if multiple versions are contained in the file, older versions can be accessed by
+        their name. Use func:`list_models` to get a representation of all stored models.
 
     Returns
     -------
@@ -52,7 +56,7 @@ def load(filename):
 
     """
     from ._base.serialization.serialization import load as _load
-    return _load(filename)
+    return _load(filename, model_name)
 
 
 def _version_check(current, testing=False):
