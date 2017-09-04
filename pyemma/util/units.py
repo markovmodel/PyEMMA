@@ -56,7 +56,7 @@ class TimeUnit(object):
         if isinstance(unit, TimeUnit):  # copy constructor
             self._factor = unit._factor
             self._unit = unit._unit
-        else:  # construct from string
+        elif isinstance(unit, str):  # construct from string
             lunit = unit.lower()
             words = lunit.split(' ')
 
@@ -85,8 +85,13 @@ class TimeUnit(object):
                 self._unit = self._UNIT_S
             else:
                 raise ValueError('Time unit is not understood: '+unit)
+        else:
+            raise ValueError('Unknown type: %s' % unit)
 
     def __str__(self):
+        if not hasattr(self, '_unit'):
+            return "[TimeUnit {unknown}]"
+
         if self._unit == -1:
             return str(self._factor)+' step'
         else:
