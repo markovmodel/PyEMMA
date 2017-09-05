@@ -24,7 +24,11 @@ class np_container(SerializableMixIn):
         if not isinstance(other, np_container):
             return False
 
-        return np.all(self.x == other.x) and np.all(self.y == other.y)
+        for e0, e1 in zip(self.x, other.x):
+            np.testing.assert_equal(e0, e1)
+
+        return True
+
 
 def patch_old_location(faked_old_class, new_class):
     from pyemma._base.serialization.util import handle_old_classes
