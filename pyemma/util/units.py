@@ -103,6 +103,10 @@ class TimeUnit(object):
     def __eq__(self, other):
         return isinstance(other, TimeUnit) and self.dt == other.dt and self.unit == other.unit
 
+    def __reduce__(self):
+        args = '{factor} {unit}'.format(factor=self._factor, unit=TimeUnit._unit_names[self._unit])
+        return TimeUnit, (args, )
+
     @property
     def dt(self):
         return self._factor
