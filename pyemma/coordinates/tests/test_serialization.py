@@ -152,9 +152,9 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         cluster.save(self.fn, save_streaming_chain=True)
         restored = pyemma.load(self.fn)
-        assert isinstance(restored, type(cluster))
-        assert isinstance(restored.data_producer, type(tica))
-        assert isinstance(restored.data_producer.data_producer, type(reader))
+        self.assertIsInstance(restored, type(cluster))
+        self.assertIsInstance(restored.data_producer, type(tica))
+        self.assertIsInstance(restored.data_producer.data_producer, type(reader))
         cluster.save(self.fn, save_streaming_chain=False)
         restored = pyemma.load(self.fn)
         assert restored.data_producer is None

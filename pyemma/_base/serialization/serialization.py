@@ -72,6 +72,7 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
     # if we are serializing a pipeline element, store whether to store the chain elements.
     old_flag = obj._save_data_producer
     obj._save_data_producer = save_streaming_chain
+    assert obj._save_data_producer == save_streaming_chain
     try:
         with h5py.File(file_name) as f:
             # TODO: rename the model, if is already there for sanity/backup?
@@ -239,7 +240,9 @@ class SerializableMixIn(object):
 
     @property
     def _save_data_producer(self):
-        if not hasattr(self, '_SerializableBase__save_data_producer'):
+        try:
+            return self.__save_data_producer
+        except AttributeError:
             self.__save_data_producer = False
         return self.__save_data_producer
 
