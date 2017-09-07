@@ -59,29 +59,26 @@ class TestVAMPSelfConsitency(unittest.TestCase):
 
     def test(self):
         tau = 10
-        vamp = pyemma_api_vamp(tau)
-        vamp.estimate(self.trajs)
+        vamp = pyemma_api_vamp(self.trajs, lag=tau)
         vamp.right = True
-        phi = [ sf[:, tau:] for sf in vamp.get_output() ]
-        phi_concat = np.concatenate(phi)
-        mean_right = phi_concat.sum(axis=1) / phi_concat.shape[1]
-        cov_right = phi_concat.T.dot(phi_concat) / phi_concat.shape[1]
-        np.testing.assert_almost_equal(mean_right, 0.0)
-        np.testing.assert_almost_equal(cov_right, np.eye(vamp.dimension()))
+        atol = np.finfo(vamp.output_type()).eps*10.0
+        phi = [ sf[tau:, :] for sf in vamp.get_output() ]
+        phi = np.concatenate(phi)
+        mean_right = phi.sum(axis=0) / phi.shape[0]
+        cov_right = phi.T.dot(phi) / phi.shape[0]
+        np.testing.assert_allclose(mean_right, 0.0, atol=atol)
+        np.testing.assert_allclose(cov_right, np.eye(vamp.dimension()), atol=atol)
 
         vamp.right = False
-        psi = [ sf[:, 0:-tau] for sf in vamp.get_output() ]
-        psi_concat = np.concatenate(psi)
-        mean_left = psi_concat.sum(axis=1) / psi_concat.shape[1]
-        cov_left = psi_concat.T.dot(psi_concat) / psi_concat.shape[1]
-        np.testing.assert_almost_equal(mean_left, 0.0)
-        np.testing.assert_almost_equal(cov_left, np.eye(vamp.dimension()))
+        psi = [ sf[0:-tau, :] for sf in vamp.get_output() ]
+        psi = np.concatenate(psi)
+        mean_left = psi.sum(axis=0) / psi.shape[0]
+        cov_left = psi.T.dot(psi) / psi.shape[0]
+        np.testing.assert_allclose(mean_left, 0.0, atol=atol)
+        np.testing.assert_allclose(cov_left, np.eye(vamp.dimension()), atol=atol)
 
         # compute correlation between left and right
-        C01_psi_phi = np.zeros((vamp.dimension(), vamp.dimension()))
-        N_frames = 0
-        for l, r in zip(psi, phi):
-            C01_psi_phi += l.T.dot(r)
-            N_frames += r.shape[1]
-        np.testing.assert_almost_equal(np.diag(C01_psi_phi), vamp.singular_values)
+        assert phi.shape[0]==psi.shape[0]
+        C01_psi_phi = psi.T.dot(phi) / phi.shape[0]
+        np.testing.assert_allclose(np.diag(C01_psi_phi), vamp.singular_values, atol=atol)
 

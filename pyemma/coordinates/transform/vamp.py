@@ -21,30 +21,43 @@
 from __future__ import absolute_import
 
 import numpy as np
-from pyemma.coordinates.transform.tica import TICA
+from decorator import decorator
+import sys
+# from pyemma.coordinates.transform.tica import TICA
 from pyemma._base.model import Model
 from pyemma.util.annotators import fix_docs
 from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
-
+import warnings
 
 __all__ = ['VAMP']
 
+
 class VAMPModel(Model):
-    def set_model_params(self, mean_0, mean_t, c00, ctt, c0t):
+    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t):
         self.mean_0 = mean_0
         self.mean_t = mean_t
-        self.c00 = c00
-        self.ctt = ctt
-        self.c0t = c0t
+        self.C00 = C00
+        self.Ctt = Ctt
+        self.C0t = C0t
 
 
-# TODO: remove time scales property
+@decorator
+def _lazy_estimation(func, *args, **kw):
+    assert isinstance(args[0], VAMP)
+    tica_obj = args[0]
+    if not tica_obj._estimated:
+        tica_obj._diagonalize()
+    return func(*args, **kw)
+
 
 @fix_docs
-class VAMP(TICA):
+class VAMP(StreamingEstimationTransformer):
     r"""Variational approach for Markov processes (VAMP)"""
+
+    def describe(self):
+        return "[VAMP, lag = %i; max. output dim. = %s]" % (self._lag, str(self.dim))
 
     def __init__(self, lag, dim=None, scaling=None, right=True, epsilon=1e-6,
                  stride=1, skip=0, ncov_max=float('inf')):
@@ -94,9 +107,31 @@ class VAMP(TICA):
                                        lag=lag, bessel=False, stride=stride, skip=skip, weights=None, ncov_max=ncov_max)
 
         # empty dummy model instance
-        self._model = VAMPModel() # left/right?
+        self._model = VAMPModel()  # TODO: left/right?
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
-                        epsilon=epsilon,  stride=stride, skip=skip, ncov_max=ncov_max)
+                        epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
+
+    def _estimate(self, iterable, **kw):
+        indim = iterable.dimension()
+
+        if isinstance(self.dim, int):
+            if not self.dim <= indim:
+                raise RuntimeError("requested more output dimensions (%i) than dimension"
+                                   " of input data (%i)" % (self.dim, indim))
+
+        if self._logger_is_active(self._loglevel_DEBUG):
+            self._logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
+                               " with dimension (%i, %i)" % (self._lag, indim, indim))
+
+        self._covar.estimate(iterable, **kw)
+        self._model.update_model_params(mean_0=self._covar.mean,
+                                        mean_t=self._covar.mean_tau,
+                                        C00=self._covar.C00_,
+                                        C0t=self._covar.C0t_,
+                                        Ctt=self._covar.Ctt_)
+        self._diagonalize()
+
+        return self._model
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
@@ -111,50 +146,80 @@ class VAMP(TICA):
         U, s, Vh = np.linalg.svd(A, compute_uv=True)
 
         # compute cumulative variance
-        cumvar = np.cumsum(s**2)
+        cumvar = np.cumsum(s ** 2)
         cumvar /= cumvar[-1]
 
-        if self.dim is None:
-            m = np.count_nonzero(s > self.epsilon)
-        if isinstance(self.dim, float):
-            m = np.count_nonzero(cumvar >= self.dim)
-        else:
-            m = min(np.min(np.count_nonzero(s > self.epsilon)), self.dim)
+        self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean0, mean_t=mean1)
+
+        # if self.dim is None:
+        #    m = np.count_nonzero(s > self.epsilon)
+        # if isinstance(self.dim, float):
+        #    m = np.count_nonzero(cumvar >= self.dim)
+        # else:
+        #    m = min(np.min(np.count_nonzero(s > self.epsilon)), self.dim)
+        m = self.dimension(_estimating=True)
+        print(self.dim, m, file=sys.stderr)
+
         singular_vectors_left = L0.dot(U[:, :m])
         singular_vectors_right = L1.dot(Vh[:m, :].T)
-        singular_values = s[:m]
 
         # remove residual contributions of the constant function
-        singular_vectors_left -= singular_vectors_left*mean0.dot(singular_vectors_left)[np.newaxis, :]
-        singular_vectors_right -= singular_vectors_right*mean1.dot(singular_vectors_right)[np.newaxis, :]
+        singular_vectors_left -= singular_vectors_left * mean0.dot(singular_vectors_left)[np.newaxis, :]
+        singular_vectors_right -= singular_vectors_right * mean1.dot(singular_vectors_right)[np.newaxis, :]
 
         # normalize vectors
-        scale_left = np.diag(singular_vectors_left.T.dot(np.diag(mean0)).dot(singular_vectors_left))**-0.5
-        scale_right = np.diag(singular_vectors_right.T.dot(np.diag(mean1)).dot(singular_vectors_right))**-0.5
-        singular_vectors_left *= scale_left[np.newaxis, :]
-        singular_vectors_right *= scale_right[np.newaxis, :]
+        # TODO: fix me!
+        scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
+        #print('scale left', scale_left, scale_left**0.5, file=sys.stderr)
+        scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
+        #print('scale right', scale_right, scale_right**0.5, file=sys.stderr)
+        singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
+        singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
 
         # scale vectors
         if self.scaling is None:
             pass
         elif self.scaling in ['km', 'kinetic map']:
-            singular_vectors_left *= singular_values[np.newaxis, :]**2 ## TODO: check left/right
-            singular_vectors_right *= singular_values[np.newaxis, :] ** 2  ## TODO: check left/right
+            singular_vectors_left *= self.singular_values[np.newaxis, :] ** 2  ## TODO: check left/right
+            singular_vectors_right *= self.singular_values[np.newaxis, :] ** 2  ## TODO: check left/right
         else:
-            raise ValueError('unexpected value (%s) of "scaling"'%self.scaling)
+            raise ValueError('unexpected value (%s) of "scaling"' % self.scaling)
 
         self._logger.debug("finished diagonalisation.")
 
-        self._model.update_model_params(cumvar=cumvar,
-                                        singular_values=singular_values,
-                                        singular_vectors_right=singular_vectors_right,
+        self._model.update_model_params(singular_vectors_right=singular_vectors_right,
                                         singular_vectors_left=singular_vectors_left)
 
         self._estimated = True
 
 
-    def _transform_array(self, X): # TODO: are these still called ics?
-        r"""Projects the data onto the dominant independent components.
+    def dimension(self, _estimating=False):
+        """ output dimension """
+        if self.dim is None or self.dim == 1.0:
+            if self._estimated or _estimating:
+                return np.count_nonzero(self.singular_values > self.epsilon)
+            else:
+                warnings.warn(
+                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
+                                   'transformer has not yet been estimated. Result is only an approximation.'))
+                return self.data_producer.dimension()
+        if isinstance(self.dim, float):
+            if self._estimated or _estimating:
+                return np.count_nonzero(self.cumvar >= self.dim)
+            else:
+                raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
+                                   'transformer has not yet been estimated. Call estimate() before.')
+        else:
+            if self._estimated or _estimating:
+                return min(np.min(np.count_nonzero(self.singular_values > self.epsilon)), self.dim)
+            else:
+                warnings.warn(
+                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
+                                   'transformer has not yet been estimated. Result is only an approximation.'))
+                return self.dim
+
+    def _transform_array(self, X):
+        r"""Projects the data onto the dominant singular functions.
 
         Parameters
         ----------
@@ -168,14 +233,46 @@ class VAMP(TICA):
         """
         # TODO: in principle get_output should not return data for *all* frames!
         if self.right:
-            X_meanfree = X - self.mean
-            Y = np.dot(X_meanfree, self.right_singular_vectors[:, 0:self.dimension()])
+            X_meanfree = X - self._model.mean_t
+            Y = np.dot(X_meanfree, self._model.singular_vectors_right[:, 0:self.dimension()])
         else:
-            X_meanfree = X - self.mean_tau
-            Y = np.dot(X_meanfree, self.left_singular_vectors[:, 0:self.dimension()])
+            X_meanfree = X - self._model.mean_0
+            Y = np.dot(X_meanfree, self._model.singular_vectors_left[:, 0:self.dimension()])
 
         return Y.astype(self.output_type())
 
-
     def output_type(self):
         return StreamingEstimationTransformer.output_type(self)
+
+    @property
+    # @_lazy_estimation
+    def singular_values(self):
+        r"""Singular values of VAMP (usually denoted :math:`\sigma`)
+
+        Returns
+        -------
+        singular values: 1-D np.array
+        """
+        return self._model.singular_values
+
+    @property
+    # @_lazy_estimation
+    def singular_vectors_right(self):
+        r"""Right singular vectors of the VAMP problem, columnwise
+
+        Returns
+        -------
+        eigenvectors: 2-D ndarray
+        """
+        return self._model.singular_vectors_right
+
+    @property
+    # @_lazy_estimation
+    def cumvar(self):
+        r"""Cumulative sum of the squared and normalized VAMP singular values
+
+        Returns
+        -------
+        cumvar: 1D np.array
+        """
+        return self._model.cumvar
