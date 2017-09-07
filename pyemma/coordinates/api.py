@@ -51,6 +51,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'vamp',
            'covariance_lagged',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
@@ -1253,6 +1254,13 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     if data is not None:
         res.estimate(data, chunksize=cs)
     return res
+
+
+def vamp(data=None, lag=10, dim=None, scaling=None, right=True,
+         stride=1, skip=0, ncov_max=float('inf')):
+    from pyemma.coordinates.transform.vamp import VAMP
+    res = VAMP(lag, dim=dim, scaling=scaling, right=right, skip=skip, ncov_max=ncov_max)
+    return _param_stage(data, res, stride=stride)
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
