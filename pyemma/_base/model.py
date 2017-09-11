@@ -146,9 +146,9 @@ class Model(object):
 class SampledModel(Model):
 
     def __init__(self, samples, conf=0.95):
+        super(SampledModel, self).__init__()
         self.set_model_params(samples=samples, conf=conf)
 
-    # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95):
         self.update_model_params(samples=samples, conf=conf)
         if samples is not None:
@@ -157,10 +157,6 @@ class SampledModel(Model):
     def _check_samples_available(self):
         if self.samples is None:
             raise AttributeError('Model samples not available in '+str(self)+'. Call set_model_params with samples.')
-
-#    def mean_model(self):
-#        """Computes the mean model from the given samples"""
-#        raise NotImplementedError('mean_model is not implemented in class '+str(self.__class__))
 
     def sample_f(self, f, *args, **kwargs):
         r"""Evaluated method f for all samples
