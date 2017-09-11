@@ -27,7 +27,6 @@ __author__ = 'noe'
 class SampledMSM(MSM, SampledModel):
     r""" Sampled Markov state model """
 
-    # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95,
                          P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """
