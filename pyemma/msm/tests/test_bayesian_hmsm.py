@@ -306,6 +306,24 @@ class TestBHMM(unittest.TestCase):
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
 
+    def test_n_samples(self):
+        with self.assertRaises(ValueError):
+            self.bhmm.nsamples = 0
+        # compute more samples
+        old = self.bhmm.nsamples
+        self.bhmm.nsamples += 5
+        self.assertEqual(len(self.bhmm.samples), old + 5)
+
+        # remove samples
+        old = self.bhmm.nsamples
+        self.bhmm.nsamples -= 5
+        self.assertEqual(len(self.bhmm.samples), old - 5)
+
+        # try to remove all samples should raise
+        old = self.bhmm.nsamples
+        with self.assertRaises(ValueError):
+            self.bhmm.nsamples -= old
+
 class TestBHMMSpecialCases(unittest.TestCase):
 
     def test_separate_states(self):

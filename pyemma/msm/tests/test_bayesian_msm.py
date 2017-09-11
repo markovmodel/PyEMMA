@@ -39,7 +39,7 @@ class TestBMSM(unittest.TestCase):
         pi_macro = np.zeros(2)
         pi_macro[0] = pi_micro[0:50].sum()
         pi_macro[1] = pi_micro[50:].sum()
-        
+
         # coarse-grain microstates to two metastable states
         cg = np.zeros(100, dtype=int)
         cg[50:] = 1
@@ -55,7 +55,7 @@ class TestBMSM(unittest.TestCase):
                                              reversible=True, nsamples=cls.nsamples)
         cls.bmsm_revpi = bayesian_markov_model(obs_macro, cls.lag, dt_traj='4 fs',
                                                reversible=True, statdist=pi_macro,
-                                                    nsamples=cls.nsamples)
+                                               nsamples=cls.nsamples)
 
     def test_reversible(self):
         self._reversible(self.bmsm_rev)
@@ -140,7 +140,7 @@ class TestBMSM(unittest.TestCase):
     def test_eigenvalues_stats(self):
         self._eigenvalues_stats(self.bmsm_rev)
         self._eigenvalues_stats(self.bmsm_revpi)
-        
+
     def _eigenvalues_stats(self, msm, tol=1e-12):
         # mean
         mean = msm.sample_mean('eigenvalues')
@@ -176,7 +176,7 @@ class TestBMSM(unittest.TestCase):
 
     def test_eigenvectors_left_stats(self):
         self._eigenvectors_left_stats(self.bmsm_rev)
-        self._eigenvectors_left_stats(self.bmsm_revpi)        
+        self._eigenvectors_left_stats(self.bmsm_revpi)
 
     def _eigenvectors_left_stats(self, msm, tol=1e-12):
         # mean
@@ -213,7 +213,7 @@ class TestBMSM(unittest.TestCase):
 
     def test_eigenvectors_right_stats(self):
         self._eigenvectors_right_stats(self.bmsm_rev)
-        self._eigenvectors_right_stats(self.bmsm_revpi)        
+        self._eigenvectors_right_stats(self.bmsm_revpi)
 
     def _eigenvectors_right_stats(self, msm, tol=1e-12):
         # mean
@@ -236,7 +236,7 @@ class TestBMSM(unittest.TestCase):
         assert np.all(R+tol >= mean)
 
     def test_stationary_distribution_samples(self):
-        self._stationary_distribution_samples(self.bmsm_rev) 
+        self._stationary_distribution_samples(self.bmsm_rev)
 
     def _stationary_distribution_samples(self, msm):
         samples = msm.sample_f('stationary_distribution')
@@ -250,7 +250,7 @@ class TestBMSM(unittest.TestCase):
     def test_stationary_distribution_stats(self):
         self._stationary_distribution_stats(self.bmsm_rev)
         self._stationary_distribution_stats(self.bmsm_revpi)
-        
+
     def _stationary_distribution_stats(self, msm, tol=1e-12):
         # mean
         mean = msm.sample_mean('stationary_distribution')
@@ -274,7 +274,7 @@ class TestBMSM(unittest.TestCase):
 
     def test_timescales_samples(self):
         self._timescales_samples(self.bmsm_rev)
-        self._timescales_samples(self.bmsm_revpi) 
+        self._timescales_samples(self.bmsm_revpi)
 
     def _timescales_samples(self, msm):
         samples = msm.sample_f('timescales')
@@ -286,7 +286,7 @@ class TestBMSM(unittest.TestCase):
 
     def test_timescales_stats(self):
         self._timescales_stats(self.bmsm_rev)
-        self._timescales_stats(self.bmsm_revpi) 
+        self._timescales_stats(self.bmsm_revpi)
 
     def _timescales_stats(self, msm):
         # mean
@@ -314,6 +314,24 @@ class TestBMSM(unittest.TestCase):
         from pyemma.util.units import TimeUnit
         tu = TimeUnit("4 fs").get_scaled(self.bmsm_rev.lag)
         self.assertEqual(self.bmsm_rev.dt_model, tu)
-    
+
+    def test_n_samples(self):
+        with self.assertRaises(ValueError):
+            self.bmsm_rev.nsamples = 0
+        # compute more samples
+        old = self.bmsm_rev.nsamples
+        self.bmsm_rev.nsamples += 5
+        self.assertEqual(len(self.bmsm_rev.samples), old + 5)
+
+        # remove samples
+        old = self.bmsm_rev.nsamples
+        self.bmsm_rev.nsamples -= 5
+        self.assertEqual(len(self.bmsm_rev.samples), old - 5)
+
+        # try to remove all samples should raise
+        old = self.bmsm_rev.nsamples
+        with self.assertRaises(ValueError):
+            self.bmsm_rev.nsamples -= old
+
 if __name__ == "__main__":
     unittest.main()
