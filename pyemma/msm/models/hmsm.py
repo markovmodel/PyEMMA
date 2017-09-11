@@ -41,26 +41,21 @@ class HMSM(_MSM):
 
     Parameters
     ----------
-    hmm : :class:`DiscreteHMM <bhmm.DiscreteHMM>`
-        Hidden Markov Model
+    Pcoarse : ndarray (m,m)
+        coarse-grained or hidden transition matrix
+
+    pobs : ndarray (m,n)
+        observation probability matrix from hidden to observable discrete states
+
+    pi: ndarray(n)
+        stationary vector
+
+    dt_model : str, optional, default='1 step'
+        time step of the model
 
     """
 
     def __init__(self, P, pobs, pi=None, dt_model='1 step'):
-        """
-
-        Parameters
-        ----------
-        Pcoarse : ndarray (m,m)
-            coarse-grained or hidden transition matrix
-
-        Pobs : ndarray (m,n)
-            observation probability matrix from hidden to observable discrete states
-
-        dt_model : str, optional, default='1 step'
-            time step of the model
-
-        """
         # construct superclass and check input
         _MSM.__init__(self, P, dt_model=dt_model)
         self.set_model_params(P=P, pobs=pobs, pi=pi, dt_model=dt_model)
