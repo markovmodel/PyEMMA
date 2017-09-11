@@ -275,7 +275,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert len(its._its_samples) == its.nsamples
 
         its.nsamples -= 2
-        assert its.estimators[0].nsamples == nsamples - 2
+        assert its.estimators[0].nsamples == nsamples
 
     def test_its_msm_set_nsamples(self):
         fake_dtrajs = [np.random.randint(0,10, size=100)]
