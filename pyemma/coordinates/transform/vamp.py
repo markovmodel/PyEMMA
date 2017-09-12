@@ -35,7 +35,7 @@ __all__ = ['VAMP']
 
 
 class VAMPModel(Model):
-    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t):
+    def set_model_params(self, dummy, mean_0, mean_t, C00, Ctt, C0t):
         self.mean_0 = mean_0
         self.mean_t = mean_t
         self.C00 = C00
@@ -107,7 +107,7 @@ class VAMP(StreamingEstimationTransformer):
                                        lag=lag, bessel=False, stride=stride, skip=skip, weights=None, ncov_max=ncov_max)
 
         # empty dummy model instance
-        self._model = VAMPModel()  # TODO: left/right?
+        self._model = VAMPModel()
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
                         epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
 
@@ -133,6 +133,39 @@ class VAMP(StreamingEstimationTransformer):
 
         return self._model
 
+    def partial_fit(self, X):
+        """ incrementally update the covariances and mean.
+
+        Parameters
+        ----------
+        X: array, list of arrays, PyEMMA reader
+            input data.
+
+        Notes
+        -----
+        The projection matrix is first being calculated upon its first access.
+        """
+        from pyemma.coordinates import source
+        iterable = source(X)
+
+        if isinstance(self.dim, int):
+            indim = iterable.dimension()
+            if not self.dim <= indim:
+                raise RuntimeError("requested more output dimensions (%i) than dimension"
+                                   " of input data (%i)" % (self.dim, indim))
+
+        self._covar.partial_fit(iterable)
+        self._model.update_model_params(mean_0=self._covar.mean, # TODO: inefficient, fixme
+                                        mean_t=self._covar.mean_tau,
+                                        C00=self._covar.C00_,
+                                        C0t=self._covar.C0t_,
+                                        Ctt=self._covar.Ctt_)
+
+        #self._used_data = self._covar._used_data
+        self._estimated = False
+
+        return self
+
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize covariance matrices")
@@ -151,14 +184,7 @@ class VAMP(StreamingEstimationTransformer):
 
         self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean0, mean_t=mean1)
 
-        # if self.dim is None: # TODO: fix me!
-        #    m = np.count_nonzero(s > self.epsilon)
-        # if isinstance(self.dim, float):
-        #    m = np.count_nonzero(cumvar >= self.dim)
-        # else:
-        #    m = min(np.min(np.count_nonzero(s > self.epsilon)), self.dim)
         m = self.dimension(_estimating=True)
-        #print(self.dim, m, file=sys.stderr)
 
         singular_vectors_left = L0.dot(U[:, :m])
         singular_vectors_right = L1.dot(Vh[:m, :].T)
@@ -190,7 +216,7 @@ class VAMP(StreamingEstimationTransformer):
         """ output dimension """
         if self.dim is None or self.dim == 1.0:
             if self._estimated or _estimating:
-                return np.count_nonzero(self.singular_values > self.epsilon)
+                return np.count_nonzero(self._model.singular_values > self.epsilon)
             else:
                 warnings.warn(
                     RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
@@ -198,13 +224,13 @@ class VAMP(StreamingEstimationTransformer):
                 return self.data_producer.dimension()
         if isinstance(self.dim, float):
             if self._estimated or _estimating:
-                return np.count_nonzero(self.cumvar >= self.dim)
+                return np.count_nonzero(self._model.cumvar >= self.dim)
             else:
                 raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
         else:
             if self._estimated or _estimating:
-                return min(np.min(np.count_nonzero(self.singular_values > self.epsilon)), self.dim)
+                return min(np.min(np.count_nonzero(self._model.singular_values > self.epsilon)), self.dim)
             else:
                 warnings.warn(
                     RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
@@ -224,7 +250,7 @@ class VAMP(StreamingEstimationTransformer):
         Y : ndarray(n,)
             the projected data
         """
-        # TODO: in principle get_output should not return data for *all* frames!
+        # TODO: in principle get_output should not return data for *all* frames! Think about this.
         if self.right:
             X_meanfree = X - self._model.mean_t
             Y = np.dot(X_meanfree, self._model.singular_vectors_right[:, 0:self.dimension()])
@@ -238,7 +264,7 @@ class VAMP(StreamingEstimationTransformer):
         return StreamingEstimationTransformer.output_type(self)
 
     @property
-    # @_lazy_estimation
+    @_lazy_estimation
     def singular_values(self):
         r"""Singular values of VAMP (usually denoted :math:`\sigma`)
 
@@ -249,7 +275,7 @@ class VAMP(StreamingEstimationTransformer):
         return self._model.singular_values
 
     @property
-    # @_lazy_estimation
+    @_lazy_estimation
     def singular_vectors_right(self):
         r"""Right singular vectors of the VAMP problem, columnwise
 
@@ -260,7 +286,7 @@ class VAMP(StreamingEstimationTransformer):
         return self._model.singular_vectors_right
 
     @property
-    # @_lazy_estimation
+    @_lazy_estimation
     def cumvar(self):
         r"""Cumulative sum of the squared and normalized VAMP singular values
 

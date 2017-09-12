@@ -46,14 +46,14 @@ def random_matrix(n, rank=None, eps=0.01):
 
 class TestVAMPSelfConsitency(unittest.TestCase):
     def test_full_rank(self):
-        self.do_test(20, 20)
+        self.do_test(20, 20, test_partial_fit=False)
 
     def test_low_rank(self):
         dim = 30
         rank = 15
-        self.do_test(dim, rank)
+        self.do_test(dim, rank, test_partial_fit=True)
 
-    def do_test(self, dim, rank):
+    def do_test(self, dim, rank, test_partial_fit=False):
         # setup
         N_frames = [123, 456, 789]
         N_trajs = len(N_frames)
@@ -75,16 +75,16 @@ class TestVAMPSelfConsitency(unittest.TestCase):
         assert vamp.dimension() <= rank
 
         atol = np.finfo(vamp.output_type()).eps*10.0
-        phi = [ sf[tau:, :] for sf in vamp.get_output() ]
-        phi = np.concatenate(phi)
+        phi_trajs = [ sf[tau:, :] for sf in vamp.get_output() ]
+        phi = np.concatenate(phi_trajs)
         mean_right = phi.sum(axis=0) / phi.shape[0]
         cov_right = phi.T.dot(phi) / phi.shape[0]
         np.testing.assert_allclose(mean_right, 0.0, atol=atol)
         np.testing.assert_allclose(cov_right, np.eye(vamp.dimension()), atol=atol)
 
         vamp.right = False
-        psi = [ sf[0:-tau, :] for sf in vamp.get_output() ]
-        psi = np.concatenate(psi)
+        psi_trajs = [ sf[0:-tau, :] for sf in vamp.get_output() ]
+        psi = np.concatenate(psi_trajs)
         mean_left = psi.sum(axis=0) / psi.shape[0]
         cov_left = psi.T.dot(psi) / psi.shape[0]
         np.testing.assert_allclose(mean_left, 0.0, atol=atol)
@@ -96,5 +96,28 @@ class TestVAMPSelfConsitency(unittest.TestCase):
         n = max(C01_psi_phi.shape)
         C01_psi_phi = C01_psi_phi[0:n,:][:, 0:n]
         np.testing.assert_allclose(np.diag(C01_psi_phi), vamp.singular_values[0:vamp.dimension()], atol=atol)
+
+        if test_partial_fit:
+            vamp2 = pyemma_api_vamp(lag=tau, scaling=None)
+            for t in trajs:
+                vamp2.partial_fit(t)
+
+            model_params = vamp._model.get_model_params()
+            model_params2 = vamp2._model.get_model_params()
+
+            for n in model_params.keys():
+                np.testing.assert_allclose(model_params[n], model_params2[n])
+
+            vamp2.singular_values # trigger diagonalization
+
+            vamp2.right = True
+            for t, ref in zip(trajs, phi_trajs):
+                np.testing.assert_allclose(vamp2.transform(t[tau:]), ref)
+
+            vamp2.right = False
+            for t, ref in zip(trajs, psi_trajs):
+                np.testing.assert_allclose(vamp2.transform(t[0:-tau]), ref)
+
+
 
 
