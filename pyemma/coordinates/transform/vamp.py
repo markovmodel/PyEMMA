@@ -84,6 +84,15 @@ class VAMP(StreamingEstimationTransformer):
             * 'kinetic map' or 'km': modes are scaled by singular value
         right : boolean
             Whether to compute the right singular functions.
+            If right==True, get_output() will return the right singular
+            functions. Otherwise, get_output() will return the left singular
+            functions.
+            Beware that only frames[tau:, :] of each trajectory returned
+            by get_output() contain valid values of the right singular
+            functions. Conversely, only frames[0:-tau, :] of each
+            trajectory returned by get_output() contain valid values of
+            the left singular functions. The remaining frames might
+            possibly be interpreted as some extrapolation.
         epsilon : float
             singular value cutoff. Singular values of C0 with norms <= epsilon
             will be cut off. The remaining number of singular values define
@@ -170,11 +179,11 @@ class VAMP(StreamingEstimationTransformer):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize covariance matrices")
 
-        mean0 = self._covar.mean
-        mean1 = self._covar.mean_tau
+        mean_0 = self._covar.mean
+        mean_t = self._covar.mean_tau
         L0 = spd_inv_sqrt(self._covar.C00_)
-        L1 = spd_inv_sqrt(self._covar.Ctt_)
-        A = L0.T.dot(self._covar.C0t_).dot(L1)
+        Lt = spd_inv_sqrt(self._covar.Ctt_)
+        A = L0.T.dot(self._covar.C0t_).dot(Lt)
 
         U, s, Vh = np.linalg.svd(A, compute_uv=True)
 
@@ -182,12 +191,12 @@ class VAMP(StreamingEstimationTransformer):
         cumvar = np.cumsum(s ** 2)
         cumvar /= cumvar[-1]
 
-        self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean0, mean_t=mean1)
+        self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean_0, mean_t=mean_t)
 
         m = self.dimension(_estimating=True)
 
         singular_vectors_left = L0.dot(U[:, :m])
-        singular_vectors_right = L1.dot(Vh[:m, :].T)
+        singular_vectors_right = Lt.dot(Vh[:m, :].T)
 
         # normalize vectors
         scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
@@ -199,8 +208,8 @@ class VAMP(StreamingEstimationTransformer):
         if self.scaling is None:
             pass
         elif self.scaling in ['km', 'kinetic map']:
-            singular_vectors_left *= self.singular_values[np.newaxis, :] ** 2  ## TODO: check left/right
-            singular_vectors_right *= self.singular_values[np.newaxis, :] ** 2  ## TODO: check left/right
+            singular_vectors_left *= self.singular_values[np.newaxis, :] ## TODO: check left/right
+            singular_vectors_right *= self.singular_values[np.newaxis, :] ## TODO: check left/right
         else:
             raise ValueError('unexpected value (%s) of "scaling"' % self.scaling)
 
@@ -284,6 +293,17 @@ class VAMP(StreamingEstimationTransformer):
         eigenvectors: 2-D ndarray
         """
         return self._model.singular_vectors_right
+
+    @property
+    @_lazy_estimation
+    def singular_vectors_left(self):
+        r"""Left singular vectors of the VAMP problem, columnwise
+
+        Returns
+        -------
+        eigenvectors: 2-D ndarray
+        """
+        return self._model.singular_vectors_left
 
     @property
     @_lazy_estimation
