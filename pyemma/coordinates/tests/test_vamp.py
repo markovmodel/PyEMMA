@@ -30,37 +30,50 @@ from pyemma.coordinates import vamp as pyemma_api_vamp
 #from pyemma._ext.variational.util import ZeroRankError
 from logging import getLogger
 
-logger = getLogger('pyemma.'+'TestTICA')
+logger = getLogger('pyemma.'+'TestVAMP')
 
-def random_invertible(n, eps=0.01):
-    'generate real random invertible matrix'
+
+def random_matrix(n, rank=None, eps=0.01):
     m = np.random.randn(n, n)
     u, s, v = np.linalg.svd(m)
-    s = np.maximum(s, eps)
+    if rank is None:
+        rank = n
+    if rank > n:
+        rank = n
+    s = np.concatenate((np.maximum(s, eps)[0:rank], np.zeros(n-rank)))
     return u.dot(np.diag(s)).dot(v)
 
 
 class TestVAMPSelfConsitency(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        N_trajs = 3
-        N_frames = 1000
+    def test_full_rank(self):
+        self.do_test(20, 20)
+
+    def test_low_rank(self):
         dim = 30
-        A = random_invertible(dim)
+        rank = 15
+        self.do_test(dim, rank)
+
+    def do_test(self, dim, rank):
+        # setup
+        N_frames = [123, 456, 789]
+        N_trajs = len(N_frames)
+        A = random_matrix(dim, rank)
         trajs = []
         mean = np.random.randn(dim)
         for i in range(N_trajs):
             # set up data
-            white = np.random.randn(N_frames, dim)
+            white = np.random.randn(N_frames[i], dim)
             brown = np.cumsum(white, axis=0)
             correlated = np.dot(brown, A)
             trajs.append(correlated + mean)
-        cls.trajs = trajs
 
-    def test(self):
-        tau = 10
-        vamp = pyemma_api_vamp(self.trajs, lag=tau)
+        # test
+        tau = 50
+        vamp = pyemma_api_vamp(trajs, lag=tau, scaling=None)
         vamp.right = True
+
+        assert vamp.dimension() <= rank
+
         atol = np.finfo(vamp.output_type()).eps*10.0
         phi = [ sf[tau:, :] for sf in vamp.get_output() ]
         phi = np.concatenate(phi)
@@ -80,5 +93,8 @@ class TestVAMPSelfConsitency(unittest.TestCase):
         # compute correlation between left and right
         assert phi.shape[0]==psi.shape[0]
         C01_psi_phi = psi.T.dot(phi) / phi.shape[0]
-        np.testing.assert_allclose(np.diag(C01_psi_phi), vamp.singular_values, atol=atol)
+        n = max(C01_psi_phi.shape)
+        C01_psi_phi = C01_psi_phi[0:n,:][:, 0:n]
+        np.testing.assert_allclose(np.diag(C01_psi_phi), vamp.singular_values[0:vamp.dimension()], atol=atol)
+
 

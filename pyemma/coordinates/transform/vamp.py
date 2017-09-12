@@ -151,28 +151,21 @@ class VAMP(StreamingEstimationTransformer):
 
         self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean0, mean_t=mean1)
 
-        # if self.dim is None:
+        # if self.dim is None: # TODO: fix me!
         #    m = np.count_nonzero(s > self.epsilon)
         # if isinstance(self.dim, float):
         #    m = np.count_nonzero(cumvar >= self.dim)
         # else:
         #    m = min(np.min(np.count_nonzero(s > self.epsilon)), self.dim)
         m = self.dimension(_estimating=True)
-        print(self.dim, m, file=sys.stderr)
+        #print(self.dim, m, file=sys.stderr)
 
         singular_vectors_left = L0.dot(U[:, :m])
         singular_vectors_right = L1.dot(Vh[:m, :].T)
 
-        # remove residual contributions of the constant function
-        singular_vectors_left -= singular_vectors_left * mean0.dot(singular_vectors_left)[np.newaxis, :]
-        singular_vectors_right -= singular_vectors_right * mean1.dot(singular_vectors_right)[np.newaxis, :]
-
         # normalize vectors
-        # TODO: fix me!
         scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
-        #print('scale left', scale_left, scale_left**0.5, file=sys.stderr)
         scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
-        #print('scale right', scale_right, scale_right**0.5, file=sys.stderr)
         singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
         singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
 
