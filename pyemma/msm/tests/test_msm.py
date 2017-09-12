@@ -147,17 +147,18 @@ class TestMSMDoubleWell(unittest.TestCase):
         cls.statdist = nu/nu.sum()
 
         cls.tau = 10
-        cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
-        cls.msmrevpi = estimate_markov_model(cls.dtraj, cls.tau,
+        maxerr = 1e-12
+        cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau ,maxerr=maxerr)
+        cls.msmrevpi = estimate_markov_model(cls.dtraj, cls.tau,maxerr=maxerr,
                                              statdist=cls.statdist)
-        cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)
+        cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, maxerr=maxerr)
 
         """Sparse"""
-        cls.msmrev_sparse = estimate_markov_model(cls.dtraj, cls.tau, sparse=True)
-        cls.msmrevpi_sparse = estimate_markov_model(cls.dtraj, cls.tau,
+        cls.msmrev_sparse = estimate_markov_model(cls.dtraj, cls.tau, sparse=True, maxerr=maxerr)
+        cls.msmrevpi_sparse = estimate_markov_model(cls.dtraj, cls.tau,maxerr=maxerr,
                                                     statdist=cls.statdist,
                                                     sparse=True)
-        cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True)
+        cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True, maxerr=maxerr)
 
     # ---------------------------------
     # SCORE
