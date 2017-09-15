@@ -16,16 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 from __future__ import absolute_import
-__author__ = 'noe'
+
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 import numpy as np
 import math
 
+__author__ = 'noe'
 
-class TimeUnit(object):
+
+class TimeUnit(SerializableMixIn):
+    _serialize_version = 0
+    _serialize_fields = ('_unit', '_factor')
 
     _UNIT_STEP = -1
     _UNIT_FS = 0
@@ -102,10 +105,6 @@ class TimeUnit(object):
 
     def __eq__(self, other):
         return isinstance(other, TimeUnit) and self.dt == other.dt and self.unit == other.unit
-
-    def __reduce__(self):
-        args = '{factor} {unit}'.format(factor=self._factor, unit=TimeUnit._unit_names[self._unit])
-        return TimeUnit, (args, )
 
     @property
     def dt(self):
