@@ -84,6 +84,10 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
             # now encode the object (this will write all numpy arrays to current group).
             context = Pickler()
             context.h5_file = g
+            # array id provider (simple counter)
+            from itertools import count
+            context.next_array_id = count(0)
+
             flattened = jsonpickle.pickler.encode(obj, context=context)
             # attach the json string in the H5 file.
             g.attrs['model'] = flattened
