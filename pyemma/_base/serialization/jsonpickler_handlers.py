@@ -72,15 +72,11 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
         super(NumpyExtractedDtypeHandler, self).__init__(context=context)
 
     def flatten(self, obj, data):
-        str_t = type(obj).__name__
-        if str_t.startswith("float"):
-            value = float(obj)
-        elif str_t.startswith("int") or str_t.startswith("uint"):
-            value = int(obj)
-        else:
-            raise ValueError("not yet impled for type %s" % str_t)
-
-        return value
+        # magic number 23
+        data['value'] = '{:.23f}'.format(obj).rstrip('0').rstrip('.')
+        return data
 
     def restore(self, obj):
-        raise RuntimeError("this should never be called, because the handled types are converted to primitives.")
+        str_t = obj['py/object'].split('.')[1]
+        res = getattr(np, str_t)(obj['value'])
+        return res
