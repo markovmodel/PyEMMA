@@ -66,7 +66,8 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
     """
     np_dtypes = (np.float16, np.float32, np.float64,
                  np.int8, np.int16, np.int32, np.int64,
-                 np.uint8, np.uint16, np.uint32, np.uint64)
+                 np.uint8, np.uint16, np.uint32, np.uint64,
+                 np.bool_)
 
     def __init__(self, context):
         super(NumpyExtractedDtypeHandler, self).__init__(context=context)
