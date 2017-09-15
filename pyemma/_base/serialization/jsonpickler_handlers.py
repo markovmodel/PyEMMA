@@ -24,7 +24,7 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         if not hasattr(context, 'h5_file'):
             raise ValueError('the given un/-pickler has to contain a hdf5 file reference.')
 
-        from pickle import Pickler
+        from jsonpickle.pickler import Pickler
         if isinstance(self, Pickler) and not hasattr(context, 'next_array_id'):
             raise ValueError('the given pickler has to contain an array id provider')
         super(H5BackendLinkageHandler, self).__init__(context=context)
@@ -35,7 +35,9 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         return self.context.h5_file
 
     def next_array_id(self):
-        return str(next(self.context.next_array_id))
+        res = str(next(self.context.next_array_id))
+        assert res not in self.file
+        return res
 
     def flatten(self, obj, data):
         if obj.dtype == np.object_:

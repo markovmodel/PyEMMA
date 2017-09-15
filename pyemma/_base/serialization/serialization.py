@@ -88,7 +88,7 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
             from itertools import count
             context.next_array_id = count(0)
 
-            flattened = jsonpickle.pickler.encode(obj, context=context)
+            flattened = jsonpickle.pickler.encode(obj, context=context, warn=True)
             # attach the json string in the H5 file.
             g.attrs['model'] = flattened
     except Exception as e:
