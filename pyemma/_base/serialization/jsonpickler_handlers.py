@@ -5,7 +5,7 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 """
 import numpy as np
 
-from pyemma._ext.jsonpickle import handlers
+from jsonpickle import handlers
 
 
 def register_ndarray_handler():

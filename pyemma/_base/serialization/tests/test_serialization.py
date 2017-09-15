@@ -7,7 +7,7 @@ import numpy as np
 
 import pyemma
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
-from pyemma._ext.jsonpickle import dumps, loads
+from jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
 

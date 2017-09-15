@@ -234,6 +234,7 @@ metadata = dict(
                       'thermotools>=0.2.5',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
+                      'jsonpickle',
                       'pyyaml',
                       'psutil>=3.1.1',
                       'decorator>=4.0.0',
@@ -274,7 +275,6 @@ else:
         # init submodules
         import subprocess
         modules = ['pybind11',
-                   os.path.join('pyemma', '_ext', 'jsonpickle'),
                    ]
         cmd = "git submodule update --init {mod}"
         for m in modules:
