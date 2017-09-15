@@ -82,13 +82,16 @@ class TestSerialisation(unittest.TestCase):
     def test_numpy_extracted_dtypes(self):
         """ scalar values extracted from a numpy array do not posses a python builtin type,
         ensure they are converted to those types properly."""
-        value = np.arange(3)
+        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
+        register_ndarray_handler()
         from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
-        for dtype in NumpyExtractedDtypeHandler.np_dtypes:
-            converted = value.astype(dtype)[0]
-            exported = dumps(converted)
-            actual = loads(exported)
-            self.assertEqual(actual, converted)
+        values = (0, 0.5, 1, 2.5, -1, -0)
+        for v in values:
+            for dtype in NumpyExtractedDtypeHandler.np_dtypes:
+                converted = dtype(v)
+                exported = dumps(converted)
+                actual = loads(exported)
+                self.assertEqual(actual, converted, msg='failed for dtype %s and value %s' % (dtype, v))
 
     def test_save_interface(self):
         inst = test_cls_v1()

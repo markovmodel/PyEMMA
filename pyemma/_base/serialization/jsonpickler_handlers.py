@@ -64,17 +64,23 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
     All float types up to float64 are mapped by builtin.float
     All integer (signed/unsigned) types up to int64 are mapped by builtin.int
     """
-    np_dtypes = (np.float16, np.float32, np.float64,
-                 np.int8, np.int16, np.int32, np.int64,
-                 np.uint8, np.uint16, np.uint32, np.uint64,
-                 np.bool_)
+    integers = (np.bool_,
+                np.int8, np.int16, np.int32, np.int64,
+                np.uint8, np.uint16, np.uint32, np.uint64)
+    floats__ = (np.float16, np.float32, np.float64)
+
+    np_dtypes = integers + floats__
 
     def __init__(self, context):
         super(NumpyExtractedDtypeHandler, self).__init__(context=context)
 
     def flatten(self, obj, data):
-        # magic number 23
-        data['value'] = '{:.23f}'.format(obj).rstrip('0').rstrip('.')
+        if isinstance(obj, self.floats__):
+            data['value'] = '{:.17f}'.format(obj).rstrip('0').rstrip('.')
+        elif isinstance(obj, self.integers):
+            data['value'] = int(obj)
+        elif isinstance(obj, np.bool_):
+            data['value'] = bool(obj)
         return data
 
     def restore(self, obj):
