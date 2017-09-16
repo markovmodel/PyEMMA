@@ -226,19 +226,21 @@ metadata = dict(
     cmdclass=get_cmdclass(),
     tests_require=['pytest'],
     # runtime dependencies
-    install_requires=['numpy>=1.7.0',
-                      'scipy>=0.11',
-                      'mdtraj>=1.8.0',
-                      'matplotlib',
-                      'msmtools>=1.2',
-                      'thermotools>=0.2.5',
-                      'bhmm>=0.6,<0.7',
-                      'joblib>0.8.4',
-                      'pyyaml',
-                      'psutil>=3.1.1',
-                      'decorator>=4.0.0',
-                      'progress-reporter',
-                      ],
+    install_requires=[
+        'bhmm>=0.6,<0.7',
+        'decorator>=4.0.0',
+        'jsonpickle',
+        'matplotlib',
+        'mdtraj>=1.8.0',
+        'msmtools>=1.2',
+        'numpy>=1.8.0',
+        'pathos',
+        'progress-reporter',
+        'psutil>=3.1.1',
+        'pyyaml',
+        'scipy>=0.11',
+        'thermotools>=0.2.6',
+    ],
     zip_safe=False,
 )
 
@@ -274,7 +276,6 @@ else:
         # init submodules
         import subprocess
         modules = ['pybind11',
-                   os.path.join('pyemma', '_ext', 'jsonpickle'),
                    ]
         cmd = "git submodule update --init {mod}"
         for m in modules:

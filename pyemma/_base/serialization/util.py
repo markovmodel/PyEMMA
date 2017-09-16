@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from pyemma._ext.jsonpickle.util import importable_name
+from jsonpickle.util import importable_name
 
 
 class _ClassRenameRegistry(object):

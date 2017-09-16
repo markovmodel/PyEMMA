@@ -192,18 +192,18 @@ class TestSerializationCoordinates(unittest.TestCase):
         self.assertEqual(restored.featurizer.active_features, r.featurizer.active_features)
 
     def test_numpy_reader(self):
-        arr = np.empty(10)
+        arr = np.random.random(10)
         from pyemma.util.files import TemporaryDirectory
         with TemporaryDirectory() as d:
             files = [os.path.join(d, '1.npy'), os.path.join(d, '2.npy')]
             np.save(files[0], arr)
             np.save(files[1], arr)
-            params = {'filenames':files, 'chunksize': 23}
+            params = {'filenames': files, 'chunksize': 23}
             r = NumPyFileReader(**params)
             self.compare(r, params)
 
     def test_csv_reader(self):
-        arr = np.empty(10)
+        arr = np.random.random(10)
         from pyemma.util.files import TemporaryDirectory
         with TemporaryDirectory() as d:
             files = [os.path.join(d, '1.csv'), os.path.join(d, '2.csv')]

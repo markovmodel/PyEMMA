@@ -5,7 +5,7 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 """
 import numpy as np
 
-from pyemma._ext.jsonpickle import handlers
+from jsonpickle import handlers
 
 
 def register_ndarray_handler():
@@ -23,6 +23,10 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
     def __init__(self, context):
         if not hasattr(context, 'h5_file'):
             raise ValueError('the given un/-pickler has to contain a hdf5 file reference.')
+
+        from jsonpickle.pickler import Pickler
+        if isinstance(self, Pickler) and not hasattr(context, 'next_array_id'):
+            raise ValueError('the given pickler has to contain an array id provider')
         super(H5BackendLinkageHandler, self).__init__(context=context)
 
     @property
@@ -30,13 +34,17 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         # obtain the current file handler
         return self.context.h5_file
 
+    def next_array_id(self):
+        res = str(next(self.context.next_array_id))
+        assert res not in self.file
+        return res
+
     def flatten(self, obj, data):
         if obj.dtype == np.object_:
             value = [self.context.flatten(v, reset=False) for v in obj]
             data['values'] = value
         else:
-            import uuid
-            array_id = str(uuid.uuid4())
+            array_id = self.next_array_id()
             self.file.create_dataset(name=array_id, data=obj,
                                      chunks=True, compression='gzip', compression_opts=4, shuffle=True)
             data['array_ref'] = array_id
@@ -64,23 +72,26 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
     All float types up to float64 are mapped by builtin.float
     All integer (signed/unsigned) types up to int64 are mapped by builtin.int
     """
-    np_dtypes = (np.float16, np.float32, np.float64,
-                 np.int8, np.int16, np.int32, np.int64,
-                 np.uint8, np.uint16, np.uint32, np.uint64)
+    integers = (np.bool_,
+                np.int8, np.int16, np.int32, np.int64,
+                np.uint8, np.uint16, np.uint32, np.uint64)
+    floats__ = (np.float16, np.float32, np.float64)
+
+    np_dtypes = integers + floats__
 
     def __init__(self, context):
         super(NumpyExtractedDtypeHandler, self).__init__(context=context)
 
     def flatten(self, obj, data):
-        str_t = type(obj).__name__
-        if str_t.startswith("float"):
-            value = float(obj)
-        elif str_t.startswith("int") or str_t.startswith("uint"):
-            value = int(obj)
-        else:
-            raise ValueError("not yet impled for type %s" % str_t)
-
-        return value
+        if isinstance(obj, self.floats__):
+            data['value'] = '{:.17f}'.format(obj).rstrip('0').rstrip('.')
+        elif isinstance(obj, self.integers):
+            data['value'] = int(obj)
+        elif isinstance(obj, np.bool_):
+            data['value'] = bool(obj)
+        return data
 
     def restore(self, obj):
-        raise RuntimeError("this should never be called, because the handled types are converted to primitives.")
+        str_t = obj['py/object'].split('.')[1]
+        res = getattr(np, str_t)(obj['value'])
+        return res

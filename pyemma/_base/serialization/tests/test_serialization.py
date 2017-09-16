@@ -7,7 +7,7 @@ import numpy as np
 
 import pyemma
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
-from pyemma._ext.jsonpickle import dumps, loads
+from jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
 
@@ -24,7 +24,11 @@ class np_container(SerializableMixIn):
         if not isinstance(other, np_container):
             return False
 
-        return np.all(self.x == other.x) and np.all(self.y == other.y)
+        for e0, e1 in zip(self.x, other.x):
+            np.testing.assert_equal(e0, e1)
+
+        return True
+
 
 def patch_old_location(faked_old_class, new_class):
     from pyemma._base.serialization.util import handle_old_classes
@@ -78,13 +82,16 @@ class TestSerialisation(unittest.TestCase):
     def test_numpy_extracted_dtypes(self):
         """ scalar values extracted from a numpy array do not posses a python builtin type,
         ensure they are converted to those types properly."""
-        value = np.arange(3)
+        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
+        register_ndarray_handler()
         from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
-        for dtype in NumpyExtractedDtypeHandler.np_dtypes:
-            converted = value.astype(dtype)[0]
-            exported = dumps(converted)
-            actual = loads(exported)
-            self.assertEqual(actual, converted)
+        values = (0, 0.5, 1, 2.5, -1, -0)
+        for v in values:
+            for dtype in NumpyExtractedDtypeHandler.np_dtypes:
+                converted = dtype(v)
+                exported = dumps(converted)
+                actual = loads(exported)
+                self.assertEqual(actual, converted, msg='failed for dtype %s and value %s' % (dtype, v))
 
     def test_save_interface(self):
         inst = test_cls_v1()

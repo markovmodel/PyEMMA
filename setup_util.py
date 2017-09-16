@@ -86,19 +86,3 @@ class lazy_cythonize(list):
         for e in self.c_list(): yield e
     def __getitem__(self, ii): return self.c_list()[ii]
     def __len__(self): return len(self.c_list())
-
-
-def init_submodules():
-    import subprocess
-    # with open('.gitmodules') as f:
-    #     git_modules = f.readlines()
-    #
-    # def module_paths(line):
-    #     import re
-    #
-    #filter(module_paths, git_modules)
-    subprocess.check_call("git submodule init".split(" "))
-    args = "git submodule update --init pyemma/_ext/jsonpickle/".split(' ')
-    print("populating git submodules with cmd:", args)
-    subprocess.check_call(args)
-

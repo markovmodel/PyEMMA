@@ -22,8 +22,8 @@ import six
 from pyemma._base.logging import Loggable
 from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
 from pyemma._base.serialization.util import class_rename_registry
-from pyemma._ext import jsonpickle
-from pyemma._ext.jsonpickle.util import importable_name as _importable_name
+import jsonpickle
+from jsonpickle.util import importable_name as _importable_name
 from pyemma.util.types import is_int
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def list_models(file_name):
 def save(obj, file_name, model_name='latest', save_streaming_chain=False):
     import h5py
     import time
-    from pyemma._ext.jsonpickle.pickler import Pickler
+    from jsonpickle.pickler import Pickler
 
     global _handlers_registered
     if not _handlers_registered:
@@ -84,7 +84,11 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
             # now encode the object (this will write all numpy arrays to current group).
             context = Pickler()
             context.h5_file = g
-            flattened = jsonpickle.pickler.encode(obj, context=context)
+            # array id provider (simple counter)
+            from itertools import count
+            context.next_array_id = count(0)
+
+            flattened = jsonpickle.pickler.encode(obj, context=context, warn=True)
             # attach the json string in the H5 file.
             g.attrs['model'] = flattened
     except Exception as e:
@@ -127,7 +131,7 @@ def load(file_name, model_name='latest'):
             _handlers_registered = True
 
         # we pass the hdf5 file handle to the unpickler by adding a known attribute.
-        from pyemma._ext.jsonpickle.unpickler import Unpickler
+        from jsonpickle.unpickler import Unpickler
         context = Unpickler()
         context.h5_file = group
         obj = jsonpickle.unpickler.decode(inp, context=context)
