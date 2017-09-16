@@ -197,17 +197,19 @@ class SerializableMixIn(object):
 
         Examples
         --------
-        >>> import pyemma, numpy as np
+        >>> import pyemma, numpy as np, pprint
         >>> from tempfile import NamedTemporaryFile
         >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
 
         >>> with NamedTemporaryFile() as ntf: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
         ...    file = ntf.name
         ...    m.save(file, 'simple')
-        ...    print(list_models(file))
+        ...    pprint.pprint(list_models(file))
         ...    inst_restored = pyemma.load(file, 'simple')
-        {'simple': {'repr': "MSM(P=array([[ 0.1,  0.9],\n       [ 0.9,  0.1]]), dt_model='1 step', neig=2,\n  pi=array([ 0.5,  0.5]), reversible=True)", 'created': '...'}}
-
+           {'simple': {'created': '...',
+                'repr': 'MSM(P=array([[ 0.1,  0.9],\n'
+                        "       [ 0.9,  0.1]]), dt_model='1 step', neig=2,\n"
+                        '  pi=array([ 0.5,  0.5]), reversible=True)'}}
         >>> assert np.all(inst_restored.P == m.P)
         """
         return save(self, file_name, model_name, save_streaming_chain)
