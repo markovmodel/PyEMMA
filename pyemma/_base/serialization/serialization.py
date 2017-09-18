@@ -257,7 +257,8 @@ class SerializableMixIn(object):
         self.__save_data_producer = value
         # forward flag to the next data producer
         if hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self:
-            assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
+            # ensure the data_producer is serializable
+            assert hasattr(self.data_producer.__class__, '_serialize_version')
             self.data_producer._save_data_producer = value
 
     def _get_state_of_serializeable_fields(self, klass):
