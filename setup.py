@@ -242,6 +242,9 @@ metadata = dict(
         'thermotools>=0.2.6',
     ],
     zip_safe=False,
+    entry_points = {
+        'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
+    }
 )
 
 # this is only metadata and not used by setuptools
