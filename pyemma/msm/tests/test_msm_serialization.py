@@ -52,6 +52,13 @@ class TestMSMSerialization(unittest.TestCase):
         self.f = tempfile.mktemp()
 
     def tearDown(self):
+        debug = False
+        if debug:
+            import subprocess
+            #print(str(subprocess.check_output(['h5dump', self.f]), encoding='ascii'))
+            print(self.id())
+            kb = os.stat(self.f).st_size / 1024
+            print('size %s kb' % kb)
         try:
             os.unlink(self.f)
         except:
@@ -205,7 +212,7 @@ class TestMSMSerialization(unittest.TestCase):
 
     def test_its_sampled(self):
         lags = [1, 3]
-        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes')
+        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=10)
 
         its.save(self.f)
         restored = load(self.f)
@@ -237,6 +244,14 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(self.oom.OOM_omega, restored.OOM_omega)
         np.testing.assert_equal(self.oom.OOM_sigma, restored.OOM_sigma)
 
+    def test_ml_msm_sparse(self):
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(42):
+            msm = pyemma.msm.estimate_markov_model([np.random.randint(0, 1000, size=10000)], sparse=True, lag=1)
+            assert msm.sparse
+            msm.save(self.f)
+            restored = load(self.f)
+            assert restored.sparse
 
 if __name__ == '__main__':
     unittest.main()
