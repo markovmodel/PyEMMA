@@ -257,12 +257,6 @@ class SerializableMixIn(object):
         self.__save_data_producer = value
         # forward flag to the next data producer
         if hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self:
-            # TODO: review, this could be desired, but is super inefficient.
-            from pyemma.coordinates.data import DataInMemory
-            if isinstance(self.data_producer, DataInMemory):
-                import warnings
-                warnings.warn("We refuse to save NumPy arrays wrapped with DataInMemory.")
-                return
             assert isinstance(self.data_producer, SerializableMixIn), self.data_producer
             self.data_producer._save_data_producer = value
 
@@ -391,12 +385,6 @@ class SerializableMixIn(object):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
 
-        from pyemma._base.estimator import Estimator
-        from pyemma._base.model import Model
-
-        #res = {'_serialize_version': self._serialize_version,}
-        # TODO: do we really need to store fields here?
-        #'_serialize_fields': self._serialize_fields}
         res = {'class_tree_versions': {}}
         for c in self.__class__.mro():
             name = _importable_name(c)
@@ -411,14 +399,12 @@ class SerializableMixIn(object):
             assert hasattr(self, 'data_producer')
             res['data_producer'] = self.data_producer
 
-        classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
-                              and c != SerializableMixIn and c != object and c != Estimator and c != Model]
+        classes_to_inspect = self._get_classes_to_inspect()
         if _debug:
             logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
         for klass in classes_to_inspect:
-            if hasattr(klass, '_serialize_fields') and klass._serialize_fields and not klass == SerializableMixIn:
-                inc = self._get_state_of_serializeable_fields(klass)
-                res.update(inc)
+            inc = self._get_state_of_serializeable_fields(klass)
+            res.update(inc)
 
         # handle special cases Estimator and Model, just use their parameters.
         if hasattr(self, 'get_params'):
@@ -441,15 +427,10 @@ class SerializableMixIn(object):
         return res
 
     def __setstate__(self, state):
-        from pyemma._base.estimator import Estimator
-        from pyemma._base.model import Model
-
-        classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
-                              and c != SerializableMixIn and c != object and c != Estimator and c != Model]
+        classes_to_inspect = self._get_classes_to_inspect()
 
         for klass in classes_to_inspect:
-            if hasattr(klass, '_serialize_fields') and klass._serialize_fields and hasattr(klass, '_serialize_version'):
-                self._set_state_from_serializeable_fields_and_state(state, klass=klass)
+            self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
         if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
             # only apply params suitable for the current model
@@ -473,3 +454,13 @@ class SerializableMixIn(object):
 
         if hasattr(state, '_pyemma_version'):
             self._pyemma_version = state['_pyemma_version']
+
+    def _get_classes_to_inspect(self):
+        from pyemma._base.estimator import Estimator
+        from pyemma._base.model import Model
+        return [c for c in self.__class__.mro() if
+                hasattr(c, '_serialize_fields') and c._serialize_fields
+                and c not in (SerializableMixIn,
+                              object,
+                              Estimator,
+                              Model)]
