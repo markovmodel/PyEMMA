@@ -207,9 +207,13 @@ class TestSerializationCoordinates(unittest.TestCase):
         from pyemma.util.files import TemporaryDirectory
         with TemporaryDirectory() as d:
             files = [os.path.join(d, '1.csv'), os.path.join(d, '2.csv')]
-            np.savetxt(files[0], arr)
-            np.savetxt(files[1], arr)
-            params = {'filenames':files, 'chunksize': 23}
+            np.savetxt(files[0], arr, delimiter='\t')
+            np.savetxt(files[1], arr, delimiter='\t')
+            with open(files[0], 'r') as fh:
+                print('file contents:')
+                print(fh.read())
+                print('-'*80)
+            params = {'filenames': files, 'chunksize': 23}
             from pyemma.coordinates.data import PyCSVReader
             r = PyCSVReader(**params)
             self.compare(r, params)
