@@ -20,8 +20,6 @@ environment:
     - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
       CONDA_PY: "36"
       ARCH: "64"
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
@@ -43,4 +41,6 @@ test_script:
 
 #on_success:
 #  - devtools/ci/appveyor/after_success.bat  
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
