@@ -27,6 +27,7 @@ from __future__ import absolute_import, print_function
 
 import numpy as np
 
+from _base.serialization.serialization import SerializableMixIn
 from pyemma._base.parallel import NJobsMixIn
 from pyemma.util.annotators import estimation_required, alias, aliased
 
@@ -78,7 +79,7 @@ def _hash_dtrajs(dtraj_list):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
+class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn, SerializableMixIn):
     _serialize_version = 0
     _serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
                          '_its', '_its_samples',
