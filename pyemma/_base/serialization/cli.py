@@ -1,16 +1,15 @@
-import argparse
-
-import sys
-
-from pyemma._base.serialization.serialization import list_models
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--json', action='store_true', default=False)
-parser.add_argument('files', metavar='files', nargs='+', help='files to inspect')
-args = parser.parse_args()
 
 
 def main():
+    import argparse
+    import sys
+    from pyemma._base.serialization.serialization import list_models
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--json', action='store_true', default=False)
+    parser.add_argument('files', metavar='files', nargs='+', help='files to inspect')
+    args = parser.parse_args()
+
     models = []
 
     for f in args.files:
