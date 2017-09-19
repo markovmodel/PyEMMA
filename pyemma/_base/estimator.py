@@ -23,7 +23,6 @@ import inspect
 import sys
 import os
 
-from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util import types as _types
@@ -349,7 +348,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         return res
 
 
-class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
+class Estimator(_BaseEstimator, Loggable):
     """ Base class for pyEMMA estimators
 
     """

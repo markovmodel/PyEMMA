@@ -22,7 +22,7 @@ import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
-
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -36,7 +36,7 @@ from pyemma.util.statistics import confidence_interval as _ci
 
 @fix_docs
 @aliased
-class _MSMEstimator(_Estimator, _MSM):
+class _MSMEstimator(_Estimator, _MSM, SerializableMixIn):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
     # version for serialization
     _serialize_version = 0

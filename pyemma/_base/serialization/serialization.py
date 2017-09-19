@@ -24,6 +24,7 @@ from pyemma._base.serialization.jsonpickler_handlers import register_all_handler
 from pyemma._base.serialization.util import class_rename_registry
 import jsonpickle
 from jsonpickle.util import importable_name as _importable_name
+
 from pyemma.util.types import is_int
 
 logger = logging.getLogger(__name__)
@@ -52,11 +53,16 @@ def list_models(file_name):
     file_name: str
         path to file to list models for
 
+    Returns
+    -------
+    dict: {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
+
     """
     import h5py
     with h5py.File(file_name, mode='r') as f:
-        return {k: {'repr':f[k].attrs['class_str'],
-                    'created': f[k].attrs['created_readable']
+        return {k: {'repr': f[k].attrs['class_str'],
+                    'created': f[k].attrs['created_readable'],
+                    'saved_streaming_chain': f[k].attrs['saved_streaming_chain']
                     } for k in f.keys()}
 
 
@@ -80,6 +86,7 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
             g.attrs['created_readable'] = time.asctime()
             g.attrs['class_str'] = str(obj)
             g.attrs['class_repr'] = repr(obj)
+            g.attrs['saved_streaming_chain'] = save_streaming_chain
             # now encode the object (this will write all numpy arrays to current group).
             context = Pickler()
             context.h5_file = g
@@ -185,6 +192,13 @@ class SerializableMixIn(object):
 
     _serialize_fields = ()
     """ attribute names to serialize """
+
+    def __new__(cls, *args, **kwargs):
+        if cls != SerializableMixIn.__class__ and not hasattr(cls, '_serialize_version'):
+            raise DeveloperError('your class {cls} does not have a _serialize_version field!')
+
+        res = super(SerializableMixIn, cls).__new__(cls) #, *args, **kwargs)
+        return res
 
     def save(self, file_name, model_name='latest', save_streaming_chain=False):
         r"""
