@@ -84,7 +84,7 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
 
     def flatten(self, obj, data):
         if isinstance(obj, self.floats__):
-            data['value'] = '{:.17f}'.format(obj).rstrip('0').rstrip('.')
+            data['value'] = '{:.18f}'.format(obj).rstrip('0').rstrip('.')
         elif isinstance(obj, self.integers):
             data['value'] = int(obj)
         elif isinstance(obj, np.bool_):
