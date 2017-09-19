@@ -75,7 +75,6 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
     assert obj._save_data_producer == save_streaming_chain
     try:
         with h5py.File(file_name) as f:
-            # TODO: rename the model, if is already there for sanity/backup?
             g = f.require_group(str(model_name))
             g.attrs['created'] = str(time.time())
             g.attrs['created_readable'] = time.asctime()
