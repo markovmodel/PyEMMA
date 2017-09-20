@@ -1,8 +1,8 @@
+import sys
 
 
 def main(argv=None):
     import argparse
-    import sys
     from pyemma._base.serialization.serialization import list_models
     from pyemma import load
 
@@ -25,6 +25,7 @@ def main(argv=None):
         except KeyError:
             print('{} did not contain a valid PyEMMA model. '
                   'If you are sure, that it does, please post an issue on Github'.format(f), file=sys.stderr)
+            return 1
 
     if not args.json:
         from io import StringIO
@@ -53,7 +54,7 @@ def main(argv=None):
         import json
 
         json.dump(models, fp=sys.stdout)
-
+    return 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
