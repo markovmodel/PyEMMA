@@ -22,6 +22,7 @@ import tempfile
 import unittest
 
 import numpy as np
+import pkg_resources
 
 import pyemma
 import pyemma.coordinates as coor
@@ -205,23 +206,22 @@ class TestSerializationCoordinates(unittest.TestCase):
     def test_csv_reader(self):
         arr = np.random.random(10)
         from pyemma.util.files import TemporaryDirectory
+        delimiter = ' '
         with TemporaryDirectory() as d:
             files = [os.path.join(d, '1.csv'), os.path.join(d, '2.csv')]
-            np.savetxt(files[0], arr, delimiter='\t')
-            np.savetxt(files[1], arr, delimiter='\t')
-            with open(files[0], 'r') as fh:
-                print('file contents:')
-                print(fh.read())
-                print('-'*80)
+            np.savetxt(files[0], arr, delimiter=delimiter)
+            np.savetxt(files[1], arr, delimiter=delimiter)
             params = {'filenames': files, 'chunksize': 23}
             from pyemma.coordinates.data import PyCSVReader
-            r = PyCSVReader(**params)
+            # sniffing the delimiter does not aid in the 1-column case:
+            # https://bugs.python.org/issue2078
+            # but also specifying it does not help...
+            r = PyCSVReader(delimiter=delimiter, **params)
             self.compare(r, params)
 
     def test_fragmented_reader(self):
         from pyemma.coordinates.tests.util import create_traj
         from pyemma.util.files import TemporaryDirectory
-        import pkg_resources
 
         top_file = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         trajfiles = []
@@ -239,6 +239,14 @@ class TestSerializationCoordinates(unittest.TestCase):
             restored = self.compare(source, params)
 
             np.testing.assert_equal(source.get_output(), restored.get_output())
+
+    def test_h5_reader(self):
+        h5_file = pkg_resources.resource_filename(__name__, 'data/bpti_mini.h5')
+        params = dict(selection='/coordinates')
+        source = coor.source(h5_file, **params)
+        restored = self.compare(source, params)
+        np.testing.assert_equal(source.get_output(), restored.get_output())
+
 
 if __name__ == '__main__':
     unittest.main()
