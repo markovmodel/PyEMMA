@@ -89,12 +89,3 @@ class Loggable(object):
             del d[logger_name]
             del Loggable.__refs[logger_id]
         return remove_logger
-
-    def __getstate__(self):
-        # do not pickle the logger instance
-        d = dict(self.__dict__)
-        try:
-            del d['_logger_instance']
-        except KeyError:
-            pass
-        return d

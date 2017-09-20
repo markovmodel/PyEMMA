@@ -20,7 +20,6 @@ from __future__ import absolute_import
 import numpy as _np
 import warnings
 
-from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member, getargspec_no_self
@@ -28,7 +27,7 @@ from pyemma.util.reflection import call_member, getargspec_no_self
 __author__ = 'noe'
 
 
-class Model(SerializableMixIn):
+class Model(object):
     """ Base class for pyEMMA models
 
     This class is inspired by sklearn's BaseEstimator class. However, we define parameter names not by the

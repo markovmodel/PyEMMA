@@ -35,8 +35,10 @@ class H5BackendLinkageHandler(handlers.BaseHandler):
         return self.context.h5_file
 
     def next_array_id(self):
-        res = str(next(self.context.next_array_id))
-        assert res not in self.file
+        n = lambda: str(next(self.context.next_array_id))
+        res = n()
+        while res in self.file:
+            res = n()
         return res
 
     def flatten(self, obj, data):
@@ -84,7 +86,7 @@ class NumpyExtractedDtypeHandler(handlers.BaseHandler):
 
     def flatten(self, obj, data):
         if isinstance(obj, self.floats__):
-            data['value'] = '{:.17f}'.format(obj).rstrip('0').rstrip('.')
+            data['value'] = '{:.18f}'.format(obj).rstrip('0').rstrip('.')
         elif isinstance(obj, self.integers):
             data['value'] = int(obj)
         elif isinstance(obj, np.bool_):

@@ -22,7 +22,7 @@ import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
-
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -1430,6 +1430,9 @@ class OOMReweightedMSM(_MSMEstimator):
 class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
+    _serialize_version = 0
+    # TODO: ask Simon what should go here.
+    _serialize_fields = ('E_active', 'pi_hat')
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
                  E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache=3000,

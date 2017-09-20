@@ -23,6 +23,8 @@ import math
 
 import numpy as np
 from decorator import decorator
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma._base.model import Model
 from pyemma._ext.variational.estimators.running_moments import running_covar
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
@@ -43,7 +45,7 @@ def _lazy_estimation(func, *args, **kw):
     return func(*args, **kw)
 
 
-class PCAModel(Model):
+class PCAModel(Model, SerializableMixIn):
     _serialize_version = 0
 
     def set_model_params(self, mean, eigenvectors):
@@ -52,7 +54,7 @@ class PCAModel(Model):
 
 
 @fix_docs
-class PCA(StreamingEstimationTransformer):
+class PCA(StreamingEstimationTransformer, SerializableMixIn):
     r""" Principal component analysis."""
     _serialize_version = 0
 

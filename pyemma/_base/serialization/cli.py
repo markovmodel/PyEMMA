@@ -1,21 +1,27 @@
-import argparse
-
-import sys
-
-from pyemma._base.serialization.serialization import list_models
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--json', action='store_true', default=False)
-parser.add_argument('files', metavar='files', nargs='+', help='files to inspect')
-args = parser.parse_args()
 
 
-def main():
+def main(argv=None):
+    import argparse
+    import sys
+    from pyemma._base.serialization.serialization import list_models
+    from pyemma import load
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--json', action='store_true', default=False)
+    parser.add_argument('files', metavar='files', nargs='+', help='files to inspect')
+    parser.add_argument('--recursive', action='store_true', default=False,
+                        help='If the pipeline of the stored estimator was stored, '
+                             'gather these information as well.')
+    args = parser.parse_args(argv)
     models = []
 
     for f in args.files:
         try:
-            models.append((f, list_models(f)))
+            m = list_models(f)
+            if m['saved_streaming_chain']:
+                restored = load(f)
+                m['input_chain'] = [repr(x) for x in restored._data_flow_chain()]
+            models.append((f, m))
         except KeyError:
             print('{} did not contain a valid PyEMMA model. '
                   'If you are sure, that it does, please post an issue on Github'.format(f), file=sys.stderr)

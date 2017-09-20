@@ -27,6 +27,8 @@ from __future__ import absolute_import
 
 import warnings
 
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
@@ -38,7 +40,7 @@ __all__ = ['RegularSpaceClustering']
 
 
 @fix_docs
-class RegularSpaceClustering(AbstractClustering):
+class RegularSpaceClustering(AbstractClustering, SerializableMixIn):
     r"""Regular space clustering"""
     _serialize_version = 0
 

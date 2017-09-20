@@ -39,7 +39,7 @@ def fix_docs(cls):
                                    if not name.startswith('_') and func.__doc__ is None}
 
     for name, func in public_undocumented_members.items():
-        for parent in cls.mro()[1:]:
+        for parent in cls.__mro__[1:]:
             parfunc = getattr(parent, name, None)
             if parfunc and getattr(parfunc, '__doc__', None):
                 if isinstance(func, property):

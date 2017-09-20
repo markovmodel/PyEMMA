@@ -27,6 +27,8 @@ and provides them for later access.
 
 from __future__ import absolute_import
 
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma.util.annotators import aliased, alias
 from six.moves import range
 
@@ -42,7 +44,7 @@ from pyemma.util import types as _types
 # TODO: Explain concept of an active set
 
 @aliased
-class MSM(_Model):
+class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
     _serialize_version = 0
 
@@ -191,7 +193,7 @@ class MSM(_Model):
         else:
             # set dummy values for not yet known attributes.
             self.nstates = 0
-            self.sparse = None
+            self.sparse = False
 
         # TODO: if spectral decomp etc. already has been computed, reset its state.
 
