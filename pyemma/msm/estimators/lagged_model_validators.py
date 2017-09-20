@@ -23,7 +23,7 @@ from six.moves import range
 import math
 import numpy as np
 
-from _base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
 from pyemma._base.progress import ProgressReporter

@@ -27,7 +27,7 @@ from __future__ import absolute_import, print_function
 
 import numpy as np
 
-from _base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.parallel import NJobsMixIn
 from pyemma.util.annotators import estimation_required, alias, aliased
 
