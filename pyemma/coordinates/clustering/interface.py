@@ -27,6 +27,8 @@ from __future__ import absolute_import
 import os
 
 import numpy as np
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma._base.model import Model
 from pyemma._base.parallel import NJobsMixIn
 from pyemma._ext.sklearn.base import ClusterMixin
@@ -39,7 +41,7 @@ from six.moves import range, zip
 
 @fix_docs
 @aliased
-class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJobsMixIn):
+class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJobsMixIn, SerializableMixIn):
 
     """
     provides a common interface for cluster algorithms.
@@ -63,6 +65,9 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         self._overwrite_dtrajs = False
         self._index_states = []
         self.n_jobs = n_jobs
+
+    _serialize_fields = ('clustercenters', '_dtrajs', '_previous_stride', '_index_states', '_overwrite_dtrajs')
+    _serialize_version = 0
 
     class _centers_wrapper(object):
         def __init__(self, arr):
@@ -157,11 +162,10 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self._inst = ClusteringBase_f(self.metric, X.shape[1])
 
         # for performance reasons we pre-center the cluster centers for minRMSD.
-        if self.metric == 'minRMSD':
-            if not self._clustercenters.pre_centered:
-                self.logger.debug("precentering cluster centers for minRMSD.")
-                self._inst.precenter_centers(self.clustercenters)
-                self._clustercenters.pre_centered = True
+        if self.metric == 'minRMSD' and not self._clustercenters.pre_centered:
+            self.logger.debug("precentering cluster centers for minRMSD.")
+            self._inst.precenter_centers(self.clustercenters)
+            self._clustercenters.pre_centered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function

@@ -22,6 +22,7 @@ from __future__ import absolute_import, division
 import math
 
 import numpy as np
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
@@ -31,7 +32,7 @@ __all__ = ['UniformTimeClustering']
 
 
 @fix_docs
-class UniformTimeClustering(AbstractClustering):
+class UniformTimeClustering(AbstractClustering, SerializableMixIn):
     r"""Uniform time clustering"""
     _serialize_version = 0
 

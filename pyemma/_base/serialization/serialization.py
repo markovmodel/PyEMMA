@@ -193,13 +193,6 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-    def __new__(cls, *args, **kwargs):
-        if cls != SerializableMixIn.__class__ and not hasattr(cls, '_serialize_version'):
-            raise DeveloperError('your class {cls} does not have a _serialize_version field!')
-
-        res = super(SerializableMixIn, cls).__new__(cls) #, *args, **kwargs)
-        return res
-
     def save(self, file_name, model_name='latest', save_streaming_chain=False):
         r"""
         Parameters
@@ -226,7 +219,7 @@ class SerializableMixIn(object):
            {'simple': {'created': '...',
                 'repr': 'MSM(P=array([[ 0.1,  0.9],\n'
                         "       [ 0.9,  0.1]]), dt_model='1 step', neig=2,\n"
-                        '  pi=array([ 0.5,  0.5]), reversible=True)'}}
+                        '  pi=array([ 0.5,  0.5]), reversible=True)'...}}
         >>> assert np.all(inst_restored.P == m.P)
         """
         return save(self, file_name, model_name, save_streaming_chain)
@@ -395,6 +388,8 @@ class SerializableMixIn(object):
         # We just dump the version number for comparison with the actual class.
         # Note: we do not want to set the version number in __setstate__,
         # since we obtain it from the actual definition.
+        if _debug:
+            logger.debug('get state of %s' % self)
         if not hasattr(self, '_serialize_version'):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
@@ -478,3 +473,7 @@ class SerializableMixIn(object):
                               object,
                               Estimator,
                               Model)]
+
+    def __init_subclass__(self, *args, **kwargs):
+        # ensure, that if this is subclasses, we have a proper class version.
+        assert hasattr(self, '_serialize_version'), '{} does not have field serialize_version'.format(self)
