@@ -76,7 +76,6 @@ class TestPipeline(unittest.TestCase):
                 api.cluster_uniform_time(k=20)
             ], run=False
         )
-        print(p._chain[-1].data_flow())
         self.assertFalse(p._is_estimated(), "If run=false, the pipeline should not be parametrized.")
         p.parametrize()
         self.assertTrue(p._is_estimated(), "If parametrized was called, the pipeline should be parametrized.")
