@@ -116,9 +116,9 @@ class TimeUnit(SerializableMixIn):
 
     def get_scaled(self, factor):
         """ Get a new time unit, scaled by the given factor """
-        import copy
-        res = copy.deepcopy(self)
-        res._factor *= factor
+        res = self.__new__(self.__class__)
+        res._factor = self._factor * factor
+        res._unit = self._unit
         return res
 
     def rescale_around1(self, times):
