@@ -492,4 +492,5 @@ class SerializableMixIn(object):
 
     def __init_subclass__(self, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
-        assert hasattr(self, '_serialize_version'), '{} does not have field serialize_version'.format(self)
+        if not hasattr(self, '_serialize_version'):
+            raise DeveloperError('{} does not have field serialize_version'.format(self))

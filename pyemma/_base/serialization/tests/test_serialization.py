@@ -193,13 +193,16 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v3()
         inst.save(self.fn)
         from pyemma._base.serialization.serialization import OldVersionUnsupported
-        #with mock.patch(test_cls_v3._serialize_version, '0'):
         test_cls_v3._serialize_version = 0
         if True:
             with self.assertRaises(OldVersionUnsupported) as c:
                 pyemma.load(self.fn)
         self.assertIn("need at least {version}".format(version=pyemma.version), c.exception.args[0])
 
+    def test_developer_forgot_to_add_version(self):
+        """ we're not allowed """
+        with self.assertRaises(DeveloperError):
+            class broken(SerializableMixIn): pass
 
 if __name__ == '__main__':
     unittest.main()
