@@ -82,7 +82,7 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
     try:
         with h5py.File(file_name) as f:
             g = f.require_group(str(model_name))
-            g.attrs['created'] = str(time.time())
+            g.attrs['created'] = time.time()
             g.attrs['created_readable'] = time.asctime()
             g.attrs['class_str'] = str(obj)
             g.attrs['class_repr'] = repr(obj)
@@ -192,6 +192,14 @@ class SerializableMixIn(object):
 
     _serialize_fields = ()
     """ attribute names to serialize """
+
+    def __new__(cls, *args, **kwargs):
+        assert cls != SerializableMixIn.__class__
+        if not hasattr(cls, '_serialize_version'):
+            raise DeveloperError('your class {cls} does not have a _serialize_version field!')
+
+        res = super(SerializableMixIn, cls).__new__(cls) #, *args, **kwargs)
+        return res
 
     def save(self, file_name, model_name='latest', save_streaming_chain=False):
         r"""
@@ -352,7 +360,8 @@ class SerializableMixIn(object):
         if _debug:
             logger.debug("interpolated state: %s", state)
 
-    def _get_version_for_class_from_state(self, state, klass):
+    @staticmethod
+    def _get_version_for_class_from_state(state, klass):
         """ retrieves the version of the current klass from the state mapping from old locations to new ones. """
 
         """ klass may have renamed, so we have to look this up in _new_to_old.
@@ -408,6 +417,10 @@ class SerializableMixIn(object):
             assert hasattr(self, 'data_producer')
             res['data_producer'] = self.data_producer
 
+        # In case of of a Reader (primary DataSource), we need to store this hidden attribute.
+        if hasattr(self, '_is_reader'):
+            res['_is_reader'] = self._is_reader
+
         classes_to_inspect = self._get_classes_to_inspect()
         if _debug:
             logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
@@ -460,6 +473,9 @@ class SerializableMixIn(object):
 
         if hasattr(self, 'data_producer') and 'data_producer' in state:
             self.data_producer = state['data_producer']
+
+        if '_is_reader' in state:
+            self._is_reader = state['_is_reader']
 
         if hasattr(state, '_pyemma_version'):
             self._pyemma_version = state['_pyemma_version']
