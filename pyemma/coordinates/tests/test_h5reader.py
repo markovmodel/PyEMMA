@@ -1,17 +1,12 @@
 import unittest
 import numpy as np
+import h5py
 
 from pyemma.coordinates.data.h5_reader import H5Reader
 from pyemma.util.testing_tools import MockLoggingHandler
-
-try:
-    import h5py, tables
-    have_hdf5 = True
-except ImportError:
-    have_hdf5 = False
+from pyemma.coordinates import source
 
 
-@unittest.skipIf(not have_hdf5, 'no hdf5 support. Install h5py and pytables')
 class TestH5Reader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -28,6 +23,8 @@ class TestH5Reader(unittest.TestCase):
             ds = f.create_group('test2').create_dataset('test_ds', shape=cls.shape)
             ds[:] = cls.data
             f.create_dataset('another_ds', shape=(10, 23))
+            f.create_dataset('1d', data=np.arange(10))
+            f.create_dataset('5d', data=np.arange(25).reshape(5, 5))
         cls.total_frames = cls.shape[0] * 2
 
         cls.reader = H5Reader(cls.f1, selection='/.*/test_ds')
@@ -66,7 +63,21 @@ class TestH5Reader(unittest.TestCase):
         np.testing.assert_equal(out, [self.data]*2)
 
     def test_source(self):
-        from pyemma.coordinates import source
         reader = source(self.f1, selection='/.*/test_ds')
         self.assertIsInstance(reader, H5Reader)
         self.assertEqual(reader.ntraj, 2)
+
+    def test_1d(self):
+        reader = source(self.f1, selection='/1d')
+        out = reader.get_output()[0]
+        assert out.shape[0] == 10
+        assert out.shape[1] == 1
+
+    def test_5d(self):
+        reader = source(self.f1, selection='/5d')
+        out = reader.get_output()[0]
+        assert out.shape[0] == 5
+        assert out.shape[1] == 5
+
+if __name__ == '__main__':
+    unittest.main()
