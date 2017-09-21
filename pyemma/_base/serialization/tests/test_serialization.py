@@ -1,11 +1,11 @@
 import os
 import tempfile
 import unittest
-from io import BytesIO
 
 import numpy as np
 
 import pyemma
+from pyemma._base.serialization.serialization import DeveloperError
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
 from jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
@@ -73,7 +73,7 @@ class TestSerialisation(unittest.TestCase):
         self.assertEqual(restored, inst)
 
     def test_numpy_container_object_array(self):
-        x = np.array([None, np.array([1,2,3]), False])
+        x = np.array([None, np.array([1, 2, 3]), False])
         inst = np_container(x)
         inst.save(self.fn)
         restored = inst.load(self.fn)
@@ -138,29 +138,28 @@ class TestSerialisation(unittest.TestCase):
         self.assertFalse(hasattr(inst_restored, 'y'))
 
     def test_validate_map_order(self):
-        interpolation_map = {3: [('set', 'x', None)], 0: [('rm', 'x')]}
-        SerializableMixIn._serialize_interpolation_map = interpolation_map
-        s = SerializableMixIn()
-        s._serialize_version = 0
-        #s._serialize_interpolation_map = interpolation_map
+        class MapOrder(SerializableMixIn):
+            _serialize_version = 0
+            _serialize_interpolation_map = {3: [('set', 'x', None)], 0: [('rm', 'x')]}
+        s = MapOrder()
         s._validate_interpolation_map(klass=s.__class__)
         self.assertSequenceEqual(list(s._serialize_interpolation_map.keys()),
                                  sorted(s._serialize_interpolation_map.keys()))
 
     def test_validate_map_invalid_op(self):
-        interpolation_map = {3: [('foo', 'x', None)]}
-        SerializableMixIn._serialize_interpolation_map = interpolation_map
-        s = SerializableMixIn()
-        from pyemma._base.serialization.serialization import DeveloperError
+        class InvalidOperatorInMap(SerializableMixIn):
+            _serialize_version = 0
+            _serialize_interpolation_map = {3: [('foo', 'x', None)]}
+        s = InvalidOperatorInMap()
         with self.assertRaises(DeveloperError) as cm:
             s._validate_interpolation_map(klass=s.__class__)
         self.assertIn('invalid operation', cm.exception.args[0])
 
     def test_validate_map_invalid_container_for_actions(self):
-        interpolation_map = {3: "foo"}
-        SerializableMixIn._serialize_interpolation_map = interpolation_map
-        s = SerializableMixIn()
-        from pyemma._base.serialization.serialization import DeveloperError
+        class InvalidContainerInMap(SerializableMixIn):
+            _serialize_version = 0
+            _serialize_interpolation_map = {3: "foo"}
+        s = InvalidContainerInMap()
         with self.assertRaises(DeveloperError) as cm:
             s._validate_interpolation_map(klass=type(s))
 
