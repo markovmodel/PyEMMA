@@ -204,7 +204,7 @@ class TestSerializationCoordinates(unittest.TestCase):
             self.compare(r, params)
 
     def test_csv_reader(self):
-        arr = np.random.random(10)
+        arr = np.random.random(10).reshape(-1, 2)
         from pyemma.util.files import TemporaryDirectory
         delimiter = ' '
         with TemporaryDirectory() as d:
