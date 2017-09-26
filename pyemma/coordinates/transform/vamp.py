@@ -15,17 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-@author: paul, marscher, wu
+@author: paul, marscher, wu, noe
 '''
 
 from __future__ import absolute_import
 
 import numpy as np
 from decorator import decorator
-import sys
-# from pyemma.coordinates.transform.tica import TICA
 from pyemma._base.model import Model
 from pyemma.util.annotators import fix_docs
+from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
 from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
@@ -35,6 +34,7 @@ __all__ = ['VAMP']
 
 
 class VAMPModel(Model):
+    # TODO: remove dummy when bugfix from Martin is committed
     def set_model_params(self, dummy, mean_0, mean_t, C00, Ctt, C0t):
         self.mean_0 = mean_0
         self.mean_t = mean_t
@@ -185,38 +185,39 @@ class VAMP(StreamingEstimationTransformer):
         Lt = spd_inv_sqrt(self._covar.Ctt_)
         A = L0.T.dot(self._covar.C0t_).dot(Lt)
 
-        U, s, Vh = np.linalg.svd(A, compute_uv=True)
+        Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
 
         # compute cumulative variance
         cumvar = np.cumsum(s ** 2)
         cumvar /= cumvar[-1]
 
+        self._L0 = L0
+        self._Lt = Lt
         self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean_0, mean_t=mean_t)
 
         m = self.dimension(_estimating=True)
 
-        singular_vectors_left = L0.dot(U[:, :m])
-        singular_vectors_right = Lt.dot(Vh[:m, :].T)
+        U = L0.dot(Uprime[:, :m]) # U in the paper singular_vectors_left
+        V = Lt.dot(Vprimeh[:m, :].T) # V in the paper singular_vectors_right
 
         # normalize vectors
-        scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
-        scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
-        singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
-        singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
+        #scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
+        #scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
+        #singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
+        #singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
 
         # scale vectors
         if self.scaling is None:
             pass
         elif self.scaling in ['km', 'kinetic map']:
-            singular_vectors_left *= self.singular_values[np.newaxis, :] ## TODO: check left/right
-            singular_vectors_right *= self.singular_values[np.newaxis, :] ## TODO: check left/right
+            U *= self.singular_values[np.newaxis, :] ## TODO: check left/right, ask Hao
+            V *= self.singular_values[np.newaxis, :] ## TODO: check left/right, ask Hao
         else:
             raise ValueError('unexpected value (%s) of "scaling"' % self.scaling)
 
         self._logger.debug("finished diagonalisation.")
 
-        self._model.update_model_params(singular_vectors_right=singular_vectors_right,
-                                        singular_vectors_left=singular_vectors_left)
+        self._model.update_model_params(U=U, V=V)
 
         self._estimated = True
 
@@ -259,13 +260,14 @@ class VAMP(StreamingEstimationTransformer):
         Y : ndarray(n,)
             the projected data
         """
-        # TODO: in principle get_output should not return data for *all* frames! Think about this.
+        # TODO: in principle get_output should not return data for *all* frames!
+        # TODO: implement our own iterators? This would also include random access to be complete...
         if self.right:
             X_meanfree = X - self._model.mean_t
-            Y = np.dot(X_meanfree, self._model.singular_vectors_right[:, 0:self.dimension()])
+            Y = np.dot(X_meanfree, self._model.V[:, 0:self.dimension()])
         else:
             X_meanfree = X - self._model.mean_0
-            Y = np.dot(X_meanfree, self._model.singular_vectors_left[:, 0:self.dimension()])
+            Y = np.dot(X_meanfree, self._model.U[:, 0:self.dimension()])
 
         return Y.astype(self.output_type())
 
@@ -286,24 +288,28 @@ class VAMP(StreamingEstimationTransformer):
     @property
     @_lazy_estimation
     def singular_vectors_right(self):
-        r"""Right singular vectors of the VAMP problem, columnwise
+        r"""Right singular vectors V of the VAMP problem, columnwise
 
         Returns
         -------
         eigenvectors: 2-D ndarray
+        Coefficients that express the right singular functions in the
+        basis of mean-free input features.
         """
-        return self._model.singular_vectors_right
+        return self._model.V
 
     @property
     @_lazy_estimation
     def singular_vectors_left(self):
-        r"""Left singular vectors of the VAMP problem, columnwise
+        r"""Left singular vectors U of the VAMP problem, columnwise
 
         Returns
         -------
         eigenvectors: 2-D ndarray
+        Coefficients that express the left singular functions in the
+        basis of mean-free input features.
         """
-        return self._model.singular_vectors_left
+        return self._model.U
 
     @property
     @_lazy_estimation
@@ -315,3 +321,127 @@ class VAMP(StreamingEstimationTransformer):
         cumvar: 1D np.array
         """
         return self._model.cumvar
+
+
+    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False, observables_mean_free=False):
+        r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
+
+        TODO: this requires some discussion
+
+        TODO: add equations
+
+        Parameters
+        ----------
+        statistics : np.ndarray((input_dimension, n_statistics)), optional
+            Coefficients that express one or multiple statistics in
+            the basis of the input features.
+            This parameter can be None. In that case, this method
+            returns the future expectation value of the observable(s).
+
+        observables : np.ndarray((input_dimension, n_observables))
+            Coefficients that express one or multiple observables in
+            the basis of the input features.
+
+        lag_multiple : int
+            If > 1, extrapolate to a multiple of the estimator's lag
+            time by assuming Markovianity of the approximated Koopman
+            operator.
+
+        statistics_mean_free : bool, default=False
+            If true, coefficients in statistics refer to the input
+            features with feature means removed.
+            If false, coefficients in statistics refer to the
+            unmodified input features.
+
+        observables_mean_free : bool, default=False
+            If true, coefficients in observables refer to the input
+            features with feature means removed.
+            If false, coefficients in observables refer to the
+            unmodified input features.
+        """
+        import sys
+
+        S = np.diag(np.concatenate(([1.0], self.singular_values[0:self.dimension()])))
+        V = self.singular_vectors_right[:, 0:self.dimension()]
+        U = self.singular_vectors_left[:, 0:self.dimension()]
+        m_0 = self.model.mean_0
+        m_t = self.model.mean_t
+
+        dim = self.dimension()
+
+        assert lag_multiple >= 1, 'lag_multiple = 0 not implemented'
+
+        if lag_multiple == 1:
+            P = S
+        else:
+            p = np.zeros((dim + 1, dim + 1))
+            p[0, 0] = 1.0
+            p[1:, 0] = U.T.dot(m_t - m_0)
+            p[1:, 1:] = U.T.dot(self.model.Ctt).dot(V)
+            P = np.linalg.matrix_power(S.dot(p), lag_multiple - 1).dot(S)
+
+        Q = np.zeros((observables.shape[1], dim + 1))
+        if not observables_mean_free:
+            Q[:, 0] = observables.T.dot(m_t)
+        Q[:, 1:] = observables.T.dot(self.model.Ctt).dot(V)
+
+        if statistics is not None:
+            # compute covariance
+            R = np.zeros((statistics.shape[1], dim + 1))
+            if not statistics_mean_free:
+                R[:, 0] = statistics.T.dot(m_0)
+            R[:, 1:] = statistics.T.dot(self.model.C00).dot(U)
+
+        if statistics is not None:
+            # compute lagged covariance
+            return Q.dot(P).dot(R.T)
+        else:
+            # compute future expectation
+            return Q.dot(P)[:, 0]
+
+
+    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10):
+        # TODO: make better API, discuss
+        #from pyemma._ext.sklearn.base import clone as clone_estimator
+
+        if n_observables is not None:
+            if n_observables > self.dimension():
+                warnings.warn('Selected singular functions as observables but dimension '
+                              'is lower than requested number of observables.')
+                n_observables = self.dimension()
+        else:
+            n_observables = self.dimension()
+
+        if isinstance(observables, str) and observables == 'psi':
+            observables = self.singular_vectors_right[:, 0:n_observables]
+            observables_mean_free = True
+        else:
+            ensure_ndarray(observables, ndim=2)
+            observables_mean_free = False
+
+        if isinstance(statistics, str) and statistics == 'phi':
+            statistics = self.singular_vectors_left[:, 0:n_observables]
+            statistics_mean_free = True
+        else:
+            ensure_ndarray_or_None(statistics, ndim=2)
+            statistics_mean_free = False
+
+        est_1 = self.expectation(statistics, observables, lag_multiple=1, statistics_mean_free=statistics_mean_free,
+                                 observables_mean_free=observables_mean_free)
+        estimates = [est_1]
+        predictions = [est_1]
+        for m in np.arange(2, mlags+1):
+            #copy = clone_estimator(self) # TODO: why doesn't this work?
+            copy = VAMP(lag=self.lag*m, dim=self.dim, scaling=self.scaling, right=self.right,
+                        epsilon=self.epsilon, stride=self.stride, skip=self.skip,
+                        ncov_max=self.ncov_max)
+            #copy.lag = self.lag*m
+            estimates.append(
+                copy.estimate(self.data_producer).expectation(statistics, observables, lag_multiple=1,
+                                                              statistics_mean_free=statistics_mean_free,
+                                                              observables_mean_free=observables_mean_free))
+            predictions.append(
+                self.expectation(statistics, observables, lag_multiple=m, statistics_mean_free=statistics_mean_free,
+                                 observables_mean_free=observables_mean_free))
+        # TODO: create some fancy object to store results
+        return predictions, estimates
