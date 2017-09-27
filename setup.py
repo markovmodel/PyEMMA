@@ -93,46 +93,35 @@ def extensions():
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
 
+    pybind_inc = os.path.join(os.path.dirname(__file__), 'pybind11', 'include')
+    assert os.path.exists(pybind_inc)
+
     exts = []
 
-    if sys.platform.startswith('win'):
-        lib_prefix = 'lib'
-    else:
-        lib_prefix = ''
-    regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspatial',
-                  sources=[
-                      'pyemma/coordinates/clustering/src/regspatial.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
+    lib_prefix = 'lib' if sys.platform.startswith('win') else ''
+
+    clustering_module = \
+        Extension('pyemma.coordinates.clustering._ext',
+                  sources=['pyemma/coordinates/clustering/src/clustering_module.cpp'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       np_inc,
+                      pybind_inc,
                       'pyemma/coordinates/clustering/include',
                   ],
+                  language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99', '-g', '-O3'])
-    kmeans_module = \
-        Extension('pyemma.coordinates.clustering.kmeans_clustering',
-                  sources=[
-                      'pyemma/coordinates/clustering/src/kmeans.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'],
-                  include_dirs=[
-                      mdtraj.capi()['include_dir'],
-                      np_inc,
-                      'pyemma/coordinates/clustering/include'],
-                  libraries=[lib_prefix+'theobald'],
-                  library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99'])
+                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     covar_module = \
-        Extension('pyemma._ext.variational.estimators.covar_c.covartools',
-                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.pyx',
-                           'pyemma/_ext/variational/estimators/covar_c/_covartools.c'],
+        Extension('pyemma._ext.variational.estimators.covar_c._covartools',
+                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.cpp'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
+                                pybind_inc,
                                 ],
-                  extra_compile_args=['-std=c99', '-O3'])
+                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
@@ -146,8 +135,7 @@ def extensions():
                   include_dirs=[np_inc],
                   extra_compile_args=['-O3'])
 
-    exts += [regspatial_module,
-             kmeans_module,
+    exts += [clustering_module,
              covar_module,
              eig_qr_module,
              orderedset
@@ -240,19 +228,20 @@ metadata = dict(
     cmdclass=get_cmdclass(),
     tests_require=['pytest'],
     # runtime dependencies
-    install_requires=['numpy>=1.7.0',
-                      'scipy>=0.11',
-                      'mdtraj>=1.8.0',
-                      'matplotlib',
-                      'msmtools>=1.2',
-                      'thermotools>=0.2.5',
-                      'bhmm>=0.6,<0.7',
-                      'joblib>0.8.4',
-                      'pyyaml',
-                      'psutil>=3.1.1',
-                      'decorator>=4.0.0',
-                      'progress-reporter',
-                      ],
+    install_requires=[
+        'bhmm>=0.6,<0.7',
+        'decorator>=4.0.0',
+        'matplotlib',
+        'mdtraj>=1.8.0',
+        'msmtools>=1.2',
+        'pathos',
+        'progress-reporter',
+        'psutil>=3.1.1',
+        'pyyaml',
+        'scipy>=0.11',
+        'thermotools>=0.2.6',
+        'numpy>=1.7.0',
+    ],
     zip_safe=False,
 )
 
@@ -284,6 +273,13 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
+
+        # init submodules
+        import subprocess
+        modules = ['pybind11', ]
+        cmd = "git submodule update --init {mod}"
+        for m in modules:
+            subprocess.check_call(cmd.format(mod=m).split(' '))
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)

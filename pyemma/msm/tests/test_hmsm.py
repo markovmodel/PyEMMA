@@ -406,6 +406,11 @@ class TestMLHMM(unittest.TestCase):
         assert (len(traj) <= N)
         assert (len(np.unique(traj)) <= len(hmsm.transition_matrix))
 
+    def test_dt_model(self):
+        from pyemma.util.units import TimeUnit
+        tu = TimeUnit("1 step").get_scaled(self.hmsm_lag10.lag)
+        self.assertEqual(self.hmsm_lag10.dt_model, tu)
+
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
@@ -424,6 +429,13 @@ class TestMLHMM(unittest.TestCase):
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
         assert np.abs(k2 - ksum) < 1e-4
+
+    def test_cktest_simple(self):
+        import pyemma
+        dtraj = np.random.randint(0, 10, 100)
+        oom = pyemma.msm.estimate_markov_model(dtraj, 1)
+        hmm = oom.coarse_grain(2)
+        hmm.cktest()
 
 
 class TestHMMSpecialCases(unittest.TestCase):

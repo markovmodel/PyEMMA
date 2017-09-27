@@ -4,10 +4,15 @@ Changelog
 2.5 (??-??-????)
 ----------------
 
+As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
+your Python installation to at least version 3.5.
+
 **New features**:
 
 - msm: Added Augmented Markov Models. A way to include averaged experimental
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
+- msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
+  a given threshold. #1106
 
 - References:
 
@@ -19,6 +24,12 @@ Changelog
 - datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
 - coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
 - coordinates: made TrajectoryInfoCache more fail-safe in case of concurrent processes. #1122
+- msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
+  correlation and relaxation times as well for timescales for this estimator. #1116
+- coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
+- coordinates: clustering code modernized in C++ with pybind11 interface. #1142
+- variational: covartools code modernized in C++ with pybind11 interface. #1147
+
 
 2.4 (05-19-2017)
 ----------------

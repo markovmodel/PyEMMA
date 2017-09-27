@@ -5,25 +5,19 @@ environment:
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
-    CONDA_NPY: "111"
+    CONDA_NPY: "113"
     PYTHONHASHSEED: "0"
 
   matrix:
-    - MINICONDA_PYTHON: "C:\\Miniconda"
-      CONDA_PY: "27"
-    
-    - MINICONDA_PYTHON: "C:\\Miniconda-x64"
-      CONDA_PY: "27" 
-      ARCH: "64"
 
-    - MINICONDA_PYTHON: "C:\\Miniconda3"
+    - MINICONDA_PYTHON: "C:\\Miniconda35"
       CONDA_PY: "35"
 
-    - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
+    - MINICONDA_PYTHON: "C:\\Miniconda35-x64"
       CONDA_PY: "35"
       ARCH: "64"
 
-    - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
+    - MINICONDA_PYTHON: "C:\\Miniconda36-x64"
       CONDA_PY: "36"
       ARCH: "64"
 
@@ -32,12 +26,7 @@ install:
 
   - conda config --set always_yes true 
   - conda config --add channels conda-forge
-  - conda install -q conda-build=2.1.4 jinja2
-
-  # use agg backend in matplotlib to avoid gui popup, which can not be closed.
-  - echo %userprofile%
-  - mkdir %userprofile%\\.matplotlib
-  - "echo backend: agg > %userprofile%\\.matplotlib\\matplotlibrc"
+  - conda install -q conda-build=3
 
 build: false # Not a C# project, build stuff at the test step instead.
 

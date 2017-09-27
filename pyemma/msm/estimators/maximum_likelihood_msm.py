@@ -22,7 +22,8 @@ import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
-from pyemma.util.annotators import alias, aliased, fix_docs, deprecated
+
+from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
@@ -39,7 +40,8 @@ class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
-                 connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10):
+                 connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -121,6 +123,12 @@ class _MSMEstimator(_Estimator, _MSM):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         """
         self.lag = lag
 
@@ -149,10 +157,14 @@ class _MSMEstimator(_Estimator, _MSM):
         # time step
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
+        self.dt_model = self.dt_traj
 
         # score
         self.score_method = score_method
         self.score_k = score_k
+
+        # connectivity
+        self.mincount_connectivity = mincount_connectivity
 
     ################################################################################
     # Generic functions
@@ -163,8 +175,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`DiscreteTrajectoryStats <pyemma.msm.estimators._dtraj_stats.DiscreteTrajectoryStats>`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
 
@@ -182,29 +193,31 @@ class _MSMEstimator(_Estimator, _MSM):
                                     'Consider using sparse=True.')
 
         # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
+                                mincount_connectivity=self.mincount_connectivity)
 
         # for other statistics
         return dtrajstats
 
-    def estimate(self, dtrajs, **parms):
+    def estimate(self, dtrajs, **kwargs):
         """
         Parameters
         ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`DiscreteTrajectoryStats <pyemma.msm.estimators._dtraj_stats.DiscreteTrajectoryStats>`
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
-        **params :
+        **kwargs :
             Other keyword parameters if different from the settings when this estimator was constructed
 
         Returns
         -------
-        MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
+        MSM : :class:`pyemma.msm.MSM`
+            Note that this class is specialized by the used estimator, eg. it has more functionality than the plain
+            MSM class.
 
         """
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
-        return super(_MSMEstimator, self).estimate(dtrajs, **parms)
+        return super(_MSMEstimator, self).estimate(dtrajs, **kwargs)
 
     def _check_is_estimated(self):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
@@ -220,10 +233,10 @@ class _MSMEstimator(_Estimator, _MSM):
             test data (discrete trajectories).
         score_method : str
             Overwrite scoring method if desired. If `None`, the estimators scoring
-            method will be used. See __init__ for documention.
+            method will be used. See __init__ for documentation.
         score_k : str
             Overwrite scoring rank if desired. If `None`, the estimators scoring
-            rank will be used. See __init__ for documention.
+            rank will be used. See __init__ for documentation.
         score_method : str, optional, default='VAMP2'
             Overwrite scoring method to be used if desired. If `None`, the estimators scoring
             method will be used.
@@ -418,7 +431,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @property
     @alias('dtrajs_full')
-    @deprecated("This attribute will be removed in the future!")
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
@@ -429,7 +441,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @property
     @alias('dtrajs_active')
-    @deprecated("This attribute will be removed in the future!")
     def discrete_trajectories_active(self):
         """
         A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
@@ -438,39 +449,11 @@ class _MSMEstimator(_Estimator, _MSM):
         """
         self._check_is_estimated()
         # compute connected dtrajs
-        dtrajs_active = [self._full2active[dtraj] for dtraj in self._dtrajs_full]
-        return dtrajs_active
+        self._dtrajs_active = []
+        for dtraj in self._dtrajs_full:
+            self._dtrajs_active.append(self._full2active[dtraj])
 
-    @alias('compute_dtrajs_active')
-    def compute_discrete_trajectories_active(self, dtrajs):
-        """
-        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
-        For example, for connectivity='largest', the indexes will be given within the connected set.
-        Frames that are not in the connected set will be -1.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
-
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # compute connected dtrajs
-        dtrajs_active = [self._full2active[dtraj] for dtraj in dtrajs]
-        return dtrajs_active
-
-    def _check_dtrajs_arg(self, dtrajs):
-        # ensure dtrajs is given, otherwise warn the user.
-        if dtrajs is None:
-            import inspect
-            s = inspect.stack(context=3)
-            method = s[1][3]
-            warnings.warn("The dtrajs argument will be mandatory in the future for method {method}."
-                          .format(method=method), stacklevel=3)
-            dtrajs = self._dtrajs_full
-        return dtrajs
+        return self._dtrajs_active
 
     @property
     def count_matrix_active(self):
@@ -520,7 +503,6 @@ class _MSMEstimator(_Estimator, _MSM):
         return float(self._nstates) / float(self._nstates_full)
 
     @property
-    @deprecated('use compute_active_count_fraction')
     def active_count_fraction(self):
         """The fraction of counts in the largest connected set.
 
@@ -529,17 +511,6 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.util.discrete_trajectories import count_states
 
         hist = count_states(self._dtrajs_full)
-        hist_active = hist[self.active_set]
-        return float(_np.sum(hist_active)) / float(_np.sum(hist))
-
-    def compute_active_count_fraction(self, dtrajs):
-        """The fraction of counts in the largest connected set.
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        from pyemma.util.discrete_trajectories import count_states
-
-        hist = count_states(dtrajs)
         hist_active = hist[self.active_set]
         return float(_np.sum(hist_active)) / float(_np.sum(hist))
 
@@ -673,7 +644,7 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
     # For general statistics
     ################################################################################
-    def trajectory_weights(self, dtrajs=None):
+    def trajectory_weights(self):
         r"""Uses the MSM to assign a probability weight to each trajectory frame.
 
         This is a powerful function for the calculation of arbitrary observables in the trajectories one has
@@ -720,18 +691,16 @@ class _MSMEstimator(_Estimator, _MSM):
 
         """
         self._check_is_estimated()
-        dtrajs = self._check_dtrajs_arg(dtrajs)
-
         # compute stationary distribution, expanded to full set
         statdist_full = _np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
         # histogram observed states
         import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(dtrajs)
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
-        for dtraj in dtrajs:
+        for dtraj in self.discrete_trajectories_full:
             w = statdist_full[dtraj] / hist[dtraj]
             W.append(w)
             wtot += _np.sum(w)
@@ -745,17 +714,13 @@ class _MSMEstimator(_Estimator, _MSM):
     # HMM-based coarse graining
     ################################################################################
 
-    def hmm(self, nhidden, dtrajs=None):
+    def hmm(self, nhidden):
         """Estimates a hidden Markov state model as described in [1]_
 
         Parameters
         ----------
         nhidden : int
             number of hidden (metastable) states
-            
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
 
         Returns
         -------
@@ -769,7 +734,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
         """
         self._check_is_estimated()
-        dtrajs = self._check_dtrajs_arg(dtrajs)
         # check if the time-scale separation is OK
         # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
         if self.nstates > nhidden:
@@ -789,7 +753,7 @@ class _MSMEstimator(_Estimator, _MSM):
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nhidden, msm_init=self,
                                           reversible=self.is_reversible, dt_traj=self.dt_traj)
-        estimator.estimate(dtrajs)
+        estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
     def coarse_grain(self, ncoarse, method='hmm'):
@@ -825,7 +789,7 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
 
     def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False,
-               n_jobs=1, show_progress=True, dtrajs=None):
+               n_jobs=1, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -850,9 +814,7 @@ class _MSMEstimator(_Estimator, _MSM):
             how many jobs to use during calculation
         show_progress : bool, optional
             Show progress bars for calculation?
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
+
         Returns
         -------
         cktest : :class:`ChapmanKolmogorovValidator <pyemma.msm.ChapmanKolmogorovValidator>`
@@ -872,14 +834,13 @@ class _MSMEstimator(_Estimator, _MSM):
             134: 174105
 
         """
-        dtrajs = self._check_dtrajs_arg(dtrajs)
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
         if memberships is None:
             self.pcca(nsets)
             memberships = self.metastable_memberships
         ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf,
                                         n_jobs=n_jobs, err_est=err_est, show_progress=show_progress)
-        ck.estimate(dtrajs)
+        ck.estimate(self._dtrajs_full)
         return ck
 
 
@@ -891,7 +852,8 @@ class MaximumLikelihoodMSM(_MSMEstimator):
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', maxiter=1000000,
-                 maxerr=1e-8, score_method='VAMP2', score_k=10):
+                 maxerr=1e-8, score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -993,6 +955,12 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1001,7 +969,8 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         """
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
                                                    sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
-                                                   score_method=score_method, score_k=score_k)
+                                                   score_method=score_method, score_k=score_k,
+                                                   mincount_connectivity=mincount_connectivity)
 
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize
@@ -1111,7 +1080,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        # TODO: remove in a future version.
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
         self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
@@ -1124,7 +1092,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
     # TODO: change to statistically effective count matrix!
     @property
-    @deprecated('Please use compute_effective_count_matrix in the future.')
     def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
 
@@ -1143,33 +1110,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         return Ceff
         # return self._C_active / float(self.lag)
 
-    # TODO: change to statistically effective count matrix!
-    def compute_effective_count_matrix(self, dtrajs):
-        """Statistically uncorrelated transition counts within the active set of states
-
-        You can use this count matrix for Bayesian estimation or error perturbation.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
-
-        References
-        ----------
-        [1] Noe, F. (2015) Statistical inefficiency of Markov model count matrices
-            http://publications.mi.fu-berlin.de/1699/1/autocorrelation_counts.pdf
-
-        """
-        self._check_is_estimated()
-        dtrajs = ensure_dtraj_list(dtrajs)
-        import msmtools.estimation as msmest
-        Ceff_full = msmest.effective_count_matrix(dtrajs, self.lag)
-        from pyemma.util.linalg import submatrix
-        Ceff = submatrix(Ceff_full, self.active_set)
-        return Ceff
-        # return self._C_active / float(self.l
-
 
 @fix_docs
 @aliased
@@ -1178,7 +1118,8 @@ class OOMReweightedMSM(_MSMEstimator):
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
-                 score_method='VAMP2', score_k=10):
+                 score_method='VAMP2', score_k=10,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -1200,12 +1141,12 @@ class OOMReweightedMSM(_MSMEstimator):
               .. math::
 
                  (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
-            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+            * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
               at time indexes
 
               .. math::
 
-                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
 
         sparse : bool, optional, default = False
             If true compute count matrix, transition matrix and all derived
@@ -1269,6 +1210,12 @@ class OOMReweightedMSM(_MSMEstimator):
             The maximum number of eigenvalues or singular values used in the
             score. If set to None, all available eigenvalues will be used.
 
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1284,7 +1231,8 @@ class OOMReweightedMSM(_MSMEstimator):
 
         super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                                                connectivity=connectivity, dt_traj=dt_traj,
-                                               score_method=score_method, score_k=score_k)
+                                               score_method=score_method, score_k=score_k,
+                                               mincount_connectivity=mincount_connectivity)
         self.nbs = nbs
         self.tol_rank = tol_rank
         self.rank_Ct = rank_Ct
@@ -1364,7 +1312,7 @@ class OOMReweightedMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        self._dtrajs_full = dtrajs  # TODO: remove this in a future version.
+        self._dtrajs_full = dtrajs
         from pyemma.util.discrete_trajectories import index_states
         self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
         self._connected_sets = msmest.connected_sets(self._C_full)
@@ -1452,8 +1400,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
-                 dt_traj='1 step', 
-                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache = 3000):
+                 dt_traj='1 step',
+                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache=3000,
+                 mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -1513,33 +1462,40 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             |  's',   'second*'
 
         E : ndarray(n, k)
-          Expectations by state. n Markov states, k experimental observables; each index is average over members of the Markov state. 
-        
+          Expectations by state. n Markov states, k experimental observables; each index is average over members of the Markov state.
+
         m : ndarray(k)
           Experimental measurements.
-        
+
         w : ndarray(k)
           Weights of experimental measurement (1/2s^2), where s is the std error.
 
         eps : float, default=0.05
           Convergence criterion for Lagrange multipliers. When the relative error on the observable average becomes less than this value for all observables, convergence is reached.
-        
+
         support_ci : float, default=1.00
           Confidence interval for determination whether experimental data are inside or outside Markov model support
 
         maxiter : int, default=500
           Maximum number of iterations
-        
+
         debug : bool, default=False
           Debug mode. Saves a number of quantities as a function of iteration.
-        
+
         max_cache : int, default=3000
           Maximum size (in megabytes) of cache when computing R tensor (Supporting information in [1]).
+
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
 
         References
         ----------
         .. [1] Olsson, Wu, Paul, Clementi and Noe "Combining Experimental and Simulation Data via Augmented Markov Models"
-               In revision, PNAS (2017) 
+               In revision, PNAS (2017)
 
         """
         # Check count mode:
@@ -1548,7 +1504,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
 
         super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=None, score_k=None)
-        
+
         self.E = E
         if E is not None:
             self.n_mstates, self.n_exp = _np.shape(E)
@@ -1558,18 +1514,18 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.logger.info("AugmentedMarkovModel instance initialized without experimental values (m). This necessary for estimation.")
         if w is None:
             self.logger.info("AugmentedMarkovModel instance initialized without experimental weights (w). This is necessary for estimation.")
-        
+
         self.m = m
         self.w = w
 
         # Relative error for lagrange convergence assessment.
         self._eps = eps
-        
+
         # Specifies the confidence interval of experimental values consider inside or outside support of the simulation
         # Is used to identify experimental data which have values never visited in the simulation, user is informed about these,
         # and lagrange estimation for these stops when the slope reaches a (near) constant value.
-        self.support_ci = support_ci 
-        
+        self.support_ci = support_ci
+
         # check for zero weights
         if w is not None:
             if _np.any(w<1e-12):
@@ -1578,7 +1534,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.sigmas = _np.sqrt(1./2./self.w)
         else:
             self.sigmas = None
-        
+
         # Convergence flag for lagrange multipliers
         self._converged = False
         # Convergence flag for hatpi
@@ -1587,6 +1543,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.debug = debug
         self._max_cache = max_cache
         self._is_estimated = False
+        self.mincount_connectivity = mincount_connectivity
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
         """ Evaluate AMM likelihood. """
@@ -1595,7 +1552,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         return ll_unbiased + ll_bias
 
     def _update_G(self):
-        """ Update G. 
+        """ Update G.
             Observable covariance.
             See SI of [1].
 
@@ -1605,7 +1562,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _update_Q(self):
         """ Compute Q, a weighted sum of the R-tensor.
-            
+
             See SI of [1].
         """
         self.Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
@@ -1615,12 +1572,12 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _update_Rslices(self, i):
         """ Computation of multiple slices of R tensor.
-          
+
             When _estimate(.) is called the R-tensor is split into segments whose maximum size is
-            specified by max_cache argument (see constructor).  
+            specified by max_cache argument (see constructor).
             _Rsi specifies which of the segments are currently in cache.
              For equations check SI of [1].
-        
+
         """
         pek = self.pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
         pp = (self.pihat[:, None] + self.pihat[None, :])
@@ -1641,21 +1598,21 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
           return self._Rs[k%self._slicesz]
 
     def _update_pihat(self):
-        """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """ 
+        """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """
         expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
 
         _ph_unnom = self.pi*_np.exp(expons)
         self.pihat = (_ph_unnom/_ph_unnom.sum()).reshape(-1,)
 
-    def _update_mhat(self): 
-        """ Updates mhat (expectation of observable of the Augmented Markov model) """ 
-        self.mhat = _np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:]) 
-        self._update_S() 
+    def _update_mhat(self):
+        """ Updates mhat (expectation of observable of the Augmented Markov model) """
+        self.mhat = _np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:])
+        self._update_S()
 
     def _update_S(self):
-        """ Computes slope in observable space """ 
-        self._S = self.mhat-self.m 
+        """ Computes slope in observable space """
+        self._S = self.mhat-self.m
 
     def _update_X_and_pi(self):
         #evaluate count-over-pi
@@ -1670,9 +1627,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _newton_lagrange(self):
         """
-          This function performs a Newton update of the Lagrange multipliers. 
+          This function performs a Newton update of the Lagrange multipliers.
           The iteration is constrained by strictly improving the AMM likelihood, and yielding meaningful stationary properties.
-          
+
           TODO: clean up and optimize code.
         """
         #initialize a number of values
@@ -1690,15 +1647,15 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             # Lagrange slope calculation
             dl = 2.*(frac*self._G*self.w[:, None]*self._S[:, None]).sum(axis=0)
             #update Lagrange multipliers
-            self.lagrange = l_old - frac*dl 
+            self.lagrange = l_old - frac*dl
             self._update_pihat()
-            # a number of sanity checks 
+            # a number of sanity checks
             while(_np.any(self.pihat<1e-12)):
                 frac = frac*0.5
-                self.lagrange = l_old - frac*dl 
+                self.lagrange = l_old - frac*dl
                 self._update_pihat()
 
-            self.lagrange = l_old - frac*dl 
+            self.lagrange = l_old - frac*dl
             self._update_pihat()
             self._update_mhat()
             self._update_Q()
@@ -1721,7 +1678,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _estimate(self, dtrajs):
         if self.E is None or self.w is None or self.m is None:
-            raise ValueError("E, w or m was not specified. Stopping.") 
+            raise ValueError("E, w or m was not specified. Stopping.")
         die = False
 
         # get trajectory counts. This sets _C_full and _nstates_full
@@ -1761,14 +1718,14 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         _dset = list(set(_np.concatenate(dtrajs)))
         _rras = [_dset.index(s) for s in self.active_set]
         self.E_active = self.E[_rras]
-       
-        if not self.sparse: 
-            self._C_active = self._C_active.toarray() 
-            self._C_full   = self._C_full.toarray() 
-        
-        # reversibly counted 
+
+        if not self.sparse:
+            self._C_active = self._C_active.toarray()
+            self._C_full   = self._C_full.toarray()
+
+        # reversibly counted
         self._C2 = 0.5*(self._C_active + self._C_active.T)
-        self._nz = _np.nonzero(self._C2) 
+        self._nz = _np.nonzero(self._C2)
         self._csum = _np.sum(self._C_active, axis=1)  # row sums C
 
         #get ranges of Markov model expectation values
@@ -1780,8 +1737,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.E_min, self.E_max = _ci(self.E_active, conf = self.support_ci)
 
         #dimensions of E matrix
-        self.n_mstates_active, self.n_exp_active = _np.shape(self.E_active) 
-        
+        self.n_mstates_active, self.n_exp_active = _np.shape(self.E_active)
+
         assert self.n_exp_active == len(self.w)
         assert self.n_exp_active == len(self.m)
 
@@ -1808,7 +1765,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.pihat = self.pi.copy()
         self._update_mhat()
         self._dmhat = _np.ones(_np.shape(self.mhat))
-        
+
         # Heuristic to determine number of slices of R-tensors computable at once with the given cache size
         self._slicesz = _np.floor(self._max_cache/(self.P.nbytes/1.e6)).astype(int)
         # compute first bundle of slices
@@ -1824,7 +1781,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self._ls = []
             self._rmss = []
             self._mhats = []
-        
+
         self._update_pihat()
         self._update_mhat()
 
@@ -1837,13 +1794,13 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         #
         # Main estimation algorithm
         # 2-step algorithm, lagrange multipliers and pihat have different convergence criteria
-        # when the lagrange multipliers have converged, pihat is updated until the log-likelihood has converged (changes are smaller than 1e-3). 
+        # when the lagrange multipliers have converged, pihat is updated until the log-likelihood has converged (changes are smaller than 1e-3).
         # These do not always converge together, but usually within a few steps of each other.
-        # A better heuristic for the latter may be necessary. For realistic cases (the two ubiquitin examples in [1]) 
+        # A better heuristic for the latter may be necessary. For realistic cases (the two ubiquitin examples in [1])
         # this yielded results very similar to those with more stringent convergence criteria (changes smaller than 1e-9) with convergence times
         # which are seconds instead of tens of minutes.
         #
-         
+
         while i < self._max_iter:
             pihat_old = self.pihat.copy()
             self._update_pihat()
@@ -1867,14 +1824,14 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 P = self.X / self.pi[:, None]
                 _ll_new = self._log_likelihood_biased(self._C_active, P, self.m, self.mhat, self.w)
                 self._lls.append(_ll_new)
-            
-            if self.debug:   
+
+            if self.debug:
                 self._phs.append(self.pihat)
                 self._ls.append(self.lagrange.copy())
                 self._mhats.append(_np.array(self.mhat))
                 self._rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
 
-            if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged: 
+            if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged:
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
                 self._converged = True
                 self._estimated = True
@@ -1888,9 +1845,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             i = i + 1
             if i == self._max_iter:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter))
-        
+
         _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
-        
+
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
         self.set_model_params(P=_P, pi=self.pihat, reversible=True,
@@ -1900,7 +1857,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def hmm(self, n):
         self.logger.info("Not Implemented - Please use PCCA for now.")
-  
+
     @property
     def debug_information(self):
         self._check_is_estimated()

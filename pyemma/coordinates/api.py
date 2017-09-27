@@ -46,6 +46,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = ['featurizer',  # IO
            'load',
            'source',
+           'combine_sources',
            'histogram',
            'pipeline',
            'discretizer',
@@ -365,6 +366,35 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
     return reader
+
+
+def combine_sources(sources, chunksize=1000):
+    r""" Combines multiple data sources to stream from.
+
+    The given source objects (readers and transformers, eg. TICA) are concatenated in dimension axis during iteration.
+    This can be used to couple arbitrary features in order to pass them to an Estimator expecting only one source,
+    which is usually the case. All the parameters for iterator creation are passed to the actual sources, to ensure
+    consistent behaviour.
+
+    Parameters
+    ----------
+    sources : list, tuple
+        list of DataSources (Readers, StreamingTransformers etc.) to combine for streaming access.
+
+    chunksize: int
+        chunk size to use for underlying iterators.
+
+    Notes
+    -----
+    This is currently only implemented for matching lengths trajectories.
+
+    Returns
+    -------
+    merger : :class:`SourcesMerger <pyemma.coordinates.data.sources_merger.SourcesMerger>`
+
+    """
+    from pyemma.coordinates.data.sources_merger import SourcesMerger
+    return SourcesMerger(sources, chunk=chunksize)
 
 
 def pipeline(stages, run=True, stride=1, chunksize=1000):
@@ -778,7 +808,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
     if len(indexes) != len(outfiles):
         raise Exception('len(indexes) (%s) does not match len(outfiles) (%s)' % (len(indexes), len(outfiles)))
 
-    # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
+    # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile
     # might be accessed more than once (less memory intensive)
     if not inmemory:
         for i_indexes, outfile in zip(indexes, outfiles):
@@ -1312,7 +1342,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 # =========================================================================
 
 def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean',
-                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000, skip=0):
+                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000, skip=0, clustercenters=None):
     r"""k-means clustering with mini-batch strategy
 
     Mini-batch k-means is an approximation to k-means which picks a randomly
@@ -1351,13 +1381,13 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     """
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
-                                    batch_size=batch_size, n_jobs=n_jobs, skip=skip)
+                                    batch_size=batch_size, n_jobs=n_jobs, skip=skip, clustercenters=clustercenters)
     return _param_stage(data, res, stride=1, chunk_size=chunk_size)
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
                    metric='euclidean', init_strategy='kmeans++', fixed_seed=False,
-                   n_jobs=None, chunk_size=5000, skip=0):
+                   n_jobs=None, chunk_size=5000, skip=0, keep_data=False, clustercenters=None):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1403,7 +1433,7 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         determines if the initial cluster centers are chosen according to the kmeans++-algorithm
         or drawn uniformly distributed from the provided data set
 
-    fixed_seed : bool or (positive) integer 
+    fixed_seed : bool or (positive) integer
         if set to true, the random seed gets fixed resulting in deterministic behavior; default is false.
         If an integer >= 0 is given, use this to initialize the random generator.
 
@@ -1417,6 +1447,14 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
 
     skip : int, default=0
         skip the first initial n frames per trajectory.
+
+    keep_data: boolean, default=False
+        if you intend to quickly resume a non-converged kmeans iteration, set this to True.
+        Otherwise the linear memory array will have to be re-created. Note that the data will also be deleted,
+        if and only if the estimation converged within the given tolerance parameter.
+
+    clustercenters: ndarray (k, dim), default=None
+        if passed, the init_strategy is ignored and these centers will be iterated.
 
     Returns
     -------
@@ -1471,7 +1509,8 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     """
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
-                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip)
+                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip,
+                           keep_data=keep_data, clustercenters=clustercenters)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
@@ -1541,7 +1580,7 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
              :attributes:
 
     """
-    from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering 
+    from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
     res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 

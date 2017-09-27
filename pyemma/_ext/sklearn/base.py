@@ -63,6 +63,13 @@ def clone(estimator, safe=True):
                             "it does not seem to be a scikit-learn estimator "
                             "as it does not implement a 'get_params' methods."
                             % (repr(estimator), type(estimator)))
+    # TODO: this is a brute force method to make things work for parameter studies. #1135
+    # But this can potentially use a lot of memory in case of large input data, which is also copied then.
+    # we need a way to distinguish input parameters from derived model parameters, which is currently only ensured for
+    # estimators in the coordinates package.
+    if hasattr(estimator, '_estimated') and estimator._estimated:
+        return copy.deepcopy(estimator)
+
     klass = estimator.__class__
     new_object_params = estimator.get_params(deep=False)
     for name, param in six.iteritems(new_object_params):
