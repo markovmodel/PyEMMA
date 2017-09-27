@@ -299,9 +299,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    if progress_reporter is not None:
-        progress_reporter._progress_register(len(estimators), stage=0,
-                                             description="estimating %s" % str(estimator.__class__.__name__))
+    if progress_reporter is not None and show_progress:
+        progress_reporter._progress_register(len(estimators), stage=0, description="estimating %s" % str(estimator.__class__.__name__))
 
     if n_jobs > 1 and os.name == 'posix':
         if hasattr(estimators[0], 'logger'):
@@ -318,7 +317,6 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         pool = Parallel(processes=n_jobs)
         args = list(task_iter)
         if progress_reporter is not None:
-            progress_reporter._progress_register(len(estimators), stage=0, description="estimating %s" % str(estimator.__class__.__name__))
             from pyemma._base.model import SampledModel
             for a in args:
                 if isinstance(a[0], SampledModel):
@@ -352,12 +350,6 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
                                        'you not have a POSIX system', estimator)
         res = []
-        if progress_reporter is not None:
-            from pyemma._base.model import SampledModel
-            if isinstance(estimator, SampledModel):
-                for e in estimators:
-                    e.show_progress = False
-
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast, return_exceptions))

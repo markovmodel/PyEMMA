@@ -414,7 +414,11 @@ class VAMP(StreamingEstimationTransformer):
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
-    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True):
+    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=False):
+        # drop reference to LaggedCovariance to avoid probelms during cloning
+        # In future pyemma versions, this will be no longer a problem...
+        self._covar = None
+
         if n_observables is not None:
             if n_observables > self.dimension():
                 warnings.warn('Selected singular functions as observables but dimension '
