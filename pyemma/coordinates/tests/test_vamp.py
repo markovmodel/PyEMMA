@@ -157,29 +157,11 @@ class TestVAMPCKTest(unittest.TestCase):
         K = np.linalg.inv(C0).dot(C1)
         np.testing.assert_allclose(K, self.msm.P, atol=1E-5)
 
-    def test_CK_covariances_against_MSM(self):
-        obs = np.eye(3) # observe every state
-        sta = np.eye(3) # restrict p0 to every state
-        pred, est = self.vamp.cktest(observables=obs, statistics=sta, mlags=4)
-
-        atol = np.finfo(self.vamp.output_type()).eps*1000.0
-
-        #import sys
-        for i in range(len(pred)):
-            msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
-            msm_esti = (self.p0 * sta).T.dot(msm.P).dot(obs)
-            msm_pred = (self.p0 * sta).T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs)
-            np.testing.assert_allclose(np.diag(pred[i]),  np.diag(msm_pred), atol=atol)
-            np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=atol)
-            np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
-            #print('pred(s)', i, np.diag(pred[i]), file=sys.stderr)
-            #print('predMSM!', i, np.diag(msm_pred), file=sys.stderr)
-            #print('esti(s)', i, np.diag(est[i]), file=sys.stderr)
-            #print('estiMSM!', i, np.diag(msm_esti), file=sys.stderr)
-
     def test_CK_expectation_against_MSM(self):
         obs = np.eye(3) # observe every state
-        pred, est = self.vamp.cktest(observables=obs, statistics=None, mlags=4)
+        cktest = self.vamp.cktest(observables=obs, statistics=None, mlags=4)
+        pred = cktest.predictions[1:]
+        est = cktest.estimates[1:]
         atol = np.finfo(self.vamp.output_type()).eps*1000.0
 
         for i in range(len(pred)):
@@ -193,9 +175,27 @@ class TestVAMPCKTest(unittest.TestCase):
     def test_CK_covariances_of_singular_functions(self):
         #from pyemma import config
         #config.show_progress_bars = False
-        pred,est = self.vamp.cktest(n_observables=2, mlags=4) # auto
+        cktest = self.vamp.cktest(n_observables=2, mlags=4) # auto
+        pred = cktest.predictions[1:]
+        est = cktest.estimates[1:]
         error = np.max(np.abs(np.array(pred) - np.array(est))) / max(np.max(pred), np.max(est))
         assert error < 0.05
+
+    def test_CK_covariances_against_MSM(self):
+        obs = np.eye(3) # observe every state
+        sta = np.eye(3) # restrict p0 to every state
+        cktest = self.vamp.cktest(observables=obs, statistics=sta, mlags=4, show_progress=True)
+        atol = np.finfo(self.vamp.output_type()).eps * 1000.0
+        pred = cktest.predictions[1:]
+        est = cktest.estimates[1:]
+
+        for i in range(len(pred)):
+            msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
+            msm_esti = (self.p0 * sta).T.dot(msm.P).dot(obs)
+            msm_pred = (self.p0 * sta).T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs)
+            np.testing.assert_allclose(np.diag(pred[i]),  np.diag(msm_pred), atol=atol)
+            np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=atol)
+            np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
 
 
 if __name__ == "__main__":

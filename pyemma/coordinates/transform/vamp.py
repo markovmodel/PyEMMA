@@ -28,6 +28,8 @@ from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
 from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
+from pyemma.msm.estimators.lagged_model_validators import LaggedModelValidator
+
 import warnings
 
 __all__ = ['VAMP']
@@ -41,6 +43,106 @@ class VAMPModel(Model):
         self.C00 = C00
         self.Ctt = Ctt
         self.C0t = C0t
+
+    def dimension(self, _estimated=True): # TODO: get rid of _estimated but test for existence of field instead
+        """ output dimension """
+        if self.dim is None or self.dim == 1.0:
+            if _estimated:
+                return np.count_nonzero(self.singular_values > self.epsilon)
+            else:
+                raise RuntimeError('Requested dimension, but the dimension depends on the singular values and the '
+                                   'transformer has not yet been estimated. Call estimate() before.')
+        if isinstance(self.dim, float):
+            if _estimated:
+                return np.count_nonzero(self.cumvar >= self.dim)
+            else:
+                raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
+                                   'transformer has not yet been estimated. Call estimate() before.')
+        else:
+            if _estimated:
+                return min(np.min(np.count_nonzero(self.singular_values > self.epsilon)), self.dim)
+            else:
+                warnings.warn(
+                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
+                                   'transformer has not yet been estimated. Result is only an approximation.'))
+                return self.dim
+
+    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False, observables_mean_free=False):
+        r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
+
+        TODO: this requires some discussion
+
+        TODO: add equations
+
+        Parameters
+        ----------
+        statistics : np.ndarray((input_dimension, n_statistics)), optional
+            Coefficients that express one or multiple statistics in
+            the basis of the input features.
+            This parameter can be None. In that case, this method
+            returns the future expectation value of the observable(s).
+
+        observables : np.ndarray((input_dimension, n_observables))
+            Coefficients that express one or multiple observables in
+            the basis of the input features.
+
+        lag_multiple : int
+            If > 1, extrapolate to a multiple of the estimator's lag
+            time by assuming Markovianity of the approximated Koopman
+            operator.
+
+        statistics_mean_free : bool, default=False
+            If true, coefficients in statistics refer to the input
+            features with feature means removed.
+            If false, coefficients in statistics refer to the
+            unmodified input features.
+
+        observables_mean_free : bool, default=False
+            If true, coefficients in observables refer to the input
+            features with feature means removed.
+            If false, coefficients in observables refer to the
+            unmodified input features.
+        """
+        import sys
+
+        dim = self.dimension()
+
+        S = np.diag(np.concatenate(([1.0], self.singular_values[0:dim])))
+        V = self.V[:, 0:dim]
+        U = self.U[:, 0:dim]
+        m_0 = self.mean_0
+        m_t = self.mean_t
+
+
+        assert lag_multiple >= 1, 'lag_multiple = 0 not implemented'
+
+        if lag_multiple == 1:
+            P = S
+        else:
+            p = np.zeros((dim + 1, dim + 1))
+            p[0, 0] = 1.0
+            p[1:, 0] = U.T.dot(m_t - m_0)
+            p[1:, 1:] = U.T.dot(self.Ctt).dot(V)
+            P = np.linalg.matrix_power(S.dot(p), lag_multiple - 1).dot(S)
+
+        Q = np.zeros((observables.shape[1], dim + 1))
+        if not observables_mean_free:
+            Q[:, 0] = observables.T.dot(m_t)
+        Q[:, 1:] = observables.T.dot(self.Ctt).dot(V)
+
+        if statistics is not None:
+            # compute covariance
+            R = np.zeros((statistics.shape[1], dim + 1))
+            if not statistics_mean_free:
+                R[:, 0] = statistics.T.dot(m_0)
+            R[:, 1:] = statistics.T.dot(self.C00).dot(U)
+
+        if statistics is not None:
+            # compute lagged covariance
+            return Q.dot(P).dot(R.T)
+        else:
+            # compute future expectation
+            return Q.dot(P)[:, 0]
 
 
 @decorator
@@ -112,15 +214,16 @@ class VAMP(StreamingEstimationTransformer):
         """
         StreamingEstimationTransformer.__init__(self)
 
-        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
-                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=None, ncov_max=ncov_max)
-
         # empty dummy model instance
         self._model = VAMPModel()
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
                         epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
+        self._covar = None
+        self._model.update_model_params(dim=dim, epsilon=epsilon)
 
     def _estimate(self, iterable, **kw):
+        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
+                                       lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None, ncov_max=self.ncov_max)
         indim = iterable.dimension()
 
         if isinstance(self.dim, int):
@@ -163,6 +266,10 @@ class VAMP(StreamingEstimationTransformer):
                 raise RuntimeError("requested more output dimensions (%i) than dimension"
                                    " of input data (%i)" % (self.dim, indim))
 
+        if self._covar is None:
+            self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
+                                           lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
+                                           ncov_max=self.ncov_max)
         self._covar.partial_fit(iterable)
         self._model.update_model_params(mean_0=self._covar.mean, # TODO: inefficient, fixme
                                         mean_t=self._covar.mean_tau,
@@ -195,7 +302,7 @@ class VAMP(StreamingEstimationTransformer):
         self._Lt = Lt
         self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean_0, mean_t=mean_t)
 
-        m = self.dimension(_estimating=True)
+        m = self._model.dimension(_estimated=True)
 
         U = L0.dot(Uprime[:, :m]) # U in the paper singular_vectors_left
         V = Lt.dot(Vprimeh[:m, :].T) # V in the paper singular_vectors_right
@@ -222,30 +329,9 @@ class VAMP(StreamingEstimationTransformer):
         self._estimated = True
 
 
-    def dimension(self, _estimating=False):
-        """ output dimension """
-        if self.dim is None or self.dim == 1.0:
-            if self._estimated or _estimating:
-                return np.count_nonzero(self._model.singular_values > self.epsilon)
-            else:
-                warnings.warn(
-                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
-                                   'transformer has not yet been estimated. Result is only an approximation.'))
-                return self.data_producer.dimension()
-        if isinstance(self.dim, float):
-            if self._estimated or _estimating:
-                return np.count_nonzero(self._model.cumvar >= self.dim)
-            else:
-                raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                                   'transformer has not yet been estimated. Call estimate() before.')
-        else:
-            if self._estimated or _estimating:
-                return min(np.min(np.count_nonzero(self._model.singular_values > self.epsilon)), self.dim)
-            else:
-                warnings.warn(
-                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
-                                   'transformer has not yet been estimated. Result is only an approximation.'))
-                return self.dim
+    def dimension(self):
+        return self._model.dimension(_estimated=self._estimated)
+
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant singular functions.
@@ -322,88 +408,13 @@ class VAMP(StreamingEstimationTransformer):
         """
         return self._model.cumvar
 
+    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False,
+                    observables_mean_free=False):
+        return self._model.expectation(statistics, observables, lag_multiple=lag_multiple,
+                                       statistics_mean_free=statistics_mean_free,
+                                       observables_mean_free=observables_mean_free)
 
-    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False, observables_mean_free=False):
-        r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
-
-        TODO: this requires some discussion
-
-        TODO: add equations
-
-        Parameters
-        ----------
-        statistics : np.ndarray((input_dimension, n_statistics)), optional
-            Coefficients that express one or multiple statistics in
-            the basis of the input features.
-            This parameter can be None. In that case, this method
-            returns the future expectation value of the observable(s).
-
-        observables : np.ndarray((input_dimension, n_observables))
-            Coefficients that express one or multiple observables in
-            the basis of the input features.
-
-        lag_multiple : int
-            If > 1, extrapolate to a multiple of the estimator's lag
-            time by assuming Markovianity of the approximated Koopman
-            operator.
-
-        statistics_mean_free : bool, default=False
-            If true, coefficients in statistics refer to the input
-            features with feature means removed.
-            If false, coefficients in statistics refer to the
-            unmodified input features.
-
-        observables_mean_free : bool, default=False
-            If true, coefficients in observables refer to the input
-            features with feature means removed.
-            If false, coefficients in observables refer to the
-            unmodified input features.
-        """
-        import sys
-
-        S = np.diag(np.concatenate(([1.0], self.singular_values[0:self.dimension()])))
-        V = self.singular_vectors_right[:, 0:self.dimension()]
-        U = self.singular_vectors_left[:, 0:self.dimension()]
-        m_0 = self.model.mean_0
-        m_t = self.model.mean_t
-
-        dim = self.dimension()
-
-        assert lag_multiple >= 1, 'lag_multiple = 0 not implemented'
-
-        if lag_multiple == 1:
-            P = S
-        else:
-            p = np.zeros((dim + 1, dim + 1))
-            p[0, 0] = 1.0
-            p[1:, 0] = U.T.dot(m_t - m_0)
-            p[1:, 1:] = U.T.dot(self.model.Ctt).dot(V)
-            P = np.linalg.matrix_power(S.dot(p), lag_multiple - 1).dot(S)
-
-        Q = np.zeros((observables.shape[1], dim + 1))
-        if not observables_mean_free:
-            Q[:, 0] = observables.T.dot(m_t)
-        Q[:, 1:] = observables.T.dot(self.model.Ctt).dot(V)
-
-        if statistics is not None:
-            # compute covariance
-            R = np.zeros((statistics.shape[1], dim + 1))
-            if not statistics_mean_free:
-                R[:, 0] = statistics.T.dot(m_0)
-            R[:, 1:] = statistics.T.dot(self.model.C00).dot(U)
-
-        if statistics is not None:
-            # compute lagged covariance
-            return Q.dot(P).dot(R.T)
-        else:
-            # compute future expectation
-            return Q.dot(P)[:, 0]
-
-
-    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10):
-        # TODO: make better API, discuss
-        #from pyemma._ext.sklearn.base import clone as clone_estimator
-
+    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True):
         if n_observables is not None:
             if n_observables > self.dimension():
                 warnings.warn('Selected singular functions as observables but dimension '
@@ -426,22 +437,34 @@ class VAMP(StreamingEstimationTransformer):
             ensure_ndarray_or_None(statistics, ndim=2)
             statistics_mean_free = False
 
-        est_1 = self.expectation(statistics, observables, lag_multiple=1, statistics_mean_free=statistics_mean_free,
-                                 observables_mean_free=observables_mean_free)
-        estimates = [est_1]
-        predictions = [est_1]
-        for m in np.arange(2, mlags+1):
-            #copy = clone_estimator(self) # TODO: why doesn't this work?
-            copy = VAMP(lag=self.lag*m, dim=self.dim, scaling=self.scaling, right=self.right,
-                        epsilon=self.epsilon, stride=self.stride, skip=self.skip,
-                        ncov_max=self.ncov_max)
-            #copy.lag = self.lag*m
-            estimates.append(
-                copy.estimate(self.data_producer).expectation(statistics, observables, lag_multiple=1,
-                                                              statistics_mean_free=statistics_mean_free,
-                                                              observables_mean_free=observables_mean_free))
-            predictions.append(
-                self.expectation(statistics, observables, lag_multiple=m, statistics_mean_free=statistics_mean_free,
-                                 observables_mean_free=observables_mean_free))
-        # TODO: create some fancy object to store results
-        return predictions, estimates
+        ck = VAMPChapmanKolmogorovValidator(self, self, observables, statistics, observables_mean_free,
+                                            statistics_mean_free, mlags=mlags, n_jobs=n_jobs,
+                                            show_progress=show_progress)
+        ck.estimate(self.data_producer)
+        return ck
+
+
+class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
+    def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
+                 mlags=10, n_jobs=1, show_progress=True):
+        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+                                      n_jobs=n_jobs, show_progress=show_progress)
+        self.statistics = statistics
+        self.observables = observables
+        self.observables_mean_free = observables_mean_free
+        self.statistics_mean_free = statistics_mean_free
+        if self.statistics is not None:
+            self.nsets = min(self.observables.shape[1], self.statistics.shape[1])
+
+
+    def _compute_observables(self, model, estimator, mlag=1):
+        # for lag time 0 we return a matrix of nan, until the correct solution is implemented
+        if mlag == 0 or model is None:
+            if self.statistics is None:
+                return np.zeros(self.observables.shape[1]) + np.nan
+            else:
+                return np.zeros((self.observables.shape[1], self.statistics.shape[1])) + np.nan
+        else:
+            return model.expectation(self.statistics, self.observables, lag_multiple=mlag,
+                                     statistics_mean_free=self.statistics_mean_free,
+                                     observables_mean_free=self.observables_mean_free)
