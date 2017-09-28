@@ -37,29 +37,35 @@ __all__ = ['VAMP']
 
 class VAMPModel(Model):
     # TODO: remove dummy when bugfix from Martin is committed
-    def set_model_params(self, dummy, mean_0, mean_t, C00, Ctt, C0t):
+    def set_model_params(self, dummy, mean_0, mean_t, C00, Ctt, C0t, U, V, singular_values, cumvar, dim, epsilon):
         self.mean_0 = mean_0
         self.mean_t = mean_t
         self.C00 = C00
         self.Ctt = Ctt
         self.C0t = C0t
+        self.U = U
+        self.V = V
+        self.singular_values = singular_values
+        self.cumvar = cumvar
+        self.dim = dim
+        self.epsilon = epsilon
 
-    def dimension(self, _estimated=True): # TODO: get rid of _estimated but test for existence of field instead
+    def dimension(self):
         """ output dimension """
         if self.dim is None or self.dim == 1.0:
-            if _estimated:
+            if hasattr(self, 'singular_values') and self.singular_values is not None:
                 return np.count_nonzero(self.singular_values > self.epsilon)
             else:
                 raise RuntimeError('Requested dimension, but the dimension depends on the singular values and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
         if isinstance(self.dim, float):
-            if _estimated:
+            if hasattr(self, 'cumvar') and self.cumvar is not None:
                 return np.count_nonzero(self.cumvar >= self.dim)
             else:
                 raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
         else:
-            if _estimated:
+            if hasattr(self, 'singular_values') and self.singular_values is not None:
                 return min(np.min(np.count_nonzero(self.singular_values > self.epsilon)), self.dim)
             else:
                 warnings.warn(
@@ -67,7 +73,8 @@ class VAMPModel(Model):
                                    'transformer has not yet been estimated. Result is only an approximation.'))
                 return self.dim
 
-    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False, observables_mean_free=False):
+    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False,
+                    observables_mean_free=False):
         r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
 
         TODO: this requires some discussion
@@ -112,7 +119,6 @@ class VAMPModel(Model):
         U = self.U[:, 0:dim]
         m_0 = self.mean_0
         m_t = self.mean_t
-
 
         assert lag_multiple >= 1, 'lag_multiple = 0 not implemented'
 
@@ -223,7 +229,8 @@ class VAMP(StreamingEstimationTransformer):
 
     def _estimate(self, iterable, **kw):
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
-                                       lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None, ncov_max=self.ncov_max)
+                                       lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
+                                       ncov_max=self.ncov_max)
         indim = iterable.dimension()
 
         if isinstance(self.dim, int):
@@ -271,13 +278,13 @@ class VAMP(StreamingEstimationTransformer):
                                            lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
                                            ncov_max=self.ncov_max)
         self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean_0=self._covar.mean, # TODO: inefficient, fixme
+        self._model.update_model_params(mean_0=self._covar.mean,  # TODO: inefficient, fixme
                                         mean_t=self._covar.mean_tau,
                                         C00=self._covar.C00_,
                                         C0t=self._covar.C0t_,
                                         Ctt=self._covar.Ctt_)
 
-        #self._used_data = self._covar._used_data
+        # self._used_data = self._covar._used_data
         self._estimated = False
 
         return self
@@ -302,23 +309,23 @@ class VAMP(StreamingEstimationTransformer):
         self._Lt = Lt
         self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean_0, mean_t=mean_t)
 
-        m = self._model.dimension(_estimated=True)
+        m = self._model.dimension()
 
-        U = L0.dot(Uprime[:, :m]) # U in the paper singular_vectors_left
-        V = Lt.dot(Vprimeh[:m, :].T) # V in the paper singular_vectors_right
+        U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
+        V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
 
         # normalize vectors
-        #scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
-        #scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
-        #singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
-        #singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
+        # scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
+        # scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
+        # singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
+        # singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
 
         # scale vectors
         if self.scaling is None:
             pass
         elif self.scaling in ['km', 'kinetic map']:
-            U *= self.singular_values[np.newaxis, :] ## TODO: check left/right, ask Hao
-            V *= self.singular_values[np.newaxis, :] ## TODO: check left/right, ask Hao
+            U *= self.singular_values[np.newaxis, :]  ## TODO: check left/right, ask Hao
+            V *= self.singular_values[np.newaxis, :]  ## TODO: check left/right, ask Hao
         else:
             raise ValueError('unexpected value (%s) of "scaling"' % self.scaling)
 
@@ -328,10 +335,8 @@ class VAMP(StreamingEstimationTransformer):
 
         self._estimated = True
 
-
     def dimension(self):
-        return self._model.dimension(_estimated=self._estimated)
-
+        return self._model.dimension()
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant singular functions.
@@ -414,8 +419,9 @@ class VAMP(StreamingEstimationTransformer):
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
-    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=False):
-        # drop reference to LaggedCovariance to avoid probelms during cloning
+    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=False,
+               iterable=None):
+        # drop reference to LaggedCovariance to avoid problems during cloning
         # In future pyemma versions, this will be no longer a problem...
         self._covar = None
 
@@ -444,7 +450,11 @@ class VAMP(StreamingEstimationTransformer):
         ck = VAMPChapmanKolmogorovValidator(self, self, observables, statistics, observables_mean_free,
                                             statistics_mean_free, mlags=mlags, n_jobs=n_jobs,
                                             show_progress=show_progress)
-        ck.estimate(self.data_producer)
+
+        if iterable is None:
+            iterable = self.data_producer
+
+        ck.estimate(iterable)
         return ck
 
 
@@ -460,7 +470,6 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
         if self.statistics is not None:
             self.nsets = min(self.observables.shape[1], self.statistics.shape[1])
 
-
     def _compute_observables(self, model, estimator, mlag=1):
         # for lag time 0 we return a matrix of nan, until the correct solution is implemented
         if mlag == 0 or model is None:
@@ -472,3 +481,6 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
             return model.expectation(self.statistics, self.observables, lag_multiple=mlag,
                                      statistics_mean_free=self.statistics_mean_free,
                                      observables_mean_free=self.observables_mean_free)
+
+    def _compute_observables_conf(self, model, estimator, mlag=1):
+        raise NotImplementedError('estimation of confidence intervals not yet implemented for VAMP')

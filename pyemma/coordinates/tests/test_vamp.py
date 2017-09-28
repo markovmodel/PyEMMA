@@ -103,7 +103,8 @@ class TestVAMPSelfConsistency(unittest.TestCase):
             model_params2 = vamp2._model.get_model_params()
 
             for n in model_params.keys():
-                np.testing.assert_allclose(model_params[n], model_params2[n])
+                if model_params[n] is not None and model_params2[n] is not None:
+                    np.testing.assert_allclose(model_params[n], model_params2[n])
 
             vamp2.singular_values # trigger diagonalization
 
