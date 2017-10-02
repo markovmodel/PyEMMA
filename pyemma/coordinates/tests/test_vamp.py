@@ -160,6 +160,7 @@ class TestVAMPCKTest(unittest.TestCase):
         cls.vamp = vamp
         cls.p0 = p0 / p0.sum()
         cls.p1 = p1 / p1.sum()
+        cls.atol = np.finfo(vamp.output_type()).eps*1000.0
 
     def test_K_is_T(self):
         m0 = self.vamp.model.mean_0
@@ -188,28 +189,27 @@ class TestVAMPCKTest(unittest.TestCase):
         psi = self.vamp.transform(np.eye(3))
         assert_allclose_ignore_phase(U, psi, atol=1E-5)
         assert_allclose_ignore_phase(V, phi, atol=1E-5)
-        references_sf = [U.T.dot(np.diag(self.p0)).dot(np.linalg.matrix_power(self.msm.P, k*self.lag)).dot(V) for k in
+        references_sf = [U.T.dot(np.diag(self.p0)).dot(np.linalg.matrix_power(self.msm.P, k*self.lag)).dot(V).T for k in
                          range(10-1)]
         cktest = self.vamp.cktest(n_observables=2, mlags=10)
         pred_sf = cktest.predictions
         esti_sf = cktest.estimates
         for e, p, r in zip(esti_sf[1:], pred_sf[1:], references_sf[1:]):
-            np.testing.assert_allclose(np.diag(p), np.diag(r), atol=1E-5)
-            np.testing.assert_allclose(np.abs(p), np.abs(r), atol=1E-4)
+            np.testing.assert_allclose(np.diag(p), np.diag(r), atol=1E-6)
+            np.testing.assert_allclose(np.abs(p), np.abs(r), atol=1E-6)
 
     def test_CK_expectation_against_MSM(self):
         obs = np.eye(3) # observe every state
         cktest = self.vamp.cktest(observables=obs, statistics=None, mlags=4)
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
-        atol = np.finfo(self.vamp.output_type()).eps*1000.0
 
         for i in range(len(pred)):
             msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
             msm_esti = self.p0.T.dot(msm.P).dot(obs)
             msm_pred = self.p0.T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs)
-            np.testing.assert_allclose(pred[i],  msm_pred, atol=atol)
-            np.testing.assert_allclose(est[i], msm_esti, atol=atol)
+            np.testing.assert_allclose(pred[i],  msm_pred, atol=self.atol)
+            np.testing.assert_allclose(est[i], msm_esti, atol=self.atol)
             np.testing.assert_allclose(est[i], pred[i], atol=0.006)
 
     def test_CK_covariances_of_singular_functions(self):
@@ -225,16 +225,15 @@ class TestVAMPCKTest(unittest.TestCase):
         obs = np.eye(3) # observe every state
         sta = np.eye(3) # restrict p0 to every state
         cktest = self.vamp.cktest(observables=obs, statistics=sta, mlags=4, show_progress=True)
-        atol = np.finfo(self.vamp.output_type()).eps * 1000.0
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
 
         for i in range(len(pred)):
             msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
-            msm_esti = (self.p0 * sta).T.dot(msm.P).dot(obs)
-            msm_pred = (self.p0 * sta).T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs)
-            np.testing.assert_allclose(np.diag(pred[i]),  np.diag(msm_pred), atol=atol)
-            np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=atol)
+            msm_esti = (self.p0 * sta).T.dot(msm.P).dot(obs).T
+            msm_pred = (self.p0 * sta).T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs).T
+            np.testing.assert_allclose(np.diag(pred[i]),  np.diag(msm_pred), atol=self.atol)
+            np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=self.atol)
             np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
 
     def test_score(self):

@@ -147,6 +147,8 @@ class VAMPModel(Model):
         if statistics is not None:
             # compute lagged covariance
             return Q.dot(P).dot(R.T)
+            # TODO: discuss whether we want to return this or the transpose
+            # TODO: from MSMs one might expect to first index to refer to the statistics, here it is the other way round
         else:
             # compute future expectation
             return Q.dot(P)[:, 0]
