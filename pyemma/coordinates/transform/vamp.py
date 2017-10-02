@@ -110,7 +110,7 @@ class VAMPModel(Model):
             If false, coefficients in observables refer to the
             unmodified input features.
         """
-        import sys
+        # TODO: implement the case lag_multiple=0
 
         dim = self.dimension()
 
@@ -314,12 +314,6 @@ class VAMP(StreamingEstimationTransformer):
         U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
         V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
 
-        # normalize vectors
-        # scale_left = np.diag(singular_vectors_left.T.dot(self._model.C00).dot(singular_vectors_left))
-        # scale_right = np.diag(singular_vectors_right.T.dot(self._model.Ctt).dot(singular_vectors_right))
-        # singular_vectors_left *= scale_left[np.newaxis, :]**-0.5
-        # singular_vectors_right *= scale_right[np.newaxis, :]**-0.5
-
         # scale vectors
         if self.scaling is None:
             pass
@@ -413,13 +407,25 @@ class VAMP(StreamingEstimationTransformer):
         """
         return self._model.cumvar
 
+    @property
+    def show_progress(self):
+        if self._covar is None:
+            return False
+        else:
+            return self._covar.show_progress
+
+    @show_progress.setter
+    def show_progress(self, value):
+        if self._covar is not None:
+            self._covar.show_progress = value
+
     def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False,
                     observables_mean_free=False):
         return self._model.expectation(statistics, observables, lag_multiple=lag_multiple,
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
-    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=False,
+    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True,
                iterable=None):
         # drop reference to LaggedCovariance to avoid problems during cloning
         # In future pyemma versions, this will be no longer a problem...

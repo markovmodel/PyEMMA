@@ -92,7 +92,7 @@ class TestVAMPSelfConsistency(unittest.TestCase):
         C01_psi_phi = psi.T.dot(phi) / phi.shape[0]
         n = max(C01_psi_phi.shape)
         C01_psi_phi = C01_psi_phi[0:n,:][:, 0:n]
-        np.testing.assert_allclose(np.diag(C01_psi_phi), vamp.singular_values[0:vamp.dimension()], atol=atol)
+        np.testing.assert_allclose(C01_psi_phi, np.diag(vamp.singular_values[0:vamp.dimension()]), atol=atol)
 
         if test_partial_fit:
             vamp2 = pyemma_api_vamp(lag=tau, scaling=None)
@@ -127,21 +127,31 @@ def generate(T, N_steps, s0=0):
     return dtraj
 
 
+def assert_allclose_ignore_phase(A, B, atol):
+    A = np.atleast_2d(A)
+    B = np.atleast_2d(B)
+    assert A.shape == B.shape
+    for i in range(B.shape[1]):
+        assert np.allclose(A[:, i], B[:, i], atol=atol) or np.allclose(A[:, i], -B[:, i], atol=atol)
+
+
 class TestVAMPCKTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         N_steps = 10000
         N_traj = 2
-        T = np.linalg.matrix_power(np.array([[0.7, 0.3, 0.0], [0.1, 0.8, 0.1], [0.0, 0.2, 0.8]]), 1)
+        lag = 1
+        T = np.linalg.matrix_power(np.array([[0.7, 0.2, 0.1], [0.1, 0.8, 0.1], [0.1, 0.1, 0.8]]), lag)
         dtrajs = [generate(T, N_steps) for _ in range(N_traj)]
         p0 = np.zeros(3)
+        p1 = np.zeros(3)
         trajs = []
-        lag = 1
         for dtraj in dtrajs:
             traj = np.zeros((N_steps, T.shape[0]))
             traj[np.arange(len(dtraj)), dtraj] = 1.0
             trajs.append(traj)
             p0 += traj[:-lag, :].sum(axis=0)
+            p1 += traj[lag:, :].sum(axis=0)
         vamp = pyemma_api_vamp(trajs, lag=lag, scaling=None)
         msm = estimate_markov_model(dtrajs, lag=lag, reversible=False)
         cls.dtrajs = dtrajs
@@ -149,6 +159,7 @@ class TestVAMPCKTest(unittest.TestCase):
         cls.msm = msm
         cls.vamp = vamp
         cls.p0 = p0 / p0.sum()
+        cls.p1 = p1 / p1.sum()
 
     def test_K_is_T(self):
         m0 = self.vamp.model.mean_0
@@ -157,6 +168,34 @@ class TestVAMPCKTest(unittest.TestCase):
         C1 = self.vamp.model.C0t + m0[:, np.newaxis]*mt[np.newaxis, :]
         K = np.linalg.inv(C0).dot(C1)
         np.testing.assert_allclose(K, self.msm.P, atol=1E-5)
+
+        Tsym = np.diag(self.p0 ** 0.5).dot(self.msm.P).dot(np.diag(self.p1 ** -0.5))
+        np.testing.assert_allclose(np.linalg.svd(Tsym)[1][1:], self.vamp.singular_values[0:2], atol=1E-7)
+
+    def test_singular_functions_against_MSM(self):
+        Tsym = np.diag(self.p0 ** 0.5).dot(self.msm.P).dot(np.diag(self.p1 ** -0.5))
+        Up, S, Vhp = np.linalg.svd(Tsym)
+        Vp = Vhp.T
+        U = Up * (self.p0 ** -0.5)[:, np.newaxis]
+        V = Vp * (self.p1 ** -0.5)[:, np.newaxis]
+        assert_allclose_ignore_phase(U[:, 0], np.ones(3), atol=1E-5)
+        assert_allclose_ignore_phase(V[:, 0], np.ones(3), atol=1E-5)
+        U = U[:, 1:]
+        V = V[:, 1:]
+        self.vamp.right = True
+        phi = self.vamp.transform(np.eye(3))
+        self.vamp.right = False
+        psi = self.vamp.transform(np.eye(3))
+        assert_allclose_ignore_phase(U, psi, atol=1E-5)
+        assert_allclose_ignore_phase(V, phi, atol=1E-5)
+        references_sf = [U.T.dot(np.diag(self.p0)).dot(np.linalg.matrix_power(self.msm.P, k*self.lag)).dot(V) for k in
+                         range(10-1)]
+        cktest = self.vamp.cktest(n_observables=2, mlags=10)
+        pred_sf = cktest.predictions
+        esti_sf = cktest.estimates
+        for e, p, r in zip(esti_sf[1:], pred_sf[1:], references_sf[1:]):
+            np.testing.assert_allclose(np.diag(p), np.diag(r), atol=1E-5)
+            np.testing.assert_allclose(np.abs(p), np.abs(r), atol=1E-4)
 
     def test_CK_expectation_against_MSM(self):
         obs = np.eye(3) # observe every state
