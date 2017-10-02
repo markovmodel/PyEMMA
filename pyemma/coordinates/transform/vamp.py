@@ -29,6 +29,7 @@ from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.msm.estimators.lagged_model_validators import LaggedModelValidator
+from pyemma.util.linalg import mdot
 
 import warnings
 
@@ -149,6 +150,30 @@ class VAMPModel(Model):
         else:
             # compute future expectation
             return Q.dot(P)[:, 0]
+
+    def score(self, other=None, score='E'):
+        # TODO: test me!
+        # TODO: implement for TICA too
+        # TODO: check compatibility of models, e.g. equal lag time, equal features?
+        if other is None:
+            other = self
+        Uk = self.U[:, 0:self.dimension()]
+        Vk = self.V[:, 0:self.dimension()]
+        if score == 1 or score == 2:
+            A = spd_inv_sqrt(Uk.T.dot(other.C00).dot(Uk))
+            B = Uk.T.dot(other.C0t).dot(Vk)
+            C = spd_inv_sqrt(Vk.T.dot(other.Ctt).dot(Vk))
+            ABC = mdot(A, B, C)
+            if score == 1:
+                return np.linalg.norm(ABC, ord='nuc')
+            elif score == 2:
+                return np.linalg.norm(ABC, ord='fro')**2
+        elif score == 'E' or score == 'e':
+            Sk = np.diag(self.singular_values[0:self.dimension()])
+            return np.trace(2.0*mdot(Vk, Sk, Uk.T, other.C0t) - mdot(Vk, Sk, Uk.T, other.C00, Uk, Sk, Vk.T, other.Ctt))
+        else:
+            raise ValueError('"score" should be one of 1, 2 or "E"')
+        # TODO: add the contribution (+1) of the constant singular functions to the result?
 
 
 @decorator
@@ -462,6 +487,12 @@ class VAMP(StreamingEstimationTransformer):
 
         ck.estimate(iterable)
         return ck
+
+    def score(self, other=None, score='E'):
+        if other is None:
+            return self.model.score(None, score=score)
+        else:
+            return self.model.score(other.model, score=score)
 
 
 class VAMPChapmanKolmogorovValidator(LaggedModelValidator):

@@ -237,6 +237,12 @@ class TestVAMPCKTest(unittest.TestCase):
             np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=atol)
             np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
 
+    def test_score(self):
+        #TODO: complete test!
+        self.vamp.score(other=self.vamp, score=1)
+        self.vamp.score(other=self.vamp, score=2)
+        self.vamp.score(other=self.vamp, score='E')
+
 
 if __name__ == "__main__":
     unittest.main()
