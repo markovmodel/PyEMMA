@@ -41,7 +41,7 @@ def random_matrix(n, rank=None, eps=0.01):
     return u.dot(np.diag(s)).dot(v)
 
 
-class TestVAMPSelfConsistency(unittest.TestCase):
+class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
     def test_full_rank(self):
         self.do_test(20, 20, test_partial_fit=True)
 
@@ -135,7 +135,7 @@ def assert_allclose_ignore_phase(A, B, atol):
         assert np.allclose(A[:, i], B[:, i], atol=atol) or np.allclose(A[:, i], -B[:, i], atol=atol)
 
 
-class TestVAMPCKTest(unittest.TestCase):
+class TestVAMPModel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         N_steps = 10000
@@ -236,12 +236,22 @@ class TestVAMPCKTest(unittest.TestCase):
             np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=self.atol)
             np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
 
-    def test_score(self):
-        #TODO: complete test!
-        self.vamp.score(other=self.vamp, score=1)
-        self.vamp.score(other=self.vamp, score=2)
-        self.vamp.score(other=self.vamp, score='E')
+    def test_self_score_with_MSM(self):
+        T = self.msm.P
+        Tadj = np.diag(1./self.p1).dot(T.T).dot(np.diag(self.p0))
+        NFro = np.trace(T.dot(Tadj))
+        s2 = self.vamp.score(score=2)
+        np.testing.assert_allclose(s2 + 1, NFro)
 
+        Tsym = np.diag(self.p0**0.5).dot(T).dot(np.diag(self.p1**-0.5))
+        Nnuc = np.linalg.norm(Tsym, ord='nuc')
+        s1 = self.vamp.score(score=1)
+        np.testing.assert_allclose(s1 + 1, Nnuc)
+
+        sE = self.vamp.score(score='E')
+        np.testing.assert_allclose(s1 + 1, Nnuc)  # see paper appendix H.2
+
+    # TODO: test cross score
 
 if __name__ == "__main__":
     unittest.main()
