@@ -153,30 +153,93 @@ class VAMPModel(Model):
             # compute future expectation
             return Q.dot(P)[:, 0]
 
-    def score(self, other=None, score='E'):
+    def _diagionalize(self, scaling=None):
+        """ performs SVD on covariance matrices and save left, right singular vectors and values in the model.
+
+        Parameters
+        ----------
+        scaling: str or None
+
+        """
+
+        L0 = spd_inv_sqrt(self.C00)
+        Lt = spd_inv_sqrt(self.Ctt)
+        A = L0.T.dot(self.C0t).dot(Lt)
+
+        Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
+
+        # compute cumulative variance
+        cumvar = np.cumsum(s ** 2)
+        cumvar /= cumvar[-1]
+
+        self._L0 = L0
+        self._Lt = Lt
+
+        m = self.dimension()
+
+        U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
+        V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
+
+        # scale vectors
+        if scaling is None:
+            pass
+        elif scaling in ['km', 'kinetic map']:
+            U *= s[np.newaxis, 0:m]  ## TODO: check left/right, ask Hao
+            V *= s[np.newaxis, 0:m]  ## TODO: check left/right, ask Hao
+        else:
+            raise ValueError('unexpected value (%s) of "scaling"' % scaling)
+
+        self.U = U
+        self.singular_values = s
+        self.V = V
+
+    def score(self, test_model=None, score_method='VAMP2'):
+        """
+
+        Parameters
+        ----------
+        test_model
+        score_method : str, optional, default='VAMP2'
+            Overwrite scoring method to be used if desired. If `None`, the estimators scoring
+            method will be used.
+            Available scores are based on the variational approach for Markov processes [1]_ [2]_ :
+
+            *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the sum of transition
+                        matrix eigenvalues, also called Rayleigh quotient [1]_ [3]_ .
+            *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [2]_ .
+                        If the MSM is reversible, this is equal to the kinetic variance [4]_ .
+            *  'VAMPE'  ...
+
+        Returns
+        -------
+
+        """
         # TODO: test me!
         # TODO: implement for TICA too
         # TODO: check compatibility of models, e.g. equal lag time, equal features?
-        if other is None:
-            other = self
+        if test_model is None:
+            test_model = self
         Uk = self.U[:, 0:self.dimension()]
         Vk = self.V[:, 0:self.dimension()]
-        if score == 1 or score == 2:
-            A = spd_inv_sqrt(Uk.T.dot(other.C00).dot(Uk))
-            B = Uk.T.dot(other.C0t).dot(Vk)
-            C = spd_inv_sqrt(Vk.T.dot(other.Ctt).dot(Vk))
+        res = None
+        if score_method == 'VAMP1' or score_method == 'VAMP2':
+            A = spd_inv_sqrt(Uk.T.dot(test_model.C00).dot(Uk))
+            B = Uk.T.dot(test_model.C0t).dot(Vk)
+            C = spd_inv_sqrt(Vk.T.dot(test_model.Ctt).dot(Vk))
             ABC = mdot(A, B, C)
-            if score == 1:
-                return np.linalg.norm(ABC, ord='nuc')
-            elif score == 2:
-                return np.linalg.norm(ABC, ord='fro')**2
-        elif score == 'E' or score == 'e':
+            if score_method == 'VAMP1':
+                res = np.linalg.norm(ABC, ord='nuc')
+            elif score_method == 'VAMP2':
+                res = np.linalg.norm(ABC, ord='fro')**2
+        elif score_method == 'VAMPE':
             Sk = np.diag(self.singular_values[0:self.dimension()])
-            return np.trace(2.0*mdot(Vk, Sk, Uk.T, other.C0t) - mdot(Vk, Sk, Uk.T, other.C00, Uk, Sk, Vk.T, other.Ctt))
+            res = np.trace(2.0 * mdot(Vk, Sk, Uk.T, test_model.C0t) - mdot(Vk, Sk, Uk.T, test_model.C00, Uk, Sk, Vk.T, test_model.Ctt))
         else:
-            raise ValueError('"score" should be one of 1, 2 or "E"')
-        # TODO: add the contribution (+1) of the constant singular functions to the result?
-
+            raise ValueError('"score" should be one of VAMP1, VAMP2 or VAMPE')
+        # add the contribution (+1) of the constant singular functions to the result
+        assert res
+        return res + 1
 
 @decorator
 def _lazy_estimation(func, *args, **kw):
@@ -260,10 +323,9 @@ class VAMP(StreamingEstimationTransformer):
                                        ncov_max=self.ncov_max)
         indim = iterable.dimension()
 
-        if isinstance(self.dim, int):
-            if not self.dim <= indim:
-                raise RuntimeError("requested more output dimensions (%i) than dimension"
-                                   " of input data (%i)" % (self.dim, indim))
+        if isinstance(self.dim, int) and not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
 
         if self._logger_is_active(self._loglevel_DEBUG):
             self._logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
@@ -319,41 +381,8 @@ class VAMP(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize covariance matrices")
-
-        mean_0 = self._covar.mean
-        mean_t = self._covar.mean_tau
-        L0 = spd_inv_sqrt(self._covar.C00_)
-        Lt = spd_inv_sqrt(self._covar.Ctt_)
-        A = L0.T.dot(self._covar.C0t_).dot(Lt)
-
-        Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
-
-        # compute cumulative variance
-        cumvar = np.cumsum(s ** 2)
-        cumvar /= cumvar[-1]
-
-        self._L0 = L0
-        self._Lt = Lt
-        self._model.update_model_params(cumvar=cumvar, singular_values=s, mean_0=mean_0, mean_t=mean_t)
-
-        m = self._model.dimension()
-
-        U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
-        V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
-
-        # scale vectors
-        if self.scaling is None:
-            pass
-        elif self.scaling in ['km', 'kinetic map']:
-            U *= self.singular_values[np.newaxis, :]  ## TODO: check left/right, ask Hao
-            V *= self.singular_values[np.newaxis, :]  ## TODO: check left/right, ask Hao
-        else:
-            raise ValueError('unexpected value (%s) of "scaling"' % self.scaling)
-
-        self._logger.debug("finished diagonalisation.")
-
-        self._model.update_model_params(U=U, V=V)
-
+        self.model._diagonolize(self.scaling)
+        self._logger.debug("finished diagonalization.")
         self._estimated = True
 
     def dimension(self):
@@ -490,11 +519,15 @@ class VAMP(StreamingEstimationTransformer):
         ck.estimate(iterable)
         return ck
 
-    def score(self, other=None, score='E'):
-        if other is None:
-            return self.model.score(None, score=score)
+    def score(self, test_data=None, score_method='VAMP2'):
+        from pyemma._ext.sklearn.base import clone as clone_estimator
+        est = clone_estimator(self)
+
+        if test_data is None:
+            return self.model.score(None, score_method=score_method)
         else:
-            return self.model.score(other.model, score=score)
+            est.estimate(test_data)
+            return self.model.score(est.model, score_method=score_method)
 
 
 class VAMPChapmanKolmogorovValidator(LaggedModelValidator):

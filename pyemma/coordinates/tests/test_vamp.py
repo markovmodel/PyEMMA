@@ -27,6 +27,8 @@ from pyemma.coordinates import vamp as pyemma_api_vamp
 from pyemma.msm import estimate_markov_model
 from logging import getLogger
 
+from pyemma.msm.estimators._dtraj_stats import cvsplit_dtrajs
+
 logger = getLogger('pyemma.'+'TestVAMP')
 
 
@@ -139,7 +141,7 @@ class TestVAMPModel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         N_steps = 10000
-        N_traj = 2
+        N_traj = 20
         lag = 1
         T = np.linalg.matrix_power(np.array([[0.7, 0.2, 0.1], [0.1, 0.8, 0.1], [0.1, 0.1, 0.8]]), lag)
         dtrajs = [generate(T, N_steps) for _ in range(N_traj)]
@@ -152,8 +154,9 @@ class TestVAMPModel(unittest.TestCase):
             trajs.append(traj)
             p0 += traj[:-lag, :].sum(axis=0)
             p1 += traj[lag:, :].sum(axis=0)
-        vamp = pyemma_api_vamp(trajs, lag=lag, scaling=None)
+        vamp = pyemma_api_vamp(trajs, lag=lag, scaling=None, dim=1.0)
         msm = estimate_markov_model(dtrajs, lag=lag, reversible=False)
+        cls.trajs = trajs
         cls.dtrajs = dtrajs
         cls.lag = lag
         cls.msm = msm
@@ -240,18 +243,32 @@ class TestVAMPModel(unittest.TestCase):
         T = self.msm.P
         Tadj = np.diag(1./self.p1).dot(T.T).dot(np.diag(self.p0))
         NFro = np.trace(T.dot(Tadj))
-        s2 = self.vamp.score(score=2)
-        np.testing.assert_allclose(s2 + 1, NFro)
+        s2 = self.vamp.score(score_method='VAMP2')
+        np.testing.assert_allclose(s2, NFro)
 
         Tsym = np.diag(self.p0**0.5).dot(T).dot(np.diag(self.p1**-0.5))
         Nnuc = np.linalg.norm(Tsym, ord='nuc')
-        s1 = self.vamp.score(score=1)
-        np.testing.assert_allclose(s1 + 1, Nnuc)
+        s1 = self.vamp.score(score_method='VAMP1')
+        np.testing.assert_allclose(s1, Nnuc)
 
-        sE = self.vamp.score(score='E')
-        np.testing.assert_allclose(s1 + 1, Nnuc)  # see paper appendix H.2
+        # TODO: check why this is not equal
+        #sE = self.vamp.score(score_method='VAMPE')
+        #np.testing.assert_allclose(sE, Nnuc)  # see paper appendix H.2
 
-    # TODO: test cross score
+    def test_score_vs_MSM(self):
+        dtrajs_test, dtrajs_train = cvsplit_dtrajs(self.dtrajs)
+        trajs_test, trajs_train = cvsplit_dtrajs(self.trajs)
+
+        methods = ('VAMP1', 'VAMP2', 'VAMPE')
+
+        for m in methods:
+            msm_train = estimate_markov_model(dtrajs=dtrajs_train, lag=self.lag, reversible=False)
+            score_msm = msm_train.score(dtrajs_test, score_method=m, score_k=None)
+
+            vamp_train = pyemma_api_vamp(data=trajs_train, lag=self.lag, dim=1.0)
+            score_vamp = vamp_train.score(test_data=trajs_test, score_method=m)
+
+            self.assertAlmostEqual(score_msm, score_vamp, places=2, msg=m)
 
 if __name__ == "__main__":
     unittest.main()
