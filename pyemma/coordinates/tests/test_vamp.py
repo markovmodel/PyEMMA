@@ -252,12 +252,15 @@ class TestVAMPModel(unittest.TestCase):
         np.testing.assert_allclose(s1, Nnuc)
 
         # TODO: check why this is not equal
-        #sE = self.vamp.score(score_method='VAMPE')
-        #np.testing.assert_allclose(sE, Nnuc)  # see paper appendix H.2
+        sE = self.vamp.score(score_method='VAMPE')
+        np.testing.assert_allclose(sE, NFro)  # see paper appendix H.2
 
     def test_score_vs_MSM(self):
-        dtrajs_test, dtrajs_train = cvsplit_dtrajs(self.dtrajs)
-        trajs_test, trajs_train = cvsplit_dtrajs(self.trajs)
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(32):
+            trajs_test, trajs_train = cvsplit_dtrajs(self.trajs)
+        with numpy_random_seed(32):
+            dtrajs_test, dtrajs_train = cvsplit_dtrajs(self.dtrajs)
 
         methods = ('VAMP1', 'VAMP2', 'VAMPE')
 
@@ -268,7 +271,7 @@ class TestVAMPModel(unittest.TestCase):
             vamp_train = pyemma_api_vamp(data=trajs_train, lag=self.lag, dim=1.0)
             score_vamp = vamp_train.score(test_data=trajs_test, score_method=m)
 
-            self.assertAlmostEqual(score_msm, score_vamp, places=2, msg=m)
+            self.assertAlmostEqual(score_msm, score_vamp, places=3, msg=m)
 
 if __name__ == "__main__":
     unittest.main()

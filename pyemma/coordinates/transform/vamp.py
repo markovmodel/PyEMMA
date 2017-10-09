@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-from decorator import decorator
+
 from pyemma._base.model import Model
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
@@ -44,18 +44,64 @@ class VAMPModel(Model):
         self.C00 = C00
         self.Ctt = Ctt
         self.C0t = C0t
-        self.U = U
-        self.V = V
-        self.singular_values = singular_values
+        self._svd_performed = False
+        self._U = U
+        self._V = V
+        self._singular_values = singular_values
         self.cumvar = cumvar
         self.dim = dim
         self.epsilon = epsilon
 
+    @property
+    def U(self):
+        if not self._svd_performed:
+            self._diagonalize()
+        return self._U
+
+    @property
+    def V(self):
+        if not self._svd_performed:
+            self._diagonalize()
+        return self._V
+
+    @property
+    def singular_values(self):
+        if not self._svd_performed:
+            self._diagonalize()
+        return self._singular_values
+
+    @property
+    def C00(self):
+        return self._C00
+
+    @C00.setter
+    def C00(self, val):
+        self._svd_performed = False
+        self._C00 = val
+
+    @property
+    def C0t(self):
+        return self._C0t
+
+    @C0t.setter
+    def C0t(self, val):
+        self._svd_performed = False
+        self._C0t = val
+
+    @property
+    def Ctt(self):
+        return self._Ctt
+
+    @Ctt.setter
+    def Ctt(self, val):
+        self._svd_performed = False
+        self._Ctt = val
+
     def dimension(self):
         """ output dimension """
         if self.dim is None or self.dim == 1.0:
-            if hasattr(self, 'singular_values') and self.singular_values is not None:
-                return np.count_nonzero(self.singular_values > self.epsilon)
+            if hasattr(self, '_singular_values') and self._singular_values is not None:
+                return np.count_nonzero(self._singular_values > self.epsilon)
             else:
                 raise RuntimeError('Requested dimension, but the dimension depends on the singular values and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
@@ -66,8 +112,8 @@ class VAMPModel(Model):
                 raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
         else:
-            if hasattr(self, 'singular_values') and self.singular_values is not None:
-                return min(np.min(np.count_nonzero(self.singular_values > self.epsilon)), self.dim)
+            if hasattr(self, '_singular_values') and self._singular_values is not None:
+                return min(np.min(np.count_nonzero(self._singular_values > self.epsilon)), self.dim)
             else:
                 warnings.warn(
                     RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
@@ -153,7 +199,7 @@ class VAMPModel(Model):
             # compute future expectation
             return Q.dot(P)[:, 0]
 
-    def _diagionalize(self, scaling=None):
+    def _diagonalize(self, scaling=None):
         """ performs SVD on covariance matrices and save left, right singular vectors and values in the model.
 
         Parameters
@@ -167,10 +213,12 @@ class VAMPModel(Model):
         A = L0.T.dot(self.C0t).dot(Lt)
 
         Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
+        self._singular_values = s
 
         # compute cumulative variance
         cumvar = np.cumsum(s ** 2)
         cumvar /= cumvar[-1]
+        self.cumvar = cumvar
 
         self._L0 = L0
         self._Lt = Lt
@@ -189,9 +237,9 @@ class VAMPModel(Model):
         else:
             raise ValueError('unexpected value (%s) of "scaling"' % scaling)
 
-        self.U = U
-        self.singular_values = s
-        self.V = V
+        self._U = U
+        self._V = V
+        self._svd_performed = True
 
     def score(self, test_model=None, score_method='VAMP2'):
         """
@@ -240,14 +288,6 @@ class VAMPModel(Model):
         # add the contribution (+1) of the constant singular functions to the result
         assert res
         return res + 1
-
-@decorator
-def _lazy_estimation(func, *args, **kw):
-    assert isinstance(args[0], VAMP)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
-    return func(*args, **kw)
 
 
 @fix_docs
@@ -381,7 +421,7 @@ class VAMP(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize covariance matrices")
-        self.model._diagonolize(self.scaling)
+        self.model._diagonalize(self.scaling)
         self._logger.debug("finished diagonalization.")
         self._estimated = True
 
@@ -416,7 +456,6 @@ class VAMP(StreamingEstimationTransformer):
         return StreamingEstimationTransformer.output_type(self)
 
     @property
-    @_lazy_estimation
     def singular_values(self):
         r"""Singular values of VAMP (usually denoted :math:`\sigma`)
 
@@ -427,7 +466,6 @@ class VAMP(StreamingEstimationTransformer):
         return self._model.singular_values
 
     @property
-    @_lazy_estimation
     def singular_vectors_right(self):
         r"""Right singular vectors V of the VAMP problem, columnwise
 
@@ -440,7 +478,6 @@ class VAMP(StreamingEstimationTransformer):
         return self._model.V
 
     @property
-    @_lazy_estimation
     def singular_vectors_left(self):
         r"""Left singular vectors U of the VAMP problem, columnwise
 
@@ -453,7 +490,6 @@ class VAMP(StreamingEstimationTransformer):
         return self._model.U
 
     @property
-    @_lazy_estimation
     def cumvar(self):
         r"""Cumulative sum of the squared and normalized VAMP singular values
 
