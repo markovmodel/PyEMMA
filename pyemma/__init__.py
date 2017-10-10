@@ -43,7 +43,7 @@ def _version_check(current, testing=False):
 
     Can be disabled by setting config.check_version = False.
 
-    >>> from mock import patch
+    >>> from unittest.mock import patch
     >>> import warnings, pyemma
     >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
     ...     warnings.simplefilter('always', UserWarning)
@@ -61,7 +61,7 @@ def _version_check(current, testing=False):
     import json
     import platform
     import os
-    
+
     from distutils.version import LooseVersion as parse
     from contextlib import closing
     import threading
@@ -74,6 +74,7 @@ def _version_check(current, testing=False):
     def _impl():
         import warnings
         try:
+            from urllib.request import urlopen, Request
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
                         .format(emma_version=current, python_version=platform.python_version(),

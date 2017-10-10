@@ -105,7 +105,7 @@ class TestConfig(unittest.TestCase):
         # replace a value with a non default value:
         self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
         import tempfile
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
             f.close()
             self.config_inst.save(f.name)
@@ -169,7 +169,7 @@ class TestConfig(unittest.TestCase):
     def test_mute_progress(self):
         """ switch mute on shall turn off progress bars"""
         from pyemma._base.progress import ProgressReporter
-        import mock
+        from unittest import mock
         rp = ProgressReporter()
 
         self.config_inst.mute = True

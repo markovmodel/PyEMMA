@@ -28,9 +28,8 @@ import logging
 from pyemma.util import log
 from pyemma.util import config
 from unittest import mock
-have_mock = True
 
-@unittest.skipIf(not have_mock, "dont have mock library")
+
 class TestNonWriteableLogFile(unittest.TestCase):
 
     def tearDown(self):
