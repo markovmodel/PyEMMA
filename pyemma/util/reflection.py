@@ -138,7 +138,7 @@ def call_member(obj, f, *args, **kwargs):
         in that case
     """
     # get function name
-    if not isinstance(f, six.string_types):
+    if not isinstance(f, str):
         fname = f.__func__.__name__
     else:
         fname = f

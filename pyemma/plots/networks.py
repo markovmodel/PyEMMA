@@ -208,7 +208,7 @@ class NetworkPlot(object):
         # show or suppress frame
         self.ax.set_frame_on(show_frame)
         # set node labels
-        if isinstance(state_labels, six.string_types) and state_labels == 'auto':
+        if isinstance(state_labels, str) and state_labels == 'auto':
             state_labels = [str(i) for i in _np.arange(n)]
         else:
             if len(state_labels) != n:
@@ -232,9 +232,9 @@ class NetworkPlot(object):
         # set arrow labels
         if isinstance(arrow_labels, _np.ndarray):
             L = arrow_labels
-            if isinstance(arrow_labels[0,0], six.string_types):
+            if isinstance(arrow_labels[0,0], str):
                 arrow_label_format = '%s'
-        elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
+        elif isinstance(arrow_labels, str) and arrow_labels.lower() == 'weights':
             L = self.A[:, :]
         elif arrow_labels is None:
             L = _np.empty(_np.shape(self.A), dtype=object)
@@ -552,7 +552,7 @@ def plot_flux(
         I, J = _np.where(F < minflux)
         F[I, J] = 0.0
 
-    if isinstance(state_labels, six.string_types) and state_labels == 'auto':
+    if isinstance(state_labels, str) and state_labels == 'auto':
         # the first and last element correspond to A and B in ReactiveFlux
         state_labels = _np.array([str(i) for i in range(flux.nstates)])
         state_labels[_np.array(flux.A)] = "A"

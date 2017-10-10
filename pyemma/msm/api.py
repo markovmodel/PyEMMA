@@ -190,7 +190,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     """
     import six
     # Catch invalid inputs for weights:
-    if isinstance(weights, six.string_types):
+    if isinstance(weights, str):
         if weights not in ['empirical', 'oom']:
             raise ValueError("Weights must be either \'empirical\' or \'oom\'")
     else:
@@ -590,7 +590,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     """
     import six
     # Catch invalid inputs for weights:
-    if isinstance(weights, six.string_types):
+    if isinstance(weights, str):
         if weights not in ['empirical', 'oom']:
             raise ValueError("Weights must be either \'empirical\' or \'oom\'")
     else:
