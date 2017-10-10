@@ -27,7 +27,7 @@ import unittest
 import numpy as np
 from pyemma import msm
 from msmtools import analysis as msmana
-from six.moves import range
+
 
 
 class TestMLHMM(unittest.TestCase):

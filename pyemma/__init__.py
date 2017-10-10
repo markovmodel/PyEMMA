@@ -61,7 +61,7 @@ def _version_check(current, testing=False):
     import json
     import platform
     import os
-    from six.moves.urllib.request import urlopen, Request
+    
     from distutils.version import LooseVersion as parse
     from contextlib import closing
     import threading

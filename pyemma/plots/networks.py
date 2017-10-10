@@ -21,7 +21,7 @@ import numpy as _np
 import six
 import warnings
 from pyemma.util import types as _types
-from six.moves import range
+
 from math import sqrt as _sqrt
 import logging
 

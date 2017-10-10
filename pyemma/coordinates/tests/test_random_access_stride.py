@@ -30,7 +30,7 @@ from pyemma.coordinates.data import DataInMemory, FeatureReader
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 from pyemma.coordinates.tests.util import create_traj, get_top
 from pyemma.util.files import TemporaryDirectory
-from six.moves import range
+
 
 
 def _test_ra_with_format(format, stride):

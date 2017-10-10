@@ -26,7 +26,7 @@ import os
 import sys
 import unittest
 
-from six.moves import configparser
+
 
 from pyemma.util.files import TemporaryDirectory
 from pyemma.util.exceptions import ConfigDirectoryException
@@ -105,7 +105,7 @@ class TestConfig(unittest.TestCase):
         # replace a value with a non default value:
         self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
         import tempfile
-        from six.moves import configparser
+        
         with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
             f.close()
             self.config_inst.save(f.name)

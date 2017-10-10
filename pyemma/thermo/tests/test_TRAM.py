@@ -17,7 +17,7 @@
 
 from __future__ import absolute_import
 import unittest
-from six.moves import range
+
 
 import numpy as np
 import pyemma.thermo

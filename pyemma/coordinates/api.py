@@ -1207,7 +1207,6 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     """
     from pyemma.coordinates.transform.tica import TICA
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
-    import six
     import types
     if isinstance(weights, str):
         if weights == "koopman":

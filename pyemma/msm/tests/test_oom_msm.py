@@ -37,7 +37,7 @@ from pyemma.util.linalg import _sort_by_norm
 from pyemma.util.discrete_trajectories import count_states
 import msmtools.estimation as msmest
 import msmtools.analysis as ma
-from six.moves import range
+
 
 def oom_transformations(Ct, C2t, rank):
     # Number of states:
