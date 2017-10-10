@@ -28,11 +28,7 @@ from pyemma.util import types as _types
 # lift this function to the api
 from pyemma.coordinates.util.stat import histogram
 
-from six import string_types as _string_types
-from six.moves import range, zip
-
 from pyemma.util.exceptions import PyEMMA_DeprecationWarning
-import warnings
 
 _logger = _logging.getLogger(__name__)
 
@@ -206,9 +202,9 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
 
-    if isinstance(trajfiles, _string_types) or (
+    if isinstance(trajfiles, str) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, (list, tuple, _string_types)) for item in trajfiles)
+            and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
                  or len(trajfiles) is 0)):
         reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size if chunk_size is not None else 0, **kw)
         trajs = reader.get_output(stride=stride)
@@ -343,9 +339,9 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, _string_types) or (
+    if isinstance(inp, str) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
+            and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
         reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size is not None else 100, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
@@ -676,7 +672,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         # Do we have what we need?
         if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
-        if not isinstance(top, (_string_types, Topology, Trajectory)):
+        if not isinstance(top, (str, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
                             "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
                             "Got type %s instead" % type(top))
@@ -1213,7 +1209,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import six
     import types
-    if isinstance(weights, six.string_types):
+    if isinstance(weights, str):
         if weights == "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
@@ -1311,7 +1307,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
     import six
-    if isinstance(weights, six.string_types):
+    if isinstance(weights, str):
         if weights== "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")

@@ -34,7 +34,6 @@ from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
 
 from pyemma.util.contexts import random_seed
-from six.moves import range
 import numpy as np
 
 
