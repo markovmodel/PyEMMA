@@ -1305,7 +1305,6 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
-    import six
     if isinstance(weights, str):
         if weights== "koopman":
             if data is None:

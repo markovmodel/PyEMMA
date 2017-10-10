@@ -17,9 +17,7 @@
 
 from __future__ import absolute_import, print_function
 
-import six
-
-
+import configparser
 import os
 import shutil
 import warnings
@@ -30,16 +28,12 @@ from pyemma.util.exceptions import ConfigDirectoryException
 import pkg_resources
 
 
-if six.PY2:
-    class NotADirectoryError(Exception):
-        pass
-
-
 # indicate error during reading
 class ReadConfigException(Exception):
     pass
 
 __all__ = ('Config', )
+
 
 class Config(object):
 
@@ -309,7 +303,7 @@ class Config(object):
     @property
     def check_version(self):
         """ Check for the latest release online.
-        
+
         Disable this if you have privacy concerns.
         We currently collect:
 
@@ -346,7 +340,7 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
-        config = configparser.SafeConfigParser() if six.PY2 else configparser.ConfigParser()
+        config = configparser.ConfigParser()
 
         try:
             self._used_filenames = config.read(filenames)

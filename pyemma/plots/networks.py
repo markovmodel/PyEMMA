@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 import numpy as _np
-import six
 import warnings
 from pyemma.util import types as _types
 
@@ -400,7 +399,7 @@ def plot_markov_model(
     Returns
     -------
     fig, pos : matplotlib.Figure, ndarray(n,2)
-    a Figure object containing the plot and the positions of states. 
+    a Figure object containing the plot and the positions of states.
     Can be used later to plot a different network representation (e.g. the flux)
 
     Examples
@@ -569,7 +568,7 @@ def plot_flux(
         max_height=max_height, figpadding=figpadding, xticks=show_committor, yticks=False,
         show_frame=show_frame, **textkwargs)
     if show_committor:
-        
+
         plt.xlabel('Committor probability')
     return fig, plot.pos
 

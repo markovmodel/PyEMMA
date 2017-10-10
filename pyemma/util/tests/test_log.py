@@ -27,17 +27,8 @@ import logging
 
 from pyemma.util import log
 from pyemma.util import config
-import six
-if six.PY2:
-    try:
-       import mock
-    except ImportError:
-       have_mock = False
-    else:
-       have_mock = True
-else:
-    from unittest import mock
-    have_mock = True
+from unittest import mock
+have_mock = True
 
 @unittest.skipIf(not have_mock, "dont have mock library")
 class TestNonWriteableLogFile(unittest.TestCase):

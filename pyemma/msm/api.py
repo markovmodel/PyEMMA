@@ -188,7 +188,6 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
          Correction of Estimation Bias J. Chem. Phys. (submitted) (2017)
 
     """
-    import six
     # Catch invalid inputs for weights:
     if isinstance(weights, str):
         if weights not in ['empirical', 'oom']:
@@ -588,7 +587,6 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     9.929...
 
     """
-    import six
     # Catch invalid inputs for weights:
     if isinstance(weights, str):
         if weights not in ['empirical', 'oom']:
@@ -1432,7 +1430,6 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         Data via Augmented Markov Models" PNAS is revision.
 
     """
-    import six
     # check input
     if _np.all(sigmas>0):
       _w = 1./(2*sigmas**2.)

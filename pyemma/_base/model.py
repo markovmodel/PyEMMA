@@ -48,10 +48,6 @@ class Model(object):
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
                                    % (self, ))
-            # Remove 'self'
-            # XXX: This is going to fail if the init is a staticmethod, but
-            # who would do this?
-            args.pop(0)
             args.sort()
             return args
         else:
