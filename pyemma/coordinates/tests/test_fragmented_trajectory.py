@@ -22,7 +22,7 @@ import mdtraj
 import numpy as np
 import pyemma.coordinates as coor
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
-from six.moves import range
+
 
 
 class TestFragmentedTrajectory(unittest.TestCase):

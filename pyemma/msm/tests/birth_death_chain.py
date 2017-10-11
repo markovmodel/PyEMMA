@@ -28,7 +28,7 @@ from __future__ import absolute_import
 import numpy as np
 
 from scipy.sparse import diags
-from six.moves import range
+
 
 
 class BirthDeathChain(object):

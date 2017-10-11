@@ -29,7 +29,7 @@ import numpy as np
 import math
 import itertools
 from . import types
-from six.moves import range
+
 import warnings
 
 

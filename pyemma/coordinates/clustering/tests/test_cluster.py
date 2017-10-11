@@ -28,7 +28,7 @@ import numpy as np
 from logging import getLogger
 import pyemma.coordinates as coor
 import pyemma.util.types as types
-from six.moves import range
+
 
 
 logger = getLogger('pyemma.'+'TestReaderUtils')

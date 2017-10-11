@@ -35,7 +35,7 @@ from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
 from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
 from pyemma.util.numeric import assert_allclose
 
-from six.moves import range
+
 
 class TestAMMSimple(unittest.TestCase):
     def setUp(self):
