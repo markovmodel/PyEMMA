@@ -36,7 +36,6 @@ from pyemma.coordinates.data._base.transformer import StreamingEstimationTransfo
 from pyemma.util.annotators import fix_docs, aliased, alias
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
-from six.moves import range, zip
 
 
 @fix_docs

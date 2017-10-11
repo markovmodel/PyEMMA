@@ -33,7 +33,7 @@ import mdtraj
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from logging import getLogger
-from six.moves import range
+
 
 log = getLogger('pyemma.'+'TestFeatureReaderAndTICA')
 

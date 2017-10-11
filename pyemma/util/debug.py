@@ -39,7 +39,7 @@ SIGNAL_PDB = 43
 
 def _show_stacktrace(sig, frame):
     import traceback
-    from six import StringIO
+    from io import StringIO
 
     global _logger
     if _logger is None:

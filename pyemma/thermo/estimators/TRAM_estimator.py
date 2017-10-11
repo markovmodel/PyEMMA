@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
-from six.moves import range
+
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM

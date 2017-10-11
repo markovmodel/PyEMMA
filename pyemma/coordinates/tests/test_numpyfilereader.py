@@ -32,7 +32,7 @@ import unittest
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from logging import getLogger
 
-from six.moves import range, zip
+
 import numpy as np
 
 
