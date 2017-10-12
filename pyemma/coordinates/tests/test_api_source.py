@@ -108,7 +108,12 @@ class TestApiSourceFileReader(unittest.TestCase):
 
     def test_bullshit_csv(self):
         # this file is not parseable as tabulated float file
-        self.assertRaises(IOError, api.source, self.bs)
+        with self.assertRaises(Exception) as r:
+            api.source(self.bs)
+        # depending on we have the traj info cache switched on, we get these types of exceptions.
+        self.assertIsInstance(r.exception, (IOError, ValueError))
+        self.assertIn('could not parse', str(r.exception))
+
 
 import pkg_resources
 class TestApiSourceFeatureReader(unittest.TestCase):
