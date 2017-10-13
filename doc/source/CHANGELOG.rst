@@ -13,6 +13,7 @@ your Python installation to at least version 3.5.
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
   a given threshold. #1106
+- coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
 
 - References:
 
