@@ -30,6 +30,7 @@ from itertools import combinations, product
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
 from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
 
+from pyemma.coordinates.data.featurization.util import _atoms_in_residues
 import pkg_resources
 
 path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
@@ -605,6 +606,98 @@ class TestFeaturizer(unittest.TestCase):
         assert np.allclose(D.squeeze(), Dref)
         assert len(self.feat.describe())==self.feat.dimension()
 
+    # TODO consider creating a COM's own class and not a method of TestFeaturizer
+    def test_Group_COM_with_all_atom_geoms(self):
+
+        traj = mdtraj.load(pdbfile_ops_aa)
+        traj = traj.join(traj)
+        traj._xyz[-1] = traj.xyz[0] + np.array([10,10,10]) # The second frame's COM is the first plus 10
+
+        # Needed variables for the checks
+        group_definitions = [[0, 1, 3],
+                             [4, 5, 6]
+                             ]
+        group_trajs = [traj.atom_slice(ra) for ra in group_definitions]
+
+        feat = MDFeaturizer(traj.topology)
+        feat.add_group_COM(group_definitions)
+
+        # "Normal" COM, i.e. weighted
+        ref_COM_xyz = np.hstack([mdtraj.compute_center_of_mass(itraj) for itraj in group_trajs])
+        test_COM_xyz = feat.transform(traj)
+        assert np.allclose(test_COM_xyz, ref_COM_xyz)
+
+
+        # Unweighted COM (=geometric center)
+        feat = MDFeaturizer(traj.topology)
+        feat.add_group_COM(group_definitions, mass_weighted=False)
+
+        ref_COM_xyz = np.hstack([np.mean(itraj.xyz, axis=1) for itraj in group_trajs])
+        test_COM_xyz = feat.transform(traj)
+        assert np.allclose(test_COM_xyz, ref_COM_xyz)
+
+        # Using a reference (the second frame and first frame should NOT have different COMs anymore)
+        feat = MDFeaturizer(traj.topology)
+        feat.add_group_COM(group_definitions, mass_weighted=False, ref_geom=traj[0])
+        test_COM_xyz = feat.transform(traj)
+        assert np.allclose(test_COM_xyz[0], test_COM_xyz[1])
+
+    def test_Residue_COM_with_all_atom_geoms(self):
+        # The hard tests are in test_Group_COM, which is the superclass of ResidueCOMFeature
+        # Here only sub-class specific things are tested, like the "scheme"
+        traj = mdtraj.load(pdbfile_ops_aa)
+        traj = traj.join(traj)
+
+        # Using schemes (just that it works, the schemes themselves are  tested in  TestAtomsInResidues
+        for scheme in ['all', 'backbone', 'sidechain']:
+            feat = MDFeaturizer(traj.topology)
+            feat.add_residue_COM(np.arange(traj.top.n_residues), scheme=scheme)
+            feat.transform(traj)
+
+        # And a full test to be sure
+        # Needed variables for the checks
+        residue_atoms = [traj.topology.select('resid %u' % (ii))
+                         for ii in range(traj.n_residues)]
+        residue_trajs = [traj.atom_slice(ra) for ra in residue_atoms]
+        ref_COM_xyz = np.hstack([mdtraj.compute_center_of_mass(itraj) for itraj in residue_trajs])
+        feat = MDFeaturizer(traj.topology)
+        feat.add_residue_COM(np.arange(traj.top.n_residues))
+        feat.transform(traj)
+        test_COM_xyz = feat.transform(traj)
+        assert np.allclose(test_COM_xyz, ref_COM_xyz)
+
+
+class TestAtomsInResidues(unittest.TestCase):
+    def __init__(self):
+        self.traj = mdtraj.load(pdbfile_ops_aa)
+
+    def testAtomsInResidues_All_Schemes_NoFallBack(self):
+        for scheme in ['all', 'backbone', 'sidechain']:
+            ref_atoms_in_residues = [self.traj.topology.select('resid %u and %s' %(ii, scheme))
+                                     for ii in range(self.traj.n_residues)]
+
+            test_atoms_in_residues =  _atoms_in_residues(self.traj.top,
+                                                         np.arange(self.traj.n_residues),
+                                                         subset_of_atom_idxs=self.traj.topology.select(scheme),
+                                                         fallback_to_full_residue=False)
+
+            for ii, (ra1, ra2) in enumerate(zip(ref_atoms_in_residues, test_atoms_in_residues)):
+                assert np.allclose(ra1, ra2)
+
+    def testAtomsInResidues_All_Schemes_FallBack(self):
+        for scheme in ['all', 'backbone', 'sidechain']:
+            ref_atoms_in_residues = [self.traj.topology.select('resid %u and %s' %(ii, scheme))
+                                     for ii in range(self.traj.n_residues)]
+
+            test_atoms_in_residues =  _atoms_in_residues(self.traj.top,
+                                                         np.arange(self.traj.n_residues),
+                                                         subset_of_atom_idxs=self.traj.topology.select(scheme),
+                                                         fallback_to_full_residue=True)
+
+            for ii, (ra1, ra2) in enumerate(zip(ref_atoms_in_residues, test_atoms_in_residues)):
+                if len(ra1) == 0: # means there are no atoms for this scheme, so we re-select without it
+                    ra1 = self.traj.topology.select('resid %u' %ii)
+                assert np.allclose(ra1, ra2)
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
@@ -686,6 +779,25 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_group_mindist([[0,1],[0,2]])
         self.assertEqual(len(featurizer.active_features), expected_active)
 
+        expected_active += 1
+        featurizer.add_residue_COM([10, 20])
+        featurizer.add_residue_COM([10, 20])
+        self.assertEqual(len(featurizer.active_features), expected_active)
+
+    def testAddVerySimilarResidueCOMs(self):
+        traj = mdtraj.load(pdbfile_ops_aa)
+        traj = traj.join(traj)
+        traj._xyz[-1] = traj.xyz[0] + np.array([10, 10, 10])  # The second frame's COM is the first plus 10
+
+        feat = MDFeaturizer(traj.topology)
+        feat.add_residue_COM([0, 1, 2])
+        feat.add_residue_COM([0, 1])
+        feat.add_residue_COM([0, 1, ], mass_weighted=False)
+        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone')
+        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[0])
+        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[1])
+        assert len(feat.active_features)==6
+
     def test_labels(self):
         """ just checks for exceptions """
         featurizer = MDFeaturizer(pdbfile)
@@ -701,6 +813,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_residue_mindist()
         featurizer.add_group_mindist([[0,1],[0,2]])
+        featurizer.add_residue_COM([0,1,2])
 
         featurizer.describe()
 
