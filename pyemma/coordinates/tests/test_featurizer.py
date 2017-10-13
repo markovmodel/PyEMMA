@@ -668,7 +668,7 @@ class TestFeaturizer(unittest.TestCase):
 
 
 class TestAtomsInResidues(unittest.TestCase):
-    def __init__(self):
+    def setUp(self):
         self.traj = mdtraj.load(pdbfile_ops_aa)
 
     def testAtomsInResidues_All_Schemes_NoFallBack(self):
