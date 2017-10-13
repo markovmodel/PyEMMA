@@ -642,6 +642,11 @@ class TestFeaturizer(unittest.TestCase):
         test_COM_xyz = feat.transform(traj)
         assert np.allclose(test_COM_xyz[0], test_COM_xyz[1])
 
+        # Using a image_molecule=True (just that it calls mdtrajs own method properly, not the method itself)
+        feat = MDFeaturizer(traj.topology)
+        feat.add_group_COM(group_definitions, image_molecules=True)
+        test_COM_xyz = feat.transform(traj)
+
     def test_Residue_COM_with_all_atom_geoms(self):
         # The hard tests are in test_Group_COM, which is the superclass of ResidueCOMFeature
         # Here only sub-class specific things are tested, like the "scheme"
@@ -670,16 +675,32 @@ class TestFeaturizer(unittest.TestCase):
 class TestAtomsInResidues(unittest.TestCase):
     def setUp(self):
         self.traj = mdtraj.load(pdbfile_ops_aa)
+        # Have a feature to have a logger to test all code
+        self.feat = MDFeaturizer(self.traj.topology)
+
+    def testAtomsInResidues_All_Schemes_NoFallBack_NoSubset(self):
+        ref_atoms_in_residues = [self.traj.topology.select('resid %u' % ii)
+                                 for ii in range(self.traj.n_residues)]
+
+        test_atoms_in_residues = _atoms_in_residues(self.traj.top,
+                                                    np.arange(self.traj.n_residues),
+                                                    fallback_to_full_residue=False,
+                                                    MDlogger=self.feat.logger)
+
+        for ii, (ra1, ra2) in enumerate(zip(ref_atoms_in_residues, test_atoms_in_residues)):
+            assert np.allclose(ra1, ra2)
 
     def testAtomsInResidues_All_Schemes_NoFallBack(self):
         for scheme in ['all', 'backbone', 'sidechain']:
+
             ref_atoms_in_residues = [self.traj.topology.select('resid %u and %s' %(ii, scheme))
                                      for ii in range(self.traj.n_residues)]
 
             test_atoms_in_residues =  _atoms_in_residues(self.traj.top,
                                                          np.arange(self.traj.n_residues),
                                                          subset_of_atom_idxs=self.traj.topology.select(scheme),
-                                                         fallback_to_full_residue=False)
+                                                         fallback_to_full_residue=False,
+                                                         MDlogger=self.feat.logger)
 
             for ii, (ra1, ra2) in enumerate(zip(ref_atoms_in_residues, test_atoms_in_residues)):
                 assert np.allclose(ra1, ra2)
@@ -692,7 +713,8 @@ class TestAtomsInResidues(unittest.TestCase):
             test_atoms_in_residues =  _atoms_in_residues(self.traj.top,
                                                          np.arange(self.traj.n_residues),
                                                          subset_of_atom_idxs=self.traj.topology.select(scheme),
-                                                         fallback_to_full_residue=True)
+                                                         fallback_to_full_residue=True,
+                                                         MDlogger=self.feat.logger)
 
             for ii, (ra1, ra2) in enumerate(zip(ref_atoms_in_residues, test_atoms_in_residues)):
                 if len(ra1) == 0: # means there are no atoms for this scheme, so we re-select without it
