@@ -99,7 +99,7 @@ class VAMPModel(Model):
 
     def dimension(self):
         """ output dimension """
-        if self.dim is None or self.dim == 1.0:
+        if self.dim is None or (isinstance(self.dim, float) and self.dim == 1.0):
             if hasattr(self, '_singular_values') and self._singular_values is not None:
                 return np.count_nonzero(self._singular_values > self.epsilon)
             else:
@@ -557,6 +557,10 @@ class VAMP(StreamingEstimationTransformer):
 
     def score(self, test_data=None, score_method='VAMP2'):
         from pyemma._ext.sklearn.base import clone as clone_estimator
+        # drop reference to LaggedCovariance to avoid problems during cloning
+        # In future pyemma versions, this will be no longer a problem...
+        self._covar = None
+
         est = clone_estimator(self)
 
         if test_data is None:
