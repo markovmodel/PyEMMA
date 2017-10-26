@@ -28,7 +28,7 @@ import psutil
 import random
 import tempfile
 
-from pyemma._base.progress.reporter import ProgressReporter
+from pyemma._base.progress.reporter import ProgressReporterMixin
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
@@ -42,7 +42,7 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
 
 @fix_docs
-class KmeansClustering(AbstractClustering, ProgressReporter):
+class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',

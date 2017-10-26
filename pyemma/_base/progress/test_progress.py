@@ -18,14 +18,14 @@
 
 import unittest
 
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma.util.contexts import settings
 
 
 class TestProgress(unittest.TestCase):
 
     def setUp(self):
-        self.pg = ProgressReporter()
+        self.pg = ProgressReporterMixin()
         self.pg._progress_register(100, "test")
 
     def test_config_override(self):

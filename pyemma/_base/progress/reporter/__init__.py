@@ -20,7 +20,7 @@ def _attached_to_ipy_notebook():
         return False
 
 
-class ProgressReporter(object):
+class ProgressReporterMixin(object):
     """ Derive from this class to make some protected methods available to register
     and update status of different stages of an algorithm.
     """
@@ -91,7 +91,7 @@ class ProgressReporter(object):
 
         # if we do not have enough work to do for the overhead of a progress bar,
         # we just define a dummy here
-        if amount_of_work <= ProgressReporter._pg_threshold:
+        if amount_of_work <= ProgressReporterMixin._pg_threshold:
             import mock
             pg = mock.Mock()
         else:
@@ -151,7 +151,7 @@ class ProgressReporter(object):
         del self._prog_rep_progressbars[stage]
 
 
-class ProgressReporter_(ProgressReporter):
+class ProgressReporter(ProgressReporterMixin):
 
     def __enter__(self):
         pass

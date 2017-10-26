@@ -683,9 +683,10 @@ def tram(
     tram_estimators = []
     from pyemma._base.progress import ProgressReporter
     pg = ProgressReporter()
-    pg._progress_register(amount_of_work=len(lags), description='Estimating TRAM for lags')
-    for lag in lags:
-        t = _TRAM(
+    pg.register(amount_of_work=len(lags), description='Estimating TRAM for lags')
+    with pg:
+        for lag in lags:
+            t = _TRAM(
             lag, count_mode=count_mode, connectivity=connectivity,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
@@ -693,8 +694,7 @@ def tram(
             callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
         tram_estimators.append(t)
-        pg._progress_update(1)
-    pg._progress_force_finish()
+        pg.update(1)
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
@@ -886,13 +886,20 @@ def dtram(
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build DTRAM and run estimation
     from pyemma.thermo import DTRAM
-    dtram_estimators = [
-        DTRAM(
-            bias, _lag,
-            count_mode=count_mode, connectivity=connectivity,
-            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
-            init_maxerr=init_maxerr).estimate((ttrajs, dtrajs)) for _lag in lags]
+    from pyemma._base.progress import ProgressReporter
+    pg = ProgressReporter()
+    pg.register(len(lags), description='Estimating DTRAM for lags')
+    dtram_estimators = []
+    with pg:
+        for _lag in lags:
+            d = DTRAM(
+                bias, _lag,
+                count_mode=count_mode, connectivity=connectivity,
+                maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+                dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
+                init_maxerr=init_maxerr).estimate((ttrajs, dtrajs))
+            dtram_estimators.append(d)
+            pg.update(1)
     _assign_unbiased_state_label(dtram_estimators, unbiased_state)
     # return
     if len(dtram_estimators) == 1:
