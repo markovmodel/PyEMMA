@@ -1,9 +1,11 @@
 from numbers import Integral
 
 import tqdm
+from psutil._common import memoize
 
 
-def __attached_to_ipy_notebook():
+@memoize
+def _attached_to_ipy_notebook():
     # check if we have an ipython kernel
     try:
         from IPython import get_ipython
@@ -16,12 +18,6 @@ def __attached_to_ipy_notebook():
         return True
     except ImportError:
         return False
-
-
-if __attached_to_ipy_notebook():
-    tqdm_bar = tqdm.tqdm_notebook
-else:
-    tqdm_bar = tqdm.tqdm
 
 
 class ProgressReporter(object):
@@ -72,7 +68,7 @@ class ProgressReporter(object):
             self.__prog_rep_callbacks = {}
         return self.__prog_rep_callbacks
 
-    def _progress_register(self, amount_of_work, description='', stage=0):
+    def _progress_register(self, amount_of_work, description='', stage=0, tqdm_args={}):
         """ Registers a progress which can be reported/displayed via a progress bar.
 
         Parameters
@@ -99,9 +95,12 @@ class ProgressReporter(object):
             import mock
             pg = mock.Mock()
         else:
-            pg = tqdm_bar(total=amount_of_work, desc=description, leave=False, dynamic_ncols=True)
-        # workaround for tqdm showing the bar prior it has been updated the first time or the process even started.
-        pg.disable= True
+            args = dict(total=amount_of_work, desc=description, leave=False, dynamic_ncols=True, **tqdm_args)
+            if _attached_to_ipy_notebook():
+                from .notebook import my_tqdm_notebook
+                pg = my_tqdm_notebook(**args)
+            else:
+                pg = tqdm.tqdm(**args)
 
         self._prog_rep_progressbars[stage] = pg
         self._prog_rep_descriptions[stage] = description
@@ -111,8 +110,7 @@ class ProgressReporter(object):
         assert hasattr(self, '_prog_rep_progressbars')
         assert stage in self._prog_rep_progressbars
         self._prog_rep_descriptions[stage] = description
-        self._prog_rep_progressbars[stage].desc = description
-        assert self._prog_rep_progressbars[stage].desc == description
+        self._prog_rep_progressbars[stage].set_description(description, refresh=False)
 
     def _progress_update(self, numerator_increment, stage=0, show_eta=True, **kw):
         """ Updates the progress. Will update progress bars or other progress output.
@@ -136,8 +134,6 @@ class ProgressReporter(object):
             return
 
         pg = self._prog_rep_progressbars[stage]
-        # workaround for tqdm showing the bar prior it has been updated the first time or the process even started.
-        pg.disable = False
         pg.update(numerator_increment)
 
     def _progress_force_finish(self, stage=0, description=None):
@@ -146,11 +142,32 @@ class ProgressReporter(object):
             return
         if stage not in self._prog_rep_progressbars:
             raise RuntimeError(
-                "call _progress_register(amount_of_work, stage=x) on this instance first!")
+                "call _progress_register(amount_of_work, stage={x}) on this instance first!".format(x=stage))
 
-        print('pg finish stage={}'.format(stage))
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
         pg.update(pg.total)
         pg.close()
         del self._prog_rep_progressbars[stage]
+
+
+class ProgressReporter_(ProgressReporter):
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for s in self._prog_rep_progressbars.keys():
+            self._progress_force_finish(stage=s)
+
+    def register(self, amount_of_work, description='', stage=0, tqdm_args={}):
+        self._progress_register(amount_of_work=amount_of_work, description=description, stage=stage, tqdm_args=tqdm_args)
+
+    def update(self, increment, stage=0):
+        self._progress_update(increment, stage=stage)
+
+    def set_description(self, description, stage=0):
+        self._progress_set_description(description=description, stage=stage)
+
+    def finish(self, description=None, stage=0):
+        self._progress_force_finish(description=description, stage=stage)
