@@ -99,7 +99,9 @@ class ProgressReporter(object):
             import mock
             pg = mock.Mock()
         else:
-            pg = tqdm_bar(total=amount_of_work, desc=description, leave=False)
+            pg = tqdm_bar(total=amount_of_work, desc=description, leave=False, dynamic_ncols=True)
+        # workaround for tqdm showing the bar prior it has been updated the first time or the process even started.
+        pg.disable= True
 
         self._prog_rep_progressbars[stage] = pg
         self._prog_rep_descriptions[stage] = description
@@ -134,6 +136,8 @@ class ProgressReporter(object):
             return
 
         pg = self._prog_rep_progressbars[stage]
+        # workaround for tqdm showing the bar prior it has been updated the first time or the process even started.
+        pg.disable = False
         pg.update(numerator_increment)
 
     def _progress_force_finish(self, stage=0, description=None):
