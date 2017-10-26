@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 import time
+
 
 class _ProgressIndicatorCallBack(object):
     def __init__(self):
@@ -35,30 +35,28 @@ class _ProgressIndicatorCallBack(object):
 class _IterationProgressIndicatorCallBack(_ProgressIndicatorCallBack):
     def __init__(self, reporter, description, stage):
         super(_IterationProgressIndicatorCallBack, self).__init__()
-        reporter._progress_register(10, description, stage=stage)
+        reporter._progress_register(10, description, stage=stage, tqdm_args=dict(smoothing=0.5))
         self.stage = stage
         self.reporter = reporter
 
     def __call__(self, *args, **kwargs):
         if not self.reporter.show_progress: return
         if self.waiting(): return
-        self.reporter._prog_rep_progressbars[self.stage].denominator = kwargs['maxiter']
+        self.reporter._prog_rep_progressbars[self.stage].total = kwargs['maxiter']
         self.reporter._progress_update(1, stage=self.stage)
 
 
 class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
     def __init__(self, reporter, stage, maxiter, maxerr, subcallback=None):
-        description =  str(stage) + ' increment={err:0.1e}/{maxerr:0.1e}'
+        self.template = str(stage) + ' increment={err:0.1e}/{maxerr:0.1e}'
+        description = str(stage)
         super(_ConvergenceProgressIndicatorCallBack, self).__init__()
         self.final = maxiter
-        reporter._progress_register(int(self.final), description, stage=stage)
+        reporter._progress_register(int(self.final), description, stage=stage, tqdm_args=dict(smoothing=0.5))
         self.stage = stage
         self.reporter = reporter
         self.state = 0.0
         self.subcallback = subcallback
-        if not reporter.show_progress: return
-        reporter._prog_rep_progressbars[stage].denominator = self.final
-        reporter._prog_rep_progressbars[stage].template = '{desc:.60}: {percent:3d}% ({fraction}) {bar} {spinner}'
 
     def __call__(self, *args, **kwargs):
         if self.subcallback is not None:
@@ -66,7 +64,10 @@ class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
         if not self.reporter.show_progress: return
         if self.waiting(): return
         current = kwargs['iteration_step']
-        if current > 0.0 and current > self.state and current <= self.final:
+        if 'err' in kwargs and 'maxerr' in kwargs:
+            err_str = self.template.format(err=kwargs['err'], maxerr=kwargs['maxerr'])
+            self.reporter._progress_set_description(self.stage, err_str)
+        if current > 0.0 and self.state < current <= self.final:
             difference = current - self.state
-            self.reporter._progress_update(difference, stage=self.stage, show_eta=True, **kwargs)
+            self.reporter._progress_update(difference, stage=self.stage, **kwargs)
             self.state = current
