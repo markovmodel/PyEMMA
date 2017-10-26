@@ -680,14 +680,21 @@ def tram(
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build TRAM and run estimation
     from pyemma.thermo import TRAM as _TRAM
-    tram_estimators = [
-        _TRAM(
-            _lag, count_mode=count_mode, connectivity=connectivity,
+    tram_estimators = []
+    from pyemma._base.progress import ProgressReporter
+    pg = ProgressReporter()
+    pg._progress_register(amount_of_work=len(lags), description='Estimating TRAM for lags')
+    for lag in lags:
+        t = _TRAM(
+            lag, count_mode=count_mode, connectivity=connectivity,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
             callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
-            equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+            equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
+        tram_estimators.append(t)
+        pg._progress_update(1)
+    pg._progress_force_finish()
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
@@ -950,14 +957,14 @@ def wham(
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
     dtrajs would look for example like this::
-    
+
     [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
-    
+
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
     the trajectory. ttrajs would look like this::
 
     [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
-    
+
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
     all centers:
@@ -1006,7 +1013,7 @@ def wham(
 
     References
     ----------
-    
+
     .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
         New Monte Carlo Technique for Studying Phase Transitions.
         Phys. Rev. Lett. 23, 2635--2638
@@ -1148,7 +1155,7 @@ def mbar(
 
     References
     ----------
-    
+
     .. [1] Shirts, M.R. and Chodera, J.D. 2008
         Statistically optimal analysis of samples from multiple equilibrium states
         J. Chem. Phys. 129, 124105
