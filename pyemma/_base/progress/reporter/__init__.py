@@ -130,12 +130,12 @@ class ProgressReporterMixin(object):
             pg = mock.Mock()
             pg.dummy = True
         else:
-            args = dict(total=amount_of_work, desc=description, leave=True, dynamic_ncols=True, **tqdm_args)
+            args = dict(total=amount_of_work, desc=description, dynamic_ncols=True, **tqdm_args)
             if _attached_to_ipy_notebook():
                 from .notebook import my_tqdm_notebook
-                pg = my_tqdm_notebook(**args)
+                pg = my_tqdm_notebook(leave=False, **args)
             else:
-                pg = tqdm.tqdm(**args)
+                pg = tqdm.tqdm(leave=True, **args)
 
         self._prog_rep_progressbars[stage] = pg
         self._prog_rep_descriptions[stage] = description
