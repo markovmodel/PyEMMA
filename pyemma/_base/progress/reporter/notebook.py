@@ -17,19 +17,20 @@ class my_tqdm_notebook(tqdm_notebook):
             pbar.value = 1
             pbar.bar_style = 'info'
         if desc:
-            description = Label(desc, layout=Layout(min_width='20%', max_width='35%'))
+            description = HBox(children=[Label(desc)])
+            description.layout.min_width = '35%'
+            description.layout.max_width = '35%'
         else:
             description = None
 
         # Prepare status text
         ptext = HTML()
-        inner = Box([pbar, ptext], layout=Layout(display='flex'))
+        inner = HBox([pbar, ptext],
+                     layout=Layout(padding='0 0 0 20px'))
         # Only way to place text to the right of the bar is to use a container
         box_layout = Layout(display='flex',
-                            justify_content='space-between',
                             width='100%')
-        container = HBox(children=[description,
-                                   inner], layout=box_layout)
+        container = HBox(children=[description, inner], layout=box_layout)
         display(container)
 
         def print_status(s='', close=False, bar_style=None):
