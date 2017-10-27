@@ -89,5 +89,16 @@ class TestProgress(unittest.TestCase):
             assert pg.num_registered == 1
             assert 'test2' in pg.registered_stages
 
+    def test_ctx4(self):
+        pg = ProgressReporter()
+        pg.register(100, 'test')
+        pg.register(40, 'test2')
+        try:
+            with pg.context():
+                pg.update(50, stage='all')
+                raise Exception()
+        except Exception:
+            assert pg.num_registered == 0
+
 if __name__ == '__main__':
     unittest.main()

@@ -179,8 +179,8 @@ class ProgressReporterMixin(object):
 
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
-        #pg.update(pg.total - pg.n)
-        #pg.refresh(nolock=True)
+        pg.update(pg.total - pg.n)
+        pg.refresh(nolock=True)
         pg.close()
         self._prog_rep_progressbars.pop(stage, None)
         self._prog_rep_descriptions.pop(stage, None)
