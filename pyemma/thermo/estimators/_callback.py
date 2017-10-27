@@ -69,5 +69,5 @@ class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
             self.reporter._progress_set_description(self.stage, err_str)
         if current > 0.0 and self.state < current <= self.final:
             difference = current - self.state
-            self.reporter._progress_update(difference, stage=self.stage, **kwargs)
+            self.reporter._progress_update(difference, stage=self.stage)
             self.state = current
