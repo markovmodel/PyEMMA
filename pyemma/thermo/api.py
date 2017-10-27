@@ -684,16 +684,16 @@ def tram(
     from pyemma._base.progress import ProgressReporter
     pg = ProgressReporter()
     pg.register(amount_of_work=len(lags), description='Estimating TRAM for lags')
-    with pg:
+    with pg.context():
         for lag in lags:
             t = _TRAM(
-            lag, count_mode=count_mode, connectivity=connectivity,
-            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
-            direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
-            callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
-            equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
-        tram_estimators.append(t)
+                lag, count_mode=count_mode, connectivity=connectivity,
+                maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+                dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
+                direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
+                callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+                equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
+            tram_estimators.append(t)
         pg.update(1)
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
@@ -890,7 +890,7 @@ def dtram(
     pg = ProgressReporter()
     pg.register(len(lags), description='Estimating DTRAM for lags')
     dtram_estimators = []
-    with pg:
+    with pg.context():
         for _lag in lags:
             d = DTRAM(
                 bias, _lag,
