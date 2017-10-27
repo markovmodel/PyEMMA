@@ -68,7 +68,23 @@ class ProgressReporterMixin(object):
             self.__prog_rep_callbacks = {}
         return self.__prog_rep_callbacks
 
-    def _progress_register(self, amount_of_work, description='', stage=0, tqdm_args={}):
+    def _progress_context(self):
+        from contextlib import contextmanager
+        @contextmanager
+        def ctx():
+            try:
+                yield self
+            finally:
+                for s in self._prog_rep_progressbars.keys():
+                    self._progress_force_finish(stage=s)
+        return ctx
+
+    def __check_stage_registered(self, stage):
+        if stage not in self._prog_rep_progressbars:
+            raise RuntimeError(
+                'call _progress_register(amount_of_work, stage={}) on this instance first!'.format(stage))
+
+    def _progress_register(self, amount_of_work, description='', stage=0, tqdm_args=None):
         """ Registers a progress which can be reported/displayed via a progress bar.
 
         Parameters
@@ -84,6 +100,9 @@ class ProgressReporterMixin(object):
         """
         if not self.show_progress:
             return
+
+        if tqdm_args is None:
+            tqdm_args = {}
 
         if not isinstance(amount_of_work, Integral):
             raise ValueError("amount_of_work has to be of integer type. But is %s"
@@ -107,8 +126,7 @@ class ProgressReporterMixin(object):
 
     def _progress_set_description(self, stage, description):
         """ set description of an already existing progress """
-        assert hasattr(self, '_prog_rep_progressbars')
-        assert stage in self._prog_rep_progressbars
+        self.__check_stage_registered(stage)
         self._prog_rep_descriptions[stage] = description
         self._prog_rep_progressbars[stage].set_description(description, refresh=False)
 
@@ -126,9 +144,7 @@ class ProgressReporterMixin(object):
         if not self.show_progress:
             return
 
-        if stage not in self._prog_rep_progressbars:
-            raise RuntimeError(
-                "call _progress_register(amount_of_work, stage=x) on this instance first!")
+        self.__check_stage_registered(stage)
 
         if hasattr(self._prog_rep_progressbars[stage], '_dummy'):
             return
@@ -140,9 +156,7 @@ class ProgressReporterMixin(object):
         """ forcefully finish the progress for given stage """
         if not self.show_progress:
             return
-        if stage not in self._prog_rep_progressbars:
-            raise RuntimeError(
-                "call _progress_register(amount_of_work, stage={x}) on this instance first!".format(x=stage))
+        self.__check_stage_registered(stage)
 
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
@@ -153,14 +167,10 @@ class ProgressReporterMixin(object):
 
 class ProgressReporter(ProgressReporterMixin):
 
-    def __enter__(self):
-        pass
+    def context(self):
+        return self._progress_context()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        for s in self._prog_rep_progressbars.keys():
-            self._progress_force_finish(stage=s)
-
-    def register(self, amount_of_work, description='', stage=0, tqdm_args={}):
+    def register(self, amount_of_work, description='', stage=0, tqdm_args=None):
         self._progress_register(amount_of_work=amount_of_work, description=description, stage=stage, tqdm_args=tqdm_args)
 
     def update(self, increment, stage=0):

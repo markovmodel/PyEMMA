@@ -18,7 +18,7 @@
 
 import unittest
 
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.progress import ProgressReporterMixin, ProgressReporter
 from pyemma.util.contexts import settings
 
 
@@ -37,6 +37,16 @@ class TestProgress(unittest.TestCase):
         self.pg.show_progress = False
         with settings(show_progress_bars=True):
             assert not self.pg.show_progress
+
+    def test_ctx(self):
+        pg = ProgressReporter()
+        pg.register(100, 'test')
+        try:
+            with pg.context():
+                pg.update(50)
+                raise Exception()
+        except Exception:
+            assert len(pg._prog_rep_progressbars) == 0
 
 
 if __name__ == '__main__':
