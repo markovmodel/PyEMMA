@@ -29,7 +29,7 @@ from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from pyemma._base.logging import Loggable
+from pyemma._base.loggable import Loggable
 
 __author__ = 'noe, marscher'
 
@@ -311,6 +311,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         pool = Parallel(processes=n_jobs)
         args = list(task_iter)
         if progress_reporter is not None:
+            progress_reporter._progress_register(len(estimators), stage=0, description="estimating %s" % str(estimator.__class__.__name__))
             from pyemma._base.model import SampledModel
             for a in args:
                 if isinstance(a[0], SampledModel):
@@ -333,7 +334,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
         if hasattr(estimators[0], 'logger'):
-            estimators[0].logger.debug('estimating %s with n_jobs=1 or because you do not have a POSIX system', estimator)
+            estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
+                                       'you not have a POSIX system', estimator)
         res = []
         if progress_reporter is not None:
             from pyemma._base.model import SampledModel

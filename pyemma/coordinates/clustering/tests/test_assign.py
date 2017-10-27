@@ -21,11 +21,10 @@ import os
 import unittest
 from contextlib import contextmanager
 
-import psutil
-from mock import patch
+from unittest.mock import patch
 from pyemma.util.files import TemporaryDirectory
 from logging import getLogger
-from six.moves import range
+
 import numpy as np
 import pyemma.coordinates as coor
 import pyemma.util.types as types

@@ -40,7 +40,7 @@ import mdtraj as md
 from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files, save_traj_w_md_load_frame, \
     compare_coords_md_trajectory_objects
 from pyemma.coordinates.api import save_traj
-from six.moves import range
+
 
 from pyemma.coordinates.tests.util import create_traj, get_top
 

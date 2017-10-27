@@ -26,12 +26,13 @@ import os
 import random
 import unittest
 
+import pyemma
 from pyemma.coordinates.api import cluster_kmeans
 from pyemma.util.files import TemporaryDirectory
 
-from six.moves import range
-import numpy as np
 
+import numpy as np
+pyemma.config.show_progress_bars= False
 
 class TestKmeans(unittest.TestCase):
 

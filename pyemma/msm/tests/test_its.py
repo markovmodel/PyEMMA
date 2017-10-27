@@ -30,7 +30,7 @@ import numpy as np
 from pyemma import msm
 from msmtools.analysis import timescales
 from pyemma.msm.api import timescales_msm
-from six.moves import range
+
 
 
 class TestITS_MSM(unittest.TestCase):

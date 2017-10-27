@@ -21,7 +21,6 @@
 from __future__ import absolute_import, print_function
 import numpy as np
 import sys
-from six.moves import range
 
 __author__ = 'Fabian Paul'
 __all__ = ['acf']

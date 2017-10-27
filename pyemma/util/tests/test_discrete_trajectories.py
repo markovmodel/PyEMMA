@@ -29,7 +29,7 @@ import os
 import unittest
 import pkg_resources
 import numpy as np
-from six.moves import range
+
 
 import pyemma.util.discrete_trajectories as dt
 

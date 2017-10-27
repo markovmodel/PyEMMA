@@ -42,7 +42,7 @@ from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma._ext.variational.util import ZeroRankError
 from logging import getLogger
 import pyemma.util.types as types
-from six.moves import range
+
 
 logger = getLogger('pyemma.'+'TestTICA')
 

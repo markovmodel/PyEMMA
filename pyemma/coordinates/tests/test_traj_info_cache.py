@@ -28,7 +28,7 @@ import os
 import tempfile
 import unittest
 
-import mock
+from unittest import mock
 
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
