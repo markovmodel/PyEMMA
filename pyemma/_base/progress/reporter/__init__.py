@@ -50,21 +50,22 @@ class ProgressReporterMixin(object):
     @property
     def _prog_rep_progressbars(self):
         # stores progressbar representation per stage
-        if not hasattr(self, '_ProgressReporter__prog_rep_progressbars'):
+        if not hasattr(self, '_ProgressReporterMixin__prog_rep_progressbars'):
+            print("new dict")
             self.__prog_rep_progressbars = {}
         return self.__prog_rep_progressbars
 
     @property
     def _prog_rep_descriptions(self):
         # stores progressbar description strings per stage. Can contain format parameters
-        if not hasattr(self, '_ProgressReporter__prog_rep_descriptions'):
+        if not hasattr(self, '_ProgressReporterMixin__prog_rep_descriptions'):
             self.__prog_rep_descriptions = {}
         return self.__prog_rep_descriptions
 
     @property
     def _prog_rep_callbacks(self):
         # store callback by stage
-        if not hasattr(self, '_ProgressReporter__prog_rep_callbacks'):
+        if not hasattr(self, '_ProgressReporterMixin__prog_rep_callbacks'):
             self.__prog_rep_callbacks = {}
         return self.__prog_rep_callbacks
 
@@ -81,8 +82,7 @@ class ProgressReporterMixin(object):
 
     def __check_stage_registered(self, stage):
         if stage not in self._prog_rep_progressbars:
-            raise RuntimeError(
-                'call _progress_register(amount_of_work, stage={}) on this instance first!'.format(stage))
+            raise RuntimeError('call _progress_register(amount_of_work, stage={}) on this instance first!'.format(stage))
 
     def _progress_register(self, amount_of_work, description='', stage=0, tqdm_args=None):
         """ Registers a progress which can be reported/displayed via a progress bar.
@@ -105,13 +105,12 @@ class ProgressReporterMixin(object):
             tqdm_args = {}
 
         if not isinstance(amount_of_work, Integral):
-            raise ValueError("amount_of_work has to be of integer type. But is %s"
-                             % type(amount_of_work))
+            raise ValueError('amount_of_work has to be of integer type. But is {}'.format(type(amount_of_work)))
 
         # if we do not have enough work to do for the overhead of a progress bar,
         # we just define a dummy here
         if amount_of_work <= ProgressReporterMixin._pg_threshold:
-            import mock
+            from unittest import mock
             pg = mock.Mock()
         else:
             args = dict(total=amount_of_work, desc=description, leave=False, dynamic_ncols=True, **tqdm_args)
@@ -123,6 +122,8 @@ class ProgressReporterMixin(object):
 
         self._prog_rep_progressbars[stage] = pg
         self._prog_rep_descriptions[stage] = description
+        assert stage in self._prog_rep_progressbars
+        assert stage in self._prog_rep_descriptions
 
     def _progress_set_description(self, stage, description):
         """ set description of an already existing progress """
