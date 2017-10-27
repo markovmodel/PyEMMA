@@ -51,7 +51,6 @@ class ProgressReporterMixin(object):
     def _prog_rep_progressbars(self):
         # stores progressbar representation per stage
         if not hasattr(self, '_ProgressReporterMixin__prog_rep_progressbars'):
-            print("new dict")
             self.__prog_rep_progressbars = {}
         return self.__prog_rep_progressbars
 
@@ -69,16 +68,33 @@ class ProgressReporterMixin(object):
             self.__prog_rep_callbacks = {}
         return self.__prog_rep_callbacks
 
-    def _progress_context(self):
+    def _progress_context(self, stage='all'):
+        """
+
+        Parameters
+        ----------
+        stage: str, iterable of keys, dict_key
+
+        Returns
+        -------
+        context manager
+        """
         from contextlib import contextmanager
         @contextmanager
         def ctx():
             try:
-                yield self
+                yield
             finally:
-                for s in self._prog_rep_progressbars.keys():
-                    self._progress_force_finish(stage=s)
-        return ctx
+                if stage == 'all':
+                    keys = tuple(self._prog_rep_progressbars.keys())
+                    for s in keys:
+                        self._progress_force_finish(stage=s)
+                elif isinstance(stage, (tuple, list)):
+                    for s in stage:
+                        self._progress_force_finish(s)
+                else:
+                    self._progress_force_finish(stage)
+        return ctx()
 
     def __check_stage_registered(self, stage):
         if stage not in self._prog_rep_progressbars:
@@ -112,8 +128,9 @@ class ProgressReporterMixin(object):
         if amount_of_work <= ProgressReporterMixin._pg_threshold:
             from unittest import mock
             pg = mock.Mock()
+            pg.dummy = True
         else:
-            args = dict(total=amount_of_work, desc=description, leave=False, dynamic_ncols=True, **tqdm_args)
+            args = dict(total=amount_of_work, desc=description, leave=True, dynamic_ncols=True, **tqdm_args)
             if _attached_to_ipy_notebook():
                 from .notebook import my_tqdm_notebook
                 pg = my_tqdm_notebook(**args)
@@ -147,7 +164,7 @@ class ProgressReporterMixin(object):
 
         self.__check_stage_registered(stage)
 
-        if hasattr(self._prog_rep_progressbars[stage], '_dummy'):
+        if hasattr(self._prog_rep_progressbars[stage], 'dummy'):
             return
 
         pg = self._prog_rep_progressbars[stage]
@@ -157,19 +174,31 @@ class ProgressReporterMixin(object):
         """ forcefully finish the progress for given stage """
         if not self.show_progress:
             return
+
         self.__check_stage_registered(stage)
 
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
-        pg.update(pg.total)
+        #pg.update(pg.total - pg.n)
+        #pg.refresh(nolock=True)
         pg.close()
-        del self._prog_rep_progressbars[stage]
+        self._prog_rep_progressbars.pop(stage, None)
+        self._prog_rep_descriptions.pop(stage, None)
+        self._prog_rep_callbacks.pop(stage, None)
+
+    @property
+    def _progress_num_registered(self):
+        return len(self._prog_rep_progressbars)
+
+    @property
+    def _progress_registered_stages(self):
+        return tuple(self._prog_rep_progressbars.keys())
 
 
 class ProgressReporter(ProgressReporterMixin):
 
-    def context(self):
-        return self._progress_context()
+    def context(self, stage='all'):
+        return self._progress_context(stage=stage)
 
     def register(self, amount_of_work, description='', stage=0, tqdm_args=None):
         self._progress_register(amount_of_work=amount_of_work, description=description, stage=stage, tqdm_args=tqdm_args)
@@ -182,3 +211,11 @@ class ProgressReporter(ProgressReporterMixin):
 
     def finish(self, description=None, stage=0):
         self._progress_force_finish(description=description, stage=stage)
+
+    @property
+    def num_registered(self):
+        return self._progress_num_registered
+
+    @property
+    def registered_stages(self):
+        return self._progress_registered_stages
