@@ -1,10 +1,17 @@
 from numbers import Integral
 
-import tqdm
-from psutil._common import memoize
 
+def _simple_memorize(f):
+    # cache function f result (takes no arguments)
+    from functools import wraps
+    @wraps(f)
+    def wrapper():
+        if not hasattr(f, 'res'):
+            f.res = f()
+        return f.res
+    return wrapper
 
-@memoize
+@_simple_memorize
 def _attached_to_ipy_notebook():
     # check if we have an ipython kernel
     try:
@@ -100,6 +107,7 @@ class ProgressReporterMixin(object):
                 from .notebook import my_tqdm_notebook
                 pg = my_tqdm_notebook(**args)
             else:
+                import tqdm
                 pg = tqdm.tqdm(**args)
 
         self._prog_rep_progressbars[stage] = pg

@@ -1,5 +1,3 @@
-from IPython.core.display import display
-from ipywidgets import IntProgress, HTML, HBox, Layout, Text, Label, Box, VBox
 from tqdm._tqdm_notebook import tqdm_notebook
 
 
@@ -9,6 +7,7 @@ class my_tqdm_notebook(tqdm_notebook):
     @staticmethod
     def status_printer(_, total=None, desc=None):
         # Prepare IPython progress bar
+        from ipywidgets import IntProgress, HTML, HBox, Layout, Label, Box
 
         if total:
             pbar = IntProgress(min=0, max=total)
@@ -30,6 +29,7 @@ class my_tqdm_notebook(tqdm_notebook):
                             width='100%')
         container = HBox(children=[description,
                                    inner], layout=box_layout)
+        from IPython.core.display import display
         display(container)
 
         def print_status(s='', close=False, bar_style=None):
