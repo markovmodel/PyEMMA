@@ -228,24 +228,24 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # run k-means with all the data
         it = 0
         prev_cost = 0
-        while it < self.max_iter:
-            self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-            cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-            rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
-            prev_cost = cost
+        with self._progress_context():
+            while it < self.max_iter:
+                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
+                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
+                rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
+                prev_cost = cost
 
-            if rel_change <= self.tolerance:
-                self._converged = True
-                self._logger.info("Cluster centers converged after %i steps.", it + 1)
-                self._progress_force_finish(stage=1)
-                break
-            else:
-                self._progress_update(1, stage=1)
-            it += 1
-        if not self._converged:
-            self._logger.info("Algorithm did not reach convergence criterion"
-                              " of %g in %i iterations. Consider increasing max_iter.",
-                              self.tolerance, self.max_iter)
+                if rel_change <= self.tolerance:
+                    self._converged = True
+                    self._logger.info("Cluster centers converged after %i steps.", it + 1)
+                    break
+                else:
+                    self._progress_update(1, stage=1)
+                it += 1
+            if not self._converged:
+                self._logger.info("Algorithm did not reach convergence criterion"
+                                  " of %g in %i iterations. Consider increasing max_iter.",
+                                  self.tolerance, self.max_iter)
         self._finish_estimate()
 
         return self
@@ -262,9 +262,6 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
             self._in_memory_chunks_set = False
         if self.init_strategy == 'uniform':
             del self._init_centers_indices
-        if self.init_strategy == 'kmeans++':
-            self._progress_force_finish(0)
-        self._progress_force_finish(1)
 
     def _init_estimate(self):
         # mini-batch sets stride to None
@@ -399,7 +396,8 @@ class MiniBatchKmeansClustering(KmeansClustering):
         prev_cost = 0
 
         ra_stride = self._draw_mini_batch_sample()
-        with iterable.iterator(return_trajindex=False, stride=ra_stride, skip=self.skip) as iterator:
+        with iterable.iterator(return_trajindex=False, stride=ra_stride, skip=self.skip) as iterator, \
+            self._progress_context():
             while not (self._converged or i_pass + 1 > self.max_iter):
                 first_chunk = True
                 # draw new sample and re-use existing iterator instance.
