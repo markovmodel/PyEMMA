@@ -29,7 +29,8 @@ class my_tqdm_notebook(tqdm_notebook):
         # Only way to place text to the right of the bar is to use a container
         box_layout = Layout(display='flex',
                             width='100%')
-        container = HBox(children=[description, inner], layout=box_layout)
+        container = HBox(children=[description, inner] if description else [inner],
+                         layout=box_layout)
         from IPython.core.display import display
         display(container)
 
