@@ -13,21 +13,22 @@ def _simple_memorize(f):
 
 
 @_simple_memorize
-def _attached_to_ipy_notebook():
-    # check if we have an ipython kernel
+def _attached_to_ipy_notebook_with_widgets():
     try:
+        # check for widgets
+        import ipywidgets
+        if ipywidgets.version_info[0] < 4:
+            raise ImportError()
+        # check for ipython kernel
         from IPython import get_ipython
         ip = get_ipython()
         if ip is None:
             return False
         if not getattr(ip, 'kernel', None):
-            print("no kernel")
             return False
         # No further checks are feasible
-        print("got ipy shell shell")
         return True
     except ImportError:
-        print("ipython import error")
         return False
 
 
@@ -142,7 +143,7 @@ class ProgressReporterMixin(object):
             pg.dummy = True
         else:
             args = dict(total=amount_of_work, desc=description, dynamic_ncols=True, **tqdm_args)
-            if _attached_to_ipy_notebook():
+            if _attached_to_ipy_notebook_with_widgets():
                 from .notebook import my_tqdm_notebook
                 pg = my_tqdm_notebook(leave=False, **args)
             else:
