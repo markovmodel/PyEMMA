@@ -32,7 +32,7 @@ import sys
 from pyemma.msm import markov_model
 from pyemma.util.linalg import _sort_by_norm
 from pyemma.msm import timescales_msm as _ts_msm
-from six.moves import range
+
 
 
 def timescales_msm(*args, **kw):

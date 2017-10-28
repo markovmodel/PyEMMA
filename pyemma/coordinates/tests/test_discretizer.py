@@ -37,7 +37,7 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
 from pyemma.coordinates.pipelines import Discretizer
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates.api import cluster_kmeans, pca, source
-from six.moves import range
+
 
 
 def create_water_topology_on_disc(n):
