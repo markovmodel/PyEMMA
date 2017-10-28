@@ -29,6 +29,9 @@ your Python installation to at least version 3.5.
 - coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
 - coordinates: clustering code modernized in C++ with pybind11 interface. #1142
 - variational: covartools code modernized in C++ with pybind11 interface. #1147
+- estimators: n_jobs setting does not look for OMP_NUM_THREADS, but for PYEMMA_NJOBS and SLURM_CPUS_ON_NODE to avoid
+  multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
+  If nothing is set, the physical cpu count is considered.
 
 
 2.4 (05-19-2017)
