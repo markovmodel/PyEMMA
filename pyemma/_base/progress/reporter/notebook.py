@@ -7,7 +7,7 @@ class my_tqdm_notebook(tqdm_notebook):
     @staticmethod
     def status_printer(_, total=None, desc=None):
         # Prepare IPython progress bar
-        from ipywidgets import IntProgress, HTML, HBox, Layout, Label, Box
+        from ipywidgets import IntProgress, HTML, HBox, Layout, Label
 
         if total:
             pbar = IntProgress(min=0, max=total)

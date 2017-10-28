@@ -11,6 +11,7 @@ def _simple_memorize(f):
         return f.res
     return wrapper
 
+
 @_simple_memorize
 def _attached_to_ipy_notebook():
     # check if we have an ipython kernel
@@ -20,10 +21,13 @@ def _attached_to_ipy_notebook():
         if ip is None:
             return False
         if not getattr(ip, 'kernel', None):
+            print("no kernel")
             return False
         # No further checks are feasible
+        print("got ipy shell shell")
         return True
     except ImportError:
+        print("ipython import error")
         return False
 
 
@@ -142,6 +146,7 @@ class ProgressReporterMixin(object):
                 from .notebook import my_tqdm_notebook
                 pg = my_tqdm_notebook(leave=False, **args)
             else:
+                import tqdm
                 pg = tqdm.tqdm(leave=True, **args)
 
         self._prog_rep_progressbars[stage] = pg
