@@ -19,7 +19,7 @@ import logging
 
 import six
 
-from pyemma._base.logging import Loggable
+from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
 from pyemma._base.serialization.util import class_rename_registry
 import jsonpickle
