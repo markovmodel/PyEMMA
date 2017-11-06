@@ -28,7 +28,7 @@ We store them either as single column ascii files or as ndarrays of shape (n,) i
 import numpy as np
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 from pyemma.util.annotators import shortcut
-from six.moves import range
+
 
 __author__ = 'noe'
 

@@ -19,13 +19,11 @@ from abc import ABCMeta, abstractmethod
 from math import ceil
 
 import numpy as np
-import six
 
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
 from pyemma.util import config
 from pyemma.util.annotators import deprecated
-from six import string_types
 import os
 
 
@@ -40,7 +38,6 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         super(DataSource, self).__init__(chunksize=chunksize)
 
         # following properties have to be set in subclass
-        self._ntraj = 0
         self._lengths = []
         self._offsets = []
         self._filenames = None
@@ -48,8 +45,11 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
 
     @property
     def ntraj(self):
-        __doc__ = self.number_of_trajectories.__doc__
-        return self._ntraj
+        if self._is_reader:
+            assert hasattr(self, '_ntraj')
+            return self._ntraj
+
+        return self.data_producer.ntraj
 
     @property
     def filenames(self):
@@ -67,7 +67,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
     @filenames.setter
     def filenames(self, filename_list):
 
-        if isinstance(filename_list, string_types):
+        if isinstance(filename_list, str):
             filename_list = [filename_list]
 
         uniq = set(filename_list)
@@ -212,7 +212,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         if not IteratorState.is_uniform_stride(stride):
             n = len(np.unique(stride[:, 0]))
         else:
-            n = self._ntraj
+            n = self.ntraj
         return n
 
     def trajectory_length(self, itraj, stride=1, skip=None):
@@ -232,9 +232,9 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         -------
         int : length of trajectory
         """
-        if itraj >= self._ntraj:
+        if itraj >= self.ntraj:
             raise IndexError("given index (%s) exceeds number of data sets (%s)."
-                             " Zero based indexing!" % (itraj, self._ntraj))
+                             " Zero based indexing!" % (itraj, self.ntraj))
         if not IteratorState.is_uniform_stride(stride):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
@@ -366,7 +366,7 @@ class IteratorState(object):
         return True
 
 
-class DataSourceIterator(six.with_metaclass(ABCMeta)):
+class DataSourceIterator(metaclass=ABCMeta):
     """
     Abstract class for any data source iterator.
     """
@@ -379,6 +379,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.__init_stride(stride)
         self._pos = 0
         self._last_chunk_in_traj = False
+        super(DataSourceIterator, self).__init__()
 
     def __init_stride(self, stride):
         self.state.stride = stride

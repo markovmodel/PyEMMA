@@ -31,7 +31,7 @@ from pyemma.coordinates.data import MDFeaturizer
 from pyemma.coordinates import api
 import msmtools.generation as msmgen
 import tempfile
-from six.moves import range
+
 import pkg_resources
 from pyemma.util.files import TemporaryDirectory
 import pyemma.coordinates as coor

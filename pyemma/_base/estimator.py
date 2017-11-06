@@ -292,6 +292,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
+    if progress_reporter is not None:
+        progress_reporter._progress_register(len(estimators), stage=0,
+                                             description="estimating %s" % str(estimator.__class__.__name__))
+
     if n_jobs > 1 and os.name == 'posix':
         if hasattr(estimators[0], 'logger'):
             estimators[0].logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
@@ -330,7 +334,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
         if hasattr(estimators[0], 'logger'):
-            estimators[0].logger.debug('estimating %s with n_jobs=1 or because you do not have a POSIX system', estimator)
+            estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
+                                       'you not have a POSIX system', estimator)
         res = []
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,

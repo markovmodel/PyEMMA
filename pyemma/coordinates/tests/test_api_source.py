@@ -108,7 +108,10 @@ class TestApiSourceFileReader(unittest.TestCase):
 
     def test_bullshit_csv(self):
         # this file is not parseable as tabulated float file
-        self.assertRaises(IOError, api.source, self.bs)
+        from pyemma.util.contexts import settings
+        with settings(use_trajectory_info_cache=False):
+            self.assertRaises(ValueError, api.source, self.bs)
+
 
 import pkg_resources
 class TestApiSourceFeatureReader(unittest.TestCase):

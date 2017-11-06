@@ -18,10 +18,9 @@
 
 from __future__ import absolute_import
 import numpy as _np
-import six
 import warnings
 from pyemma.util import types as _types
-from six.moves import range
+
 from math import sqrt as _sqrt
 import logging
 
@@ -208,7 +207,7 @@ class NetworkPlot(object):
         # show or suppress frame
         self.ax.set_frame_on(show_frame)
         # set node labels
-        if isinstance(state_labels, six.string_types) and state_labels == 'auto':
+        if isinstance(state_labels, str) and state_labels == 'auto':
             state_labels = [str(i) for i in _np.arange(n)]
         else:
             if len(state_labels) != n:
@@ -232,9 +231,9 @@ class NetworkPlot(object):
         # set arrow labels
         if isinstance(arrow_labels, _np.ndarray):
             L = arrow_labels
-            if isinstance(arrow_labels[0,0], six.string_types):
+            if isinstance(arrow_labels[0,0], str):
                 arrow_label_format = '%s'
-        elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
+        elif isinstance(arrow_labels, str) and arrow_labels.lower() == 'weights':
             L = self.A[:, :]
         elif arrow_labels is None:
             L = _np.empty(_np.shape(self.A), dtype=object)
@@ -400,7 +399,7 @@ def plot_markov_model(
     Returns
     -------
     fig, pos : matplotlib.Figure, ndarray(n,2)
-    a Figure object containing the plot and the positions of states. 
+    a Figure object containing the plot and the positions of states.
     Can be used later to plot a different network representation (e.g. the flux)
 
     Examples
@@ -552,7 +551,7 @@ def plot_flux(
         I, J = _np.where(F < minflux)
         F[I, J] = 0.0
 
-    if isinstance(state_labels, six.string_types) and state_labels == 'auto':
+    if isinstance(state_labels, str) and state_labels == 'auto':
         # the first and last element correspond to A and B in ReactiveFlux
         state_labels = _np.array([str(i) for i in range(flux.nstates)])
         state_labels[_np.array(flux.A)] = "A"
@@ -569,7 +568,7 @@ def plot_flux(
         max_height=max_height, figpadding=figpadding, xticks=show_committor, yticks=False,
         show_frame=show_frame, **textkwargs)
     if show_committor:
-        
+
         plt.xlabel('Committor probability')
     return fig, plot.pos
 

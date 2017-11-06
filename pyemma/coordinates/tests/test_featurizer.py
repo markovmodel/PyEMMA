@@ -29,7 +29,7 @@ from itertools import combinations, product
 
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
 from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
-from six.moves import range
+
 import pkg_resources
 
 path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep

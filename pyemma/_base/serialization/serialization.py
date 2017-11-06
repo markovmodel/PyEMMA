@@ -198,14 +198,14 @@ class SerializableMixIn(object):
         if not hasattr(cls, '_serialize_version'):
             raise DeveloperError('your class {cls} does not have a _serialize_version field!')
 
-        res = super(SerializableMixIn, cls).__new__(cls) #, *args, **kwargs)
+        res = super(SerializableMixIn, cls).__new__(cls)
         return res
 
     def save(self, file_name, model_name='latest', save_streaming_chain=False):
         r"""
         Parameters
         -----------
-        filename: str
+        file_name: str
             path to desired output file
         model_name: str, default=latest
             creates a group named 'model_name' in the given file, which will contain all of the data.
@@ -492,4 +492,5 @@ class SerializableMixIn(object):
 
     def __init_subclass__(self, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
-        assert hasattr(self, '_serialize_version'), '{} does not have field serialize_version'.format(self)
+        if not hasattr(self, '_serialize_version'):
+            raise DeveloperError('{} does not have field serialize_version'.format(self))

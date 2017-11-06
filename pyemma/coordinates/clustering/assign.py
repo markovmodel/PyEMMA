@@ -25,7 +25,6 @@ Created on 18.02.2015
 from __future__ import absolute_import
 
 import numpy as np
-import six
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
@@ -66,7 +65,7 @@ class AssignCenters(AbstractClustering):
     def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None, skip=0):
         super(AssignCenters, self).__init__(metric=metric, n_jobs=n_jobs)
 
-        if isinstance(clustercenters, six.string_types):
+        if isinstance(clustercenters, str):
             from pyemma.coordinates.data import create_file_reader
             reader = create_file_reader(clustercenters, None, None)
             clustercenters = reader.get_output()[0]
