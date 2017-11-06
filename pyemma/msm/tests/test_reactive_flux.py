@@ -32,7 +32,9 @@ import msmtools.analysis as msmana
 
 
 class TestReactiveFluxFunctions(unittest.TestCase):
-    def setUp(self):
+
+    @classmethod
+    def setUpClass(self):
         # 5-state toy system
         self.P = msmapi.MSM(np.array([[0.8, 0.15, 0.05, 0.0, 0.0],
                            [0.1, 0.75, 0.05, 0.05, 0.05],
@@ -101,6 +103,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         self.coarsesets2 = [[2, 3, 6, 7], [10, 11, 14, 15], [0, 1, 4, 5], [8, 9, 12, 13], ]
 
         # REFERENCE SOLUTION CG
+        from pyemma.util.ordered_set import OrderedSet as set
         self.ref2_tpt_sets = [set([0, 4]), set([2, 3, 6, 7]), set([10, 14]), set([1, 5]), set([8, 9, 12, 13]),
                               set([11, 15])]
         self.ref2_cgA = [0]
