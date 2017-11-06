@@ -29,7 +29,7 @@ from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from pyemma._base.logging import Loggable
+from pyemma._base.loggable import Loggable
 
 __author__ = 'noe, marscher'
 
