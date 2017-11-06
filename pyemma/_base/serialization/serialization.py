@@ -17,8 +17,6 @@
 
 import logging
 
-import six
-
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
 from pyemma._base.serialization.util import class_rename_registry
@@ -278,7 +276,7 @@ class SerializableMixIn(object):
     def _get_state_of_serializeable_fields(self, klass):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
         res = {}
-        assert all(isinstance(f, six.string_types) for f in klass._serialize_fields)
+        assert all(isinstance(f, str) for f in klass._serialize_fields)
         for field in klass._serialize_fields:
             # only try to get fields, we actually have.
             if hasattr(self, field):
