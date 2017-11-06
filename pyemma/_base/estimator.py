@@ -337,6 +337,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
                                        'you not have a POSIX system', estimator)
         res = []
+        if progress_reporter is not None:
+            from pyemma._base.model import SampledModel
+            if isinstance(estimator, SampledModel):
+                for e in estimators:
+                    e.show_progress = False
+
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast))

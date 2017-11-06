@@ -24,7 +24,7 @@ from math import log
 from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
@@ -33,7 +33,7 @@ __all__ = ['LaggedCovariance']
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator, ProgressReporter):
+class LaggedCovariance(StreamingEstimator, ProgressReporterMixin):
     r"""Compute lagged covariances between time series.
 
      Parameters
