@@ -138,16 +138,15 @@ class TestFeaturizer(unittest.TestCase):
             assert a.dimension() == b.dimension()
             assert a.describe() == b.describe()
 
-        from tempfile import NamedTemporaryFile
-        with NamedTemporaryFile() as ntf:
-            buff = ntf.name
+        from pyemma.util.contexts import named_temporary_file
+        with named_temporary_file() as buff:
             self.feat.save(buff)
             restored = pyemma.load(buff)
         feat_equal(restored, self.feat)
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
-    
+
     def test_select_non_symmetry_heavy_atoms(self):
         try:
             inds = self.feat.select_Heavy(exclude_symmetry_related=True)

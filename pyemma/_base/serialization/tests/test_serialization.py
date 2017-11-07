@@ -204,5 +204,6 @@ class TestSerialisation(unittest.TestCase):
         with self.assertRaises(DeveloperError):
             class broken(SerializableMixIn): pass
 
+
 if __name__ == '__main__':
     unittest.main()

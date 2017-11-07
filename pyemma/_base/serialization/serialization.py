@@ -171,7 +171,7 @@ class SerializableMixIn(object):
     -------
 
     >>> import pyemma
-    >>> from tempfile import NamedTemporaryFile
+    >>> from pyemma.util.contexts import named_temporary_file
     >>> class MyClass(SerializableMixIn):
     ...    _serialize_version = 0
     ...    _serialize_fields = ['x']
@@ -179,8 +179,7 @@ class SerializableMixIn(object):
     ...        self.x = x
 
     >>> inst = MyClass()
-    >>> with NamedTemporaryFile() as ntf:
-    ...    file = ntf.name
+    >>> with named_temporary_file() as file:
     ...    inst.save(file)
     ...    inst_restored = pyemma.load(file)
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
@@ -214,11 +213,10 @@ class SerializableMixIn(object):
         Examples
         --------
         >>> import pyemma, numpy as np, pprint
-        >>> from tempfile import NamedTemporaryFile
+        >>> from pyemma.util.contexts import named_temporary_file
         >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
 
-        >>> with NamedTemporaryFile() as ntf: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
-        ...    file = ntf.name
+        >>> with named_temporary_file() as file: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
         ...    m.save(file, 'simple')
         ...    pprint.pprint(list_models(file))
         ...    inst_restored = pyemma.load(file, 'simple')
