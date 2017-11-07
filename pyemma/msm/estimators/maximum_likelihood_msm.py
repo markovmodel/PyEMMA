@@ -363,11 +363,13 @@ class _MSMEstimator(_Estimator, _MSM):
             raise ValueError('score_cv currently only supports count modes "sliding" and "sample"')
         sliding = self.count_mode == 'sliding'
         scores = []
+        from pyemma._ext.sklearn.base import clone
+        estimator = clone(self)
         for i in range(n):
             dtrajs_split = self._blocksplit_dtrajs(dtrajs, sliding)
             dtrajs_train, dtrajs_test = cvsplit_dtrajs(dtrajs_split)
-            self.fit(dtrajs_train)
-            s = self.score(dtrajs_test, score_method=score_method, score_k=score_k)
+            estimator.fit(dtrajs_train)
+            s = estimator.score(dtrajs_test, score_method=score_method, score_k=score_k)
             scores.append(s)
         return _np.array(scores)
 
