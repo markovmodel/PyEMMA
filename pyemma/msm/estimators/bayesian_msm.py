@@ -20,7 +20,7 @@ from __future__ import absolute_import
 
 
 
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
@@ -31,7 +31,7 @@ __author__ = 'noe'
 
 
 @fix_docs
-class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
+class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
     r"""Bayesian Markov state model estimator"""
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,

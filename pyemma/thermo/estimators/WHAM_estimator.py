@@ -18,7 +18,7 @@
 import numpy as _np
 
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporter as _ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin as _ProgressReporter
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -87,7 +87,7 @@ class WHAM(_Estimator, _MultiThermModel, _ProgressReporter):
 
         References
         ----------
-        
+
         .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
             New Monte Carlo Technique for Studying Phase Transitions.
             Phys. Rev. Lett. 23, 2635--2638

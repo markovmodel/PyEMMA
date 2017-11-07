@@ -235,10 +235,10 @@ metadata = dict(
         'msmtools>=1.2',
         'numpy>=1.8.0',
         'pathos',
-        'progress-reporter',
         'psutil>=3.1.1',
         'pyyaml',
         'scipy>=0.11',
+        'tqdm',
         'thermotools>=0.2.6',
     ],
     zip_safe=False,
@@ -278,8 +278,7 @@ else:
 
         # init submodules
         import subprocess
-        modules = ['pybind11',
-                   ]
+        modules = ['pybind11', ]
         cmd = "git submodule update --init {mod}"
         for m in modules:
             subprocess.check_call(cmd.format(mod=m).split(' '))

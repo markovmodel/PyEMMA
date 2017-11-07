@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 import numpy as _np
 
 
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
@@ -33,7 +33,7 @@ __author__ = 'noe'
 
 
 @fix_docs
-class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
+class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
     r"""Estimator for a Bayesian Hidden Markov state model"""
     _serialize_version = 0
     _serialize_fields = ('accuracy',

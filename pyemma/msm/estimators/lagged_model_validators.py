@@ -25,14 +25,14 @@ import numpy as np
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types
 
 __author__ = 'noe'
 
 
-class LaggedModelValidator(Estimator, ProgressReporter, SerializableMixIn):
+class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
     r""" Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
 

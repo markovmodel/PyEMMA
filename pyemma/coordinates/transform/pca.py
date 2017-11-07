@@ -228,16 +228,18 @@ class PCA(StreamingEstimationTransformer, SerializableMixIn):
 
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
+        it = iterable.iterator(return_trajindex=False, chunk=self.chunksize,
+                               stride=self.stride, skip=self.skip)
+        from pyemma._base.progress import ProgressReporter
+        pg = ProgressReporter()
+        pg.register(it.n_chunks, "calc mean+cov", 0)
 
-        with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
-                               stride=self.stride, skip=self.skip) as it:
-            n_chunks = it.n_chunks
-            self._progress_register(n_chunks, "calc mean+cov", 0)
-            self._init_covar(partial_fit, n_chunks)
+        with  it, pg.context():
+            self._init_covar(partial_fit, it.n_chunks)
 
             for chunk in it:
                 self._covar.add(chunk)
-                self._progress_update(1, 0)
+                pg.update(1)
 
         self.cov = self._covar.cov_XX(bessel=True)
         self.mu = self._covar.mean_X()
