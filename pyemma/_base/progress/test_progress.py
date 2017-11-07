@@ -100,5 +100,13 @@ class TestProgress(unittest.TestCase):
         except Exception:
             assert pg.num_registered == 0
 
+    def test_below_threshold(self):
+        # show not raise
+        pg = ProgressReporter()
+        pg.register(2)
+        pg.update(1)
+        pg.set_description('dummy')
+
+
 if __name__ == '__main__':
     unittest.main()

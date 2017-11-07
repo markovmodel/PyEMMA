@@ -135,12 +135,9 @@ class ProgressReporterMixin(object):
         if not isinstance(amount_of_work, Integral):
             raise ValueError('amount_of_work has to be of integer type. But is {}'.format(type(amount_of_work)))
 
-        # if we do not have enough work to do for the overhead of a progress bar,
-        # we just define a dummy here
+        # if we do not have enough work to do for the overhead of a progress bar just dont create a bar.
         if amount_of_work <= ProgressReporterMixin._pg_threshold:
-            from unittest import mock
-            pg = mock.Mock()
-            pg.dummy = True
+            pg = None
         else:
             args = dict(total=amount_of_work, desc=description, dynamic_ncols=True, **tqdm_args)
             if _attached_to_ipy_notebook_with_widgets():
@@ -159,7 +156,8 @@ class ProgressReporterMixin(object):
         """ set description of an already existing progress """
         self.__check_stage_registered(stage)
         self._prog_rep_descriptions[stage] = description
-        self._prog_rep_progressbars[stage].set_description(description, refresh=False)
+        if self._prog_rep_progressbars[stage]:
+            self._prog_rep_progressbars[stage].set_description(description, refresh=False)
 
     def _progress_update(self, numerator_increment, stage=0, show_eta=True, **kw):
         """ Updates the progress. Will update progress bars or other progress output.
@@ -177,7 +175,7 @@ class ProgressReporterMixin(object):
 
         self.__check_stage_registered(stage)
 
-        if hasattr(self._prog_rep_progressbars[stage], 'dummy'):
+        if not self._prog_rep_progressbars[stage]:
             return
 
         pg = self._prog_rep_progressbars[stage]
@@ -189,6 +187,9 @@ class ProgressReporterMixin(object):
             return
 
         self.__check_stage_registered(stage)
+
+        if not self._prog_rep_progressbars[stage]:
+            return
 
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
