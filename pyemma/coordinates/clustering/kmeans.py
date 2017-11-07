@@ -265,9 +265,6 @@ class KmeansClustering(AbstractClustering, SerializableMixIn, ProgressReporterMi
             self._in_memory_chunks_set = False
         if self.init_strategy == 'uniform':
             del self._init_centers_indices
-        if self.init_strategy == 'kmeans++':
-            self._progress_force_finish(0)
-        self._progress_force_finish(1)
 
     def _init_estimate(self):
         # mini-batch sets stride to None
@@ -300,7 +297,7 @@ class KmeansClustering(AbstractClustering, SerializableMixIn, ProgressReporterMi
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
         from ._ext import kmeans as kmeans_mod
-        if self.init_strategy == 'kmeans++' and self.show_progress:
+        if self.init_strategy == 'kmeans++' and self.show_progress and self._prog_rep_progressbars[0]:
             callback = lambda: self._progress_update(1, stage=0)
         else:
             callback = None
