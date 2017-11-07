@@ -203,6 +203,7 @@ class TestSerialisation(unittest.TestCase):
         """ we're not allowed """
         with self.assertRaises(DeveloperError):
             class broken(SerializableMixIn): pass
+            x = broken()
 
 
 if __name__ == '__main__':
