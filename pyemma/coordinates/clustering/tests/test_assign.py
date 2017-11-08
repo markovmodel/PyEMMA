@@ -37,11 +37,13 @@ logger = getLogger('pyemma.'+'TestCluster')
 def temporary_env(var, value):
     old_val = os.getenv(var, None)
     os.environ[var] = str(value)
-    yield
-    if old_val is not None:
-        os.environ[var] = old_val
-    else:
-        del os.environ[var]
+    try:
+        yield
+    finally:
+        if old_val is not None:
+            os.environ[var] = old_val
+        else:
+            del os.environ[var]
 
 
 class TestClusterAssign(unittest.TestCase):
