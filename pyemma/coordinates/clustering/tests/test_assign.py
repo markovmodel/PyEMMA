@@ -218,7 +218,7 @@ class TestClusterAssign(unittest.TestCase):
         expected = 3
         def fake_cpu_count(*args, **kw):
             return expected
-        with patch('psutil.cpu_count', fake_cpu_count), temporary_env('OMP_NUM_THREADS', 'this is not right'):
+        with patch('psutil.cpu_count', fake_cpu_count), temporary_env('PYEMMA_NJOBS', 'this is not right'):
             res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
             self.assertEqual(res.n_jobs, expected)
 

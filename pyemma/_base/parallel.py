@@ -1,8 +1,8 @@
 
 def get_n_jobs(logger=None):
-    import psutil
 
     def _from_hardware():
+        import psutil
         return psutil.cpu_count(logical=False)
 
     def _from_env(var):
@@ -14,8 +14,8 @@ def get_n_jobs(logger=None):
             except ValueError as ve:
                 if logger is not None:
                     logger.warning("could not parse env variable '{var}'."
-                                   " Value='{val}'. Error={err}. Will use {val} jobs."
-                                   .format(err=ve, val=val, var=var))
+                                   " Value='{val}'. Error={err}."
+                                   .format(err=ve, val=e, var=var))
         return None
 
     slurm_njobs = _from_env('SLURM_CPUS_ON_NODE')  # Number of CPUS on the allocated SLURM node.
@@ -24,7 +24,7 @@ def get_n_jobs(logger=None):
     if slurm_njobs and pyemma_njobs:
         import warning
         warning.warn('two settings for n_jobs from environment: PYEMMA_NJOBS and SLURM_CPUS_ON_NODE. '
-                     'Respecting the SLURM setting to avoid overprovisioning')
+                     'Respecting the SLURM setting to avoid overprovisioning resources.')
 
     # slurm njobs will be used preferably.
     val = slurm_njobs or pyemma_njobs
