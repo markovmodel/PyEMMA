@@ -28,7 +28,7 @@ from __future__ import absolute_import, print_function
 import numpy as np
 
 from pyemma._base.parallel import NJobsMixIn
-from pyemma.util.annotators import estimation_required, alias, aliased
+from pyemma.util.annotators import alias, aliased
 
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
@@ -317,7 +317,6 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
         self._nits = int(value) if value is not None else None
 
     @property
-    @estimation_required
     def timescales(self):
         r"""Returns the implied timescale estimates
 
@@ -347,6 +346,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
         for every lag time
 
         """
+        if not self._estimated:
+            raise RuntimeError('you need to call fit() or estimate() first!')
         if process is None:
             return self._its[self._successful_lag_indexes, :]
         else:
