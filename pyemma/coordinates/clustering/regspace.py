@@ -133,7 +133,7 @@ class RegularSpaceClustering(AbstractClustering):
         # temporary list to store cluster centers
         clustercenters = []
         used_frames = 0
-        from ._ext import regspace
+        from ._ext import regspace, MaxCentersReachedException
         self._inst = regspace.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
         try:
             with iterable.iterator(return_trajindex=False, stride=self.stride,
@@ -141,8 +141,8 @@ class RegularSpaceClustering(AbstractClustering):
                 for X in it:
                     used_frames += len(X)
                     self._inst.cluster(X.astype(np.float32, order='C', copy=False),
-                                       clustercenters)
-        except RuntimeError:
+                                       clustercenters, self.n_jobs)
+        except MaxCentersReachedException:
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
                   ' a larger minimum distance, dmin.'

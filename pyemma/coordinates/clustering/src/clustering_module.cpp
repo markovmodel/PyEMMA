@@ -25,6 +25,8 @@ PYBIND11_PLUGIN(_ext) {
     py::class_<regspace_f, cbase_f>(regspace_mod, "Regspace_f")
             .def(py::init<dtype, std::size_t, const std::string&, size_t>())
             .def("cluster", &regspace_f::cluster);
+    // A simple exception translation
+    auto ex = py::register_exception<MaxCentersReachedException>(m, "MaxCentersReachedException");
     // kmeans
     typedef KMeans<dtype> kmeans_f;
     py::class_<kmeans_f, cbase_f>(kmeans_mod, "Kmeans_f")
