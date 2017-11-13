@@ -20,7 +20,7 @@ PYBIND11_PLUGIN(_ext) {
     py::class_<cbase_f>(m, "ClusteringBase_f")
             .def(py::init<const std::string&, std::size_t>())
             .def("assign", &cbase_f::assign_chunk_to_centers)
-                    .def("precenter_centers", &cbase_f::precenter_centers);
+            .def("precenter_centers", &cbase_f::precenter_centers);
 
     py::class_<regspace_f, cbase_f>(regspace_mod, "Regspace_f")
             .def(py::init<dtype, std::size_t, const std::string&, size_t>())
