@@ -263,6 +263,26 @@ class TestITS_AllEstimators(unittest.TestCase):
         np.testing.assert_array_less(L, estimator.timescales)
         np.testing.assert_array_less(estimator.timescales, R)
 
+    def test_its_bmsm_set_nsamples(self):
+        nsamples = 10
+        fake_dtrajs = [np.random.randint(0,10, size=100)]
+        its = msm.timescales_msm(fake_dtrajs, errors='bayes', nsamples=nsamples)
+        assert its.estimators[0].nsamples == nsamples
+        its.nsamples += 2
+        assert its.estimators[0].nsamples == nsamples + 2
+
+        its.estimate(fake_dtrajs)
+        assert len(its._its_samples) == its.nsamples
+
+        its.nsamples -= 2
+        assert its.estimators[0].nsamples == nsamples
+
+    def test_its_msm_set_nsamples(self):
+        fake_dtrajs = [np.random.randint(0,10, size=100)]
+        its = msm.timescales_msm(fake_dtrajs)
+        assert its.nsamples == 0
+        its.nsamples = 1
+        assert its.nsamples == 0
 
 if __name__ == "__main__":
     unittest.main()

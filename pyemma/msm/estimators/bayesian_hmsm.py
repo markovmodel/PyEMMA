@@ -26,6 +26,7 @@ from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM 
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.annotators import fix_docs
+from pyemma.util.discrete_trajectories import number_of_states
 from pyemma.util.types import ensure_dtraj_list
 from pyemma.util.units import TimeUnit
 
@@ -139,8 +140,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         self.p0_prior = p0_prior
         self.transition_matrix_prior = transition_matrix_prior
         self.nsamples = nsamples
-        if init_hmsm is not None:
-            assert issubclass(init_hmsm.__class__, _MaximumLikelihoodHMSM), 'hmsm must be of type MaximumLikelihoodHMSM'
+        if init_hmsm is not None and not issubclass(init_hmsm.__class__, _MaximumLikelihoodHMSM):
+            raise ValueError('hmsm must be of type MaximumLikelihoodHMSM')
         self.init_hmsm = init_hmsm
         self.conf = conf
         self.store_hidden = store_hidden
@@ -188,8 +189,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                                      dt_model=TimeUnit(self.dt_traj).get_scaled(self.lag))
 
         # check if we have a valid initial model
-        import msmtools.estimation as msmest
-        if self.reversible and not msmest.is_connected(self.count_matrix):
+        from msmtools.estimation import is_connected
+        if self.reversible and not is_connected(self.count_matrix):
             raise NotImplementedError('Encountered disconnected count matrix:\n ' + str(self.count_matrix)
                                       + 'with reversible Bayesian HMM sampler using lag=' + str(self.lag)
                                       + ' and stride=' + str(self.stride) + '. Consider using shorter lag, '
@@ -198,7 +199,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler. This is just an initialization.
-        nstates_full = msmest.number_of_states(dtrajs)
+        dtrajs = self.discrete_trajectories_full
+        nstates_full = number_of_states(dtrajs)
         if self.nstates_obs < nstates_full:
             eps = 0.01 / nstates_full  # default output probability, in order to avoid zero columns
             # full state space output matrix. make sure there are no zero columns
@@ -210,39 +212,15 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         else:
             B_init = self.observation_probabilities
 
-        # HMM sampler
-        if self.show_progress:
-            self._progress_register(self.nsamples, description='Sampling HMSMs', stage=0)
+        # TODO: is this really needed here, because we have already an discrete hmm from the parent class
+        # estimate initial discrete hmm
+        # from bhmm import discrete_hmm
+        # hmm_mle = discrete_hmm(self.initial_distribution, self.transition_matrix, B_init)
+        # self._hmm_mle = hmm_mle
 
-            def call_back():
-                self._progress_update(1, stage=0)
-        else:
-            call_back = None
-
-        from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(self.initial_distribution, self.transition_matrix, B_init)
-
-        sampled_hmm = bayesian_hmm(self.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   reversible=self.reversible, stationary=self.stationary,
-                                   p0_prior=self.p0_prior, transition_matrix_prior=self.transition_matrix_prior,
-                                   store_hidden=self.store_hidden, call_back=call_back)
-
-        if self.show_progress:
-            self._progress_force_finish(stage=0)
-
-        # Samples
-        sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
-        sample_pis = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsamples)]
-        sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsamples)]
-        samples = []
-        for i in range(self.nsamples):  # restrict to observable set if necessary
-            Bobs = sample_pobs[i][:, self.observable_set]
-            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
-            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
-
-        # store results
-        self.sampled_trajs = [sampled_hmm.sampled_hmms[i].hidden_state_trajectories for i in range(self.nsamples)]
+        samples, sampled_trajs = self._sample(self.nsamples)
         self.update_model_params(samples=samples)
+        self.sampled_trajs = sampled_trajs
 
         # deal with connectivity
         states_subset = None
@@ -260,14 +238,81 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         return self.submodel(states=states_subset, obs=observe_subset,
                              mincount_connectivity=self.mincount_connectivity)
 
+    def _sample(self, n_samples):
+        # HMM sampler
+        if self.show_progress:
+            self._progress_register(n_samples, description='Sampling HMSMs', stage=0)
+
+            def call_back():
+                self._progress_update(1, stage=0)
+        else:
+            call_back = None
+
+        from bhmm import bayesian_hmm
+        sampled_hmm = bayesian_hmm(self.discrete_trajectories_lagged, self.hmm, nsample=n_samples,
+                                   reversible=self.reversible, stationary=self.stationary,
+                                   p0_prior=self.p0_prior, transition_matrix_prior=self.transition_matrix_prior,
+                                   store_hidden=self.store_hidden, call_back=call_back)
+
+        if self.show_progress:
+            self._progress_force_finish(stage=0)
+
+        # Samples
+        sample_Ps = [hmm.transition_matrix for hmm in sampled_hmm.sampled_hmms]
+        sample_pis = [hmm.stationary_distribution for hmm in sampled_hmm.sampled_hmms]
+        sample_pobs = [hmm.output_model.output_probabilities for hmm in sampled_hmm.sampled_hmms]
+        samples = []
+        for i in range(n_samples):  # restrict to observable set if necessary
+            Bobs = sample_pobs[i][:, self.observable_set]
+            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
+            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
+
+        # return results
+        sampled_trajs = [hmm.hidden_state_trajectories for hmm in sampled_hmm.sampled_hmms]
+        return samples, sampled_trajs
+
+    @property
+    def nsamples(self):
+        """number of transition matrix samples to compute."""
+        return self._nsamples
+
+    @nsamples.setter
+    def nsamples(self, value):
+        value = int(value)
+        if not value:
+            raise ValueError('nsamples has to be positive.')
+        if hasattr(self, 'samples') and self.samples is not None:
+            # already computed? User wants to increment number of samples.
+            old_value = self.nsamples
+            diff = value - old_value
+            if diff < 0:
+                # this would throw all samples away... can this be the case?
+                new_samples = self.samples[0:diff]
+                new_sampled_trajs = self.sampled_trajs[0:diff]
+                assert new_samples
+                assert new_sampled_trajs
+                self.sampled_trajs = new_sampled_trajs
+                self.update_model_params(samples=new_samples)
+            elif diff > 0:
+                if not hasattr(self, '_sample'):
+                    import warnings
+                    warnings.warn('more samples are requested by {}, '
+                                  'but this class does not have a _sample interface.'.format(self))
+                    value = old_value
+                else:
+                    new_samples, sampled_trajs = self._sample(diff)
+                    self.update_model_params(samples=self.samples + new_samples)
+                    self.sampled_trajs += sampled_trajs
+
+        self._nsamples = value
+
     def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
         # call submodel on MaximumLikelihoodHMSM
         _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs, mincount_connectivity=mincount_connectivity)
         # if samples set, also reduce them
-        if hasattr(self, 'samples'):
-            if self.samples is not None:
-                subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
-                              for sample in self.samples]
-                self.update_model_params(samples=subsamples)
+        if hasattr(self, 'samples') and self.samples is not None:
+            subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
+                          for sample in self.samples]
+            self.update_model_params(samples=subsamples)
         # return
         return self

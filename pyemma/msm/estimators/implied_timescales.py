@@ -178,6 +178,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
             lags = sorted(list(set(self._lags).difference(self._last_lags)))
             if len(lags) == 0:
                 self.logger.info("All lag times already estimated.")
+                # re-run post-processing to reflect changes in nsamples
+                self._postprocess_results(self._models)
                 return self
             assert lags
             self.logger.info("Running estimating for not yet estimated lags times: %s", lags)
@@ -185,7 +187,7 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
             lags = self._lags
 
         # construct all parameter sets for the estimator
-        param_sets = tuple(param_grid({'lag': lags}))
+        param_sets = param_grid({'lag': lags})
 
         # run estimation on all lag times
         models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
@@ -193,9 +195,11 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
                                                  progress_reporter=self)
         self._estimators = estimators
 
-        self._postprocess_results(models)
+        self._merge_models(models)
+        # post-process all (merged) models
+        self._postprocess_results(self._models)
 
-    def _postprocess_results(self, models):
+    def _merge_models(self, models):
         ### PROCESS RESULTS
         # if some results are None, estimation has failed. Warn and truncate models and lag times
         good = np.array([i for i, m in enumerate(models) if m is not None], dtype=int)
@@ -216,6 +220,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
             models = sorted(self._models + models, key=lambda m: m.lag)
 
         self._models = models
+
+    def _postprocess_results(self, models):
         # timescales
         timescales = [m.timescales() for m in models]
 
@@ -264,6 +270,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
         if not computed_all:
             self.logger.warning('Some timescales could not be computed. Timescales array is smaller than '
                                 'expected or contains NaNs')
+
+        self._last_lags = set(self._lags)
 
     @property
     @alias('lagtimes')
@@ -351,6 +359,28 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
             return self._its[self._successful_lag_indexes, :]
         else:
             return self._its[self._successful_lag_indexes, process]
+
+    @property
+    def nsamples(self):
+        """ Number of samples (if any) of estimator used to calculate the implied timescales.
+
+        Can be used to increase the number of samples.
+        """
+        if self.samples_available:
+            return self.estimators[0].nsamples
+        return 0
+
+    @nsamples.setter
+    def nsamples(self, value):
+        if self.samples_available:
+            value = int(value)
+            if not value:
+                raise ValueError('nsamples has to be positive')
+            for e in self.estimators:
+                e.nsamples = value
+        else:
+            self.logger.info('nsamples setting ignored, because underlying estimator '
+                             '{} does not support sampling'.format(self.estimator))
 
     @property
     def samples_available(self):

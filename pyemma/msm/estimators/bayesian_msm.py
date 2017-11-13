@@ -149,6 +149,37 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
         self.conf = conf
         self.show_progress = show_progress
 
+    @property
+    def nsamples(self):
+        """number of transition matrix samples to compute."""
+        return self._nsamples
+
+    @nsamples.setter
+    def nsamples(self, value):
+        value = int(value)
+        if not value:
+            raise ValueError('nsamples has to be positive.')
+        if hasattr(self, 'samples') and self.samples is not None:
+            # already computed? User wants to increment number of samples.
+            old_value = self.nsamples
+            diff = value - old_value
+            if diff < 0:
+                # this would throw all samples away... can this be the case?
+                new_samples = self.samples[0:diff]
+                assert new_samples
+                self.update_model_params(samples=new_samples)
+            elif diff > 0:
+                if not hasattr(self, '_sample'):
+                    import warnings
+                    warnings.warn('more samples are requested by {}, '
+                                  'but this class does not have a _sample interface.'.format(self))
+                    value = old_value
+                else:
+                    new_samples = self._sample(diff)
+                    self.update_model_params(samples=self.samples + new_samples)
+
+        self._nsamples = value
+
     def estimate(self, dtrajs, **kw):
         """
 
@@ -169,21 +200,15 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
         """
         return super(BayesianMSM, self).estimate(dtrajs, **kw)
 
-    def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # conduct MLE estimation (superclass) first
-        _MLMSM._estimate(self, dtrajs)
-
-        # transition matrix sampler
+    def _sample(self, n_samples):
         from msmtools.estimation import tmatrix_sampler
         from math import sqrt
         if self.nsteps is None:
             self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
         # use the same count matrix as the MLE. This is why we have effective as a default
         if self.statdist_constraint is None:
-            tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
-                                       nsteps=self.nsteps)
+            tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
+                                       T0=self.transition_matrix, nsteps=self.nsteps)
         else:
             # Use the stationary distribution on the active set of states
             statdist_active = self.pi
@@ -191,7 +216,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
             tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
                                        mu=statdist_active, nsteps=self.nsteps)
 
-        self._progress_register(self.nsamples, description="Sampling MSMs", stage=0)
+        self._progress_register(n_samples, description="Sampling MSMs", stage=0)
 
         if self.show_progress:
             def call_back():
@@ -199,16 +224,24 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
         else:
             call_back = None
 
-        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples,
+        sample_Ps, sample_mus = tsampler.sample(nsamples=n_samples,
                                                 return_statdist=True,
                                                 call_back=call_back)
         self._progress_force_finish(0)
 
         # construct sampled MSMs
         samples = []
-        for i in range(self.nsamples):
-            samples.append(_MSM(sample_Ps[i], pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
+        for sample, mu in zip(sample_Ps, sample_mus):
+            samples.append(_MSM(sample, pi=mu, reversible=self.reversible, dt_model=self.dt_model))
+        return samples
 
+
+    def _estimate(self, dtrajs):
+        # conduct MLE estimation (superclass) first
+        _MLMSM._estimate(self, dtrajs)
+
+        # transition matrix sampler, invoked on self.P
+        samples = self._sample(self.nsamples)
         # update self model
         self.update_model_params(samples=samples)
 
