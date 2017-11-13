@@ -63,6 +63,15 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         self._index_states = []
         self.n_jobs = n_jobs
 
+    @NJobsMixIn.n_jobs.setter
+    def n_jobs(self, val):
+        # minRMSD with multiple jobs is broken on Windows.
+        import os
+        if os.name == 'win32' and self.metric == 'minRMSD':
+            val = 1
+
+        NJobsMixIn.n_jobs.fset(self, val)
+
     class _centers_wrapper(object):
         def __init__(self, arr):
             self.centers = np.asarray(arr, dtype='float32', order='C')
