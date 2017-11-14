@@ -128,7 +128,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
-    
+
     def test_select_non_symmetry_heavy_atoms(self):
         try:
             inds = self.feat.select_Heavy(exclude_symmetry_related=True)
@@ -143,12 +143,27 @@ class TestFeaturizer(unittest.TestCase):
         refmap = np.reshape(self.traj.xyz, (len(self.traj), self.traj.n_atoms * 3))
         assert (np.all(refmap == self.feat.transform(self.traj)))
 
+    def test_select_all_reference(self):
+        self.feat.add_all(reference=self.traj[0])
+        assert (self.feat.dimension() == self.traj.n_atoms * 3)
+        aligned = self.traj.slice(slice(0, None), copy=True).superpose(self.traj[0])
+        refmap = np.reshape(aligned.xyz, (len(self.traj), self.traj.n_atoms * 3))
+        assert (np.all(refmap == self.feat.transform(self.traj)))
+
     def test_select(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         self.feat.add_selection(sel)
         assert (self.feat.dimension() == sel.shape[0] * 3)
         refmap = np.reshape(self.traj.xyz[:, sel, :], (len(self.traj), sel.shape[0] * 3))
         assert (np.all(refmap == self.feat.transform(self.traj)))
+
+    def test_select_reference(self):
+        sel = np.array([1, 2, 5, 20], dtype=int)
+        self.feat.add_selection(sel, reference=self.traj[0])
+        assert (self.feat.dimension() == sel.shape[0] * 3)
+        aligned = self.traj.slice(slice(0, None), copy=True).superpose(self.traj[0])
+        refmap = np.reshape(aligned.xyz[:, sel, :], (len(self.traj), sel.shape[0] * 3))
+        np.testing.assert_equal(refmap, self.feat.transform(self.traj))
 
     def test_distances(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
