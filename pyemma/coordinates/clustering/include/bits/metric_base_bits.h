@@ -136,19 +136,16 @@ inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
 }
 
 template<typename dtype>
-inline float * min_rmsd_metric<dtype>::precenter_centers(float *original_centers, std::size_t N_centers) {
-    centers_precentered.resize(N_centers*parent_t::dim);
-    centers_precentered.assign(original_centers, original_centers + (N_centers * parent_t::dim));
+inline void min_rmsd_metric<dtype>::precenter_centers(float *centers, std::size_t N_centers) {
     trace_centers.resize(N_centers);
     float *trace_centers_p = trace_centers.data();
 
     /* Parallelize centering of cluster generators */
     /* Note that this is already OpenMP-enabled */
     for (std::size_t j = 0; j < N_centers; ++j) {
-        inplace_center_and_trace_atom_major(&centers_precentered[j * parent_t::dim],
+        inplace_center_and_trace_atom_major(&centers[j * parent_t::dim],
                                             &trace_centers_p[j], 1, parent_t::dim / 3);
     }
-    return centers_precentered.data();
 }
 
 

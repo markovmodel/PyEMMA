@@ -74,6 +74,9 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     class _centers_wrapper(object):
         def __init__(self, arr):
+            # take a copy, because centering is an inplace operation!
+            if arr.dtype == np.float32:
+                arr = arr[:]
             self.centers = np.asarray(arr, dtype='float32', order='C')
             self.pre_centered = False
 

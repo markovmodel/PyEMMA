@@ -26,7 +26,7 @@ public:
     ClusteringBase(const std::string& metric_s, std::size_t input_dimension) : input_dimension(input_dimension) {
         if (metric_s == "euclidean") {
             typedef euclidean_metric<dtype> eucl;
-            metric = std::unique_ptr<eucl>( new eucl(input_dimension));
+            metric = std::unique_ptr<eucl>(new eucl(input_dimension));
             _metric_type = MetricType::EUCLIDEAN;
         } else if(metric_s == "minRMSD") {
             typedef min_rmsd_metric<float> min_rmsd_t;
@@ -53,18 +53,19 @@ public:
     }
 
     /**
-     *
+     * pre-center given centers in place
      * @param centers
-     * @return
      */
     void precenter_centers(np_array& centers) const {
         switch (_metric_type) {
             case MetricType::MINRMSD: {
                 auto ptr = dynamic_cast<min_rmsd_metric<dtype>*>(metric.get());
-                ptr->precenter_centers(centers.mutable_data(0), centers.shape(1));
+                ptr->precenter_centers(centers.mutable_data(0), centers.shape(0));
                 break;
             }
-            case EUCLIDEAN:break;
+            case EUCLIDEAN: {
+                throw std::runtime_error("precentering is only available for minRMSD metric.")
+            };
         }
     }
 
