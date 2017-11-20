@@ -54,7 +54,6 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
     omp_set_num_threads(n_threads);
     assert(omp_get_num_threads() == n_threads);
 #endif
-    omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
         for(size_t i = 0; i < N_frames; ++i) {
@@ -124,19 +123,10 @@ inline dtype min_rmsd_metric<dtype>::compute(const dtype *a, const dtype *b) {
 
     if (!has_trace_a_been_precalculated) {
         std::vector<float> buffer_a (a, a + parent_t::dim);
-        //buffer_a.resize(parent_t::dim);
-        //buffer_b.resize(parent_t::dim);
-
-        //buffer_a.assign(a, a + parent_t::dim);
-        //buffer_b.assign(b, b + parent_t::dim);
-
         inplace_center_and_trace_atom_major(buffer_a.data(), &trace_a, 1, dim3);
         inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
 
     } else {
-        // only copy b, since a has been pre-centered,
-        //buffer_b.assign(b, b + parent_t::dim);
-
         inplace_center_and_trace_atom_major(buffer_b.data(), &trace_b, 1, dim3);
         trace_a = *trace_centers.data();
     }
