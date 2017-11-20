@@ -64,7 +64,7 @@ public:
                 break;
             }
             case EUCLIDEAN: {
-                throw std::runtime_error("precentering is only available for minRMSD metric.")
+                throw std::runtime_error("precentering is only available for minRMSD metric.");
             };
         }
     }
