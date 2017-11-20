@@ -267,7 +267,13 @@ class TestClusterAssign(unittest.TestCase):
                               reader.ra_itraj_jagged[1, [32, 1, 23]],
                               reader.ra_itraj_jagged[2, [17, 8, 15]])
                              ).reshape((N_centers, -1))
-        dtraj = coor.assign_to_centers(reader, centers=centers, metric='minRMSD', return_dtrajs=True)
+        ass = coor.assign_to_centers(centers=centers, metric='minRMSD', return_dtrajs=False)
+        import os
+        if os.name == 'win32':
+            assert ass.n_jobs == 0
+
+        ass.estimate(reader)
+        dtraj = ass.dtrajs
 
         num_assigned_states = len(np.unique(np.concatenate(dtraj)))
         self.assertEqual(num_assigned_states, N_centers,
