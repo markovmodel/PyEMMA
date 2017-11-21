@@ -223,7 +223,7 @@ class TestClusterAssign(unittest.TestCase):
             self.assertEqual(res.n_jobs, expected)
 
     def test_threads_cpu_count_def_arg(self):
-        expected = int(os.getenv('OMP_NUM_THREADS', 3))
+        expected = int(os.getenv('PYEMMA_NJOBS', 3))
         def fake_cpu_count(*args, **kw):
             return expected
         with patch('psutil.cpu_count', fake_cpu_count):
