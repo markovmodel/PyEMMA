@@ -57,12 +57,12 @@ public:
         #endif
         // do the clustering
         for (std::size_t i = 0; i < N_frames; ++i) {
-            dtype mindist = std::numeric_limits<dtype>::max();
+            auto mindist = std::numeric_limits<dtype>::max();
             #pragma omp parallel for reduction(min:mindist)
             for (std::size_t j = 0; j < N_centers; ++j) {
                 // TODO avoid the cast in inner loop?
                 auto point = py_centers[j].cast < py::array_t < dtype >> ();
-                dtype d = parent_t::metric.get()->compute(&data(i, 0), point.data());
+                auto d = parent_t::metric.get()->compute(&data(i, 0), point.data());
                 if (d < mindist) mindist = d;
             }
             if (mindist > dmin) {
@@ -74,7 +74,7 @@ public:
                 // add newly found center
                 std::vector<size_t> shape = {1, dim};
                 py::array_t<dtype> new_center(shape, nullptr);
-                std::memcpy(new_center.mutable_data(), &data(i,0), sizeof(dtype)*dim);
+                std::memcpy(new_center.mutable_data(), &data(i, 0), sizeof(dtype)*dim);
 
                 py_centers.append(new_center);
                 N_centers++;
