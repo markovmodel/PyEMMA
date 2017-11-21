@@ -15,8 +15,6 @@ cache:
 before_cache:
   # Remove since we're caching the extracted directories
   - conda clean --tarballs
-  # Conda's repodata cache
-  - rm -rf tools/conda-cache/.pkgs/cache
 
 env:
   global:
