@@ -15,6 +15,7 @@ cache:
 before_cache:
   # Remove since we're caching the extracted directories
   - conda clean --tarballs
+  - rm -rf $MINICONDA_DIR/conda-bld/
 
 env:
   global:
