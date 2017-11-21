@@ -16,7 +16,7 @@ before_cache:
   # Remove since we're caching the extracted directories
   - if [[ "$BUILD_PACKAGE" == "docker" || "$BUILD_DOCS" == "true" ]]; then mv $HOME/miniconda $HOME/no_cache_miniconda; else conda clean --tarballs --yes; fi
   # Conda's repodata cache
-- rm -rf tools/conda-cache/.pkgs/cache
+  - rm -rf tools/conda-cache/.pkgs/cache
 
 env:
   global:
