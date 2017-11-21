@@ -30,6 +30,8 @@ def get_n_jobs(logger=None):
     val = slurm_njobs or pyemma_njobs
     if not val:
         val = _from_hardware()
+    if logger is not None:
+        logger.debug('determined n_jobs: %s', val)
     return val
 
 
