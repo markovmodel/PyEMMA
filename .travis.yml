@@ -14,7 +14,8 @@ cache:
   timeout: 480
 before_cache:
   # Remove since we're caching the extracted directories
-  - conda clean --all
+  - conda clean -ilps -v
+  - rm -rvf "${MINICONDA_DIR}\conda-bld\"
 
 env:
   global:
