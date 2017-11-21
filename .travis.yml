@@ -21,9 +21,6 @@ before_cache:
 env:
   global:
     - MINICONDA_DIR="$HOME/miniconda"
-    # TODO: needed?
-    #- PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="conda-build=3"
     - PYTHONHASHSEED=0
     - OMP_NUM_THREADS=2
     - PYEMMA_NJOBS=1
@@ -34,10 +31,10 @@ env:
     - CONDA_PY=3.6 CONDA_NPY=1.13
 
 before_install:
-- devtools/ci/travis/install_miniconda.sh
+- source devtools/ci/travis/install_miniconda.sh
 - conda config --set always_yes true
 - conda config --add channels conda-forge
-- conda install -q $common_py_deps
+- conda install conda-build=3
 
 script:
 - conda build -q devtools/conda-recipe
