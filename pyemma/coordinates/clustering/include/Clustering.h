@@ -63,7 +63,7 @@ public:
                 ptr->precenter_centers(centers.mutable_data(0), centers.shape(0));
                 break;
             }
-            case EUCLIDEAN: {
+            default: {
                 throw std::runtime_error("precentering is only available for minRMSD metric.");
             };
         }
