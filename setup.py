@@ -129,16 +129,9 @@ def extensions():
                   include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
                   extra_compile_args=['-std=c99', '-O3'])
 
-    orderedset = \
-        Extension('pyemma._ext.orderedset._orderedset',
-                  sources=['pyemma/_ext/orderedset/_orderedset.pyx'],
-                  include_dirs=[np_inc],
-                  extra_compile_args=['-O3'])
-
     exts += [clustering_module,
              covar_module,
              eig_qr_module,
-             orderedset
              ]
 
     if not USE_CYTHON:

@@ -29,7 +29,7 @@ from msmtools import flux as tptapi
 
 
 # we use a order preserving set data structure here, because we would loose order eg. in _compute_coarse_sets
-from pyemma._ext.orderedset import OrderedSet as set
+from pyemma.util.ordered_set import OrderedSet as set
 from pyemma._base.model import Model
 
 __all__ = ['ReactiveFlux']
