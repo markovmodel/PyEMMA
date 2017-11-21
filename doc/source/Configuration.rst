@@ -103,3 +103,30 @@ Configuration values
 
     .. autoautosummary:: pyemma.util._config.Config
         :attributes:
+
+
+Parallel setup
+--------------
+
+Some algorithms of PyEMMA use parallel computing. On one hand there is parallelisation due to
+NumPy, which can use several threads to speed up raw NumPy computations. On the other hand PyEMMA itself
+can start several threads and or sub-processes (eg. in clustering, MSM timescales computation etc.).
+
+To limit the amount of threads/processes started by PyEMMA you can set the environment variable **PYEMMA_NJOBS**
+to an integer value. This setting can also be overridden by the **n_jobs** property of the supported estimator.
+
+To set the number of threads utilized by NumPy you can set the environment variable **OMP_NUM_THREADS**
+to an integer value as well.
+
+Note that this number will be multiplied by the setting for **PYEMMA_NJOBS**, if the the algorithm uses
+multiple processes, as each process will use the same amount of OMP threads.
+
+Setting these values too high, will lead to bad performance due to the overhead of maintaining multiple threads
+and or processes.
+
+By default `PYEMMA_NJOBS` will be chosen automatically to suit your hardware setup, but in shared environments
+this can be sub-optimal.
+
+For the popular SLURM cluster scheduler, we also respect the value of the environment variable **SLURM_CPUS_ON_NODE** and give it a high preference, if
+`PYEMMA_NJOBS` is also set. So if you have chosen the number of CPUs for your cluster job, PyEMMA would then
+automatically use the same amount of threads.
