@@ -37,11 +37,13 @@ logger = getLogger('pyemma.'+'TestCluster')
 def temporary_env(var, value):
     old_val = os.getenv(var, None)
     os.environ[var] = str(value)
-    yield
-    if old_val is not None:
-        os.environ[var] = old_val
-    else:
-        del os.environ[var]
+    try:
+        yield
+    finally:
+        if old_val is not None:
+            os.environ[var] = old_val
+        else:
+            del os.environ[var]
 
 
 class TestClusterAssign(unittest.TestCase):
@@ -216,12 +218,12 @@ class TestClusterAssign(unittest.TestCase):
         expected = 3
         def fake_cpu_count(*args, **kw):
             return expected
-        with patch('psutil.cpu_count', fake_cpu_count), temporary_env('OMP_NUM_THREADS', 'this is not right'):
+        with patch('psutil.cpu_count', fake_cpu_count), temporary_env('PYEMMA_NJOBS', 'this is not right'):
             res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
             self.assertEqual(res.n_jobs, expected)
 
     def test_threads_cpu_count_def_arg(self):
-        expected = int(os.getenv('OMP_NUM_THREADS', 3))
+        expected = int(os.getenv('PYEMMA_NJOBS', 3))
         def fake_cpu_count(*args, **kw):
             return expected
         with patch('psutil.cpu_count', fake_cpu_count):

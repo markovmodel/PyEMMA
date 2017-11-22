@@ -213,23 +213,3 @@ def deprecated(*optional_message):
         # actually got a message (or empty parenthesis)
         msg = optional_message[0] if len(optional_message) > 0 else ""
         return decorator(_deprecated)
-
-
-@decorator
-def estimation_required(func, *args, **kw):
-    """
-    Decorator checking the self._estimated flag in an Estimator instance, raising a value error if the decorated
-    function is called before estimator.estimate() has been called.
-
-    If mixed with a property-annotation, this annotation needs to come first in the chain of function calls, i.e.,
-
-    @property
-    @estimation_required
-    def func(self):
-        ....
-    """
-    self = args[0] if len(args) > 0 else None
-    if self and hasattr(self, '_estimated') and not self._estimated:
-        raise ValueError("Tried calling %s on %s which requires the estimator to be estimated."
-                         % (func.__name__, self.__class__.__name__))
-    return func(*args, **kw)

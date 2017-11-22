@@ -138,18 +138,19 @@ class RegularSpaceClustering(AbstractClustering, SerializableMixIn):
         used_frames = 0
         from ._ext import regspace
         self._inst = regspace.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
+        it = iterable.iterator(return_trajindex=False, stride=self.stride,
+                               chunk=self.chunksize, skip=self.skip)
         try:
-            with iterable.iterator(return_trajindex=False, stride=self.stride,
-                                   chunk=self.chunksize, skip=self.skip) as it:
+            with it:
                 for X in it:
                     used_frames += len(X)
                     self._inst.cluster(X.astype(np.float32, order='C', copy=False),
-                                       clustercenters)
-        except RuntimeError:
+                                       clustercenters, self.n_jobs)
+        except regspace.MaxCentersReachedException:
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
                   ' a larger minimum distance, dmin.'
-            self._logger.warning(msg)
+            self.logger.warning(msg)
             warnings.warn(msg)
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
             new_shape = (len(clustercenters), iterable.ndim)
@@ -166,7 +167,7 @@ class RegularSpaceClustering(AbstractClustering, SerializableMixIn):
                                  n_clusters=len(clustercenters))
 
         if len(clustercenters) == 1:
-            self._logger.warning('Have found only one center according to '
+            self.logger.warning('Have found only one center according to '
                                  'minimum distance requirement of %f' % self.dmin)
 
         return self

@@ -120,10 +120,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
               sample, the sampler cannot recover and that transition will never
               be sampled again. This option is not recommended unless you have
               a small HMM and a lot of data.
-        init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`, default=None
-            Single-point estimate of HMSM object around which errors will be evaluated.
-            If None is give an initial estimate will be automatically generated using the
-            given parameters.
+        init_hmsm : default=None
+            deprecated.
         store_hidden : bool, optional, default=False
             store hidden trajectories in sampled HMMs
         show_progress : bool, default=True
@@ -151,7 +149,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         self.transition_matrix_prior = transition_matrix_prior
         self.nsamples = nsamples
         if init_hmsm is not None:
-            assert issubclass(init_hmsm.__class__, _MaximumLikelihoodHMSM), 'hmsm must be of type MaximumLikelihoodHMSM'
+            raise NotImplementedError('Currently unsupported')
         self.init_hmsm = init_hmsm
         self.conf = conf
         self.store_hidden = store_hidden
@@ -176,27 +174,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             self.mincount_connectivity = default_mincount_connectivity
             self.observe_nonempty = default_observe_nonempty
         else:  # if given another initialization, must copy its attributes
-            # TODO: this is too tedious - need to automatize parameter+result copying between estimators.
-            self.nstates = self.init_hmsm.nstates
-            self.reversible = self.init_hmsm.is_reversible
-            self.stationary = self.init_hmsm.stationary
-            # trajectories
-            self._dtrajs_full = self.init_hmsm._dtrajs_full
-            self._dtrajs_lagged = self.init_hmsm._dtrajs_lagged
-            self._observable_set = self.init_hmsm._observable_set
-            self._dtrajs_obs = self.init_hmsm._dtrajs_obs
-            # MLE estimation results
-            self.likelihoods = self.init_hmsm.likelihoods  # Likelihood history
-            self.likelihood = self.init_hmsm.likelihood
-            self.hidden_state_probabilities = self.init_hmsm.hidden_state_probabilities  # gamma variables
-            self.hidden_state_trajectories = self.init_hmsm.hidden_state_trajectories  # Viterbi path
-            self.count_matrix = self.init_hmsm.count_matrix  # hidden count matrix
-            self.initial_count = self.init_hmsm.initial_count  # hidden init count
-            self.initial_distribution = self.init_hmsm.initial_distribution
-            self._active_set = self.init_hmsm._active_set
-            # update HMM Model
-            self.update_model_params(P=self.init_hmsm.transition_matrix, pobs=self.init_hmsm.observation_probabilities,
-                                     dt_model=TimeUnit(self.dt_traj).get_scaled(self.lag))
+            raise NotImplementedError()
 
         # check if we have a valid initial model
         import msmtools.estimation as msmest
@@ -242,14 +220,13 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             self._progress_force_finish(stage=0)
 
         # Samples
-        sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
-        sample_pis = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsamples)]
-        sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsamples)]
+        sample_inp = [(m.transition_matrix, m.stationary_distribution, m.output_probabilities)
+                      for m in sampled_hmm.sampled_hmms]
         samples = []
-        for i in range(self.nsamples):  # restrict to observable set if necessary
-            Bobs = sample_pobs[i][:, self.observable_set]
-            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
-            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
+        for P, pi, pobs in sample_inp:  # restrict to observable set if necessary
+            Bobs = pobs[:, self.observable_set]
+            pobs = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
+            samples.append(_HMSM(P, pobs, pi=pi, dt_model=self.dt_model))
 
         # store results
         self.sampled_trajs = [sampled_hmm.sampled_hmms[i].hidden_state_trajectories for i in range(self.nsamples)]
@@ -275,10 +252,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         # call submodel on MaximumLikelihoodHMSM
         _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs, mincount_connectivity=mincount_connectivity)
         # if samples set, also reduce them
-        if hasattr(self, 'samples'):
-            if self.samples is not None:
-                subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
-                              for sample in self.samples]
-                self.update_model_params(samples=subsamples)
+        if hasattr(self, 'samples') and self.samples is not None:
+            subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
+                          for sample in self.samples]
+            self.update_model_params(samples=subsamples)
         # return
         return self

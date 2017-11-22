@@ -1,7 +1,7 @@
-language: c 
+language: c
 git:
   submodules: false
-  depth: 250
+  depth: 500
 os:
  - osx
  - linux
@@ -11,11 +11,10 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="conda-build=2"
-    - PACKAGENAME=pyemma
-    - ORGNAME=omnia
+    - common_py_deps="conda-build=3"
     - PYTHONHASHSEED=0
     - OMP_NUM_THREADS=2
+    - PYEMMA_NJOBS=1
     - MACOSX_DEPLOYMENT_TARGET=10.9
   matrix:
     - CONDA_PY=3.5 CONDA_NPY=1.11

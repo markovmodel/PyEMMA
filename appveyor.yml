@@ -1,5 +1,4 @@
 environment:
-  BINSTAR_TOKEN: o5nTvV9PwJQgt5HXoqAl1iWi1ivyOrGb9ZL20puP4xklAEfvN/0EDHbhDHpVwjC7
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
@@ -24,7 +23,7 @@ environment:
 install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
-  - conda config --set always_yes true 
+  - conda config --set always_yes true
   - conda config --add channels conda-forge
   - conda install -q conda-build=3
 
@@ -34,6 +33,9 @@ test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - "%CMD_IN_ENV% conda build -q devtools/conda-recipe"
 
-#on_success:
-#  - devtools/ci/appveyor/after_success.bat  
+#on_finish:
+  # upload test results to AppVeyor
+ # - ps: $wc = New-Object 'System.Net.WebClient';
+ #       $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)",
+ #       C:\Users\appveyor\reports\xunit.xml))
 

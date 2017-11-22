@@ -49,7 +49,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
     /* do the clustering */
     if (n_threads == 0) {
         std::size_t closest_center_index = 0;
-        for (size_t i = 0; i < n_frames; ++i) {
+        for (std::size_t i = 0; i < n_frames; ++i) {
             auto mindist = std::numeric_limits<dtype>::max();
             for(std::size_t j = 0; j < n_centers; ++j) {
                 auto d = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
@@ -95,11 +95,11 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
             std::size_t grainSize = n_frames / n_threads;
 
             auto worker = [&](std::size_t tid, std::size_t begin, std::size_t end, std::mutex& m) {
-                for (size_t i = begin; i < end; ++i) {
+                for (auto i = begin; i < end; ++i) {
                     std::size_t argMinDist = 0;
                     {
                         dtype minDist = parent_t::metric->compute(&chunk(i, 0), &centers(0, 0));
-                        for (size_t j = 1; j < n_centers; ++j) {
+                        for (std::size_t j = 1; j < n_centers; ++j) {
                             auto dist = parent_t::metric->compute(&chunk(i, 0), &centers(j, 0));
                             if(dist < minDist) {
                                 minDist = dist;
@@ -112,7 +112,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
                         std::unique_lock<std::mutex> lock(m);
 
                         centers_counter.at(argMinDist)++;
-                        for (size_t j = 0; j < dim; j++) {
+                        for (std::size_t j = 0; j < dim; j++) {
                             new_centers(argMinDist, j) += chunk(i, j);
                         }
                     }
