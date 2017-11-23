@@ -143,6 +143,36 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
 }
 
 template<typename dtype>
+std::tuple<py::array_t<dtype>, int, int> KMeans<dtype>::cluster_loop(const np_array& np_chunk, np_array& np_centers,
+                                                      int n_threads, int max_iter, float tolerance) const {
+    int it = 0;
+    bool converged = false;
+    dtype rel_change = 0;
+    dtype prev_cost = std::numeric_limits<dtype>::max();
+
+    do {
+        np_centers = cluster(np_chunk, np_centers, n_threads);
+        auto cost = costFunction(np_chunk, np_centers, n_threads);
+        prev_cost = cost;
+        if(cost != 0) {
+            rel_change = std::abs(cost - prev_cost) / cost;
+        }
+        if(rel_change <= tolerance) {
+            converged = true;
+            break;
+        } else {
+            if(! callback.is_none()) {
+                callback();
+            }
+        }
+
+        it += 1;
+    } while(it < max_iter);
+
+    return std::make_tuple(np_centers, converged, it);
+}
+
+template<typename dtype>
 dtype KMeans<dtype>::costFunction(const np_array &np_data, const np_array &np_centers, int n_threads) const {
     auto data = np_data.template unchecked<2>();
     auto centers = np_centers.template unchecked<2>();

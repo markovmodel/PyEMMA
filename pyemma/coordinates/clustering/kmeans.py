@@ -226,26 +226,16 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                    format(len(self.clustercenters), self.n_clusters))
 
         # run k-means with all the data
-        it = 0
-        prev_cost = 0
         with self._progress_context():
-            while it < self.max_iter:
-                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-                rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
-                prev_cost = cost
-
-                if rel_change <= self.tolerance:
-                    self._converged = True
-                    self._logger.info("Cluster centers converged after %i steps.", it + 1)
-                    break
-                else:
-                    self._progress_update(1, stage=1)
-                it += 1
-            if not self._converged:
-                self._logger.info("Algorithm did not reach convergence criterion"
-                                  " of %g in %i iterations. Consider increasing max_iter.",
-                                  self.tolerance, self.max_iter)
+            self._inst.set_callback(lambda: self._progress_update(1))
+            self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters, self.n_jobs, self.max_iter, self.tolerance)
+            if code == 0:
+                self._converged = True
+                self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
+        if not self._converged:
+            self._logger.info("Algorithm did not reach convergence criterion"
+                              " of %g in %i iterations. Consider increasing max_iter.",
+                              self.tolerance, self.max_iter)
         self._finish_estimate()
 
         return self

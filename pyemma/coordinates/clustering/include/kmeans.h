@@ -33,6 +33,9 @@ public:
      */
     np_array cluster(const np_array & /*np_chunk*/, const np_array & /*np_centers*/, int /*n_threads*/) const;
 
+    std::tuple<py::array_t<dtype>, int, int> cluster_loop(const np_array & /*np_chunk*/, np_array & /*np_centers*/,
+                                           int /*n_threads*/, int /*max_iter*/, float /*tolerance*/) const;
+
     /**
      * evaluate the quality of the centers
      *

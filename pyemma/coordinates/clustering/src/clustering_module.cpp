@@ -32,6 +32,7 @@ PYBIND11_PLUGIN(_ext) {
             .def(py::init<int, const std::string&, std::size_t, py::object&>(),
                  py::arg("k"), py::arg("metric"), py::arg("dim"), py::arg("callback") = py::none())
             .def("cluster", &kmeans_f::cluster)
+            .def("cluster_loop", &kmeans_f::cluster_loop)
             .def("init_centers_KMpp", &kmeans_f::initCentersKMpp)
             .def("set_callback", &kmeans_f::set_callback)
             .def("cost_function", &kmeans_f::costFunction);
