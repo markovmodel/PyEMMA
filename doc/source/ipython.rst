@@ -22,8 +22,6 @@ Application walkthroughs
 
    generated/pentapeptide_msm
    generated/MSM_BPTI
-   generated/trypsin_benzamidine_hmm
-
 
 By means of application examples, these notebooks give an overview of following methods:
 
