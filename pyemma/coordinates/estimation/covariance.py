@@ -24,7 +24,7 @@ from math import log
 from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.progress import ProgressReporter
 from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
@@ -33,7 +33,7 @@ __all__ = ['LaggedCovariance']
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator, ProgressReporterMixin):
+class LaggedCovariance(StreamingEstimator):
     r"""Compute lagged covariances between time series.
 
      Parameters
@@ -185,8 +185,9 @@ class LaggedCovariance(StreamingEstimator, ProgressReporterMixin):
         # TODO: we could possibly optimize the case lag>0 and c0t=False using skip.
         # Access how much iterator hassle this would be.
         #self.skipped=0
-        with it:
-            self._progress_register(it.n_chunks, "calculate covariances", 0)
+        pg = ProgressReporter()
+        pg.register(it.n_chunks, 'calculate covariances', stage=0)
+        with it, pg.context(stage=0):
             self._init_covar(partial_fit, it.n_chunks)
             for data, weight in zip(it, it_weights):
                 if self.lag != 0:
@@ -213,7 +214,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporterMixin):
                 except MemoryError:
                     raise MemoryError('Covariance matrix does not fit into memory. '
                                       'Input is too high-dimensional ({} dimensions). '.format(X.shape[1]))
-                self._progress_update(1, stage=0)
+                pg.update(1, stage=0)
 
         if partial_fit:
             self._used_data += len(it)
