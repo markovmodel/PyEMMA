@@ -142,34 +142,34 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
     return return_new_centers;
 }
 
+
 template<typename dtype>
 std::tuple<py::array_t<dtype>, int, int> KMeans<dtype>::cluster_loop(const np_array& np_chunk, np_array& np_centers,
                                                       int n_threads, int max_iter, float tolerance) const {
     int it = 0;
     bool converged = false;
-    dtype rel_change = 0;
-    dtype prev_cost = std::numeric_limits<dtype>::max();
-
+    dtype rel_change = std::numeric_limits<dtype>::max();
+    dtype prev_cost = 0;
     do {
         np_centers = cluster(np_chunk, np_centers, n_threads);
         auto cost = costFunction(np_chunk, np_centers, n_threads);
+        rel_change = (cost != 0.0) ? std::abs(cost - prev_cost) / cost : 0;
         prev_cost = cost;
-        if(cost != 0) {
-            rel_change = std::abs(cost - prev_cost) / cost;
-        }
         if(rel_change <= tolerance) {
             converged = true;
             break;
         } else {
             if(! callback.is_none()) {
+                /* Acquire GIL before calling Python code */
+                py::gil_scoped_acquire acquire;
                 callback();
             }
         }
 
         it += 1;
     } while(it < max_iter);
-
-    return std::make_tuple(np_centers, converged, it);
+    int res = converged ? 0 : 1;
+    return std::make_tuple(np_centers, res, it);
 }
 
 template<typename dtype>
@@ -198,7 +198,7 @@ dtype KMeans<dtype>::costFunction(const np_array &np_data, const np_array &np_ce
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
 initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads) const {
-
+    py::gil_scoped_release release;
     if (np_data.shape(0) < k) {
         std::stringstream ss;
         ss << "not enough data to initialize desired number of centers.";
@@ -255,6 +255,7 @@ initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads
     centers_found++;
     /* perform callback */
     if (!callback.is_none()) {
+        py::gil_scoped_acquire acquire;
         callback();
     }
 #ifdef USE_OPENMP
@@ -366,6 +367,7 @@ initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads
             centers_found++;
             /* perform the callback */
             if (!callback.is_none()) {
+                py::gil_scoped_acquire acquire;
                 callback();
             }
             /* mark the data point as assigned center */
