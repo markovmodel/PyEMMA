@@ -275,15 +275,16 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        from pyemma.coordinates.data import DataInMemory
+        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+            n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
+            self._progress_register(n_chunks, description="creating data array", stage='data')
+
         if self.init_strategy == 'kmeans++':
             self._progress_register(self.n_clusters,
                                     description="initialize kmeans++ centers", stage=0)
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
         self._init_in_memory_chunks(total_length)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
-            n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
-            self._progress_register(n_chunks, description="creating data array", stage='data')
 
         if self.init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
