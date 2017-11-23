@@ -226,16 +226,17 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                    format(len(self.clustercenters), self.n_clusters))
 
         # run k-means with all the data
-        with self._progress_context():
-            self._inst.set_callback(lambda: self._progress_update(1))
+        with self._progress_context(stage=1):
+            if self.show_progress:
+                self._inst.set_callback(lambda: self._progress_update(1, stage=1))
             self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters, self.n_jobs, self.max_iter, self.tolerance)
             if code == 0:
                 self._converged = True
                 self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
-        if not self._converged:
-            self._logger.info("Algorithm did not reach convergence criterion"
-                              " of %g in %i iterations. Consider increasing max_iter.",
-                              self.tolerance, self.max_iter)
+            else:
+                self._logger.info("Algorithm did not reach convergence criterion"
+                                  " of %g in %i iterations. Consider increasing max_iter.",
+                                  self.tolerance, self.max_iter)
         self._finish_estimate()
 
         return self
