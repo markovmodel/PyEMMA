@@ -199,6 +199,14 @@ class TestMSMSerialization(unittest.TestCase):
         # compare samples
         self.assertEqual(new_obj.samples, hmm.samples)
 
+    def test_its_bmsm_njobs(self):
+        # triggers serialisation by using multiple jobs
+        lags = [1, 2, 3]
+        its_n1 = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', n_jobs=1)
+        its_n2 = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', n_jobs=2)
+        np.testing.assert_allclose(its_n1.nits, its_n2.nits)
+        np.testing.assert_allclose(its_n1.timescales, its_n2.timescales)
+
     def test_its(self):
         lags = [1, 2, 3]
         its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags)
