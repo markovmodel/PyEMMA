@@ -133,6 +133,7 @@ class TestFeaturizer(unittest.TestCase):
         """
 
         def feat_equal(a, b):
+            assert a == b, (list(a.topology.atoms), list(b.topology.atoms))
             assert isinstance(a, MDFeaturizer)
             assert isinstance(b, MDFeaturizer)
             assert a.dimension() == b.dimension()
