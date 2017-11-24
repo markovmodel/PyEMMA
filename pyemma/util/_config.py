@@ -381,6 +381,13 @@ class Config(object):
         value = str(value)
         self._conf_values.set('pyemma', name, value)
 
+    def __setattr__(self, key, value):
+        if key.startswith('_') or key == 'cfg_dir':
+            pass
+        elif key not in self.keys():
+            raise ValueError('Not a valid configuration key: "%s"' % key)
+        super(Config, self).__setattr__(key, value)
+
     @staticmethod
     def _format_msg(msg):
         from pyemma import __version__

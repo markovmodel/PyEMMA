@@ -225,24 +225,20 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 raise RuntimeError('Passed clustercenters do not match n_clusters: {} vs. {}'.
                                    format(len(self.clustercenters), self.n_clusters))
 
-        # run k-means with all the data
-        it = 0
-        prev_cost = 0
-        with self._progress_context():
-            while it < self.max_iter:
-                self.clustercenters = self._inst.cluster(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-                cost = self._inst.cost_function(self._in_memory_chunks, self.clustercenters, self.n_jobs)
-                rel_change = np.abs(cost - prev_cost) / cost if cost != 0.0 else 0.0
-                prev_cost = cost
+        if self.show_progress:
+            callback = lambda: self._progress_update(1, stage=1)
+        else:
+            callback = None
 
-                if rel_change <= self.tolerance:
-                    self._converged = True
-                    self._logger.info("Cluster centers converged after %i steps.", it + 1)
-                    break
-                else:
-                    self._progress_update(1, stage=1)
-                it += 1
-            if not self._converged:
+        # run k-means with all the data
+        with self._progress_context(stage=1):
+            self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters,
+                                                                            self.n_jobs, self.max_iter, self.tolerance,
+                                                                            callback)
+            if code == 0:
+                self._converged = True
+                self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
+            else:
                 self._logger.info("Algorithm did not reach convergence criterion"
                                   " of %g in %i iterations. Consider increasing max_iter.",
                                   self.tolerance, self.max_iter)
@@ -295,11 +291,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
         from ._ext import kmeans as kmeans_mod
-        if self.init_strategy == 'kmeans++' and self.show_progress:
-            callback = lambda: self._progress_update(1, stage=0)
-        else:
-            callback = None
-        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim, callback)
+        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim)
 
         return stride
 
@@ -315,7 +307,12 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                         new = np.vstack((self.clustercenters, X[l]))
                         self.clustercenters = new
         elif last_chunk and self.init_strategy == 'kmeans++':
-            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs)
+            if self.init_strategy == 'kmeans++' and self.show_progress:
+                callback = lambda: self._progress_update(1, stage=0)
+            else:
+                callback = None
+            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
+                                                               callback)
 
     def _collect_data(self, X, first_chunk, last_chunk):
         # beginning - compute

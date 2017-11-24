@@ -98,9 +98,13 @@ class TestConfig(unittest.TestCase):
     def test_keys(self):
         self.config_inst.keys()
 
+    def test_set_non_existing_key(self):
+        with self.assertRaises(ValueError):
+            self.config_inst.fooobarr = False
+
     def test_set(self):
         self.config_inst.show_progress_bars = 'False'
-        self.config_inst.use_traj_length_cache = 0
+        self.config_inst.use_trajectory_lengths_cache = 0
 
     def test_save_load_user_cfg_file(self):
         # replace a value with a non default value:
