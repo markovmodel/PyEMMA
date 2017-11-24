@@ -225,11 +225,16 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 raise RuntimeError('Passed clustercenters do not match n_clusters: {} vs. {}'.
                                    format(len(self.clustercenters), self.n_clusters))
 
+        if self.show_progress:
+            callback = lambda: self._progress_update(1, stage=1)
+        else:
+            callback = None
+
         # run k-means with all the data
         with self._progress_context(stage=1):
-            if self.show_progress:
-                self._inst.set_callback(lambda: self._progress_update(1, stage=1))
-            self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters, self.n_jobs, self.max_iter, self.tolerance)
+            self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters,
+                                                                            self.n_jobs, self.max_iter, self.tolerance,
+                                                                            callback)
             if code == 0:
                 self._converged = True
                 self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
@@ -285,11 +290,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                             math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
         from ._ext import kmeans as kmeans_mod
-        if self.init_strategy == 'kmeans++' and self.show_progress:
-            callback = lambda: self._progress_update(1, stage=0)
-        else:
-            callback = None
-        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim, callback)
+        self._inst = kmeans_mod.Kmeans_f(self.n_clusters, self.metric, self.data_producer.ndim)
 
         return stride
 
@@ -305,7 +306,12 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                         new = np.vstack((self.clustercenters, X[l]))
                         self.clustercenters = new
         elif last_chunk and self.init_strategy == 'kmeans++':
-            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs)
+            if self.init_strategy == 'kmeans++' and self.show_progress:
+                callback = lambda: self._progress_update(1, stage=0)
+            else:
+                callback = None
+            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
+                                                               callback)
 
     def _collect_data(self, X, first_chunk, last_chunk):
         # beginning - compute
