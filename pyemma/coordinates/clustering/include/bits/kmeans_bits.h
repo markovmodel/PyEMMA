@@ -145,7 +145,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
 template<typename dtype>
 typename KMeans<dtype>::cluster_res KMeans<dtype>::cluster_loop(const np_array& np_chunk, np_array& np_centers,
                                                                 int n_threads, int max_iter, float tolerance,
-                                                                py::function& callback) const {
+                                                                py::object& callback) const {
     int it = 0;
     bool converged = false;
     dtype rel_change = std::numeric_limits<dtype>::max();
@@ -196,7 +196,7 @@ dtype KMeans<dtype>::costFunction(const np_array &np_data, const np_array &np_ce
 
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
-initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads, py::function& callback) const {
+initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads, py::object& callback) const {
     if (np_data.shape(0) < k) {
         std::stringstream ss;
         ss << "not enough data to initialize desired number of centers.";

@@ -40,7 +40,7 @@ public:
       */
     cluster_res cluster_loop(const np_array & /*np_chunk*/, np_array & /*np_centers*/,
                              int /*n_threads*/, int /*max_iter*/, float /*tolerance*/,
-                             py::function& /*callback*/) const;
+                             py::object& /*callback*/) const;
 
     /**
      * evaluate the quality of the centers
@@ -57,7 +57,7 @@ public:
      * @return init centers.
      */
     np_array initCentersKMpp(const np_array& /*np_data*/, unsigned int /*random_seed*/, int /*n_threads*/,
-                             py::function& /*callback*/) const;
+                             py::object& /*callback*/) const;
 
 protected:
     unsigned int k;
