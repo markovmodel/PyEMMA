@@ -34,7 +34,6 @@ __author__ = 'noe'
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
     r"""Bayesian Markov state model estimator"""
     _serialize_version = 0
-    _serialize_fields = _MLMSM._get_param_names()
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
