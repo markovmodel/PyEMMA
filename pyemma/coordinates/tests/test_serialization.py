@@ -162,36 +162,32 @@ class TestSerializationCoordinates(unittest.TestCase):
 
     def test_featurizer_empty(self):
         from pyemma.datasets import get_bpti_test_data
-        topfile = get_bpti_test_data()['top']
-        import mdtraj
-        top = mdtraj.load(topfile).top
-        f = pyemma.coordinates.featurizer(topfile)
+        top = get_bpti_test_data()['top']
+        f = pyemma.coordinates.featurizer(top)
         params = {}
-        params['topology'] = top
+        params['topologyfile'] = top
 
         self.compare(f, params)
 
     def test_featurizer(self):
         from pyemma.datasets import get_bpti_test_data
-        import mdtraj
-        top = mdtraj.load(get_bpti_test_data()['top']).top
+        top = get_bpti_test_data()['top']
         f = pyemma.coordinates.featurizer(top)
         f.add_distances_ca()
         params = {}
-        params['topology'] = top
+        params['topologyfile'] = top
         params['active_features'] = f.active_features
         self.maxDiff = None
         self.compare(f, params)
 
     def test_feature_reader(self):
         from pyemma.datasets import get_bpti_test_data
-        import mdtraj
-        top = mdtraj.load(get_bpti_test_data()['top']).top
+        top = get_bpti_test_data()['top']
         trajs = get_bpti_test_data()['trajs']
         r = pyemma.coordinates.source(trajs, top=top)
         r.featurizer.add_distances_ca()
 
-        params = {'filenames': trajs, 'ndim': r.ndim, 'featurizer': r.featurizer}
+        params = {'filenames': trajs, 'ndim': r.ndim, 'topfile': r.topfile}
         restored = self.compare(r, params=params)
 
         self.assertEqual(restored.featurizer.active_features, r.featurizer.active_features)
