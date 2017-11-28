@@ -359,11 +359,7 @@ class SerializableMixIn(object):
     @staticmethod
     def _get_version_for_class_from_state(state, klass):
         """ retrieves the version of the current klass from the state mapping from old locations to new ones. """
-
-        """ klass may have renamed, so we have to look this up in _new_to_old.
-        
-        """
-
+        # klass may have renamed, so we have to look this up in the class rename registry.
         names = [_importable_name(klass)]
         # lookup old names, handled by current klass.
         names.extend(class_rename_registry.old_handled_by(klass))
@@ -380,11 +376,17 @@ class SerializableMixIn(object):
         if _debug:
             logger.debug("restoring state for class %s", klass)
 
+        # handle field renames, deletion, transformations etc.
         klass.__interpolate(self, state, klass)
+
+        if hasattr(klass, '_get_param_names'):
+            for param in klass._get_param_names():
+                if param in state:
+                    setattr(self, param, state.pop(param))
 
         for field in klass._serialize_fields:
             if field in state:
-                setattr(self, field, state[field])
+                setattr(self, field, state.pop(field))
             else:
                 if _debug:
                     logger.debug("skipped %s, because it is not declared in _serialize_fields", field)
@@ -393,98 +395,115 @@ class SerializableMixIn(object):
         # We just dump the version number for comparison with the actual class.
         # Note: we do not want to set the version number in __setstate__,
         # since we obtain it from the actual definition.
-        if _debug:
-            logger.debug('get state of %s' % self)
-        if not hasattr(self, '_serialize_version'):
-            raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
-                                 .format(klass=self.__class__))
+        try:
+            if _debug:
+                logger.debug('get state of %s' % self)
+            if not hasattr(self, '_serialize_version'):
+                raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
+                                     .format(klass=self.__class__))
+            res = {}
+            # currently it is used to handle class renames etc.
+            res['class_tree_versions'] = {}
+            for c in self.__class__.mro():
+                name = _importable_name(c)
+                if hasattr(c, '_serialize_version'):
+                    v = c._serialize_version
+                else:
+                    v = -1
+                res['class_tree_versions'][name] = v
 
-        res = {'class_tree_versions': {}}
-        for c in self.__class__.mro():
-            name = _importable_name(c)
-            if hasattr(c, '_serialize_version'):
-                v = c._serialize_version
-            else:
-                v = -1
-            res['class_tree_versions'][name] = v
+            # if we want to save the chain, do this now:
+            if self._save_data_producer:
+                assert hasattr(self, 'data_producer')
+                res['data_producer'] = self.data_producer
 
-        # if we want to save the chain, do this now:
-        if self._save_data_producer:
-            assert hasattr(self, 'data_producer')
-            res['data_producer'] = self.data_producer
+            # In case of of a Reader (primary DataSource), we need to store this hidden attribute.
+            if hasattr(self, '_is_reader'):
+                res['_is_reader'] = self._is_reader
 
-        # In case of of a Reader (primary DataSource), we need to store this hidden attribute.
-        if hasattr(self, '_is_reader'):
-            res['_is_reader'] = self._is_reader
+            classes_to_inspect = self._get_classes_to_inspect()
+            if _debug:
+                logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
+            from pyemma._ext.sklearn.base import BaseEstimator
+            for klass in classes_to_inspect:
+                inc = self._get_state_of_serializeable_fields(klass)
+                # get estimation parameter for all classes in the hierarchy too.
+                if issubclass(klass, BaseEstimator):
+                    up = {k: getattr(self, k, None) for k in klass._get_param_names()}
+                    inc.update(up)
+                res.update(inc)
 
-        classes_to_inspect = self._get_classes_to_inspect()
-        if _debug:
-            logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
-        for klass in classes_to_inspect:
-            inc = self._get_state_of_serializeable_fields(klass)
-            res.update(inc)
+            # handle special cases Estimator and Model, just use their parameters.
+            if hasattr(self, 'get_params'):
+                #res.update(self.get_params())
+                # remember if it has been estimated.
+                res['_estimated'] = self._estimated
+                try:
+                    res['model'] = self._model
+                except AttributeError:
+                    pass
 
-        # handle special cases Estimator and Model, just use their parameters.
-        if hasattr(self, 'get_params'):
-            res.update(self.get_params())
-            # remember if it has been estimated.
-            res['_estimated'] = self._estimated
-            try:
-                res['model'] = self._model
-            except AttributeError:
-                pass
+            # handle model state
+            if hasattr(self, 'get_model_params'):
+                state = self.get_model_params(deep=False)
+                res.update(state)
 
-        if hasattr(self, 'get_model_params'):
-            state = self.get_model_params()
-            res.update(state)
+            # store the current software version
+            from pyemma import version
+            res['_pyemma_version'] = version
 
-        # store the current software version
-        from pyemma import version
-        res['_pyemma_version'] = version
-
-        return res
+            return res
+        except:
+            logger.exception('exception during pickling {}'.format(self))
 
     def __setstate__(self, state):
-        classes_to_inspect = self._get_classes_to_inspect()
+        try:
+            assert state
+            # handle exceptions here, because they will be sucked up by jsonpickle and silently fail...
+            classes_to_inspect = self._get_classes_to_inspect()
 
-        for klass in classes_to_inspect:
-            self._set_state_from_serializeable_fields_and_state(state, klass=klass)
+            if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):
+                self._estimated = state.pop('_estimated')
+                model = state.pop('model', None)
+                self._model = model
 
-        if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
-            # only apply params suitable for the current model
-            names = self._get_model_param_names()
-            new_state = {key: state[key] for key in names}
+            from pyemma._ext.sklearn.base import BaseEstimator
+            for klass in classes_to_inspect:
+                self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
-            self.set_model_params(**new_state)
+            if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
+                # only apply params suitable for the current model
+                names = self._get_model_param_names()
+                new_state = {key: state.pop(key) for key in names if key in state}
 
-        if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):
-            self._estimated = state.pop('_estimated')
-            model = state.pop('model', None)
-            self._model = model
+                self.set_model_params(**new_state)
 
-            # first set parameters of estimator, items in state which are not estimator parameters
-            names = self._get_param_names()
-            new_state = {key: state[key] for key in names if key in state}
-            self.set_params(**new_state)
+            if hasattr(self, 'data_producer') and 'data_producer' in state:
+                self.data_producer = state['data_producer']
 
-        if hasattr(self, 'data_producer') and 'data_producer' in state:
-            self.data_producer = state['data_producer']
+            if '_is_reader' in state:
+                self._is_reader = state.pop('_is_reader')
 
-        if '_is_reader' in state:
-            self._is_reader = state['_is_reader']
-
-        if hasattr(state, '_pyemma_version'):
-            self._pyemma_version = state['_pyemma_version']
+            self._pyemma_version = state.pop('_pyemma_version', '!!!! UNKNOWN !!!!')
+            state.pop('class_tree_versions')
+            assert len(state) == 0, 'unhandled attributes in state'
+        except AssertionError:
+            import pprint
+            logger.error('left-overs after setstate: %s', pprint.pformat(state))
+        except:
+            logger.exception('exception during pickling {}'.format(self))
 
     def _get_classes_to_inspect(self):
-        from pyemma._base.estimator import Estimator
-        from pyemma._base.model import Model
-        return [c for c in self.__class__.mro() if
-                hasattr(c, '_serialize_fields') and c._serialize_fields
-                and c not in (SerializableMixIn,
-                              object,
-                              Estimator,
-                              Model)]
+        """ gets classes self derives from which
+         1. are Estimators (or sub classes)
+         2. have custom fields (_serialize_fields
+         """
+        classes_with_custom_fields = [c for c in self.__class__.mro() if
+                hasattr(c, '_serialize_fields') and c._serialize_fields]
+        # sub classes of Estimator (base estimator might have their own parameters each
+        estimator_classes = [c for c in self.__class__.mro() if (hasattr(c, '_get_param_names')
+                             and hasattr(c, '_serialize_version'))]
+        return classes_with_custom_fields + estimator_classes
 
     def __init_subclass__(self, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.

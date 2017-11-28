@@ -36,18 +36,19 @@ class Model(object):
 
     """
 
-    def _get_model_param_names(self):
+    @classmethod
+    def _get_model_param_names(cls):
         r"""Get parameter names for the model"""
         # fetch model parameters
-        if hasattr(self, 'set_model_params'):
-            set_model_param_method = getattr(self, 'set_model_params')
+        if hasattr(cls, 'set_model_params'):
+            set_model_param_method = getattr(cls, 'set_model_params')
             # introspect the constructor arguments to find the model parameters
             # to represent
             args, varargs, kw, default = getargspec_no_self(set_model_param_method)
             if varargs is not None:
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
-                                   % (self, ))
+                                   % (cls,))
             args.sort()
             return args
         else:
