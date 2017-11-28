@@ -834,6 +834,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
 # =========================================================================
 
 def _get_input_stage(previous_stage):
+    # TODO: this is handled by
     # this is a pipelining stage, so let's parametrize from it
     from pyemma.coordinates.data._base.iterable import Iterable
     from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
@@ -848,7 +849,7 @@ def _get_input_stage(previous_stage):
     return inputstage
 
 
-def _param_stage(previous_stage, this_stage, stride=1, chunk_size=None):
+def _param_stage(previous_stage, this_stage, chunk_size=None):
     r""" Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
@@ -858,8 +859,8 @@ def _param_stage(previous_stage, this_stage, stride=1, chunk_size=None):
         If None, there is no input data and the stage will be returned without
         any other action.
     stage : the transformer object to be parametrized given the source input.
-
     """
+    # TODO: can this function simply be removed by an estimator.estimate() call?
     # no input given - nothing to do
     if previous_stage is None:
         return this_stage
@@ -869,8 +870,7 @@ def _param_stage(previous_stage, this_stage, stride=1, chunk_size=None):
         input_stage.chunksize = chunk_size
     # parametrize transformer
     this_stage.data_producer = input_stage
-    # TODO: do we need stride here? since it is an estimation parameter (eg. ctor param)
-    this_stage.estimate(X=input_stage, stride=stride)
+    this_stage.estimate(X=input_stage)
     return this_stage
 
 
@@ -1012,8 +1012,8 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
         import warnings
         warnings.warn("provided mean ignored", DeprecationWarning)
 
-    res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip)
-    return _param_stage(data, res, stride=stride)
+    res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip, stride=stride)
+    return _param_stage(data, res)
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
@@ -1215,7 +1215,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             if not reversible:
                 raise ValueError("Koopman re-weighting is designed for reversible processes, set reversible=True")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
-            _param_stage(data, koop, stride=stride)
+            _param_stage(data, koop)
             weights = koop.weights
         elif weights == "empirical":
             weights = None
@@ -1239,9 +1239,9 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             user_msg,
             category=PyEMMA_DeprecationWarning)
 
-    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip,
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip, stride=stride,
                weights=weights, reversible=reversible, ncov_max=ncov_max)
-    return _param_stage(data, res, stride=stride)
+    return _param_stage(data, res)
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
@@ -1310,7 +1310,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
-            _param_stage(data, koop, stride=stride)
+            _param_stage(data, koop)
             weights = koop.weights
         elif weights == "empirical":
             weights = None
@@ -1326,7 +1326,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
                           weights=weights, stride=stride, skip=skip, chunksize=chunksize)
-    return _param_stage(data, lc, stride=stride)
+    return _param_stage(data, lc)
 
 
 # =========================================================================
@@ -1376,7 +1376,7 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
                                     batch_size=batch_size, n_jobs=n_jobs, skip=skip, clustercenters=clustercenters)
-    return _param_stage(data, res, stride=1, chunk_size=chunk_size)
+    return _param_stage(data, res, chunk_size=chunk_size)
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
@@ -1504,8 +1504,8 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
                            init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip,
-                           keep_data=keep_data, clustercenters=clustercenters)
-    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
+                           keep_data=keep_data, clustercenters=clustercenters, stride=stride)
+    return _param_stage(data, res, chunk_size=chunk_size)
 
 
 def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
@@ -1575,8 +1575,8 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
 
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
-    res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip)
-    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
+    res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
+    return _param_stage(data, res, chunk_size=chunk_size)
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean',
@@ -1669,7 +1669,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
     res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric,
                                   n_jobs=n_jobs, stride=stride, skip=skip)
-    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
+    return _param_stage(data, res, chunk_size=chunk_size)
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
@@ -1758,7 +1758,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     from pyemma.coordinates.clustering.assign import AssignCenters
     res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip)
 
-    parametrized_stage = _param_stage(data, res, stride=stride, chunk_size=chunk_size)
+    parametrized_stage = _param_stage(data, res, chunk_size=chunk_size)
     if return_dtrajs and data is not None:
         return parametrized_stage.dtrajs
 
