@@ -149,9 +149,6 @@ class TICA(StreamingEstimationTransformer):
         if dim > -1:
             var_cutoff = 1.0
 
-        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
-                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
-
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
@@ -235,7 +232,10 @@ class TICA(StreamingEstimationTransformer):
         if not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
-
+        if self._covar is None:
+            self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=self.reversible,
+                                           lag=self.lag, bessel=False, stride=self.stride, skip=self.skip,
+                                           weights=self.weights, ncov_max=self.ncov_max)
         self._covar.partial_fit(iterable)
         self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
                                         cov=self._covar.C00_,
@@ -247,6 +247,9 @@ class TICA(StreamingEstimationTransformer):
         return self
 
     def _estimate(self, iterable, **kw):
+        covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=self.reversible,
+                                 lag=self.lag, bessel=False, stride=self.stride, skip=self.skip,
+                                 weights=self.weights, ncov_max=self.ncov_max)
         indim = iterable.dimension()
 
         if not self.dim <= indim:
@@ -254,13 +257,14 @@ class TICA(StreamingEstimationTransformer):
                                " of input data (%i)" % (self.dim, indim))
 
         if self._logger_is_active(self._loglevel_DEBUG):
-            self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                               " with dimension (%i, %i)" % (self._lag, indim, indim))
+            self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
+                               " with dimension (%i, %i)", self._lag, indim, indim)
 
-        self._covar.estimate(iterable, **kw)
-        self._model.update_model_params(mean=self._covar.mean,
-                                        cov=self._covar.C00_,
-                                        cov_tau=self._covar.C0t_)
+        covar.estimate(iterable, **kw)
+        self._model.update_model_params(mean=covar.mean,
+                                        cov=covar.C00_,
+                                        cov_tau=covar.C0t_)
+        self._used_data = covar._used_data
         self._diagonalize()
 
         return self._model
@@ -287,7 +291,7 @@ class TICA(StreamingEstimationTransformer):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
         try:
-            eigenvalues, eigenvectors = eig_corr(self._covar.C00_, self._covar.C0t_, self.epsilon, sign_maxelement=True)
+            eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
             raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
         if self.kinetic_map and self.commute_map:
