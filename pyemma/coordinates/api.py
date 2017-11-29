@@ -270,9 +270,11 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
         will be extracted from it.
 
-    chunk_size: int, optional, default = 100 for file readers and 5000 for
-        already loaded data The chunk size at which the input file is being
-        processed.
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -310,8 +312,8 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     Create a reader for huge NumPy in-memory arrays to process them in
     huge chunks to avoid memory issues:
 
-    >>> data = np.random.random(int(1e7))
-    >>> reader = source(data, chunk_size=5000)
+    >>> data = np.random.random(int(1e6))
+    >>> reader = source(data, chunk_size=1000)
     >>> from pyemma.coordinates import cluster_regspace
     >>> regspace = cluster_regspace(reader, dmin=0.1)
 
@@ -364,7 +366,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     return reader
 
 
-def combine_sources(sources, chunksize=1000):
+def combine_sources(sources, chunksize=None):
     r""" Combines multiple data sources to stream from.
 
     The given source objects (readers and transformers, eg. TICA) are concatenated in dimension axis during iteration.
@@ -377,8 +379,11 @@ def combine_sources(sources, chunksize=1000):
     sources : list, tuple
         list of DataSources (Readers, StreamingTransformers etc.) to combine for streaming access.
 
-    chunksize: int
-        chunk size to use for underlying iterators.
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Notes
     -----
@@ -423,8 +428,11 @@ def pipeline(stages, run=True, stride=1, chunksize=1000):
         is usually correlated at short timescales, it is often sufficient to
         parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
-    chunksize : int, optiona, default = 100
-        how many datapoints to process as a batch at one step
+    chunk_size: int, default=1000
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -515,8 +523,11 @@ def discretizer(reader,
         it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
 
-    chunksize : int, optiona, default = 100
-        how many datapoints to process as a batch at one step
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -628,7 +639,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         reading/featurizing/transforming/discretizing the files contained
         in :py:obj:`traj_inp.trajfiles`.
 
-    chunksize : int. Default 1000.
+    chunksize : int. Default=1000.
         The chunksize for reading input trajectory files. If :py:obj:`traj_inp`
         is a :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object,
         this input variable will be ignored and :py:obj:`traj_inp.chunksize` will be used instead.
@@ -833,48 +844,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
 #
 # =========================================================================
 
-def _get_input_stage(previous_stage):
-    # TODO: this is handled by
-    # this is a pipelining stage, so let's parametrize from it
-    from pyemma.coordinates.data._base.iterable import Iterable
-    from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-
-    if isinstance(previous_stage, Iterable):
-        inputstage = previous_stage
-    # second option: data is array or list of arrays
-    else:
-        data = _types.ensure_traj_list(previous_stage)
-        inputstage = _DataInMemory(data)
-
-    return inputstage
-
-
-def _param_stage(previous_stage, this_stage, chunk_size=None):
-    r""" Parametrizes the given pipelining stage if a valid source is given.
-
-    Parameters
-    ----------
-    source : one of the following: None, Transformer (subclass), ndarray, list
-        of ndarrays data source from which this transformer will be parametrized.
-        If None, there is no input data and the stage will be returned without
-        any other action.
-    stage : the transformer object to be parametrized given the source input.
-    """
-    # TODO: can this function simply be removed by an estimator.estimate() call?
-    # no input given - nothing to do
-    if previous_stage is None:
-        return this_stage
-
-    input_stage = _get_input_stage(previous_stage)
-    if chunk_size is not None:
-        input_stage.chunksize = chunk_size
-    # parametrize transformer
-    this_stage.data_producer = input_stage
-    this_stage.estimate(X=input_stage)
-    return this_stage
-
-
-def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
+def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_size=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
@@ -928,6 +898,15 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     mean : ndarray, optional, default None
         Optionally pass pre-calculated means to avoid their re-computation.
         The shape has to match the input dimension.
+
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
+
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -1013,11 +992,13 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
         warnings.warn("provided mean ignored", DeprecationWarning)
 
     res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip, stride=stride)
-    return _param_stage(data, res)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
-         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf')):
+         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunk_size=None):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1100,6 +1081,12 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     ncov_max : int, default=infinity
         limit the memory usage of the algorithm from [7]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
+
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -1215,7 +1202,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             if not reversible:
                 raise ValueError("Koopman re-weighting is designed for reversible processes, set reversible=True")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
-            _param_stage(data, koop)
+            koop.estimate(data, chunksize=chunk_size)
             weights = koop.weights
         elif weights == "empirical":
             weights = None
@@ -1241,18 +1228,20 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip, stride=stride,
                weights=weights, reversible=reversible, ncov_max=ncov_max)
-    return _param_stage(data, res)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=1000):
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
     """
         Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
         number of time steps and N the number of dimensions, this function can compute lagged covariances like
 
         .. math::
 
-            C_00 &=      X^T X \\
+            C_00 &= X^T X \\
             C_{0t} &= X^T Y \\
             C_{tt} &= Y^T Y,
 
@@ -1290,15 +1279,19 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
             Use only every stride-th time step. By default, every time step is used.
         skip : int, optional, default=0
             skip the first initial n frames per trajectory.
-        chunksize : int, optional, default=None
-            The chunk size at which the input files are being processed.
+        chunk_size: int, default=None
+            Number of data frames to process at once. Choose a higher value here,
+            to optimize thread usage and gain processing speed. If None is passed,
+            use the default value of the underlying reader/data source. Choose zero to
+            disable chunking at all.
 
         Returns
         -------
         lc : a :class:`LaggedCovariance <pyemma.coordinates.estimation.covariance.LaggedCovariance>` object.
 
+
         .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
-        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
+           approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
 
         """
 
@@ -1310,7 +1303,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
-            _param_stage(data, koop)
+            koop.estimate(data, chunksize=chunksize)
             weights = koop.weights
         elif weights == "empirical":
             weights = None
@@ -1323,10 +1316,13 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     else:
         raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
 
+    # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip, chunksize=chunksize)
-    return _param_stage(data, lc)
+                          weights=weights, stride=stride, skip=skip)
+    if data is not None:
+        lc.estimate(data, chunksize=chunksize)
+    return lc
 
 
 # =========================================================================
@@ -1336,7 +1332,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 # =========================================================================
 
 def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean',
-                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000, skip=0, clustercenters=None):
+                              init_strategy='kmeans++', n_jobs=None, chunk_size=None, skip=0, clustercenters=None):
     r"""k-means clustering with mini-batch strategy
 
     Mini-batch k-means is an approximation to k-means which picks a randomly
@@ -1376,12 +1372,14 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
                                     batch_size=batch_size, n_jobs=n_jobs, skip=skip, clustercenters=clustercenters)
-    return _param_stage(data, res, chunk_size=chunk_size)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
                    metric='euclidean', init_strategy='kmeans++', fixed_seed=False,
-                   n_jobs=None, chunk_size=5000, skip=0, keep_data=False, clustercenters=None):
+                   n_jobs=None, chunk_size=None, skip=0, keep_data=False, clustercenters=None):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1435,9 +1433,11 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=5000
+    chunk_size: int, default=None
         Number of data frames to process at once. Choose a higher value here,
-        to optimize thread usage and gain processing speed.
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     skip : int, default=0
         skip the first initial n frames per trajectory.
@@ -1505,11 +1505,13 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
                            init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip,
                            keep_data=keep_data, clustercenters=clustercenters, stride=stride)
-    return _param_stage(data, res, chunk_size=chunk_size)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
-                         n_jobs=None, chunk_size=5000, skip=0):
+                         n_jobs=None, chunk_size=None, skip=0):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in
@@ -1545,9 +1547,11 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=5000
+    chunk_size: int, default=None
         Number of data frames to process at once. Choose a higher value here,
-        to optimize thread usage and gain processing speed.
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     skip : int, default=0
         skip the first initial n frames per trajectory.
@@ -1576,7 +1580,9 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
     res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
-    return _param_stage(data, res, chunk_size=chunk_size)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean',
@@ -1628,9 +1634,11 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=5000
+    chunk_size: int, default=None
         Number of data frames to process at once. Choose a higher value here,
-        to optimize thread usage and gain processing speed.
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
 
     Returns
@@ -1669,7 +1677,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
     res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric,
                                   n_jobs=n_jobs, stride=stride, skip=skip)
-    return _param_stage(data, res, chunk_size=chunk_size)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+    return res
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
@@ -1712,9 +1722,11 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=3000
+    chunk_size: int, default=None
         Number of data frames to process at once. Choose a higher value here,
-        to optimize thread usage and gain processing speed.
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -1757,9 +1769,9 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
     res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip)
+    if data is not None:
+        res.estimate(data, chunksize=chunk_size)
+        if return_dtrajs:
+            return res.dtrajs
 
-    parametrized_stage = _param_stage(data, res, chunk_size=chunk_size)
-    if return_dtrajs and data is not None:
-        return parametrized_stage.dtrajs
-
-    return parametrized_stage
+    return res
