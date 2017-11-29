@@ -151,6 +151,8 @@ class TICA(StreamingEstimationTransformer):
 
         # empty dummy model instance
         self._model = TICAModel()
+        # this instance will be set by partial fit.
+        self._covar = None
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
                         epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
