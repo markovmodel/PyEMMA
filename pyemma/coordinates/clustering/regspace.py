@@ -79,7 +79,7 @@ class RegularSpaceClustering(AbstractClustering):
 
         """
         super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
-
+        self._converged = False
         self.set_params(dmin=dmin, metric=metric,
                         max_centers=max_centers, stride=stride, skip=skip)
 
@@ -93,11 +93,11 @@ class RegularSpaceClustering(AbstractClustering):
 
     @dmin.setter
     def dmin(self, d):
+        d = float(d)
         if d < 0:
             raise ValueError("d has to be positive")
 
-        self._dmin = float(d)
-        self._estimated = False
+        self._dmin = d
 
     @property
     def max_centers(self):
@@ -109,11 +109,11 @@ class RegularSpaceClustering(AbstractClustering):
 
     @max_centers.setter
     def max_centers(self, value):
+        value = int(value)
         if value < 0:
             raise ValueError("max_centers has to be positive")
 
-        self._max_centers = int(value)
-        self._estimated = False
+        self._max_centers = value
 
     @property
     def n_clusters(self):
@@ -143,28 +143,26 @@ class RegularSpaceClustering(AbstractClustering):
                     used_frames += len(X)
                     self._inst.cluster(X.astype(np.float32, order='C', copy=False),
                                        clustercenters, self.n_jobs)
+            self._converged = True
         except regspace.MaxCentersReachedException:
+            self._converged = False
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
                   ' a larger minimum distance, dmin.'
             self.logger.warning(msg)
             warnings.warn(msg)
-            # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
-            new_shape = (len(clustercenters), iterable.ndim)
-            clustercenters = np.array(clustercenters).reshape(new_shape)
-            self.update_model_params(clustercenters=clustercenters,
-                                     n_cluster=len(clustercenters))
             # pass amount of processed data
             used_data = used_frames / float(it.n_frames_total()) * 100.0
             raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
+        finally:
+            # even if not converged, we store the found centers.
+            new_shape = (len(clustercenters), iterable.ndim)
+            clustercenters = np.array(clustercenters).reshape(new_shape)
+            self.update_model_params(clustercenters=clustercenters,
+                                     n_clusters=len(clustercenters))
 
-        new_shape = (len(clustercenters), iterable.ndim)
-        clustercenters = np.array(clustercenters).reshape(new_shape)
-        self.update_model_params(clustercenters=clustercenters,
-                                 n_clusters=len(clustercenters))
-
-        if len(clustercenters) == 1:
-            self.logger.warning('Have found only one center according to '
-                                 'minimum distance requirement of %f' % self.dmin)
+            if len(clustercenters) == 1:
+                self.logger.warning('Have found only one center according to '
+                                     'minimum distance requirement of %f' % self.dmin)
 
         return self
