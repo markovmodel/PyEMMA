@@ -166,14 +166,15 @@ class LaggedCovariance(StreamingEstimator):
         self.logger.debug("will use %s total frames for %s",
                           iterable.trajectory_lengths(self.stride, skip=self.skip), self.name)
 
+        chunksize = 0 if partial_fit else iterable.chunksize
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip,
-                               chunk=self.chunksize if not partial_fit else 0)
+                               chunk=chunksize)
         # iterator over input weights
         if hasattr(self.weights, 'iterator'):
             if hasattr(self.weights, '_transform_array'):
                 self.weights.data_producer = iterable
             it_weights = self.weights.iterator(lag=0, return_trajindex=False, stride=self.stride, skip=self.skip,
-                                               chunk=self.chunksize if not partial_fit else 0)
+                                               chunk=chunksize)
             if it_weights.number_of_trajectories() != iterable.number_of_trajectories():
                 raise ValueError("number of weight arrays did not match number of input data sets. {} vs. {}"
                                  .format(it_weights.number_of_trajectories(), iterable.number_of_trajectories()))
