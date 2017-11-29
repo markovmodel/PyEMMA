@@ -34,8 +34,8 @@ class TestEqCovar(unittest.TestCase):
         cls.mean_constant = np.random.rand(cls.nf)
 
         # Generate _KoopmanEstimator:
-        Kest = _KoopmanEstimator(cls.tau, epsilon=cls.epsilon, chunksize=cls.chunksize)
-        Kest.estimate(cls.source_obj)
+        Kest = _KoopmanEstimator(cls.tau, epsilon=cls.epsilon)
+        Kest.estimate(cls.source_obj, chunksize=cls.chunksize)
         cls.weight_object = Kest.weights
 
         # References for xx=True

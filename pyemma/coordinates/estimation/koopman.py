@@ -67,7 +67,7 @@ class _KoopmanEstimator(StreamingEstimator):
 
     def __init__(self, lag, epsilon=1e-6, stride=1, skip=0, chunksize=None, ncov_max=float('inf')):
 
-        super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
+        super(_KoopmanEstimator, self).__init__()
 
         self._covar = LaggedCovariance(c00=True, c0t=True, remove_data_mean=True, reversible=False,
                                        lag=lag, bessel=False, stride=stride, skip=skip, ncov_max=ncov_max)
