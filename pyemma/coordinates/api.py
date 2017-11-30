@@ -1683,7 +1683,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
-                      metric='euclidean', n_jobs=None, chunk_size=5000, skip=0):
+                      metric='euclidean', n_jobs=None, chunk_size=None, skip=0):
     r"""Assigns data to the nearest cluster centers
 
     Creates a Voronoi partition with the given cluster centers. If given
@@ -1701,13 +1701,8 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         cluster centers to use in assignment of data
 
     stride : int, optional, default = 1
-        If set to 1, all input data will be used for estimation. Note that
-        this could cause this calculation to be very slow for large data sets.
-        Since molecular dynamics data is usually correlated at short timescales,
-        it is often sufficient to estimate transformations at a longer stride.
-        Note that the stride option in the get_output() function of the
-        returned object is independent, so you can parametrize at a long stride,
-        and still map all frames through the transformer.
+        assign only every n'th frame to the centers. Usually you want to assign
+        all the data and only use a stride during calculation the centers.
 
     return_dtrajs : bool, optional, default = True
         If True, it will return the discretized trajectories obtained from
@@ -1768,7 +1763,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
-    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip)
+    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
     if data is not None:
         res.estimate(data, chunksize=chunk_size)
         if return_dtrajs:
