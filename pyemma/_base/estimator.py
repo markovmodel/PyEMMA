@@ -374,7 +374,7 @@ class Estimator(_BaseEstimator, Loggable):
         raise NotImplementedError(
             'You need to overload the _estimate() method in your Estimator implementation!')
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         """Estimates parameters - for compatibility with sklearn.
 
         Parameters
