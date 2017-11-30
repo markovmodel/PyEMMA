@@ -168,8 +168,11 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
 
-    chunk_size: int, optional, default = 100
-        The chunk size at which the input file is being processed.
+    chunk_size: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
 
     Returns
     -------
@@ -206,7 +209,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size if chunk_size is not None else 0, **kw)
+        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -344,7 +347,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     if isinstance(inp, str) or (
             isinstance(inp, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
-        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size is not None else 100, **kw)
+        reader = create_file_reader(inp, top, features, chunk_size=chunk_size, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -355,7 +358,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
         from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-        reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000, **kw)
+        reader = _DataInMemory(inp, chunksize=chunk_size, **kw)
     elif isinstance(inp, Iterable):
         if chunk_size is not None:
             inp.chunk = chunk_size
@@ -398,7 +401,7 @@ def combine_sources(sources, chunksize=None):
     return SourcesMerger(sources, chunk=chunksize)
 
 
-def pipeline(stages, run=True, stride=1, chunksize=1000):
+def pipeline(stages, run=True, stride=1, chunksize=None):
     r""" Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
@@ -428,7 +431,7 @@ def pipeline(stages, run=True, stride=1, chunksize=1000):
         is usually correlated at short timescales, it is often sufficient to
         parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
-    chunk_size: int, default=1000
+    chunk_size: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -488,7 +491,7 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1,
-                chunksize=1000):
+                chunksize=None):
     r""" Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
@@ -592,7 +595,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=True):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, image_molecules=False, verbose=True):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -639,7 +642,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         reading/featurizing/transforming/discretizing the files contained
         in :py:obj:`traj_inp.trajfiles`.
 
-    chunksize : int. Default=1000.
+    chunksize : int. Default=None.
         The chunksize for reading input trajectory files. If :py:obj:`traj_inp`
         is a :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object,
         this input variable will be ignored and :py:obj:`traj_inp.chunksize` will be used instead.
@@ -1308,7 +1311,8 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+            raise ValueError("reweighting must be either 'empirical', 'koopman' "
+                             "or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         pass
     elif isinstance(weights, (list, tuple, _np.ndarray)):
