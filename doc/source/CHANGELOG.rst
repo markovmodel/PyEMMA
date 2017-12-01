@@ -33,7 +33,7 @@ your Python installation to at least version 3.5.
   multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
   If nothing is set, the physical cpu count is considered.
 - msm: calling score_cv does not modify the object anymore. #1178
-- base:estimator: fixed signature of fit function for compatability with scikit-learn
+- base:estimator: fixed signature of fit function for compatability with scikit-learn. #1193
 
 2.4 (05-19-2017)
 ----------------
