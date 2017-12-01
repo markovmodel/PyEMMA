@@ -181,6 +181,14 @@ class TestConfig(unittest.TestCase):
         with mock.patch('pyemma.config', self.config_inst):
             assert not rp.show_progress
 
+    def test_default_chunksize(self):
+        self.config_inst.default_chunksize = '0'
+        self.config_inst.default_chunksize = '2k'
+        self.config_inst.default_chunksize = '0.5G'
+        with self.assertRaises(RuntimeError): # negative not allowed
+            self.config_inst.default_chunksize = '-1'
+        with self.assertRaises(RuntimeError): # unknown suffix
+            self.config_inst.default_chunksize = '23 j'
 
 if __name__ == "__main__":
     unittest.main()

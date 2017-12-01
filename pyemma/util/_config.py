@@ -320,6 +320,18 @@ class Config(object):
     def check_version(self, val):
         self._conf_values.set('pyemma', 'check_version', str(val))
 
+    @property
+    def default_chunksize(self):
+        """ default chunksize to use for coordinate transformations, only intergers with suffix [k,m,g]"""
+        return self._conf_values.get('pyemma', 'default_chunksize')
+
+    @default_chunksize.setter
+    def default_chunksize(self, val):
+        from pyemma.util.units import string_to_bytes
+        # check for parsing exceptions
+        string_to_bytes(val)
+        self._conf_values.set('pyemma', 'default_chunksize', str(val))
+
     ### FIlE HANDLING
 
     def __copy_default_files_to_cfg_dir(self, target_dir):
