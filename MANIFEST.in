@@ -40,3 +40,6 @@ recursive-include pyemma *.pyx *.h *.c
 
 # do not include eventually present eggs (installed during setup runtime)
 prune .eggs
+
+# include pybind11 headers in source archive
+recursive-include pybind11 *.h

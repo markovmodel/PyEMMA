@@ -111,9 +111,9 @@ class TestEqCovar(unittest.TestCase):
         cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, bessel=False, weights="koopman")
         cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
-        assert np.allclose(cc.cov, self.Mxx)
+        assert np.allclose(cc.C00_, self.Mxx)
         assert np.allclose(cc1.mean, self.mx)
-        assert np.allclose(cc1.cov, self.Mxx)
+        assert np.allclose(cc1.C00_, self.Mxx)
 
     def test_XX_removeconstantmean(self):
         cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
@@ -121,9 +121,9 @@ class TestEqCovar(unittest.TestCase):
         cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
                                 bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx_c)
-        assert np.allclose(cc.cov, self.Mxx_c)
+        assert np.allclose(cc.C00_, self.Mxx_c)
         assert np.allclose(cc1.mean, self.mx_c)
-        assert np.allclose(cc1.cov, self.Mxx_c)
+        assert np.allclose(cc1.C00_, self.Mxx_c)
 
     def test_XX_removedatamean(self):
         cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
@@ -131,21 +131,21 @@ class TestEqCovar(unittest.TestCase):
         cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
                                 weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
-        assert np.allclose(cc.cov, self.Mxx0)
+        assert np.allclose(cc.C00_, self.Mxx0)
         assert np.allclose(cc1.mean, self.mx)
-        assert np.allclose(cc1.cov, self.Mxx0)
+        assert np.allclose(cc1.C00_, self.Mxx0)
 
     def test_XY(self):
         cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, bessel=False, weights="koopman")
         cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
-        assert np.allclose(cc.cov, self.Mxx)
-        assert np.allclose(cc.cov_tau, self.Mxy)
+        assert np.allclose(cc.C00_, self.Mxx)
+        assert np.allclose(cc.C0t_, self.Mxy)
         assert np.allclose(cc1.mean, self.mx)
         assert np.allclose(cc1.mean_tau, self.my)
-        assert np.allclose(cc1.cov, self.Mxx)
-        assert np.allclose(cc1.cov_tau, self.Mxy)
+        assert np.allclose(cc1.C00_, self.Mxx)
+        assert np.allclose(cc1.C0t_, self.Mxy)
 
 
     def test_XY_removeconstantmean(self):
@@ -155,12 +155,12 @@ class TestEqCovar(unittest.TestCase):
                                 bessel=False, weights="koopman")
         assert np.allclose(cc.mean, self.mx_c)
         assert np.allclose(cc.mean_tau, self.my_c)
-        assert np.allclose(cc.cov, self.Mxx_c)
-        assert np.allclose(cc.cov_tau, self.Mxy_c)
+        assert np.allclose(cc.C00_, self.Mxx_c)
+        assert np.allclose(cc.C0t_, self.Mxy_c)
         assert np.allclose(cc1.mean, self.mx_c)
         assert np.allclose(cc1.mean_tau, self.my_c)
-        assert np.allclose(cc1.cov, self.Mxx_c)
-        assert np.allclose(cc1.cov_tau, self.Mxy_c)
+        assert np.allclose(cc1.C00_, self.Mxx_c)
+        assert np.allclose(cc1.C0t_, self.Mxy_c)
 
     def test_XY_removedatamean(self):
         cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, remove_data_mean=True, bessel=False,
@@ -169,12 +169,12 @@ class TestEqCovar(unittest.TestCase):
                                 weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
-        assert np.allclose(cc.cov, self.Mxx0)
-        assert np.allclose(cc.cov_tau, self.Mxy0)
+        assert np.allclose(cc.C00_, self.Mxx0)
+        assert np.allclose(cc.C0t_, self.Mxy0)
         assert np.allclose(cc1.mean, self.mx)
         assert np.allclose(cc1.mean_tau, self.my)
-        assert np.allclose(cc1.cov, self.Mxx0)
-        assert np.allclose(cc1.cov_tau, self.Mxy0)
+        assert np.allclose(cc1.C00_, self.Mxx0)
+        assert np.allclose(cc1.C0t_, self.Mxy0)
 
     def test_XY_sym(self):
         cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
@@ -182,11 +182,11 @@ class TestEqCovar(unittest.TestCase):
         cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
                                 weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym)
-        assert np.allclose(cc.cov, self.Mxx_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy_sym)
+        assert np.allclose(cc.C00_, self.Mxx_sym)
+        assert np.allclose(cc.C0t_, self.Mxy_sym)
         assert np.allclose(cc1.mean, self.msym)
-        assert np.allclose(cc1.cov, self.Mxx_sym)
-        assert np.allclose(cc1.cov_tau, self.Mxy_sym)
+        assert np.allclose(cc1.C00_, self.Mxx_sym)
+        assert np.allclose(cc1.C0t_, self.Mxy_sym)
 
     def test_XY_sym_removeconstantmean(self):
         cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True,
@@ -194,11 +194,11 @@ class TestEqCovar(unittest.TestCase):
         cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True,
                                 remove_constant_mean=self.mean_constant, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym_c)
-        assert np.allclose(cc.cov, self.Mxx_c_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy_c_sym)
+        assert np.allclose(cc.C00_, self.Mxx_c_sym)
+        assert np.allclose(cc.C0t_, self.Mxy_c_sym)
         assert np.allclose(cc1.mean, self.msym_c)
-        assert np.allclose(cc1.cov, self.Mxx_c_sym)
-        assert np.allclose(cc1.cov_tau, self.Mxy_c_sym)
+        assert np.allclose(cc1.C00_, self.Mxx_c_sym)
+        assert np.allclose(cc1.C0t_, self.Mxy_c_sym)
 
     def test_XY_sym_removedatamean(self):
         cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
@@ -206,13 +206,11 @@ class TestEqCovar(unittest.TestCase):
         cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
                                 bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym)
-        assert np.allclose(cc.cov, self.Mxx0_sym)
-        assert np.allclose(cc.cov_tau, self.Mxy0_sym)
+        assert np.allclose(cc.C00_, self.Mxx0_sym)
+        assert np.allclose(cc.C0t_, self.Mxy0_sym)
         assert np.allclose(cc1.mean, self.msym)
-        assert np.allclose(cc1.cov, self.Mxx0_sym)
-        assert np.allclose(cc1.cov_tau, self.Mxy0_sym)
-
-
+        assert np.allclose(cc1.C00_, self.Mxx0_sym)
+        assert np.allclose(cc1.C0t_, self.Mxy0_sym)
 
 
 if __name__ == "__main__":

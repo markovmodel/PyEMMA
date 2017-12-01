@@ -18,7 +18,7 @@
 
 r"""Unit test for the AMM module
 
-.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de>
+.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de> 
 
 """
 
@@ -26,7 +26,6 @@ from __future__ import absolute_import
 import unittest
 
 import numpy as np
-import scipy.sparse
 import warnings
 
 from msmtools.generation import generate_traj
@@ -35,7 +34,7 @@ from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
 from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
 from pyemma.util.numeric import assert_allclose
 
-from six.moves import range
+
 
 class TestAMMSimple(unittest.TestCase):
     def setUp(self):
@@ -95,16 +94,16 @@ class TestAMMDoubleWell(_tmsm):
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
-        cls.dtraj = [pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10]
-        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)
-        cls.m = np.array([1.9])
-        cls.w = np.array([2.0])
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)    
+        cls.m = np.array([1.9]) 
+        cls.w = np.array([2.0]) 
         cls.sigmas = 1./np.sqrt(2)/np.sqrt(cls.w)
-        _sd = list(set(cls.dtraj[0]))
-
-        cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj[0]], :]
+        _sd = list(set(cls.dtraj))
+        
+        cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj], :]
         cls.tau = 10
-        cls.amm = estimate_augmented_markov_model(cls.dtraj, [cls.ftraj], cls.tau, cls.m, cls.sigmas)
+        cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.tau, cls.m, cls.sigmas)
         cls.msm = cls.amm
 
     def test_reversible(cls):
@@ -147,6 +146,9 @@ class TestAMMDoubleWell(_tmsm):
 
     def test_count_matrix_full(self):
         self._count_matrix_full(self.amm)
+
+    def test_discrete_trajectories_full(self):
+        self._discrete_trajectories_full(self.amm)
 
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.amm)
@@ -277,7 +279,7 @@ class TestAMMDoubleWell(_tmsm):
         if amm.is_sparse:
             k = 4
         else:
-            k = amm.nstates
+            k = amm.nstates            
         pi_perturbed = (amm.stationary_distribution ** 2)
         pi_perturbed /= pi_perturbed.sum()
         a = list(range(amm.nstates))[::-1]
@@ -332,6 +334,8 @@ class TestAMMDoubleWell(_tmsm):
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.amm)
 
+# avoid parent class being executed as additional test case
+del _tmsm
 
 if __name__ == "__main__":
     unittest.main()

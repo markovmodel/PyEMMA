@@ -6,7 +6,7 @@ from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
 import os
 from glob import glob
-from six.moves import range
+
 
 
 class TestCoordinatesIterator(unittest.TestCase):

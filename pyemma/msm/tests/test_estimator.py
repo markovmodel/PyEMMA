@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
-import mock
+from unittest import mock
 from pyemma import msm
 from functools import wraps
 

@@ -32,7 +32,7 @@ import unittest
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from logging import getLogger
 
-from six.moves import range, zip
+
 import numpy as np
 
 
@@ -209,6 +209,9 @@ class TestNumPyFileReader(unittest.TestCase):
                 NumPyFileReader(myfiles)
             self.assertIn("different dimensions", cm.exception.args[0])
 
+    def test_describe(self):
+        r = NumPyFileReader(self.files2d)
+        r.describe()
 
 if __name__ == "__main__":
     unittest.main()

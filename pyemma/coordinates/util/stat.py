@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 import numpy as np
 from pyemma.util.annotators import deprecated
-from six.moves import zip
+
 
 __author__ = 'Fabian Paul'
 __all__ = ['histogram']

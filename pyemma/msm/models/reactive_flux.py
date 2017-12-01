@@ -26,7 +26,7 @@ from __future__ import division
 import numpy as np
 
 from msmtools import flux as tptapi
-from six.moves import range
+
 
 # we use a order preserving set data structure here, because we would loose order eg. in _compute_coarse_sets
 from pyemma._ext.orderedset import OrderedSet as set

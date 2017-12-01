@@ -34,6 +34,25 @@ class TestDtrajStats(unittest.TestCase):
             assert len(dtrajs_train) > 0
             assert len(dtrajs_test) > 0
 
+    def test_mincount_connectivity(self):
+        dtrajs = np.zeros(10, dtype=int)
+        dtrajs[0] = 1
+        dtrajs[-1] = 1
+        dts = DiscreteTrajectoryStats(dtrajs)
+
+        dts.count_lagged(1, mincount_connectivity=0)
+
+        C_mincount0 = dts.count_matrix_largest.todense()
+
+        np.testing.assert_equal(C_mincount0, np.array([[7, 1], [1, 0]]))
+
+        dts.count_lagged(1, mincount_connectivity=2)
+        C = np.array(dts.count_matrix_largest.todense())
+        np.testing.assert_equal(C, np.array([[7]]))
+
+        # check that the original count matrix remains unmodified
+        np.testing.assert_equal(dts.count_matrix().todense(), C_mincount0)
+
     def test_core_sets(self):
         dtrajs   = [np.array([0, 0, 2, 0, 0, 3, 0, 5, 5, 5, 0, 0, 6, 8, 4, 1, 2, 0, 3])]
         expected = [np.array([-1, -1, 2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 6, 6, 4, 4, 2, 2, 3])]

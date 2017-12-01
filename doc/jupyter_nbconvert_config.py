@@ -313,7 +313,7 @@ c.NbConvertApp.export_format = 'rst'
 
 # Name of kernel to use to execute the cells. If not set, use the kernel_spec
 # embedded in the notebook.
-# c.ExecutePreprocessor.kernel_name = ''
+c.ExecutePreprocessor.kernel_name = 'python3'
 
 # If `False` (default), then the kernel will continue waiting for iopub messages
 # until it receives a kernel idle message, or until a timeout occurs, at which

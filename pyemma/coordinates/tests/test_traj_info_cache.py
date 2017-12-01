@@ -28,7 +28,7 @@ import os
 import tempfile
 import unittest
 
-import mock
+from unittest import mock
 
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
@@ -274,8 +274,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         max_size = 1
 
         files = []
-        config.show_progress_bars = False
-        with TemporaryDirectory() as td, settings(traj_info_max_size=max_size):
+        with TemporaryDirectory() as td, settings(traj_info_max_size=max_size, show_progress_bars=False):
             for i, arr in enumerate(data):
                 f = os.path.join(td, "%s.txt" % i)
                 # save as txt to enforce creation of offsets

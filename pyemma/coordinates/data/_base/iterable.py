@@ -17,16 +17,15 @@
 
 from __future__ import print_function
 from abc import ABCMeta, abstractmethod
-import six
 import numpy as np
 
-from pyemma._base.logging import Loggable
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.loggable import Loggable
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma.util.contexts import attribute
 from pyemma.util.types import is_int
 
 
-class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
+class Iterable(Loggable, metaclass=ABCMeta):
 
     def __init__(self, chunksize=1000):
         super(Iterable, self).__init__()
@@ -218,26 +217,35 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                 trajs = [np.empty((l, ndim), dtype=self.output_type())
                          for l in it.trajectory_lengths()]
             except MemoryError:
-                self._logger.exception("Could not allocate enough memory to map all data."
+                self.logger.exception("Could not allocate enough memory to map all data."
                                        " Consider using a larger stride.")
                 return
 
-            if self._logger_is_active(self._loglevel_DEBUG):
-                self._logger.debug("get_output(): dimensions=%s" % str(dimensions))
-                self._logger.debug("get_output(): created output trajs with shapes: %s"
-                                   % [x.shape for x in trajs])
-            # fetch data
-            self.logger.debug("nchunks :%s, chunksize=%s" % (it.n_chunks, it.chunksize))
-            self._progress_register(it.n_chunks,
-                                    description='getting output of %s' % self.__class__.__name__,
-                                    stage=1)
-            for itraj, chunk in it:
-                L = len(chunk)
-                if L > 0:
-                    trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
+            from pyemma import config
+            if config.coordinates_check_output:
+                for t in trajs:
+                    t[:] = np.nan
 
-                # update progress
-                self._progress_update(1, stage=1)
+            if self._logger_is_active(self._loglevel_DEBUG):
+                self.logger.debug("get_output(): dimensions=%s" % str(dimensions))
+                self.logger.debug("get_output(): created output trajs with shapes: %s"
+                                   % [x.shape for x in trajs])
+                self.logger.debug("nchunks :%s, chunksize=%s" % (it.n_chunks, it.chunksize))
+            # fetch data
+            from pyemma._base.progress import ProgressReporter
+            pg = ProgressReporter()
+            pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
+            with pg.context():
+                for itraj, chunk in it:
+                    L = len(chunk)
+                    assert L
+                    trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
+                    # update progress
+                    pg.update(1)
+
+        if config.coordinates_check_output:
+            for t in trajs:
+                assert np.all(np.isfinite(t))
 
         return trajs
 
@@ -269,7 +277,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         Example
         -------
         Assume you want to save features calculated by some FeatureReader to ASCII:
-        
+
         >>> import numpy as np, pyemma
         >>> import os
         >>> from pyemma.util.files import TemporaryDirectory
@@ -291,7 +299,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
             for f in self.filenames:
                 base, _ = os.path.splitext(f)
                 filenames.append(base + extension)
-        elif isinstance(filename, six.string_types):
+        elif isinstance(filename, str):
             filename = filename.replace('{stride}', str(stride))
             filenames = [filename.replace('{itraj}', str(itraj)) for itraj
                          in range(self.number_of_trajectories())]
@@ -312,8 +320,11 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                     continue
                 raise
         f = None
-        with self.iterator(stride, chunk=chunksize, return_trajindex=False) as it:
-            self._progress_register(it.n_chunks, "saving to csv")
+        from pyemma._base.progress import ProgressReporter
+        pg = ProgressReporter()
+        it = self.iterator(stride, chunk=chunksize, return_trajindex=False)
+        pg.register(it.n_chunks, "saving to csv")
+        with it, pg.context():
             oldtraj = -1
             for X in it:
                 if oldtraj != it.current_trajindex:
@@ -325,10 +336,9 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                     oldtraj = it.current_trajindex
                 np.savetxt(f, X, **kw)
                 f.flush()
-                self._progress_update(1, 0)
+                pg.update(1, 0)
         if f is not None:
             f.close()
-        self._progress_force_finish(0)
 
     @abstractmethod
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
@@ -340,7 +350,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         :param return_trajindex: take the trajindex into account
         :return: a chunk of data if return_trajindex is False, otherwise a tuple of (trajindex, data).
         """
-        pass
+        raise NotImplementedError()
 
     def output_type(self):
         r""" By default transformers return single precision floats. """

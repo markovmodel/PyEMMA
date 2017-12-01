@@ -24,8 +24,6 @@ Created on 14.04.2015
 '''
 
 from __future__ import absolute_import
-# unicode compat py2/3
-from six import text_type
 import unittest
 from pyemma.coordinates.api import load
 import os
@@ -53,13 +51,13 @@ class TestAPILoad(unittest.TestCase):
         cls.bpti_mini_files = [os.path.join(path, 'bpti_mini%s' % ext) for ext in extensions]
 
     def testUnicodeString_without_featurizer(self):
-        filename = text_type(traj_files[0])
+        filename = u''.join(traj_files[0])
 
         with self.assertRaises(ValueError):
             load(filename)
 
     def testUnicodeString(self):
-        filename = text_type(traj_files[0])
+        filename = u''.join(traj_files[0])
         features = api.featurizer(pdb_file)
 
         load(filename, features)
