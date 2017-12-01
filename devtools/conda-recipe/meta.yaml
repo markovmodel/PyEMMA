@@ -12,46 +12,52 @@ build:
   preserve_egg_dir: True
   script_env:
    - CIRCLE_TEST_REPORTS
+   - OMP_NUM_THREADS
+   - PYEMMA_NJOBS
+  script: python -B setup.py install --single-version-externally-managed --record record.txt
 
 requirements:
   build:
     - cython
+    - gcc # [linux or osx]
     - mdtraj
     - numpy x.x
-    - python
+    - pybind11
+    - python >=3
     - scipy
     - setuptools
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
-    - joblib >0.8.4
+    - libgcc # [linux or osx]
     - matplotlib
     - mdtraj
-    - mock
     - msmtools >=1.2
     - numpy x.x
-    - progress_reporter
+    - pathos
     - psutil >3.1
-    - python
+    - python >=3
     - pyyaml
     - scipy
     - setuptools
-    - six >=1.10
-    - thermotools >=0.2.5
+    - thermotools >=0.2.6
+    - tqdm
 
 test:
-  commands:
-  # enable the reporting of Python warning
-    - pip install pytest-warnings
   source_files:
     - conftest.py
     - setup.cfg
   files:
     - matplotlibrc
   requires:
-    - pytest 
+    - h5py
+    - pytest
     - pytest-cov
-    - pytest-faulthandler
+   # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
+    - pytest-faulthandler # [not win]
+    - pytest-xdist
+    # https://github.com/Frozenball/pytest-sugar/issues/124
+    #- pytest-sugar
 
 about:
   home: http://emma-project.org

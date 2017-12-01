@@ -37,18 +37,9 @@ def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
 
 
 def _hash_numpy_array(x):
-    import six
     hash_value = hash(x.shape)
     hash_value ^= hash(x.strides)
 
-    if six.PY3:  # python 3 does not support the hashing of memoryviews with other types than 'b', 'B'
-        hash_value ^= hash(x.data.tobytes())  # this makes a copy!
-    else:
-        writeable_old = x.flags.writeable
-        try:
-            x.flags.writeable = False
-            hash_value ^= hash(x.data)
-        finally:
-            x.flags.writeable = writeable_old
+    hash_value ^= hash(x.data.tobytes())  # this makes a copy!
 
     return hash_value

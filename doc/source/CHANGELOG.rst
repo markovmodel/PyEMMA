@@ -4,10 +4,15 @@ Changelog
 2.5 (??-??-????)
 ----------------
 
+As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
+your Python installation to at least version 3.5.
+
 **New features**:
 
 - msm: Added Augmented Markov Models. A way to include averaged experimental
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
+- msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
+  a given threshold. #1106
 
 - References:
 
@@ -22,6 +27,12 @@ Changelog
 - msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
   correlation and relaxation times as well for timescales for this estimator. #1116
 - coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
+- coordinates: clustering code modernized in C++ with pybind11 interface. #1142
+- variational: covartools code modernized in C++ with pybind11 interface. #1147
+- estimators: n_jobs setting does not look for OMP_NUM_THREADS, but for PYEMMA_NJOBS and SLURM_CPUS_ON_NODE to avoid
+  multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
+  If nothing is set, the physical cpu count is considered.
+- msm: calling score_cv does not modify the object anymore. #1178
 - base:estimator: fixed signature of fit function for compatability with scikit-learn
 
 2.4 (05-19-2017)

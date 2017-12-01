@@ -28,7 +28,7 @@ and provides them for later access.
 from __future__ import absolute_import
 
 import numpy as _np
-from six.moves import range
+
 
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util import types as _types

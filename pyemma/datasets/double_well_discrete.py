@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from six.moves import range
+
 __author__ = 'noe'
 
 import numpy as np

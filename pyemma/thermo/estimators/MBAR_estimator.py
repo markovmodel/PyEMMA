@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
-from six.moves import range
+
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporter as _ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin as _ProgressReporter
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -170,6 +170,6 @@ class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
             assert 0 <= therm_state < self.nthermo
         mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs]
         _mbar.get_pointwise_unbiased_free_energies(therm_state,
-            _np.log(self.therm_state_counts_full), self.btrajs, 
+            _np.log(self.therm_state_counts_full), self.btrajs,
             self.therm_energies, None, mu)
         return mu

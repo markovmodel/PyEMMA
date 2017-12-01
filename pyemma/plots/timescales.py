@@ -18,7 +18,7 @@
 
 from __future__ import absolute_import
 
-from six.moves import range
+
 import numpy as _np
 from pyemma.util.types import  is_iterable_of_int as _is_iterable_of_int, is_int as _is_int
 

@@ -6,12 +6,10 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://travis-ci.org/markovmodel/PyEMMA
 .. image:: https://img.shields.io/pypi/v/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
-.. image:: https://img.shields.io/pypi/dm/pyemma.svg
-   :target: https://pypi.python.org/pypi/pyemma
-.. image:: https://anaconda.org/omnia/pyemma/badges/downloads.svg
-   :target: https://anaconda.org/omnia/pyemma
-.. image:: https://anaconda.org/omnia/pyemma/badges/installer/conda.svg
-   :target: https://conda.anaconda.org/omnia
+.. image:: https://anaconda.org/conda-forge/pyemma/badges/downloads.svg
+   :target: https://anaconda.org/conda-forge/pyemma
+.. image:: https://anaconda.org/conda-forge/pyemma/badges/installer/conda.svg
+   :target: https://conda.anaconda.org/conda-forge
 .. image:: https://img.shields.io/codecov/c/github/markovmodel/PyEMMA/devel.svg
    :target: https://codecov.io/gh/markovmodel/PyEMMA/branch/devel
 

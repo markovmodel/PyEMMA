@@ -28,12 +28,12 @@ from __future__ import absolute_import, print_function
 import numpy as np
 
 from pyemma._base.parallel import NJobsMixIn
-from pyemma.util.annotators import estimation_required, alias, aliased
+from pyemma.util.annotators import alias, aliased
 
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma._base.model import SampledModel
 
 __docformat__ = "restructuredtext en"
@@ -58,7 +58,7 @@ def _generate_lags(maxlag, multiplier):
     while lag <= maxlag:
         lag = lag*multiplier
         # round up, like python 2
-        lag = int(decimal.Decimal(lag).quantize(decimal.Decimal('1'),    
+        lag = int(decimal.Decimal(lag).quantize(decimal.Decimal('1'),
                                                 rounding=decimal.ROUND_HALF_UP))
         if lag <= maxlag:
             ilag = int(lag)
@@ -78,7 +78,7 @@ def _hash_dtrajs(dtraj_list):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
+class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
     r"""Implied timescales for a series of lag times.
 
     Parameters
@@ -186,9 +186,6 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         # construct all parameter sets for the estimator
         param_sets = tuple(param_grid({'lag': lags}))
-
-        if isinstance(self.estimator, SampledModel):
-            self.estimator.show_progress = False
 
         # run estimation on all lag times
         models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
@@ -320,7 +317,6 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
         self._nits = int(value) if value is not None else None
 
     @property
-    @estimation_required
     def timescales(self):
         r"""Returns the implied timescale estimates
 
@@ -344,12 +340,14 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         --------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
 
         """
+        if not self._estimated:
+            raise RuntimeError('you need to call fit() or estimate() first!')
         if process is None:
             return self._its[self._successful_lag_indexes, :]
         else:
@@ -389,7 +387,7 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         -------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
@@ -431,7 +429,7 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
 
         Returns
         -------
-        if process is None, will return a (l x k) array, where l is the number of lag times 
+        if process is None, will return a (l x k) array, where l is the number of lag times
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time

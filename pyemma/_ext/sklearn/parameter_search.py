@@ -24,7 +24,7 @@ from functools import partial
 from itertools import product
 from functools import reduce
 import operator
-from six.moves import zip
+
 import numpy as np
 
 
