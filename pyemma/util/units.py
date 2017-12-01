@@ -163,4 +163,24 @@ def bytes_to_string(num, suffix='B'):
     else:
         n_bytes = float(abs(num))
         place = int(math.floor(math.log(n_bytes, 1024)))
-        return "%.1f%s" % (np.sign(num) * (n_bytes / pow(1024, place)), extensions[place])
+        return "%.1f%s" % (np.sign(num) * (n_bytes / 1024** place), extensions[place])
+
+
+def string_to_bytes(string):
+    """
+    Returns the amount of bytes in a human readable form up to Yottabytes (YB).
+    :param string: integer with suffix (b, k, m, g, t, p, e, z, y)
+    :return: amount of bytes in string representation
+    """
+    if string == '0':
+        return 0
+    import re
+    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])', string)
+    if not match:
+        raise RuntimeError('"{}" does not match "[integer] [suffix]"'.format(string))
+    value = float(match.group(1))
+    suffix = match.group(2).upper()
+    extensions = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    x = extensions.index(suffix)
+    value *= 1024**x
+    return int(value)

@@ -77,14 +77,14 @@ class LaggedCovariance(StreamingEstimator):
          Use only every stride-th time step. By default, every time step is used.
      skip : int, optional, default=0
          skip the first initial n frames per trajectory.
-     chunksize : int, optional, default=None
-         The chunk size at which the input files are being processed.
+     chunksize : deprecated, default=NoTImplemented
+         The chunk size can be se during estimation.
 
      """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
-                 chunksize=None, ncov_max=float('inf')):
-        super(LaggedCovariance, self).__init__(chunksize=chunksize)
+                 chunksize=NotImplemented, ncov_max=float('inf')):
+        super(LaggedCovariance, self).__init__()
 
         if (c0t or ctt) and lag == 0:
             raise ValueError("lag must be positive if c0t=True or ctt=True")
@@ -166,14 +166,15 @@ class LaggedCovariance(StreamingEstimator):
         self.logger.debug("will use %s total frames for %s",
                           iterable.trajectory_lengths(self.stride, skip=self.skip), self.name)
 
+        chunksize = 0 if partial_fit else iterable.chunksize
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip,
-                               chunk=self.chunksize if not partial_fit else 0)
+                               chunk=chunksize)
         # iterator over input weights
         if hasattr(self.weights, 'iterator'):
             if hasattr(self.weights, '_transform_array'):
                 self.weights.data_producer = iterable
             it_weights = self.weights.iterator(lag=0, return_trajindex=False, stride=self.stride, skip=self.skip,
-                                               chunk=self.chunksize if not partial_fit else 0)
+                                               chunk=chunksize)
             if it_weights.number_of_trajectories() != iterable.number_of_trajectories():
                 raise ValueError("number of weight arrays did not match number of input data sets. {} vs. {}"
                                  .format(it_weights.number_of_trajectories(), iterable.number_of_trajectories()))
