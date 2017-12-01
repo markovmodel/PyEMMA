@@ -43,7 +43,7 @@ def _version_check(current, testing=False):
 
     Can be disabled by setting config.check_version = False.
 
-    >>> from mock import patch
+    >>> from unittest.mock import patch
     >>> import warnings, pyemma
     >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
     ...     warnings.simplefilter('always', UserWarning)
@@ -60,9 +60,8 @@ def _version_check(current, testing=False):
         return _dummy()
     import json
     import platform
-    import six
     import os
-    from six.moves.urllib.request import urlopen, Request
+
     from distutils.version import LooseVersion as parse
     from contextlib import closing
     import threading
@@ -73,22 +72,26 @@ def _version_check(current, testing=False):
         testing = True
 
     def _impl():
+        import warnings
         try:
+            from urllib.request import urlopen, Request
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
                         .format(emma_version=current, python_version=platform.python_version(),
                                 platform=platform.platform(terse=True), addr=uuid.getnode())} if not testing else {})
-            encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
             with closing(urlopen(r, timeout=30)) as response:
-                payload = str(response.read(), **encoding_args)
+                payload = str(response.read(), encoding='ascii')
             versions = json.loads(payload)
             latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
             latest = parse(latest_json)
             if parse(current) < latest:
-                import warnings
                 warnings.warn("You are not using the latest release of PyEMMA."
                               " Latest is {latest}, you have {current}."
                               .format(latest=latest, current=current), category=UserWarning)
+            if sys.version_info[0] < 3:
+                warnings.warn("Python 2.7 usage is deprecated. "
+                              "Future versions of PyEMMA will not support it. "
+                              "Please upgrade your Python installation.", category=UserWarning)
         except Exception:
             import logging
             logging.getLogger('pyemma').debug("error during version check", exc_info=True)

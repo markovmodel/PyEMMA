@@ -22,11 +22,12 @@ Created on 11.06.2015
 
 from __future__ import absolute_import, print_function
 
+import configparser
 import os
 import sys
 import unittest
 
-from six.moves import configparser
+
 
 from pyemma.util.files import TemporaryDirectory
 from pyemma.util.exceptions import ConfigDirectoryException
@@ -97,15 +98,19 @@ class TestConfig(unittest.TestCase):
     def test_keys(self):
         self.config_inst.keys()
 
+    def test_set_non_existing_key(self):
+        with self.assertRaises(ValueError):
+            self.config_inst.fooobarr = False
+
     def test_set(self):
         self.config_inst.show_progress_bars = 'False'
-        self.config_inst.use_traj_length_cache = 0
+        self.config_inst.use_trajectory_lengths_cache = 0
 
     def test_save_load_user_cfg_file(self):
         # replace a value with a non default value:
         self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
         import tempfile
-        from six.moves import configparser
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
             f.close()
             self.config_inst.save(f.name)
@@ -168,9 +173,9 @@ class TestConfig(unittest.TestCase):
 
     def test_mute_progress(self):
         """ switch mute on shall turn off progress bars"""
-        from pyemma._base.progress import ProgressReporter
-        import mock
-        rp = ProgressReporter()
+        from pyemma._base.progress import ProgressReporterMixin
+        from unittest import mock
+        rp = ProgressReporterMixin()
 
         self.config_inst.mute = True
         with mock.patch('pyemma.config', self.config_inst):

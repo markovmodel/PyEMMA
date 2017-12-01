@@ -19,10 +19,9 @@ from __future__ import absolute_import
 
 import warnings
 
-from pyemma._base.logging import Loggable
+from pyemma._base.loggable import Loggable
 from pyemma.util.types import is_string
 import mdtraj
-import six
 
 from pyemma.coordinates.data.featurization.util import (_parse_pairwise_input,
                                                         _parse_groupwise_input)
@@ -52,7 +51,7 @@ class MDFeaturizer(Loggable):
            cache already loaded topologies, if file contents match.
        """
         self.topologyfile = None
-        if isinstance(topfile, six.string_types):
+        if isinstance(topfile, str):
             self.topology = load_topology_cached(topfile) if use_cache else load_topology_uncached(topfile)
             self.topologyfile = topfile
         elif isinstance(topfile, mdtraj.Topology):
@@ -96,6 +95,11 @@ class MDFeaturizer(Loggable):
         for f in self.active_features:
             all_labels += f.describe()
         return all_labels
+
+    def __repr__(self):
+        import pprint
+        feat_str = pprint.pformat(self.describe()[:10])[:-1] + ', ...]'
+        return 'MDFeaturizer with features:\n{feats}'.format(feats=feat_str)
 
     def select(self, selstring):
         """
@@ -143,7 +147,7 @@ class MDFeaturizer(Loggable):
         """
         Returns the indexes of all heavy atoms (Mass >= 2),
         optionally excluding symmetry-related heavy atoms.
-        
+
         Parameters
         ----------
         exclude_symmetry_related : boolean, default=False
@@ -157,7 +161,7 @@ class MDFeaturizer(Loggable):
         """
         if exclude_symmetry_related:
             exclusions = []
-        
+
             exclusions.append("mass < 2")
             exclusions.append("(resname == VAL and name == CG)")
             exclusions.append("(resname == LEU and name == CD)")
@@ -167,14 +171,14 @@ class MDFeaturizer(Loggable):
             exclusions.append("(resname == ASP and name == OG1) or (resname == ASP and name == OG2)")
             exclusions.append("(resname == HIS and name == ND1) or (resname == HIS and name == NE2)")
             exclusions.append("(resname == ARG and name == NH1) or (resname == ARG and name == NH2)")
-            
+
             exclusion_string = ' or '.join(exclusions)
             selection_string = 'not (' + exclusion_string + ')'
-        
+
             return self.topology.select(selection_string)
         else:
             return self.topology.select("mass >= 2")
-    
+
     @staticmethod
     def pairs(sel, excluded_neighbors=0):
         """
@@ -216,7 +220,7 @@ class MDFeaturizer(Loggable):
         return np.array(p)
 
     def _check_indices(self, pair_inds, pair_n=2):
-        """ensure pairs are valid (shapes, all atom indices available?, etc.) 
+        """ensure pairs are valid (shapes, all atom indices available?, etc.)
         """
 
         pair_inds = np.array(pair_inds).astype(dtype=np.int, casting='safe')
@@ -717,23 +721,14 @@ class MDFeaturizer(Loggable):
         Returns
         -------
         out : ndarray((T, n), dtype=float32)
-            Output features: For each of T time steps in the given trajectory, 
+            Output features: For each of T time steps in the given trajectory,
             a vector with all n output features selected.
 
         """
         # if there are no features selected, return given trajectory
-        if len(self.active_features) == 0:
-            if not self._showed_warning_empty_feature_list:
-                warnings.warn("You have no features selected."
-                              " Returning plain coordinates.")
-                self._showed_warning_empty_feature_list = True
-            s = traj.xyz.shape
-            new_shape = (s[0], s[1] * s[2])
-            return traj.xyz.reshape(new_shape)
-
-        # handle empty chunks (which might occur due to time lagged access
-        if traj.xyz.shape[0] == 0:
-            return np.empty((0, self.dimension()))
+        if not self.active_features:
+            self.add_selection(np.arange(self.topology.n_atoms))
+            warnings.warn("You have not selected any features. Returning plain coordinates.")
 
         # otherwise build feature vector.
         feature_vec = []

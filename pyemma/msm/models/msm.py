@@ -28,7 +28,7 @@ and provides them for later access.
 from __future__ import absolute_import
 
 from pyemma.util.annotators import aliased, alias
-from six.moves import range
+
 
 __docformat__ = "restructuredtext en"
 

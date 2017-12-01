@@ -21,11 +21,10 @@ import os
 import unittest
 from contextlib import contextmanager
 
-import psutil
-from mock import patch
+from unittest.mock import patch
 from pyemma.util.files import TemporaryDirectory
 from logging import getLogger
-from six.moves import range
+
 import numpy as np
 import pyemma.coordinates as coor
 import pyemma.util.types as types
@@ -38,11 +37,13 @@ logger = getLogger('pyemma.'+'TestCluster')
 def temporary_env(var, value):
     old_val = os.getenv(var, None)
     os.environ[var] = str(value)
-    yield
-    if old_val is not None:
-        os.environ[var] = old_val
-    else:
-        del os.environ[var]
+    try:
+        yield
+    finally:
+        if old_val is not None:
+            os.environ[var] = old_val
+        else:
+            del os.environ[var]
 
 
 class TestClusterAssign(unittest.TestCase):
@@ -190,7 +191,7 @@ class TestClusterAssign(unittest.TestCase):
 
     def test_wrong_centers_argument2(self):
         dim = 3
-        data = np.empty((100,dim))
+        data = np.empty((100, dim))
         centers = np.empty(1)
 
         with self.assertRaises(ValueError):
@@ -198,16 +199,16 @@ class TestClusterAssign(unittest.TestCase):
 
     def test_threads_env_num_threads_fixed(self):
         desired_n_jobs = 2
-        with temporary_env('OMP_NUM_THREADS', 0):
-            assert os.environ['OMP_NUM_THREADS'] == '0'
+        with temporary_env('PYEMMA_NJOBS', 0):
+            assert os.environ['PYEMMA_NJOBS'] == '0'
             res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=desired_n_jobs, return_dtrajs=False)
             self.assertEqual(res.n_jobs, desired_n_jobs)
 
     def test_threads_env_num_threads_fixed_def_arg(self):
         """ tests that if no njobs arg is given (None) we fall back to OMP_NUM_THREADS """
         desired_n_jobs = 3
-        with temporary_env('OMP_NUM_THREADS', desired_n_jobs):
-            assert os.environ['OMP_NUM_THREADS'] == str(desired_n_jobs)
+        with temporary_env('PYEMMA_NJOBS', desired_n_jobs):
+            assert os.environ['PYEMMA_NJOBS'] == str(desired_n_jobs)
             # note: we want another job number here, but it will be ignored!
             res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
             self.assertEqual(res.n_jobs, desired_n_jobs)
@@ -215,13 +216,17 @@ class TestClusterAssign(unittest.TestCase):
     def test_threads_omp_env_arg_borked(self):
         """ if the env var can not be interpreted as int, fall back to one thread. """
         expected = 3
-        with patch('psutil.cpu_count', lambda: expected), temporary_env('OMP_NUM_THREADS', 'this is not right'):
+        def fake_cpu_count(*args, **kw):
+            return expected
+        with patch('psutil.cpu_count', fake_cpu_count), temporary_env('PYEMMA_NJOBS', 'this is not right'):
             res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
             self.assertEqual(res.n_jobs, expected)
 
     def test_threads_cpu_count_def_arg(self):
-        expected = int(os.getenv('OMP_NUM_THREADS', 3))
-        with patch('psutil.cpu_count', lambda: expected):
+        expected = int(os.getenv('PYEMMA_NJOBS', 3))
+        def fake_cpu_count(*args, **kw):
+            return expected
+        with patch('psutil.cpu_count', fake_cpu_count):
             res = coor.assign_to_centers(self.X, self.centers_big, return_dtrajs=False)
         self.assertEqual(res.n_jobs, expected)
 
@@ -236,10 +241,19 @@ class TestClusterAssign(unittest.TestCase):
 
     def test_assignment_multithread_minrsmd(self):
         # re-do assignment with multiple threads and compare results
+        import pyemma.datasets as data
+        d = data.get_bpti_test_data()
+        reader = coor.source(d['trajs'], top=d['top'])
+
+        N_centers = 9
+        centers = np.asarray((reader.ra_itraj_jagged[0, [0, 1, 7]],
+                              reader.ra_itraj_jagged[1, [32, 1, 23]],
+                              reader.ra_itraj_jagged[2, [17, 8, 15]])
+                             ).reshape((N_centers, -1))
         chunksize = 1000
 
-        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
-        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+        assignment_mp = coor.assign_to_centers(reader, centers, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(reader, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 

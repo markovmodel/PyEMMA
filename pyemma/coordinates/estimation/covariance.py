@@ -20,6 +20,8 @@ from __future__ import absolute_import
 import numpy as np
 import numbers
 from math import log
+
+from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma._base.progress import ProgressReporter
@@ -31,17 +33,20 @@ __all__ = ['LaggedCovariance']
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator, ProgressReporter):
+class LaggedCovariance(StreamingEstimator):
     r"""Compute lagged covariances between time series.
 
      Parameters
      ----------
      c00 : bool, optional, default=True
          compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+         Makes the C00_ attribute available.
      c0t : bool, optional, default=False
          compute lagged correlations. Does not work with lag==0.
+         Makes the C0t_ attribute available.
      ctt : bool, optional, default=False
-         compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+         compute instantaneous correlations over the time-shifted chunks of the data. Does not work with lag==0.
+         Makes the Ctt_ attribute available.
      remove_constant_mean : ndarray(N,), optional, default=None
          substract a constant vector of mean values from time series.
      remove_data_mean : bool, optional, default=False
@@ -180,8 +185,9 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         # TODO: we could possibly optimize the case lag>0 and c0t=False using skip.
         # Access how much iterator hassle this would be.
         #self.skipped=0
-        with it:
-            self._progress_register(it.n_chunks, "calculate covariances", 0)
+        pg = ProgressReporter()
+        pg.register(it.n_chunks, 'calculate covariances', stage=0)
+        with it, pg.context(stage=0):
             self._init_covar(partial_fit, it.n_chunks)
             for data, weight in zip(it, it_weights):
                 if self.lag != 0:
@@ -208,7 +214,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
                 except MemoryError:
                     raise MemoryError('Covariance matrix does not fit into memory. '
                                       'Input is too high-dimensional ({} dimensions). '.format(X.shape[1]))
-                self._progress_update(1, stage=0)
+                pg.update(1, stage=0)
 
         if partial_fit:
             self._used_data += len(it)
@@ -239,14 +245,34 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         return self._rc.mean_Y()
 
     @property
+    @deprecated('Please use the attribute "C00_".')
     def cov(self):
         self._check_estimated()
         return self._rc.cov_XX(bessel=self.bessel)
 
     @property
+    def C00_(self):
+        """ Instantaneous covariance matrix """
+        self._check_estimated()
+        return self._rc.cov_XX(bessel=self.bessel)
+
+    @property
+    @deprecated('Please use the attribute "C0t_".')
     def cov_tau(self):
         self._check_estimated()
         return self._rc.cov_XY(bessel=self.bessel)
+
+    @property
+    def C0t_(self):
+        """ Time-lagged covariance matrix """
+        self._check_estimated()
+        return self._rc.cov_XY(bessel=self.bessel)
+
+    @property
+    def Ctt_(self):
+        """ Covariance matrix of the time shifted data"""
+        self._check_estimated()
+        return self._rc.cov_YY(bessel=self.bessel)
 
     @property
     def nsave(self):
@@ -264,3 +290,6 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter):
         if self.c0t:
             if self._rc.storage_XY.nsave <= ns:
                 self._rc.storage_XY.nsave = ns
+        if self.ctt:
+            if self._rc.storage_YY.nsave <= ns:
+                self._rc.storage_YY.nsave = ns

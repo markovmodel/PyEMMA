@@ -30,7 +30,7 @@ from pyemma.coordinates.data import DataInMemory, FeatureReader
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 from pyemma.coordinates.tests.util import create_traj, get_top
 from pyemma.util.files import TemporaryDirectory
-from six.moves import range
+
 
 
 def _test_ra_with_format(format, stride):
@@ -469,7 +469,7 @@ class TestRandomAccessStride(TestCase):
         for ext in savable_formats_mdtra_18:
             traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
 
-            from mock import patch
+            from unittest.mock import patch
             # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
             with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
                 r = coor.source(traj, top=get_top())

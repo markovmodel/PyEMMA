@@ -34,7 +34,7 @@ from logging import getLogger
 import mdtraj
 import pkg_resources
 
-from six.moves import range
+
 import numpy as np
 
 from pyemma.coordinates.tests.util import create_traj

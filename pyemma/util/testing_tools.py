@@ -1,5 +1,6 @@
 import logging
 
+
 class MockLoggingHandler(logging.Handler):
     """Mock logging handler to check for expected logs."""
 

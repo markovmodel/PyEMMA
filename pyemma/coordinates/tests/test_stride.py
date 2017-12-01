@@ -27,8 +27,8 @@ import tempfile
 import numpy as np
 import mdtraj
 import pyemma.coordinates as coor
-from six.moves import range
-from six.moves import zip
+
+
 
 class TestStride(unittest.TestCase):
     @classmethod
