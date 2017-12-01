@@ -17,8 +17,6 @@ class TestBaseEstimator(unittest.TestCase):
         class T(Estimator):
             def _estimate(self, X): pass
 
-            def score(self, *args, **kw): print('score called')
-
         from sklearn.pipeline import Pipeline
         p = Pipeline([('test', T())])
         p.fit([1, 2, 3])
