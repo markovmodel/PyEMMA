@@ -12,7 +12,7 @@ except ImportError:
 
 class TestBaseEstimator(unittest.TestCase):
 
-    @unittest.skipIf(not have_sklearn)
+    @unittest.skipIf(not have_sklearn, 'no sklearn')
     def test_sklearn_compat_fit(self):
         class T(Estimator):
             def _estimate(self, X): pass
