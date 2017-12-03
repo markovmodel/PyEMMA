@@ -14,6 +14,8 @@ your Python installation to at least version 3.5.
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
   a given threshold. #1106
 - coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
+- coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
+  extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
 
 - References:
 
@@ -30,6 +32,12 @@ your Python installation to at least version 3.5.
 - coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
 - coordinates: clustering code modernized in C++ with pybind11 interface. #1142
 - variational: covartools code modernized in C++ with pybind11 interface. #1147
+- estimators: n_jobs setting does not look for OMP_NUM_THREADS, but for PYEMMA_NJOBS and SLURM_CPUS_ON_NODE to avoid
+  multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
+  If nothing is set, the physical cpu count is considered.
+- msm: calling score_cv does not modify the object anymore. #1178
+- base:estimator: fixed signature of fit function for compatability with scikit-learn. #1193
+- coordinates: assign_to_centers now handles stride argument again. #1190
 
 
 2.4 (05-19-2017)

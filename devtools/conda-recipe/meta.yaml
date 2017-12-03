@@ -13,6 +13,8 @@ build:
   script_env:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
+   - PYEMMA_NJOBS
+  script: python -B setup.py install --single-version-externally-managed --record record.txt
 
 requirements:
   build:
@@ -21,26 +23,25 @@ requirements:
     - mdtraj
     - numpy x.x
     - pybind11
-    - python
+    - python >=3
     - scipy
     - setuptools
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
-    - joblib >0.8.4
     - libgcc # [linux or osx]
     - matplotlib
     - mdtraj
     - msmtools >=1.2
     - numpy x.x
     - pathos
-    - progress_reporter
     - psutil >3.1
-    - python
+    - python >=3
     - pyyaml
     - scipy
     - setuptools
     - thermotools >=0.2.6
+    - tqdm
 
 test:
   source_files:
@@ -52,7 +53,12 @@ test:
     - h5py
     - pytest
     - pytest-cov
-    - pytest-faulthandler
+   # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
+    - pytest-faulthandler # [not win]
+    - pytest-xdist
+    - scikit-learn
+    # https://github.com/Frozenball/pytest-sugar/issues/124
+    #- pytest-sugar
 
 about:
   home: http://emma-project.org

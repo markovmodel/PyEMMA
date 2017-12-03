@@ -87,8 +87,8 @@ class TestKoopman(unittest.TestCase):
         cls.u[cls.nf] = cls.u_pc_1[-1] - np.dot(np.dot(cls.mean_x, cls.R), cls.u_pc_1[:-1])
 
         # Set up the model:
-        cls.K_est = _KoopmanEstimator(cls.tau, epsilon=cls.epsilon, chunksize=cls.chunksize)
-        cls.K_est.estimate(cls.source_obj)
+        cls.K_est = _KoopmanEstimator(cls.tau, epsilon=cls.epsilon)
+        cls.K_est.estimate(cls.source_obj, chunksize=cls.chunksize)
 
     def test_K_pc_1(self):
         assert np.allclose(self.K_est.K_pc_1, self.K)

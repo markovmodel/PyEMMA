@@ -28,12 +28,12 @@ from __future__ import absolute_import, print_function
 import numpy as np
 
 from pyemma._base.parallel import NJobsMixIn
-from pyemma.util.annotators import estimation_required, alias, aliased
+from pyemma.util.annotators import alias, aliased
 
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
-from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress import ProgressReporterMixin
 from pyemma._base.model import SampledModel
 
 __docformat__ = "restructuredtext en"
@@ -78,7 +78,7 @@ def _hash_dtrajs(dtraj_list):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
+class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn):
     r"""Implied timescales for a series of lag times.
 
     Parameters
@@ -317,7 +317,6 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
         self._nits = int(value) if value is not None else None
 
     @property
-    @estimation_required
     def timescales(self):
         r"""Returns the implied timescale estimates
 
@@ -347,6 +346,8 @@ class ImpliedTimescales(Estimator, ProgressReporter, NJobsMixIn):
         for every lag time
 
         """
+        if not self._estimated:
+            raise RuntimeError('you need to call fit() or estimate() first!')
         if process is None:
             return self._its[self._successful_lag_indexes, :]
         else:

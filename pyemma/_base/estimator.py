@@ -29,7 +29,7 @@ from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from pyemma._base.logging import Loggable
+from pyemma._base.loggable import Loggable
 
 __author__ = 'noe, marscher'
 
@@ -337,6 +337,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
                                        'you not have a POSIX system', estimator)
         res = []
+        if progress_reporter is not None:
+            from pyemma._base.model import SampledModel
+            if isinstance(estimator, SampledModel):
+                for e in estimators:
+                    e.show_progress = False
+
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast))
@@ -394,7 +400,7 @@ class Estimator(_BaseEstimator, Loggable):
         raise NotImplementedError(
             'You need to overload the _estimate() method in your Estimator implementation!')
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         """Estimates parameters - for compatibility with sklearn.
 
         Parameters

@@ -76,18 +76,16 @@ public:
     min_rmsd_metric&operator=(min_rmsd_metric&&) = default;
     dtype compute(const dtype *a, const dtype *b);
     /**
-     * TODO: this can only be used during assignment?! so it should be moved to ClusteringBase::assign
+     * pre-center in place
      * @param original_centers
      * @param N_centers
-     * @return
      */
-    float *precenter_centers(float *original_centers, std::size_t N_centers);
+    void precenter_centers(float *original_centers, std::size_t N_centers);
 
 private:
     /**
      * only used during cluster assignment. Avoids precentering the centers in every step.
      */
-    std::vector<float> centers_precentered;
     std::vector<float> trace_centers;
     bool has_trace_a_been_precalculated;
     float trace_a_precentered;

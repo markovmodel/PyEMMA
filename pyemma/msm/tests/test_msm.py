@@ -154,13 +154,23 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ---------------------------------
     # SCORE
     # ---------------------------------
-
     def _score(self, msm):
+        # check estimator args are not overwritten, if default arguments are used.
+        old_score_k = msm.score_k
+        old_score_method = msm.score_method
         dtrajs_test = self.dtraj[80000:]
+        msm.score(dtrajs_test)
+        assert msm.score_k == old_score_k
+        assert msm.score_method == old_score_method
         s1 = msm.score(dtrajs_test, score_method='VAMP1', score_k=2)
+        assert msm.score_k == 2
+        assert msm.score_method == 'VAMP1'
         assert 1.0 <= s1 <= 2.0
+
         s2 = msm.score(dtrajs_test, score_method='VAMP2', score_k=2)
         assert 1.0 <= s2 <= 2.0
+        assert msm.score_k == 2
+        assert msm.score_method == 'VAMP2'
         # se = msm.score(dtrajs_test, score_method='VAMPE', score_k=2)
         # se_inf = msm.score(dtrajs_test, score_method='VAMPE', score_k=None)
 
