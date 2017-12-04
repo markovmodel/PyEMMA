@@ -55,6 +55,7 @@ Topic :: Scientific/Engineering :: Physics
 
 """
 from setup_util import lazy_cythonize
+
 try:
     from setuptools import setup, Extension, find_packages
 except ImportError as ie:
@@ -85,9 +86,6 @@ def extensions():
     except ImportError:
         warnings.warn('Cython not found. Using pre cythonized files.')
 
-    # setup OpenMP support
-    from setup_util import detect_openmp
-    openmp_enabled, needs_gomp = detect_openmp()
 
     import mdtraj
     from numpy import get_include as _np_inc
@@ -112,7 +110,7 @@ def extensions():
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
+                  extra_compile_args=['-O3'])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c._covartools',
@@ -121,7 +119,8 @@ def extensions():
                                 np_inc,
                                 pybind_inc,
                                 ],
-                  extra_compile_args=['-std=c++11', '-O3', '-fvisibility=hidden'])
+                  language='c++',
+                  extra_compile_args=['-O3'])
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
@@ -150,16 +149,6 @@ def extensions():
             e.sources = new_src
     else:
         exts = cythonize(exts)
-
-    if openmp_enabled:
-        warnings.warn('enabled openmp')
-        omp_compiler_args = ['-fopenmp']
-        omp_libraries = ['-lgomp'] if needs_gomp else []
-        omp_defines = [('USE_OPENMP', None)]
-        for e in exts:
-            e.extra_compile_args += omp_compiler_args
-            e.extra_link_args += omp_libraries
-            e.define_macros += omp_defines
 
     return exts
 
@@ -203,6 +192,49 @@ def get_cmdclass():
             sys.exit(errno)
 
     versioneer_cmds['test'] = PyTest
+
+    from setuptools.command.build_ext import build_ext
+    # taken from https://github.com/pybind/python_example/blob/master/setup.py
+    class BuildExt(build_ext):
+        """A custom build extension for adding compiler-specific options."""
+        c_opts = {
+            'msvc': ['/EHsc'],
+            'unix': [],
+        }
+
+        if sys.platform == 'darwin':
+            c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+
+        def build_extensions(self):
+            from setup_util import cpp_flag, has_flag, detect_openmp
+            ct = self.compiler.compiler_type
+            opts = self.c_opts.get(ct, [])
+            if ct == 'unix':
+                opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
+                opts.append(cpp_flag(self.compiler))
+                if has_flag(self.compiler, '-fvisibility=hidden'):
+                    opts.append('-fvisibility=hidden')
+            elif ct == 'msvc':
+                opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+
+            # setup OpenMP support
+            openmp_enabled, needs_gomp = detect_openmp()
+
+            for ext in self.extensions:
+                if ext.language == 'c++':
+                    ext.extra_compile_args = opts
+                if openmp_enabled:
+                    warnings.warn('enabled openmp')
+                    omp_compiler_args = ['-fopenmp']
+                    omp_libraries = ['-lgomp'] if needs_gomp else []
+                    omp_defines = [('USE_OPENMP', None)]
+                    ext.extra_compile_args += omp_compiler_args
+                    ext.extra_link_args += omp_libraries
+                    ext.define_macros += omp_defines
+
+            build_ext.build_extensions(self)
+
+    versioneer_cmds['build_ext'] = BuildExt
 
     return versioneer_cmds
 

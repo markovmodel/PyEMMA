@@ -24,15 +24,46 @@ import os
 import sys
 import shutil
 from distutils.ccompiler import new_compiler
+import setuptools
+
+
+import contextlib
+
+
+@contextlib.contextmanager
+def stdchannel_redirected(stdchannel, dest_filename, fake=False):
+    """
+    A context manager to temporarily redirect stdout or stderr
+
+    e.g.:
+
+    with stdchannel_redirected(sys.stderr, os.devnull):
+        if compiler.has_function('clock_gettime', libraries=['rt']):
+            libraries.append('rt')
+    """
+    if fake:
+        yield
+        return
+    oldstdchannel = dest_file = None
+    try:
+        oldstdchannel = os.dup(stdchannel.fileno())
+        dest_file = open(dest_filename, 'w')
+        os.dup2(dest_file.fileno(), stdchannel.fileno())
+
+        yield
+    finally:
+        if oldstdchannel is not None:
+            os.dup2(oldstdchannel, stdchannel.fileno())
+        if dest_file is not None:
+            dest_file.close()
+
 
 # From http://stackoverflow.com/questions/
 # 7018879/disabling-output-when-compiling-with-distutils
-def hasfunction(cc, funcname, headers):
-    tmpdir = tempfile.mkdtemp(prefix='hasfunction-')
-    devnull = oldstderr = None
+def has_function(cc, funcname, headers):
     if not isinstance(headers, (tuple, list)):
         headers = [headers]
-    try:
+    with tempfile.TemporaryDirectory() as tmpdir:
         try:
             fname = os.path.join(tmpdir, 'funcname.c')
             f = open(fname, 'w')
@@ -40,38 +71,60 @@ def hasfunction(cc, funcname, headers):
                 f.write('#include <%s>\n' % h)
             f.write('int main(void) {\n')
             f.write(' %s();\n' % funcname)
-            f.write('return 0;\n')
-            f.write('}\n')
+            f.write('return 0;}')
             f.close()
-            # Redirect stderr to /dev/null to hide any error messages
-            # from the compiler.
-            # This will have to be changed if we ever have to check
-            # for a function on Windows.
-            devnull = open('/dev/null', 'w')
-            oldstderr = os.dup(sys.stderr.fileno())
-            os.dup2(devnull.fileno(), sys.stderr.fileno())
             objects = cc.compile([fname], output_dir=tmpdir)
-            cc.link_executable(objects, os.path.join(tmpdir, "a.out"))
+            cc.link_executable(objects, os.path.join(tmpdir, 'a.out'))
+        except (setuptools.distutils.errors.CompileError, setuptools.distutils.errors.LinkError):
+            return False
         except:
+            import traceback
+            traceback.print_last()
             return False
         return True
-    finally:
-        if oldstderr is not None:
-            os.dup2(oldstderr, sys.stderr.fileno())
-        if devnull is not None:
-            devnull.close()
-        shutil.rmtree(tmpdir)
 
 
 def detect_openmp():
-    compiler = new_compiler()
-    hasopenmp = hasfunction(compiler, 'omp_get_num_threads', headers=('omp.h', ))
-    needs_gomp = hasopenmp
-    if not hasopenmp:
-        compiler.add_library('gomp')
-        hasopenmp = hasfunction(compiler, 'omp_get_num_threads', headers=('omp.h', ))
-        needs_gomp = hasopenmp
-    return hasopenmp, needs_gomp
+    with stdchannel_redirected(sys.stderr, os.devnull), \
+         stdchannel_redirected(sys.stdout, os.devnull):
+        compiler = new_compiler()
+        has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
+        needs_gomp = has_openmp
+        if not has_openmp:
+            compiler.add_library('gomp')
+            has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
+            needs_gomp = has_openmp
+        return has_openmp, needs_gomp
+
+
+# has_flag and cpp_flag taken from https://github.com/pybind/python_example/blob/master/setup.py
+def has_flag(compiler, flagname):
+    """Return a boolean indicating whether a flag name is supported on
+    the specified compiler.
+    """
+    import tempfile
+    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f, \
+            stdchannel_redirected(sys.stderr, os.devnull), \
+            stdchannel_redirected(sys.stdout, os.devnull):
+        f.write('int main (int argc, char **argv) { return 0; }')
+        try:
+            compiler.compile([f.name], extra_postargs=[flagname])
+        except setuptools.distutils.errors.CompileError:
+            return False
+    return True
+
+
+def cpp_flag(compiler):
+    """Return the -std=c++[11/14] compiler flag.
+    The c++14 is prefered over c++11 (when it is available).
+    """
+    if has_flag(compiler, '-std=c++14'):
+        return '-std=c++14'
+    elif has_flag(compiler, '-std=c++11'):
+        return '-std=c++11'
+    else:
+        raise RuntimeError('Unsupported compiler -- at least C++11 support '
+                           'is needed!')
 
 
 class lazy_cythonize(list):
