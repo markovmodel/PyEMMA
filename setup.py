@@ -34,6 +34,14 @@ import versioneer
 import warnings
 from io import open
 
+from setup_util import lazy_cythonize
+
+try:
+    from setuptools import setup, Extension, find_packages
+except ImportError as ie:
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
+
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
@@ -46,7 +54,6 @@ Natural Language :: English
 Operating System :: MacOS :: MacOS X
 Operating System :: POSIX
 Operating System :: Microsoft :: Windows
-Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
 Topic :: Scientific/Engineering :: Bio-Informatics
 Topic :: Scientific/Engineering :: Chemistry
@@ -54,13 +61,7 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import lazy_cythonize
 
-try:
-    from setuptools import setup, Extension, find_packages
-except ImportError as ie:
-    print("PyEMMA requires setuptools. Please install it with conda or pip.")
-    sys.exit(1)
 
 ###############################################################################
 # Extensions
@@ -202,11 +203,15 @@ def get_cmdclass():
             'unix': [],
         }
 
-        if sys.platform == 'darwin':
-            c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-
         def build_extensions(self):
+            import sysconfig
             from setup_util import cpp_flag, has_flag, detect_openmp
+
+            compiler = os.path.basename(sysconfig.get_config_var("CC"))
+            # enable these options only for clang, OSX
+            if sys.platform == 'darwin' and compiler.startswith('clang'):
+                self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+
             ct = self.compiler.compiler_type
             opts = self.c_opts.get(ct, [])
             if ct == 'unix':
