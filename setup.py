@@ -204,13 +204,13 @@ def get_cmdclass():
         }
 
         def build_extensions(self):
-            import sysconfig
             from setup_util import cpp_flag, has_flag, detect_openmp
-
-            compiler = os.path.basename(sysconfig.get_config_var("CC"))
             # enable these options only for clang, OSX
-            if sys.platform == 'darwin' and compiler.startswith('clang'):
-                self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+            if sys.platform == 'darwin':
+                import sysconfig
+                compiler = os.path.basename(sysconfig.get_config_var("CC"))
+                if compiler.startswith('clang'):
+                    self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
 
             ct = self.compiler.compiler_type
             opts = self.c_opts.get(ct, [])
