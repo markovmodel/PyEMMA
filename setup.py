@@ -209,7 +209,7 @@ def get_cmdclass():
             if sys.platform == 'darwin':
                 import sysconfig
                 compiler = os.path.basename(sysconfig.get_config_var("CC"))
-                if compiler.startswith('clang'):
+                if str(compiler).startswith('clang'):
                     self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
 
             ct = self.compiler.compiler_type
