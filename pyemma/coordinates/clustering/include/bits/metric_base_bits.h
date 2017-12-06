@@ -9,7 +9,6 @@
 
 #include <center.h>
 #include <theobald_rmsd.h>
-#include <omp.h>
 
 #ifdef USE_OPENMP
 #include <omp.h>
