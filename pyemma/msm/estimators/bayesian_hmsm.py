@@ -165,24 +165,27 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             self.mincount_connectivity = default_mincount_connectivity
             self.observe_nonempty = default_observe_nonempty
         else:  # if given another initialization, must copy its attributes
-            # TODO: this is too tedious - need to automatize parameter+result copying between estimators.
-            self.nstates = self.init_hmsm.nstates
-            self.reversible = self.init_hmsm.is_reversible
-            self.stationary = self.init_hmsm.stationary
-            # trajectories
-            self._dtrajs_full = self.init_hmsm._dtrajs_full
-            self._dtrajs_lagged = self.init_hmsm._dtrajs_lagged
-            self._observable_set = self.init_hmsm._observable_set
-            self._dtrajs_obs = self.init_hmsm._dtrajs_obs
-            # MLE estimation results
-            self.likelihoods = self.init_hmsm.likelihoods  # Likelihood history
-            self.likelihood = self.init_hmsm.likelihood
-            self.hidden_state_probabilities = self.init_hmsm.hidden_state_probabilities  # gamma variables
-            self.hidden_state_trajectories = self.init_hmsm.hidden_state_trajectories  # Viterbi path
-            self.count_matrix = self.init_hmsm.count_matrix  # hidden count matrix
-            self.initial_count = self.init_hmsm.initial_count  # hidden init count
-            self.initial_distribution = self.init_hmsm.initial_distribution
-            self._active_set = self.init_hmsm._active_set
+            copy_attributes = ['_nstates', '_nstates_obs_full', '_nstates_obs',
+                               '_reversible', '_pi',
+                               '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
+                               '_observable_set', 'likelihoods', 'likelihood',
+                               'hidden_state_probabilities', 'hidden_state_trajectories',
+                               'count_matrix', 'initial_count', 'initial_distribution', '_active_set']
+            check_user_choises = ['lag', '_nstates']
+
+            # check if nstates and lag are compatible
+            for attr in check_user_choises:
+                if not self.__getattribute__(attr) == self.init_hmsm.__getattribute__(attr):
+                    raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
+                    + 'incompatible lag or nstates.')
+
+            # update self with estimates from init_hmsm
+            self.__dict__.update(
+            {k: i for k, i in self.init_hmsm.__dict__.items() if k in copy_attributes})
+
+            # as mentioned in the docstring, take init_hmsm observed set observation probabilities
+            self.observe_nonempty = False
+
             # update HMM Model
             self.update_model_params(P=self.init_hmsm.transition_matrix, pobs=self.init_hmsm.observation_probabilities,
                                      dt_model=TimeUnit(self.dt_traj).get_scaled(self.lag))
@@ -220,7 +223,11 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             call_back = None
 
         from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(self.initial_distribution, self.transition_matrix, B_init)
+
+        if self.init_hmsm is not None:
+            hmm_mle = self.init_hmsm.hmm
+        else:
+            hmm_mle = discrete_hmm(self.initial_distribution, self.transition_matrix, B_init)
 
         sampled_hmm = bayesian_hmm(self.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
                                    reversible=self.reversible, stationary=self.stationary,
