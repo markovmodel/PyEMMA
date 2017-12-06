@@ -231,14 +231,14 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             self._progress_force_finish(stage=0)
 
         # Samples
-        sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
-        sample_pis = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsamples)]
-        sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsamples)]
+        sample_inp = [(m.transition_matrix, m.stationary_distribution, m.output_probabilities)
+                      for m in sampled_hmm.sampled_hmms]
+
         samples = []
-        for i in range(self.nsamples):  # restrict to observable set if necessary
-            Bobs = sample_pobs[i][:, self.observable_set]
-            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
-            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
+        for P, pi, pobs in sample_inp:  # restrict to observable set if necessary
+            Bobs = pobs[:, self.observable_set]
+            pobs = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
+            samples.append(_HMSM(P, pobs, pi=pi, dt_model=self.dt_model))
 
         # store results
         self.sampled_trajs = [sampled_hmm.sampled_hmms[i].hidden_state_trajectories for i in range(self.nsamples)]
@@ -264,10 +264,10 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         # call submodel on MaximumLikelihoodHMSM
         _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs, mincount_connectivity=mincount_connectivity)
         # if samples set, also reduce them
-        if hasattr(self, 'samples'):
-            if self.samples is not None:
-                subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
-                              for sample in self.samples]
-                self.update_model_params(samples=subsamples)
+        if hasattr(self, 'samples') and self.samples is not None:
+            subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
+                          for sample in self.samples]
+            self.update_model_params(samples=subsamples)
+
         # return
         return self
