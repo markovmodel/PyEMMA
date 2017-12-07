@@ -178,6 +178,10 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                     raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
                                       + 'incompatible lag or nstates.')
 
+            if not _np.array_equal(dtrajs, self.init_hmsm._dtrajs_full):
+                raise NotImplementedError('Bayesian HMM estimation with init_hmsm is currently only implemented ' +
+                                          'if applied to the same data.')
+
             # TODO: implement more elegant solution to copy-pasting effective stride evaluation from ML HMM.
             # EVALUATE STRIDE
             if self.stride == 'effective':
@@ -201,10 +205,6 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                 _nstates_obs = _number_of_states(dtrajs_lagged_strided, only_used=True)
                 _nstates_obs_full = _number_of_states(dtrajs)
 
-                if _np.setxor1d(_np.concatenate(dtrajs),
-                                _np.concatenate(self.init_hmsm._dtrajs_full)).size != 0:
-                    raise UserWarning('Set of observed microstates in discrete trajectories must match to ' +
-                                      'the one used for init_hmsm estimation.')
                 if _np.setxor1d(_np.concatenate(dtrajs_lagged_strided),
                                  _np.concatenate(self.init_hmsm._dtrajs_lagged)).size != 0:
                     raise UserWarning('Choice of stride has excluded a different set of microstates than in ' +
