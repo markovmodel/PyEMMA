@@ -328,7 +328,7 @@ class TestBHMMSpecialCases(unittest.TestCase):
 
         init_hmm = pyemma.msm.estimate_hidden_markov_model(obs, 2, 10)
         bay_hmm = pyemma.msm.estimators.BayesianHMSM(nstates=init_hmm.nstates, lag=init_hmm.lag,
-                                                     init_hmsm=init_hmm)
+                                                     stride=init_hmm.stride, init_hmsm=init_hmm)
         bay_hmm.estimate(obs)
 
         assert np.isclose(bay_hmm.stationary_distribution.sum(), 1)
