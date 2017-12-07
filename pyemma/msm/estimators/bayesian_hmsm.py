@@ -166,22 +166,21 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             self.observe_nonempty = default_observe_nonempty
         else:  # if given another initialization, must copy its attributes
             copy_attributes = ['_nstates', '_nstates_obs_full', '_nstates_obs',
-                               '_reversible', '_pi',
-                               '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
+                               '_reversible', '_pi', '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
                                '_observable_set', 'likelihoods', 'likelihood',
                                'hidden_state_probabilities', 'hidden_state_trajectories',
                                'count_matrix', 'initial_count', 'initial_distribution', '_active_set']
-            check_user_choises = ['lag', '_nstates']
+            check_user_choices = ['lag', '_nstates']
 
             # check if nstates and lag are compatible
-            for attr in check_user_choises:
+            for attr in check_user_choices:
                 if not self.__getattribute__(attr) == self.init_hmsm.__getattribute__(attr):
                     raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
-                    + 'incompatible lag or nstates.')
+                                      + 'incompatible lag or nstates.')
 
             # update self with estimates from init_hmsm
             self.__dict__.update(
-            {k: i for k, i in self.init_hmsm.__dict__.items() if k in copy_attributes})
+                {k: i for k, i in self.init_hmsm.__dict__.items() if k in copy_attributes})
 
             # as mentioned in the docstring, take init_hmsm observed set observation probabilities
             self.observe_nonempty = False
