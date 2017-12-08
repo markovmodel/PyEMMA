@@ -266,9 +266,11 @@ class SerializableMixIn(object):
     def _save_data_producer(self, value):
         self.__save_data_producer = value
         # forward flag to the next data producer
-        if hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self:
+        if (value and
+            hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self):
             # ensure the data_producer is serializable
-            assert hasattr(self.data_producer.__class__, '_serialize_version')
+            if not hasattr(self.data_producer.__class__, '_serialize_version'):
+                raise RuntimeError('class in chain is not serializable: {}'.format(self.data_producer.__class__))
             self.data_producer._save_data_producer = value
 
     def _get_state_of_serializeable_fields(self, klass):
@@ -508,4 +510,4 @@ class SerializableMixIn(object):
     def __init_subclass__(self, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
         if not hasattr(self, '_serialize_version'):
-            raise DeveloperError('{} does not have field serialize_version'.format(self))
+            raise DeveloperError('{} does not have field _serialize_version'.format(self))
