@@ -65,8 +65,6 @@ class TestSerialisation(unittest.TestCase):
 
     def test_numpy_container(self):
         x = np.random.randint(0, 1000, size=10)
-        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
-        register_ndarray_handler()
         inst = np_container(x)
         inst.save(self.fn)
         restored = inst.load(self.fn)
@@ -78,20 +76,6 @@ class TestSerialisation(unittest.TestCase):
         inst.save(self.fn)
         restored = inst.load(self.fn)
         self.assertEqual(restored, inst)
-
-    def test_numpy_extracted_dtypes(self):
-        """ scalar values extracted from a numpy array do not posses a python builtin type,
-        ensure they are converted to those types properly."""
-        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
-        register_ndarray_handler()
-        from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
-        values = (0, 0.5, 1, 2.5, -1, -0)
-        for v in values:
-            for dtype in NumpyExtractedDtypeHandler.np_dtypes:
-                converted = dtype(v)
-                exported = dumps(converted)
-                actual = loads(exported)
-                self.assertEqual(actual, converted, msg='failed for dtype %s and value %s' % (dtype, v))
 
     def test_save_interface(self):
         inst = test_cls_v1()
@@ -218,6 +202,7 @@ class TestSerialisation(unittest.TestCase):
         inst = np_container(np.empty(0))
         import types
         old = SerializableMixIn.__getstate__
+        old2 = inst.__class__.__reduce__
         try:
             del SerializableMixIn.__getstate__
             inst.__class__.__reduce__ = types.MethodType(evil, inst)
@@ -228,6 +213,7 @@ class TestSerialisation(unittest.TestCase):
             self.assertTrue(called, 'hack not executed')
         finally:
             SerializableMixIn.__getstate__ = old
+            np_container.__reduce__ = old2
 
 if __name__ == '__main__':
     unittest.main()
