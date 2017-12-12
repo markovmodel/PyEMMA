@@ -200,11 +200,34 @@ class TestSerialisation(unittest.TestCase):
         self.assertIn("need at least {version}".format(version=pyemma.version), c.exception.args[0])
 
     def test_developer_forgot_to_add_version(self):
-        """ we're not allowed """
+        """ we're not allowed to use an un-versioned class """
         with self.assertRaises(DeveloperError):
             class broken(SerializableMixIn): pass
             x = broken()
 
+    def test_evil_things_not_allowed(self):
+        """ overwrite the pickling procedure with something an evil method. Ensure it raises."""
+        import subprocess
+        from pickle import UnpicklingError
+        called = False
+        def evil(self):
+            nonlocal called
+            called = True
+            return subprocess.Popen, ('/bin/sh', )
+
+        inst = np_container(np.empty(0))
+        import types
+        old = SerializableMixIn.__getstate__
+        try:
+            del SerializableMixIn.__getstate__
+            inst.__class__.__reduce__ = types.MethodType(evil, inst)
+            inst.save(self.fn)
+            with self.assertRaises(UnpicklingError) as e:
+                pyemma.load(self.fn)
+            self.assertIn('not allowed', str(e.exception))
+            self.assertTrue(called, 'hack not executed')
+        finally:
+            SerializableMixIn.__getstate__ = old
 
 if __name__ == '__main__':
     unittest.main()
