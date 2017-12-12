@@ -481,7 +481,7 @@ class SerializableMixIn(object):
     def __setstate__(self, state):
         try:
             assert state
-            # handle exceptions here, because they will be sucked up by jsonpickle and silently fail...
+            # handle exceptions here, because they will be sucked up by pickle and silently fail...
             classes_to_inspect = self._get_classes_to_inspect()
 
             if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):

@@ -7,9 +7,9 @@ import numpy as np
 import pyemma
 from pyemma._base.serialization.serialization import DeveloperError
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
-from jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
+
 
 class np_container(SerializableMixIn):
     _serialize_version = 0
