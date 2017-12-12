@@ -18,10 +18,7 @@
 import logging
 
 from pyemma._base.loggable import Loggable
-from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
 from pyemma._base.serialization.util import class_rename_registry
-import jsonpickle
-from jsonpickle.util import importable_name as _importable_name
 
 from pyemma.util.types import is_int
 
@@ -64,6 +61,11 @@ def _hash(attributes, compare_to=None):
         raise IntegrityError('mismatch:{} !=\n{}'.format(digest, compare_to))
     return digest.hexdigest()
 
+
+def _importable_name(cls):
+    name = cls.__name__
+    module = cls.__module__
+    return '%s.%s' % (module, name)
 
 def list_models(file_name):
     """ list all stored models in given file.

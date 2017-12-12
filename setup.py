@@ -266,7 +266,6 @@ metadata = dict(
     install_requires=[
         'bhmm>=0.6,<0.7',
         'decorator>=4.0.0',
-        'jsonpickle',
         'matplotlib',
         'mdtraj>=1.8.0',
         'msmtools>=1.2',
