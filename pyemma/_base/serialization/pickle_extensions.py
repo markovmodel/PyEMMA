@@ -61,7 +61,8 @@ class HDF5PersistentUnpickler(Unpickler):
             # by the persistent ID.
             raise pickle.UnpicklingError("unsupported persistent object")
 
-    def _check_allowed(self, module):
+    @staticmethod
+    def _check_allowed(module):
         # check if we are allowed to unpickle from these modules.
         i = module.find('.')
         if i > 0:
