@@ -171,14 +171,25 @@ def string_to_bytes(string):
     Returns the amount of bytes in a human readable form up to Yottabytes (YB).
     :param string: integer with suffix (b, k, m, g, t, p, e, z, y)
     :return: amount of bytes in string representation
+
+    >>> string_to_bytes('1024')
+    1024
+    >>> string_to_bytes('1024k')
+    1048576
+    >>> string_to_bytes('4 G')
+    4294967296
+    >>> string_to_bytes('4.5g')
+    4831838208
     """
     if string == '0':
         return 0
     import re
-    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])', string)
+    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?', string)
     if not match:
         raise RuntimeError('"{}" does not match "[integer] [suffix]"'.format(string))
     value = float(match.group(1))
+    if match.group(2) is None:
+        return int(value)
     suffix = match.group(2).upper()
     extensions = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     x = extensions.index(suffix)
