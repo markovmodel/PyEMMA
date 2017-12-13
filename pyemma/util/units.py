@@ -180,13 +180,19 @@ def string_to_bytes(string):
     4294967296
     >>> string_to_bytes('4.5g')
     4831838208
+    >>> try:
+    ...     string_to_bytes('1x')
+    ... except RuntimeError as re:
+    ...     assert 'unknown suffix' in str(re)
     """
     if string == '0':
         return 0
     import re
-    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?', string)
+    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?(\D?)', string)
     if not match:
         raise RuntimeError('"{}" does not match "[integer] [suffix]"'.format(string))
+    if match.group(3):
+        raise RuntimeError('unknown suffix: "{}"'.format(match.group(3)))
     value = float(match.group(1))
     if match.group(2) is None:
         return int(value)
