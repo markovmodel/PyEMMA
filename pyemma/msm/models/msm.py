@@ -886,7 +886,7 @@ class MSM(_Model):
         Notes
         -----
         If you coarse grain with PCCA++, the order of the obtained memberships
-        might not be preserved. This also applies for :func:`metastable_memberships`, 
+        might not be preserved. This also applies for :func:`metastable_memberships`,
         :func:`metastable_distributions`, :func:`metastable_sets`, :func:`metastable_assignments`
 
         References
@@ -900,19 +900,19 @@ class MSM(_Model):
         m = int(m)
         # can we do it?
         if not self.reversible:
-            raise ValueError(
-                'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
+            raise ValueError('Cannot compute PCCA for non-reversible matrices. '
+                             'Set reversible=True when constructing the MSM.')
 
-        from msmtools.analysis.api import _pcca_object as PCCA
+        from pyemma.msm.models.pcca import PCCA
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
-                self._pcca = PCCA(self.transition_matrix, m)
+                self._pcca = PCCA(self, m)
         except AttributeError:
             # didn't have a pcca object yet - compute
-            self._pcca = PCCA(self.transition_matrix, m)
+            self._pcca = PCCA(self, m)
 
         # set metastable properties
         self._metastable_computed = True
