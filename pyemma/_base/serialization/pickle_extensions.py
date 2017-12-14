@@ -39,7 +39,9 @@ class HDF5PersistentUnpickler(Unpickler):
     __allowed_packages = ('builtin',
                           'pyemma',
                           'mdtraj',
-                          'numpy')
+                          'numpy',
+                          'scipy',
+                          )
 
     def __init__(self, group, file):
         super().__init__(file=file)
