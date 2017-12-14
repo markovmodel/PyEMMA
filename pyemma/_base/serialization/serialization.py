@@ -47,7 +47,7 @@ class IntegrityError(Exception):
 def _hash(attributes, compare_to=None):
     # hashes the attributes in the hdf5 file (also binary data), to make it harder to manipulate them.
     import hashlib
-    digest = hashlib.blake2b()
+    digest = hashlib.sha256()
     attributes_to_check = ('model', 'created', 'class_str', 'saved_streaming_chain')
     for attr in attributes_to_check:
         value = attributes[attr]
@@ -477,8 +477,6 @@ class SerializableMixIn(object):
             if hasattr(self, 'get_model_params'):
                 state = self.get_model_params(deep=False)
                 res.update(state)
-
-
 
             return res
         except:
