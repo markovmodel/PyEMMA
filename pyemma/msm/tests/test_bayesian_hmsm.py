@@ -333,6 +333,17 @@ class TestBHMMSpecialCases(unittest.TestCase):
 
         assert np.isclose(bay_hmm.stationary_distribution.sum(), 1)
 
+    def test_initialized_bhmm_newstride(self):
+        import pyemma.msm
+        obs = np.random.randint(0, 2, size=1000)
+
+        init_hmm = pyemma.msm.estimate_hidden_markov_model(obs, 2, 10)
+        bay_hmm = pyemma.msm.estimators.BayesianHMSM(nstates=init_hmm.nstates, lag=init_hmm.lag,
+                                                     stride='effective', init_hmsm=init_hmm)
+        bay_hmm.estimate(obs)
+
+        assert np.isclose(bay_hmm.stationary_distribution.sum(), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
