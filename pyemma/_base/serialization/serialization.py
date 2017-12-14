@@ -94,9 +94,10 @@ def save(obj, file_name, model_name='latest', overwrite=False, save_streaming_ch
     import time
 
     # if we are serializing a pipeline element, store whether to store the chain elements.
-    old_flag = obj._save_data_producer
-    obj._save_data_producer = save_streaming_chain
-    assert obj._save_data_producer == save_streaming_chain
+    old_flag = getattr(obj, '_save_data_producer', None)
+    if old_flag is not None:
+        obj._save_data_producer = save_streaming_chain
+        assert obj._save_data_producer == save_streaming_chain
     try:
         with h5py.File(file_name) as f:
             model_name = str(model_name)
@@ -132,7 +133,8 @@ def save(obj, file_name, model_name='latest', overwrite=False, save_streaming_ch
         raise
     finally:
         # restore old state.
-        obj._save_data_producer = old_flag
+        if old_flag is not None:
+            obj._save_data_producer = old_flag
 
 
 def load(file_name, model_name='latest'):
