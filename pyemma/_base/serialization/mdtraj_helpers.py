@@ -46,7 +46,6 @@ def topology_from_numpy(atoms, bonds=None):
     --------
     create_standard_bonds
     """
-    raise NotImplementedError('there is some bug....')
     if bonds is None:
         bonds = np.zeros((0, 2))
 
