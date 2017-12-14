@@ -267,7 +267,7 @@ class _MSMEstimator(_Estimator, _MSM):
         # reset estimator data if needed
         if score_method is not None:
             self.score_method = score_method
-        if self.score_k is not None:
+        if score_k is not None:
             self.score_k = score_k
 
         # determine actual scoring rank

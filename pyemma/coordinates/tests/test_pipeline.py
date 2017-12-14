@@ -193,7 +193,7 @@ class TestPipeline(unittest.TestCase):
         reader_xtc = api.source(self.traj_files, top=self.pdb_file)
         chunksize = 1001
         chain = [reader_xtc, api.tica(), api.cluster_mini_batch_kmeans(batch_size=0.3, k=3)]
-        p = api.pipeline(chain, chunksize=chunksize)
+        p = api.pipeline(chain, chunksize=chunksize, run=False)
         assert p.chunksize == chunksize
         for e in p._chain:
             assert e.chunksize == chunksize

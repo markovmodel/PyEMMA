@@ -19,7 +19,6 @@
 template<typename dtype>
 typename KMeans<dtype>::np_array
 KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int n_threads) const {
-    using size_t = std::size_t;
 
     if (np_chunk.ndim() != 2) {
         throw std::runtime_error(R"(Number of dimensions of "chunk" ain't 2.)");
@@ -40,7 +39,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
     auto centers = np_centers.template unchecked<2>();
 
     /* initialize centers_counter and new_centers with zeros */
-    std::vector<size_t> shape = {n_centers, dim};
+    std::vector<std::size_t> shape = {n_centers, dim};
     py::array_t <dtype> return_new_centers(shape);
     auto new_centers = return_new_centers.mutable_unchecked();
     std::fill(return_new_centers.mutable_data(), return_new_centers.mutable_data() + return_new_centers.size(), 0.0);
@@ -59,7 +58,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
                 }
             }
             centers_counter[closest_center_index]++;
-            for (size_t j = 0; j < dim; j++) {
+            for (std::size_t j = 0; j < dim; j++) {
                 new_centers(closest_center_index, j) += chunk(i, j);
             }
         }
@@ -79,7 +78,7 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
             {
                 auto closest_center_index = std::distance(dists.begin(), std::min_element(dists.begin(), dists.end()));
                 {
-                    centers_counter.at(static_cast<size_t>(closest_center_index))++;
+                    centers_counter.at(static_cast<std::size_t>(closest_center_index))++;
                     for (std::size_t j = 0; j < dim; j++) {
                         new_centers(closest_center_index, j) += chunk(i, j);
                     }
@@ -142,6 +141,36 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
     return return_new_centers;
 }
 
+
+template<typename dtype>
+typename KMeans<dtype>::cluster_res KMeans<dtype>::cluster_loop(const np_array& np_chunk, np_array& np_centers,
+                                                                int n_threads, int max_iter, float tolerance,
+                                                                py::object& callback) const {
+    int it = 0;
+    bool converged = false;
+    dtype rel_change = std::numeric_limits<dtype>::max();
+    dtype prev_cost = 0;
+    do {
+        np_centers = cluster(np_chunk, np_centers, n_threads);
+        auto cost = costFunction(np_chunk, np_centers, n_threads);
+        rel_change = (cost != 0.0) ? std::abs(cost - prev_cost) / cost : 0;
+        prev_cost = cost;
+        if(rel_change <= tolerance) {
+            converged = true;
+        } else {
+            if(! callback.is_none()) {
+                /* Acquire GIL before calling Python code */
+                py::gil_scoped_acquire acquire;
+                callback();
+            }
+        }
+
+        it += 1;
+    } while(it < max_iter && ! converged);
+    int res = converged ? 0 : 1;
+    return std::make_tuple(std::move(np_centers), res, it);
+}
+
 template<typename dtype>
 dtype KMeans<dtype>::costFunction(const np_array &np_data, const np_array &np_centers, int n_threads) const {
     auto data = np_data.template unchecked<2>();
@@ -167,8 +196,7 @@ dtype KMeans<dtype>::costFunction(const np_array &np_data, const np_array &np_ce
 
 template<typename dtype>
 typename KMeans<dtype>::np_array KMeans<dtype>::
-initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads) const {
-
+initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads, py::object& callback) const {
     if (np_data.shape(0) < k) {
         std::stringstream ss;
         ss << "not enough data to initialize desired number of centers.";
@@ -225,6 +253,7 @@ initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads
     centers_found++;
     /* perform callback */
     if (!callback.is_none()) {
+        py::gil_scoped_acquire acquire;
         callback();
     }
 #ifdef USE_OPENMP
@@ -247,6 +276,7 @@ initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads
 
     /* keep picking centers while we do not have enough of them... */
     while (centers_found < k) {
+        py::gil_scoped_release release;
 
         /* initialize the trials random values by the D^2-weighted distribution */
         for (std::size_t j = 0; j < n_trials; j++) {
@@ -336,6 +366,7 @@ initCentersKMpp(const np_array &np_data, unsigned int random_seed, int n_threads
             centers_found++;
             /* perform the callback */
             if (!callback.is_none()) {
+                py::gil_scoped_acquire acquire;
                 callback();
             }
             /* mark the data point as assigned center */
