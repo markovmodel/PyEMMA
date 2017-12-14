@@ -201,9 +201,9 @@ class SerializableMixIn(object):
     ...        self.x = x
 
     >>> inst = MyClass()
-    >>> with named_temporary_file() as file:
-    ...    inst.save(file)
-    ...    inst_restored = pyemma.load(file)
+    >>> with named_temporary_file() as file: # doctest: +SKIP
+    ...    inst.save(file) # doctest: +SKIP
+    ...    inst_restored = pyemma.load(file) # doctest: +SKIP
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
 
