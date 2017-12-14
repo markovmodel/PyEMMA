@@ -907,8 +907,8 @@ class MSM(_Model):
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object
-            if self._pcca.n_metastable != m:
-                # incorrect number of states - recompute
+            if self._pcca.n_metastable != m or self._pcca.P is not self.P:
+                # incorrect number of states or new transition matrix -> recompute
                 self._pcca = PCCA(self, m)
         except AttributeError:
             # didn't have a pcca object yet - compute
