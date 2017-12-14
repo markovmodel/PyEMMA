@@ -89,7 +89,7 @@ def list_models(file_name):
                     } for k in f.keys()}
 
 
-def save(obj, file_name, model_name='latest', save_streaming_chain=False):
+def save(obj, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
     import h5py
     import time
 
@@ -99,7 +99,11 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
     assert obj._save_data_producer == save_streaming_chain
     try:
         with h5py.File(file_name) as f:
-            g = f.require_group(str(model_name))
+            model_name = str(model_name)
+            if overwrite and model_name in f:
+                logger.info('overwriting model "%s" in file %s', model_name, f)
+                del f[model_name]
+            g = f.require_group(model_name)
             g.attrs['created'] = time.time()
             g.attrs['created_readable'] = time.asctime()
             g.attrs['class_str'] = str(obj)
@@ -220,7 +224,7 @@ class SerializableMixIn(object):
         res = super(SerializableMixIn, cls).__new__(cls)
         return res
 
-    def save(self, file_name, model_name='latest', save_streaming_chain=False):
+    def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
         r"""
         Parameters
         -----------
@@ -228,7 +232,9 @@ class SerializableMixIn(object):
             path to desired output file
         model_name: str, default=latest
             creates a group named 'model_name' in the given file, which will contain all of the data.
-            If the name already exists,
+            If the name already exists, and overwrite is False (default) will raise.
+        overwrite: bool, default=False
+            Should overwrite existing model names?
         save_streaming_chain : boolean, default=False
             if True, the data_producer(s) of this object will also be saved in the given file.
 
@@ -248,7 +254,7 @@ class SerializableMixIn(object):
                         '  pi=array([ 0.5,  0.5]), reversible=True)'...}}
         >>> assert np.all(inst_restored.P == m.P)
         """
-        return save(self, file_name, model_name, save_streaming_chain)
+        return save(self, file_name, model_name, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
 
     @classmethod
     def load(cls, file_name, model_name='latest'):
