@@ -1,7 +1,5 @@
 from collections import defaultdict
 
-from jsonpickle.util import importable_name
-
 
 class _ClassRenameRegistry(object):
     """ perform a mapping between old and new names and reverse.
@@ -15,7 +13,8 @@ class _ClassRenameRegistry(object):
         if isinstance(location, str):
             location = [location]
         assert hasattr(new_cls, "__module__"), "makes only sense for importable classes."
-        new_cls_str = importable_name(new_cls)
+        from pyemma._base.serialization.serialization import _importable_name
+        new_cls_str = _importable_name(new_cls)
         for old in location:
             self._old_to_new[old] = new_cls_str
             self._new_to_old[new_cls].append(old)

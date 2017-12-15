@@ -7,9 +7,9 @@ import numpy as np
 import pyemma
 from pyemma._base.serialization.serialization import DeveloperError
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
-from jsonpickle import dumps, loads
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
+
 
 class np_container(SerializableMixIn):
     _serialize_version = 0
@@ -65,8 +65,6 @@ class TestSerialisation(unittest.TestCase):
 
     def test_numpy_container(self):
         x = np.random.randint(0, 1000, size=10)
-        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
-        register_ndarray_handler()
         inst = np_container(x)
         inst.save(self.fn)
         restored = inst.load(self.fn)
@@ -78,20 +76,6 @@ class TestSerialisation(unittest.TestCase):
         inst.save(self.fn)
         restored = inst.load(self.fn)
         self.assertEqual(restored, inst)
-
-    def test_numpy_extracted_dtypes(self):
-        """ scalar values extracted from a numpy array do not posses a python builtin type,
-        ensure they are converted to those types properly."""
-        from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler
-        register_ndarray_handler()
-        from pyemma._base.serialization.jsonpickler_handlers import NumpyExtractedDtypeHandler
-        values = (0, 0.5, 1, 2.5, -1, -0)
-        for v in values:
-            for dtype in NumpyExtractedDtypeHandler.np_dtypes:
-                converted = dtype(v)
-                exported = dumps(converted)
-                actual = loads(exported)
-                self.assertEqual(actual, converted, msg='failed for dtype %s and value %s' % (dtype, v))
 
     def test_save_interface(self):
         inst = test_cls_v1()
@@ -200,11 +184,36 @@ class TestSerialisation(unittest.TestCase):
         self.assertIn("need at least {version}".format(version=pyemma.version), c.exception.args[0])
 
     def test_developer_forgot_to_add_version(self):
-        """ we're not allowed """
+        """ we're not allowed to use an un-versioned class """
         with self.assertRaises(DeveloperError):
             class broken(SerializableMixIn): pass
             x = broken()
 
+    def test_evil_things_not_allowed(self):
+        """ overwrite the pickling procedure with something an evil method. Ensure it raises."""
+        import subprocess
+        from pickle import UnpicklingError
+        called = False
+        def evil(self):
+            nonlocal called
+            called = True
+            return subprocess.Popen, ('/bin/sh', )
+
+        inst = np_container(np.empty(0))
+        import types
+        old = SerializableMixIn.__getstate__
+        old2 = inst.__class__.__reduce__
+        try:
+            del SerializableMixIn.__getstate__
+            inst.__class__.__reduce__ = types.MethodType(evil, inst)
+            inst.save(self.fn)
+            with self.assertRaises(UnpicklingError) as e:
+                pyemma.load(self.fn)
+            self.assertIn('not allowed', str(e.exception))
+            self.assertTrue(called, 'hack not executed')
+        finally:
+            SerializableMixIn.__getstate__ = old
+            np_container.__reduce__ = old2
 
 if __name__ == '__main__':
     unittest.main()

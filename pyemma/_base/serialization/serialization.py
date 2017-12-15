@@ -18,10 +18,7 @@
 import logging
 
 from pyemma._base.loggable import Loggable
-from pyemma._base.serialization.jsonpickler_handlers import register_all_handlers as _reg_all_handlers
 from pyemma._base.serialization.util import class_rename_registry
-import jsonpickle
-from jsonpickle.util import importable_name as _importable_name
 
 from pyemma.util.types import is_int
 
@@ -43,6 +40,33 @@ class OldVersionUnsupported(NotImplementedError):
     """ can not load recent models with old software versions. """
 
 
+class IntegrityError(Exception):
+    """ data mismatches of stored model parameters and pickled data. """
+
+
+def _hash(attributes, compare_to=None):
+    # hashes the attributes in the hdf5 file (also binary data), to make it harder to manipulate them.
+    import hashlib
+    digest = hashlib.sha256()
+    attributes_to_check = ('model', 'created', 'class_str', 'saved_streaming_chain')
+    for attr in attributes_to_check:
+        value = attributes[attr]
+        if attr == 'model': # do not convert to ascii.
+            pair = value
+        else:
+            pair = '{}={}'.format(attr, value).encode('ascii')
+        digest.update(pair)
+    hex = digest.hexdigest()
+    if compare_to is not None and hex != compare_to:
+        raise IntegrityError('mismatch:{} !=\n{}'.format(digest, compare_to))
+    return digest.hexdigest()
+
+
+def _importable_name(cls):
+    name = cls.__name__
+    module = cls.__module__
+    return '%s.%s' % (module, name)
+
 def list_models(file_name):
     """ list all stored models in given file.
 
@@ -60,41 +84,48 @@ def list_models(file_name):
     with h5py.File(file_name, mode='r') as f:
         return {k: {'repr': f[k].attrs['class_str'],
                     'created': f[k].attrs['created_readable'],
-                    'saved_streaming_chain': f[k].attrs['saved_streaming_chain']
+                    'saved_streaming_chain': f[k].attrs['saved_streaming_chain'],
+                    'saved_with_version' : f[k].attrs['pyemma_version']
                     } for k in f.keys()}
 
 
-def save(obj, file_name, model_name='latest', save_streaming_chain=False):
+def save(obj, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
     import h5py
     import time
-    from jsonpickle.pickler import Pickler
 
-    global _handlers_registered
-    if not _handlers_registered:
-        _reg_all_handlers()
-        _handlers_registered = True
     # if we are serializing a pipeline element, store whether to store the chain elements.
-    old_flag = obj._save_data_producer
-    obj._save_data_producer = save_streaming_chain
-    assert obj._save_data_producer == save_streaming_chain
+    old_flag = getattr(obj, '_save_data_producer', None)
+    if old_flag is not None:
+        obj._save_data_producer = save_streaming_chain
+        assert obj._save_data_producer == save_streaming_chain
     try:
         with h5py.File(file_name) as f:
-            g = f.require_group(str(model_name))
+            model_name = str(model_name)
+            if overwrite and model_name in f:
+                logger.info('overwriting model "%s" in file %s', model_name, f)
+                del f[model_name]
+            g = f.require_group(model_name)
             g.attrs['created'] = time.time()
             g.attrs['created_readable'] = time.asctime()
             g.attrs['class_str'] = str(obj)
             g.attrs['class_repr'] = repr(obj)
             g.attrs['saved_streaming_chain'] = save_streaming_chain
+            # store the current software version
+            from pyemma import version
+            g.attrs['pyemma_version'] = version
             # now encode the object (this will write all numpy arrays to current group).
-            context = Pickler()
-            context.h5_file = g
-            # array id provider (simple counter)
-            from itertools import count
-            context.next_array_id = count(0)
-
-            flattened = jsonpickle.pickler.encode(obj, context=context, warn=True)
-            # attach the json string in the H5 file.
-            g.attrs['model'] = flattened
+            from io import BytesIO
+            import numpy as np
+            file = BytesIO()
+            from .pickle_extensions import HDF5PersistentPickler
+            pickler = HDF5PersistentPickler(g, file=file)
+            pickler.dump(obj)
+            file.seek(0)
+            flat = file.read()
+            # attach the pickle byte string to the H5 file.
+            g.attrs['model'] = np.void(flat)
+            # integrity check
+            g.attrs['digest'] = _hash(g.attrs)
     except Exception as e:
         if isinstance(obj, Loggable):
             obj.logger.exception('During saving the object ("{error}") '
@@ -102,7 +133,8 @@ def save(obj, file_name, model_name='latest', save_streaming_chain=False):
         raise
     finally:
         # restore old state.
-        obj._save_data_producer = old_flag
+        if old_flag is not None:
+            obj._save_data_producer = old_flag
 
 
 def load(file_name, model_name='latest'):
@@ -120,25 +152,21 @@ def load(file_name, model_name='latest'):
     -------
     obj : the de-serialized object
     """
-
     import h5py
     with h5py.File(file_name, 'r') as f:
         if model_name not in f:
             raise ValueError('Model with name "{model_name}" not found in given file {file_name}'
                              .format(model_name=model_name, file_name=file_name))
-        group = f[model_name]
-        inp = group.attrs['model']
-        inp = class_rename_registry.upgrade_old_names_in_json(inp)
-        global _handlers_registered
-        if not _handlers_registered:
-            _reg_all_handlers()
-            _handlers_registered = True
-
-        # we pass the hdf5 file handle to the unpickler by adding a known attribute.
-        from jsonpickle.unpickler import Unpickler
-        context = Unpickler()
-        context.h5_file = group
-        obj = jsonpickle.unpickler.decode(inp, context=context)
+        g = f[model_name]
+        inp = g.attrs['model']
+        from .pickle_extensions import HDF5PersistentUnpickler
+        from io import BytesIO
+        file = BytesIO(inp)
+        # validate hash.
+        _hash(g.attrs, compare_to=g.attrs['digest'])
+        unpickler = HDF5PersistentUnpickler(g, file=file)
+        obj = unpickler.load()
+        obj._restored_from_pyemma_version = g.attrs['pyemma_version']
 
         return obj
 
@@ -179,9 +207,9 @@ class SerializableMixIn(object):
     ...        self.x = x
 
     >>> inst = MyClass()
-    >>> with named_temporary_file() as file:
-    ...    inst.save(file)
-    ...    inst_restored = pyemma.load(file)
+    >>> with named_temporary_file() as file: # doctest: +SKIP
+    ...    inst.save(file) # doctest: +SKIP
+    ...    inst_restored = pyemma.load(file) # doctest: +SKIP
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
 
@@ -198,7 +226,7 @@ class SerializableMixIn(object):
         res = super(SerializableMixIn, cls).__new__(cls)
         return res
 
-    def save(self, file_name, model_name='latest', save_streaming_chain=False):
+    def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
         r"""
         Parameters
         -----------
@@ -206,7 +234,9 @@ class SerializableMixIn(object):
             path to desired output file
         model_name: str, default=latest
             creates a group named 'model_name' in the given file, which will contain all of the data.
-            If the name already exists,
+            If the name already exists, and overwrite is False (default) will raise.
+        overwrite: bool, default=False
+            Should overwrite existing model names?
         save_streaming_chain : boolean, default=False
             if True, the data_producer(s) of this object will also be saved in the given file.
 
@@ -226,7 +256,7 @@ class SerializableMixIn(object):
                         '  pi=array([ 0.5,  0.5]), reversible=True)'...}}
         >>> assert np.all(inst_restored.P == m.P)
         """
-        return save(self, file_name, model_name, save_streaming_chain)
+        return save(self, file_name, model_name, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
 
     @classmethod
     def load(cls, file_name, model_name='latest'):
@@ -450,10 +480,6 @@ class SerializableMixIn(object):
                 state = self.get_model_params(deep=False)
                 res.update(state)
 
-            # store the current software version
-            from pyemma import version
-            res['_pyemma_version'] = version
-
             return res
         except:
             logger.exception('exception during pickling {}'.format(self))
@@ -461,7 +487,7 @@ class SerializableMixIn(object):
     def __setstate__(self, state):
         try:
             assert state
-            # handle exceptions here, because they will be sucked up by jsonpickle and silently fail...
+            # handle exceptions here, because they will be sucked up by pickle and silently fail...
             classes_to_inspect = self._get_classes_to_inspect()
 
             if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):
@@ -486,7 +512,6 @@ class SerializableMixIn(object):
             if '_is_reader' in state:
                 self._is_reader = state.pop('_is_reader')
 
-            self._pyemma_version = state.pop('_pyemma_version', '!!!! UNKNOWN !!!!')
             state.pop('class_tree_versions')
             assert len(state) == 0, 'unhandled attributes in state'
         except AssertionError:
