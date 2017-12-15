@@ -1,6 +1,7 @@
 import numpy as np
 
-from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.serialization import SerializableMixIn, Modifications
+
 
 class test_cls_v1(SerializableMixIn):
     _serialize_fields = ('a', 'x', 'y')
@@ -21,9 +22,7 @@ class test_cls_v2(SerializableMixIn):
     _serialize_fields = ('b', 'y', 'z')
     _serialize_version = 2
     # interpolate from version 1: add attr z with value 42
-    _serialize_interpolation_map = {1: [('set', 'z', 42),
-                                        ('mv', 'a', 'b'),
-                                        ('rm', 'x')]}
+    _serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list()}
 
     def __init__(self):
         self.b = np.array([1, 2, 3])
@@ -39,12 +38,8 @@ class test_cls_v3(SerializableMixIn):
     _serialize_fields = ('c', 'z')
     _serialize_version = 3
     # interpolate from version 1 and 2
-    _serialize_interpolation_map = {1: [('set', 'z', 42),
-                                        ('mv', 'a', 'b'),
-                                        ('rm', 'x')],
-                                    2: [('set', 'z', 23),
-                                        ('mv', 'b', 'c'),
-                                        ('rm', 'y')]}
+    _serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list(),
+                                    2: Modifications().set('z', 23).mv('b', 'c').rm('y').list()}
 
     def __init__(self):
         self.c = np.array([1, 2, 3])
@@ -76,4 +71,4 @@ class to_interpolate_with_functions(test_cls_v1):
 
     _serialize_version = 2
     # map from version 1 to 2
-    _serialize_interpolation_map = {1: [('map', 'y', map_y)]}
+    _serialize_interpolation_map = {1: Modifications().map('y', map_y).list()}

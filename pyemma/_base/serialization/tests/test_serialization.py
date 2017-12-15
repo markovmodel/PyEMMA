@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 import pyemma
-from pyemma._base.serialization.serialization import DeveloperError
+from pyemma._base.serialization.serialization import DeveloperError, Modifications
 from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions)
@@ -52,6 +52,7 @@ class TestSerialisation(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         class_rename_registry = cls.backup_cls_reg
+        # TODO: restore backup!
 
     def setUp(self):
         self.fn = tempfile.mktemp()
@@ -120,34 +121,6 @@ class TestSerialisation(unittest.TestCase):
         self.assertEqual(inst_restored.z, 23)
         np.testing.assert_equal(inst_restored.c, inst.a)
         self.assertFalse(hasattr(inst_restored, 'y'))
-
-    def test_validate_map_order(self):
-        class MapOrder(SerializableMixIn):
-            _serialize_version = 0
-            _serialize_interpolation_map = {3: [('set', 'x', None)], 0: [('rm', 'x')]}
-        s = MapOrder()
-        s._validate_interpolation_map(klass=s.__class__)
-        self.assertSequenceEqual(list(s._serialize_interpolation_map.keys()),
-                                 sorted(s._serialize_interpolation_map.keys()))
-
-    def test_validate_map_invalid_op(self):
-        class InvalidOperatorInMap(SerializableMixIn):
-            _serialize_version = 0
-            _serialize_interpolation_map = {3: [('foo', 'x', None)]}
-        s = InvalidOperatorInMap()
-        with self.assertRaises(DeveloperError) as cm:
-            s._validate_interpolation_map(klass=s.__class__)
-        self.assertIn('invalid operation', cm.exception.args[0])
-
-    def test_validate_map_invalid_container_for_actions(self):
-        class InvalidContainerInMap(SerializableMixIn):
-            _serialize_version = 0
-            _serialize_interpolation_map = {3: "foo"}
-        s = InvalidContainerInMap()
-        with self.assertRaises(DeveloperError) as cm:
-            s._validate_interpolation_map(klass=type(s))
-
-        self.assertIn("have to be list or tuple", cm.exception.args[0])
 
     def test_interpolation_with_map(self):
         c = test_cls_v1()

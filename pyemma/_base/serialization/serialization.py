@@ -44,6 +44,30 @@ class IntegrityError(Exception):
     """ data mismatches of stored model parameters and pickled data. """
 
 
+class Modifications(object):
+    def __init__(self):
+        self.ops = []
+
+    def rm(self, name):
+        self.ops.append(('rm', name))
+        return self
+
+    def mv(self, name, new_name):
+        self.ops.append(('mv', name, new_name))
+        return self
+
+    def map(self, name, callable):
+        self.ops.append(('map', name, callable))
+        return self
+
+    def set(self, name, value):
+        self.ops.append(('set', name, value))
+        return self
+
+    def list(self):
+        return self.ops
+
+
 def _hash(attributes, compare_to=None):
     # hashes the attributes in the hdf5 file (also binary data), to make it harder to manipulate them.
     import hashlib
@@ -218,6 +242,8 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
+
+
     def __new__(cls, *args, **kwargs):
         assert cls != SerializableMixIn.__class__
         if not hasattr(cls, '_serialize_version'):
@@ -313,30 +339,6 @@ class SerializableMixIn(object):
                 res[field] = getattr(self, field)
         return res
 
-    def _validate_interpolation_map(self, klass):
-        # version numbers should be sorted
-        from collections import OrderedDict
-        inter_map = OrderedDict(sorted(klass._serialize_interpolation_map.items()))
-        if _debug:
-            logger.debug("validate map: %s", inter_map)
-
-        # check for valid operations: add, rm, mv, map
-        valid_ops = ('set', 'rm', 'mv', 'map')
-        for k, v in inter_map.items():
-            if not is_int(k):
-                raise DeveloperError("all keys of _serialize_interpolation_map "
-                                     "have to be of type int (class version numbers)")
-            if not isinstance(v, (list, tuple)):
-                raise DeveloperError("actions per version have to be list or tuple")
-
-            for action in v:
-                if action[0] not in valid_ops:
-                    raise DeveloperError("Your _serialize_interpolation_map contains invalid operations. "
-                                         "Valid ops are: {valid_ops}. You provided {provided}"
-                                         .format(valid_ops=valid_ops, provided=action[0]))
-
-        klass._serialize_interpolation_map = inter_map
-
     def __interpolate(self, state, klass):
         # First lookup the version of klass in the state (this maps from old versions too).
         # Lookup attributes in interpolation map according to version number of the class.
@@ -349,11 +351,10 @@ class SerializableMixIn(object):
         if klass_version > klass._serialize_version:
             return
 
-        self._validate_interpolation_map(klass)
-
         if _debug:
             logger.debug("input state: %s" % state)
-        for key in klass._serialize_interpolation_map.keys():
+        sorted_keys = sorted(klass._serialize_interpolation_map.keys())
+        for key in sorted_keys:
             if not (klass._serialize_version > key >= klass_version):
                 if _debug:
                     logger.debug("skipped interpolation rules for version %s" % key)
