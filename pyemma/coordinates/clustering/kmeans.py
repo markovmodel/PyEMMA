@@ -42,7 +42,7 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
 
 @fix_docs
-class KmeansClustering(AbstractClustering, SerializableMixIn, ProgressReporterMixin):
+class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
 
     _serialize_version = 0
