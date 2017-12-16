@@ -54,8 +54,8 @@ class HDF5PersistentUnpickler(Unpickler):
         if type_tag == "np_array":
             return self.group[str(key_id)][:]
         elif type_tag == 'md/Topology':
-            atoms = self.group[str(key_id[0])][:]
-            bonds = self.group[str(key_id[1])][:]
+            atoms = self.group[str(key_id[0])]
+            bonds = self.group[str(key_id[1])]
             return topology_from_numpy(atoms, bonds)
         else:
             # Always raises an error if you cannot return the correct object.
