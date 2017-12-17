@@ -189,7 +189,8 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         params = {'filenames': trajs, 'ndim': r.ndim, 'topfile': r.topfile}
         restored = self.compare(r, params=params)
-
+        assert hasattr(restored, '_is_reader')
+        assert restored._is_reader
         self.assertEqual(restored.featurizer.active_features, r.featurizer.active_features)
 
     def test_numpy_reader(self):
