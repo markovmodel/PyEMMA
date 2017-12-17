@@ -365,6 +365,8 @@ class Estimator(_BaseEstimator, Loggable):
     """
     # flag indicating if estimator's estimate method has been called
     _estimated = False
+    _serialize_version = 0
+    _serialize_fields = ('_estimated', 'model')
 
     def estimate(self, X, **params):
         """ Estimates the model given the data X

@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import numpy as _np
 import warnings
 
@@ -36,6 +35,10 @@ class Model(object):
 
     """
 
+    def __new__(cls, *args, **kwargs):
+        cls._serialize_fields = cls._get_model_param_names()
+        return super(Model, cls).__new__(cls)
+
     @classmethod
     def _get_model_param_names(cls):
         r"""Get parameter names for the model"""
@@ -54,6 +57,9 @@ class Model(object):
         else:
             # No parameters known
             return []
+
+    def set_model_params(self, **kw):
+        raise NotImplementedError()
 
     def update_model_params(self, **params):
         r"""Update given model parameter if they are set to specific values"""
@@ -100,38 +106,6 @@ class Model(object):
                 out.update((key + '__' + k, val) for k, val in deep_items)
             out[key] = value
         return out
-
-    # def set_model_params(self, **params):
-    #     """Set the parameters of this estimator.
-    #     The method works on simple estimators as well as on nested objects
-    #     (such as pipelines). The former have parameters of the form
-    #     ``<component>__<parameter>`` so that it's possible to update each
-    #     component of a nested object.
-    #     Returns
-    #     -------
-    #     self
-    #     """
-    #     if not params:
-    #         # Simple optimisation to gain speed (inspect is slow)
-    #         return self
-    #     valid_params = self.get_model_params(deep=True)
-    #     for key, value in six.iteritems(params):
-    #         split = key.split('__', 1)
-    #         if len(split) > 1:
-    #             # nested objects case
-    #             name, sub_name = split
-    #             if name not in valid_params:
-    #                 raise ValueError('Invalid parameter %s for estimator %s' %
-    #                                  (name, self))
-    #             sub_object = valid_params[name]
-    #             sub_object.set_params(**{sub_name: value})
-    #         else:
-    #             # simple objects case
-    #             if key not in valid_params:
-    #                 raise ValueError('Invalid parameter %s ' 'for estimator %s'
-    #                                  % (key, self.__class__.__name__))
-    #             setattr(self, key, value)
-    #     return self
 
     def __repr__(self):
         class_name = self.__class__.__name__
