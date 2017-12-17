@@ -55,8 +55,8 @@ def load(filename, model_name='latest'):
         the instance containing the same parameters as the saved model/estimator.
 
     """
-    from ._base.serialization.serialization import load as _load
-    return _load(filename, model_name)
+    from ._base.serialization.serialization import SerializableMixIn
+    return SerializableMixIn.load(file_name=filename, model_name=model_name)
 
 
 def _version_check(current, testing=False):
