@@ -13,7 +13,6 @@ class _ClassRenameRegistry(object):
         if isinstance(location, str):
             location = [location]
         assert hasattr(new_cls, "__module__"), "makes only sense for importable classes."
-        from pyemma._base.serialization.serialization import _importable_name
         new_cls_str = _importable_name(new_cls)
         for old in location:
             self._old_to_new[old] = new_cls_str
@@ -63,3 +62,9 @@ class handle_old_classes(object):
     def __call__(self, cls):
         class_rename_registry.add_mapping(self.locations, cls)
         return cls
+
+
+def _importable_name(cls):
+    name = cls.__name__
+    module = cls.__module__
+    return '%s.%s' % (module, name)

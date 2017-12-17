@@ -18,9 +18,7 @@
 import logging
 
 from pyemma._base.loggable import Loggable
-from pyemma._base.serialization.util import class_rename_registry
-
-from pyemma.util.types import is_int
+from pyemma._base.serialization.util import class_rename_registry, _importable_name
 
 logger = logging.getLogger(__name__)
 _debug = False
@@ -45,6 +43,8 @@ class IntegrityError(Exception):
 
 
 class Modifications(object):
+    # class to create state modifications used to handle refactored classes.
+
     def __init__(self):
         self.ops = []
 
@@ -67,132 +67,47 @@ class Modifications(object):
     def list(self):
         return self.ops
 
-
-def _hash(attributes, compare_to=None):
-    # hashes the attributes in the hdf5 file (also binary data), to make it harder to manipulate them.
-    import hashlib
-    digest = hashlib.sha256()
-    attributes_to_check = ('model', 'created', 'class_str', 'saved_streaming_chain')
-    for attr in attributes_to_check:
-        value = attributes[attr]
-        if attr == 'model': # do not convert to ascii.
-            pair = value
-        else:
-            pair = '{}={}'.format(attr, value).encode('ascii')
-        digest.update(pair)
-    hex = digest.hexdigest()
-    if compare_to is not None and hex != compare_to:
-        raise IntegrityError('mismatch:{} !=\n{}'.format(digest, compare_to))
-    return digest.hexdigest()
-
-
-def _importable_name(cls):
-    name = cls.__name__
-    module = cls.__module__
-    return '%s.%s' % (module, name)
-
-def list_models(file_name):
-    """ list all stored models in given file.
-
-    Parameters
-    ----------
-    file_name: str
-        path to file to list models for
-
-    Returns
-    -------
-    dict: {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
-
-    """
-    import h5py
-    with h5py.File(file_name, mode='r') as f:
-        return {k: {'repr': f[k].attrs['class_str'],
-                    'created': f[k].attrs['created_readable'],
-                    'saved_streaming_chain': f[k].attrs['saved_streaming_chain'],
-                    'saved_with_version' : f[k].attrs['pyemma_version']
-                    } for k in f.keys()}
-
-
-def save(obj, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
-    import h5py
-    import time
-
-    # if we are serializing a pipeline element, store whether to store the chain elements.
-    old_flag = getattr(obj, '_save_data_producer', None)
-    if old_flag is not None:
-        obj._save_data_producer = save_streaming_chain
-        assert obj._save_data_producer == save_streaming_chain
-    try:
-        with h5py.File(file_name) as f:
-            model_name = str(model_name)
-            if overwrite and model_name in f:
-                logger.info('overwriting model "%s" in file %s', model_name, f)
-                del f[model_name]
-            g = f.require_group(model_name)
-            g.attrs['created'] = time.time()
-            g.attrs['created_readable'] = time.asctime()
-            g.attrs['class_str'] = str(obj)
-            g.attrs['class_repr'] = repr(obj)
-            g.attrs['saved_streaming_chain'] = save_streaming_chain
-            # store the current software version
-            from pyemma import version
-            g.attrs['pyemma_version'] = version
-            # now encode the object (this will write all numpy arrays to current group).
-            from io import BytesIO
-            import numpy as np
-            file = BytesIO()
-            from .pickle_extensions import HDF5PersistentPickler
-            pickler = HDF5PersistentPickler(g, file=file)
-            pickler.dump(obj)
-            file.seek(0)
-            flat = file.read()
-            # attach the pickle byte string to the H5 file.
-            g.attrs['model'] = np.void(flat)
-            # integrity check
-            g.attrs['digest'] = _hash(g.attrs)
-    except Exception as e:
-        if isinstance(obj, Loggable):
-            obj.logger.exception('During saving the object ("{error}") '
-                                 'the following error occurred'.format(error=e))
-        raise
-    finally:
-        # restore old state.
-        if old_flag is not None:
-            obj._save_data_producer = old_flag
-
-
-def load(file_name, model_name='latest'):
-    """ loads a previously saved object of this class from a file.
-
-    Parameters
-    ----------
-    file_name : str or file like object (has to provide read method).
-        The file like object tried to be read for a serialized object.
-    model_name: str, default='latest'
-        if multiple versions are contained in the file, older versions can be accessed by
-        their name. Use func:`list_models` to get a representation of all stored models.
-
-    Returns
-    -------
-    obj : the de-serialized object
-    """
-    import h5py
-    with h5py.File(file_name, 'r') as f:
-        if model_name not in f:
-            raise ValueError('Model with name "{model_name}" not found in given file {file_name}'
-                             .format(model_name=model_name, file_name=file_name))
-        g = f[model_name]
-        inp = g.attrs['model']
-        from .pickle_extensions import HDF5PersistentUnpickler
-        from io import BytesIO
-        file = BytesIO(inp)
-        # validate hash.
-        _hash(g.attrs, compare_to=g.attrs['digest'])
-        unpickler = HDF5PersistentUnpickler(g, file=file)
-        obj = unpickler.load()
-        obj._restored_from_pyemma_version = g.attrs['pyemma_version']
-
-        return obj
+    @staticmethod
+    def apply(modifications:[()], state:dict):
+        """ applies modifications to given state
+        Parameters
+        ----------
+        modifications: list of tuples
+            created by this class.list method.
+        state: dict
+            state dictionary
+        """
+        count = 0
+        for a in modifications:
+            if _debug:
+                assert a[0] in ('set', 'mv', 'map', 'rm')
+                logger.debug("processing rule: %s", str(a))
+            if len(a) == 3:
+                operation, name, value = a
+                if operation == 'set':
+                    state[name] = value
+                    count += 1
+                elif operation == 'mv':
+                    try:
+                        arg = state.pop(name)
+                        state[value] = arg
+                        count += 1
+                    except KeyError:
+                        raise DeveloperError("the previous version didn't "
+                                             "store an attribute named '{}'".format(a[1]))
+                elif operation == 'map':
+                    func = value
+                    if hasattr(func, '__func__'):
+                        func = func.__func__
+                    assert callable(func)
+                    state[name] = func(state[name])
+                    count += 1
+            elif len(a) == 2:
+                action, value = a
+                if action == 'rm':
+                    state.pop(value, None)
+                    count += 1
+        assert count == len(modifications), 'was not able to process all modifications on state'
 
 
 class SerializableMixIn(object):
@@ -242,12 +157,12 @@ class SerializableMixIn(object):
     _serialize_fields = ()
     """ attribute names to serialize """
 
-
+    _serialize_interpolation_map = {}
 
     def __new__(cls, *args, **kwargs):
         assert cls != SerializableMixIn.__class__
         if not hasattr(cls, '_serialize_version'):
-            raise DeveloperError('your class {cls} does not have a _serialize_version field!')
+            raise DeveloperError('your class {cls} does not have a _serialize_version field!'.format(cls=cls))
 
         res = super(SerializableMixIn, cls).__new__(cls)
         return res
@@ -274,15 +189,20 @@ class SerializableMixIn(object):
 
         >>> with named_temporary_file() as file: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
         ...    m.save(file, 'simple')
-        ...    pprint.pprint(list_models(file))
         ...    inst_restored = pyemma.load(file, 'simple')
-           {'simple': {'created': '...',
-                'repr': 'MSM(P=array([[ 0.1,  0.9],\n'
-                        "       [ 0.9,  0.1]]), dt_model='1 step', neig=2,\n"
-                        '  pi=array([ 0.5,  0.5]), reversible=True)'...}}
-        >>> assert np.all(inst_restored.P == m.P)
+        >>> np.testing.assert_equal(m.P, inst_restored.P)
         """
-        return save(self, file_name, model_name, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
+        from pyemma._base.serialization.h5file import H5Wrapper
+        try:
+            with H5Wrapper(file_name=file_name) as f:
+                f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
+        except Exception as e:
+            msg = ('During saving the object ("{error}") '
+                    'the following error occurred'.format(error=e))
+            if isinstance(self, Loggable):
+                self.logger.exception(msg)
+            else:
+                logger.exception(msg)
 
     @classmethod
     def load(cls, file_name, model_name='latest'):
@@ -300,15 +220,9 @@ class SerializableMixIn(object):
         -------
         obj : the de-serialized object
         """
-        obj = load(file_name, model_name)
-
-        if obj.__class__ != cls:
-            raise ValueError("Given file '%s' did not contain the right type:"
-                             " desired(%s) vs. actual(%s)" % (file_name, cls, obj.__class__))
-        if not hasattr(cls, '_serialize_version'):
-            raise DeveloperError("your class does not implement the serialization protocol of PyEMMA.")
-
-        return obj
+        from .h5file import H5Wrapper
+        with H5Wrapper(file_name, model_name=model_name, mode='r') as f:
+            return f.model
 
     @property
     def _save_data_producer(self):
@@ -329,25 +243,26 @@ class SerializableMixIn(object):
                 raise RuntimeError('class in chain is not serializable: {}'.format(self.data_producer.__class__))
             self.data_producer._save_data_producer = value
 
-    def _get_state_of_serializeable_fields(self, klass):
+    def _get_state_of_serializeable_fields(self, klass, state):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
-        res = {}
         assert all(isinstance(f, str) for f in klass._serialize_fields)
         for field in klass._serialize_fields:
             # only try to get fields, we actually have.
             if hasattr(self, field):
-                res[field] = getattr(self, field)
-        return res
+                if _debug and field in state:
+                    logger.debug('field "%s" already in state!', field)
+                state[field] = getattr(self, field)
+        return state
 
-    def __interpolate(self, state, klass):
+    @staticmethod
+    def __interpolate(state, klass):
         # First lookup the version of klass in the state (this maps from old versions too).
         # Lookup attributes in interpolation map according to version number of the class.
         # Drag in all prior versions attributes
         if not hasattr(klass, '_serialize_interpolation_map'):
             return
 
-        klass_version = self._get_version_for_class_from_state(state, klass)
-
+        klass_version = SerializableMixIn._get_version_for_class_from_state(state, klass)
         if klass_version > klass._serialize_version:
             return
 
@@ -361,31 +276,8 @@ class SerializableMixIn(object):
                 continue
             if _debug:
                 logger.debug("processing rules for version %s" % key)
-            actions = klass._serialize_interpolation_map[key]
-            for a in actions:
-                if _debug:
-                    logger.debug("processing rule: %s", str(a))
-                if len(a) == 3:
-                    operation, name, value = a
-                    if operation == 'set':
-                        state[name] = value
-                    elif operation == 'mv':
-                        try:
-                            arg = state.pop(name)
-                            state[value] = arg
-                        except KeyError:
-                            raise DeveloperError("the previous version didn't "
-                                                 "store an attribute named '{}'".format(a[1]))
-                    elif operation == 'map':
-                        func = value
-                        if hasattr(func, '__func__'):
-                            func = func.__func__
-                        assert callable(func)
-                        state[name] = func(state[name])
-                elif len(a) == 2:
-                    action, value = a
-                    if action == 'rm':
-                        state.pop(value, None)
+            modifications = klass._serialize_interpolation_map[key]
+            Modifications.apply(modifications, state)
         if _debug:
             logger.debug("interpolated state: %s", state)
 
@@ -410,19 +302,20 @@ class SerializableMixIn(object):
             logger.debug("restoring state for class %s", klass)
 
         # handle field renames, deletion, transformations etc.
-        klass.__interpolate(self, state, klass)
+        SerializableMixIn.__interpolate(state, klass)
 
         if hasattr(klass, '_get_param_names'):
             for param in klass._get_param_names():
                 if param in state:
-                    setattr(self, param, state.pop(param))
+                    pass
+                    #setattr(self, param, state.pop(param))
 
         for field in klass._serialize_fields:
             if field in state:
                 setattr(self, field, state.pop(field))
             else:
                 if _debug:
-                    logger.debug("skipped %s, because it is not declared in _serialize_fields", field)
+                    logger.debug("skipped %s, because it is not contained in state", field)
 
     def __getstate__(self):
         # We just dump the version number for comparison with the actual class.
@@ -434,84 +327,52 @@ class SerializableMixIn(object):
             if not hasattr(self, '_serialize_version'):
                 raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                      .format(klass=self.__class__))
-            res = {}
+            state = {}
             # currently it is used to handle class renames etc.
-            res['class_tree_versions'] = {}
+            state['class_tree_versions'] = {}
             for c in self.__class__.mro():
                 name = _importable_name(c)
                 if hasattr(c, '_serialize_version'):
                     v = c._serialize_version
                 else:
                     v = -1
-                res['class_tree_versions'][name] = v
+                state['class_tree_versions'][name] = v
 
             # if we want to save the chain, do this now:
             if self._save_data_producer:
                 assert hasattr(self, 'data_producer')
-                res['data_producer'] = self.data_producer
-
-            # In case of of a Reader (primary DataSource), we need to store this hidden attribute.
-            if hasattr(self, '_is_reader'):
-                res['_is_reader'] = self._is_reader
+                state['data_producer'] = self.data_producer
 
             classes_to_inspect = self._get_classes_to_inspect()
             if _debug:
                 logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
-            from pyemma._ext.sklearn.base import BaseEstimator
             for klass in classes_to_inspect:
-                inc = self._get_state_of_serializeable_fields(klass)
-                # get estimation parameter for all classes in the hierarchy too.
-                if issubclass(klass, BaseEstimator):
-                    up = {k: getattr(self, k, None) for k in klass._get_param_names()}
-                    inc.update(up)
-                res.update(inc)
+                self._get_state_of_serializeable_fields(klass, state)
 
-            # handle special cases Estimator and Model, just use their parameters.
-            if hasattr(self, 'get_params'):
-                #res.update(self.get_params())
-                # remember if it has been estimated.
-                res['_estimated'] = self._estimated
-                try:
-                    res['model'] = self._model
-                except AttributeError:
-                    pass
+            # validation
+            if _debug:
+                from pyemma.coordinates.data._base.datasource import DataSource
+                if isinstance(self, DataSource):
+                    assert '_is_reader' in state
 
-            # handle model state
-            if hasattr(self, 'get_model_params'):
-                state = self.get_model_params(deep=False)
-                res.update(state)
-
-            return res
+            return state
         except:
             logger.exception('exception during pickling {}'.format(self))
 
     def __setstate__(self, state):
+        # handle exceptions here, because they will be sucked up by pickle and silently fail...
         try:
             assert state
-            # handle exceptions here, because they will be sucked up by pickle and silently fail...
-            classes_to_inspect = self._get_classes_to_inspect()
+            # we need to set the model prior extra fields from _serializable_fields, because the model often contains
+            # the details needed in the parent estimator.
+            if 'model' in state:
+                self._model = state.pop('model')
 
-            if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):
-                self._estimated = state.pop('_estimated')
-                model = state.pop('model', None)
-                self._model = model
-
-            from pyemma._ext.sklearn.base import BaseEstimator
-            for klass in classes_to_inspect:
+            for klass in self._get_classes_to_inspect():
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
-
-            if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
-                # only apply params suitable for the current model
-                names = self._get_model_param_names()
-                new_state = {key: state.pop(key) for key in names if key in state}
-
-                self.set_model_params(**new_state)
 
             if hasattr(self, 'data_producer') and 'data_producer' in state:
                 self.data_producer = state['data_producer']
-
-            if '_is_reader' in state:
-                self._is_reader = state.pop('_is_reader')
 
             state.pop('class_tree_versions')
             assert len(state) == 0, 'unhandled attributes in state'
@@ -520,18 +381,19 @@ class SerializableMixIn(object):
             logger.error('left-overs after setstate: %s', pprint.pformat(state))
         except:
             logger.exception('exception during pickling {}'.format(self))
+            raise
 
     def _get_classes_to_inspect(self):
         """ gets classes self derives from which
          1. are Estimators (or sub classes)
          2. have custom fields (_serialize_fields
          """
-        classes_with_custom_fields = [c for c in self.__class__.mro() if
-                hasattr(c, '_serialize_fields') and c._serialize_fields]
-        # sub classes of Estimator (base estimator might have their own parameters each
-        estimator_classes = [c for c in self.__class__.mro() if (hasattr(c, '_get_param_names')
-                             and hasattr(c, '_serialize_version'))]
-        return classes_with_custom_fields + estimator_classes
+        # TODO: abcmeta will use the same serialize_fields for all subclasses of the super type...
+        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields)
+                                     or (hasattr(c, '_get_param_names')
+                                            and hasattr(c, '_serialize_version')),
+                           self.__class__.mro()))
+        return res
 
     def __init_subclass__(self, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
