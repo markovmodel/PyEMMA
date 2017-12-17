@@ -1,9 +1,10 @@
 import sys
 
+from pyemma._base.serialization.h5file import H5Wrapper
+
 
 def main(argv=None):
     import argparse
-    from pyemma._base.serialization.serialization import list_models
     from pyemma import load
 
     parser = argparse.ArgumentParser()
@@ -21,7 +22,8 @@ def main(argv=None):
 
     for f in args.files:
         try:
-            m = list_models(f)
+            with H5Wrapper(f) as fh:
+                m = fh.models_descriptive
             for k in m:
                 models[f][k] = m[k]
             for model_name, values in m.items():
@@ -55,7 +57,7 @@ def main(argv=None):
                            'created: {created}\n'
                            '{repr}\n'.format(key=model_name, index=i+1,
                                              created=attrs['created'],
-                                             repr=attrs['repr']))
+                                             repr=attrs['class_str']))
                 if 'saved_streaming_chain' in attrs:
                     buff.write('\n---------Input chain---------\n')
                     for j, x in enumerate(attrs['input_chain']):
@@ -66,7 +68,6 @@ def main(argv=None):
         print(buff.read())
     else:
         import json
-
         json.dump(models, fp=sys.stdout)
     return 0
 
