@@ -36,7 +36,13 @@ class Model(object):
     """
 
     def __new__(cls, *args, **kwargs):
-        cls._serialize_fields = cls._get_model_param_names()
+        if hasattr(cls, '_serialize_fields'):
+            new_fields = cls._get_model_param_names()
+            new_fields.extend(cls._serialize_fields)
+            new_fields = tuple(new_fields)
+        else:
+            new_fields = tuple(cls._get_model_param_names())
+        cls._serialize_fields = new_fields
         return super(Model, cls).__new__(cls)
 
     @classmethod
@@ -52,7 +58,6 @@ class Model(object):
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
                                    % (cls,))
-            args.sort()
             return args
         else:
             # No parameters known
