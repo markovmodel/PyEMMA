@@ -368,6 +368,16 @@ class Estimator(_BaseEstimator, Loggable):
     _serialize_version = 0
     _serialize_fields = ('_estimated', 'model')
 
+    def __new__(cls, *args, **kwargs):
+        if hasattr(cls, '_serialize_fields'):
+            new_fields = cls._get_param_names()
+            new_fields.extend(cls._serialize_fields)
+            new_fields = tuple(new_fields)
+        else:
+            new_fields = tuple(cls._get_param_names())
+        cls._serialize_fields = new_fields
+        return super(Estimator, cls).__new__(cls)
+
     def estimate(self, X, **params):
         """ Estimates the model given the data X
 
