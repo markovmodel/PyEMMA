@@ -26,18 +26,18 @@ class H5Wrapper(object):
 
     @property
     def _current_model_group(self):
-        return self._current_model_name
+        return self.__group
 
     @_current_model_group.setter
     def _current_model_group(self, model_name: str):
         if model_name is None:
-            self._current_model_name = None
+            self.__group = None
         else:
             if model_name in self._parent and \
                     not all(attr in self._parent[model_name].attrs for attr in H5Wrapper.stored_attributes):
                 raise ValueError('already saved model does not contain desired attributes: {}. Contains only: {}'
-                                 .format(H5Wrapper.stored_attributes, self._parent[model_name].attrs))
-            self._current_model_name = self._parent.require_group(model_name)
+                                 .format(H5Wrapper.stored_attributes, list(self._parent[model_name].attrs)))
+            self.__group = self._parent.require_group(model_name)
 
     @_current_model_group.deleter
     def _current_model_group(self):
@@ -45,7 +45,7 @@ class H5Wrapper(object):
         if self._current_model_group is None:
             raise AttributeError('can not delete current group, because it is not set.')
         del self._parent[self._current_model_group.name]
-        self._current_model_name = None
+        self.__group = None
 
     @property
     def model(self):
@@ -63,53 +63,117 @@ class H5Wrapper(object):
 
         return obj
 
+    @property
+    def created(self):
+        return self._current_model_group.attrs['created']
+
+    @created.setter
+    def created(self, value):
+        self._current_model_group.attrs['created'] = value
+
+    @property
+    def created_readable(self):
+        return self._current_model_group.attrs['created_readable']
+
+    @created_readable.setter
+    def created_readable(self, value:str):
+        self._current_model_group.attrs['created_readable'] = value
+
+    @property
+    def class_str(self):
+        return self._current_model_group.attrs['class_str']
+
+    @class_str.setter
+    def class_str(self, value:str):
+        self._current_model_group.attrs['class_str'] = value
+
+    @property
+    def class_repr(self):
+        return self._current_model_group.attrs['class_repr']
+
+    @class_repr.setter
+    def class_repr(self, value:str):
+        self._current_model_group.attrs['class_repr'] = value
+
+    @property
+    def save_streaming_chain(self):
+        return self._current_model_group.attrs['saved_streaming_chain']
+
+    @save_streaming_chain.setter
+    def save_streaming_chain(self, value:bool):
+        self._current_model_group.attrs['saved_streaming_chain'] = value
+
+    @property
+    def pyemma_version(self):
+        return self._current_model_group.attrs['pyemma_version']
+
+    @pyemma_version.setter
+    def pyemma_version(self, value:str):
+        self._current_model_group.attrs['pyemma_version'] = value
+
+    def _set_group(self, name, overwrite=False):
+        if name in self._parent:
+            if overwrite:
+                logger.info('overwriting model "%s" in file %s', name, self._file.name)
+                self._current_model_group = 'latest'
+                del self._current_model_group
+            else:
+                raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
+                                   ' or use a different name/file.')
+        self._current_model_group = name
+
     def add_serializable(self, name, obj, overwrite=False, save_streaming_chain=False):
         # create new group with given name and serialize the object in it.
         from pyemma._base.serialization.serialization import SerializableMixIn
         assert isinstance(obj, SerializableMixIn)
 
-        from pyemma import version
-        import time
-
-        if name in self._parent:
-            if overwrite:
-                logger.info('overwriting model "%s" in file %s', name, self._file.name)
-                self._current_model_group = name
-                del self._current_model_group
-            else:
-                raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
-                                   ' or use a different name/file.')
-
+        # save data producer chain?
         old_flag = getattr(obj, '_save_data_producer', None)
         if old_flag is not None:
             obj._save_data_producer = save_streaming_chain
             assert obj._save_data_producer == save_streaming_chain
 
         try:
-            self._current_model_group = name
-            g = self._current_model_group
-            g.attrs['created'] = time.time()
-            g.attrs['created_readable'] = time.asctime()
-            g.attrs['class_str'] = str(obj)
-            g.attrs['class_repr'] = repr(obj)
-            g.attrs['saved_streaming_chain'] = save_streaming_chain
-            # store the current software version
-            g.attrs['pyemma_version'] = version
+            self._set_group(name, overwrite)
+            # store attributes
+            self._save_attributes(obj)
+            # additionally we store, whether the pipeline has been saved.
+            self.save_streaming_chain = save_streaming_chain
 
             # now encode the object (this will write all numpy arrays to current group).
-            file = BytesIO()
-            pickler = HDF5PersistentPickler(g, file=file)
-            pickler.dump(obj)
-            file.seek(0)
-            flat = file.read()
-            # attach the pickle byte string to the H5 file.
-            g.attrs['model'] = np.void(flat)
-            # integrity check
-            g.attrs['digest'] = H5Wrapper._hash(g.attrs)
+            self._pickle_and_attach_object(obj)
         finally:
             # restore old state.
             if old_flag is not None:
                 obj._save_data_producer = old_flag
+
+    def add_object(self, name, obj, overwrite=False):
+        self._set_group(name, overwrite)
+        self._save_attributes(obj)
+        self._pickle_and_attach_object(obj)
+
+    def _save_attributes(self, obj):
+        from pyemma import version
+        import time
+        self.created = time.time()
+        self.created_readable = time.asctime()
+        self.class_str = str(obj)
+        self.class_repr = repr(obj)
+        # store the current software version
+        self.pyemma_version = version
+
+    def _pickle_and_attach_object(self, obj):
+        # now encode the object (this will write all numpy arrays to current group).
+        file = BytesIO()
+        pickler = HDF5PersistentPickler(self._current_model_group, file=file)
+        pickler.dump(obj)
+        file.seek(0)
+        flat = file.read()
+        # attach the pickle byte string to the H5 file.
+        attrs = self._current_model_group.attrs
+        attrs['model'] = np.void(flat)
+        # integrity check
+        attrs['digest'] = H5Wrapper._hash(attrs)
 
     @property
     def models_descriptive(self):
@@ -136,7 +200,7 @@ class H5Wrapper(object):
         import hashlib
         digest = hashlib.sha256()
         for attr in H5Wrapper.stored_attributes:
-            if attr == 'digest':
+            if attr == 'digest' or attr == 'saved_streaming_chain':
                 continue
             value = attributes[attr]
             if attr == 'model':  # do not convert to ascii.

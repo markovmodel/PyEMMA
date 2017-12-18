@@ -377,8 +377,9 @@ class SerializableMixIn(object):
             state.pop('class_tree_versions')
             assert len(state) == 0, 'unhandled attributes in state'
         except AssertionError:
-            import pprint
-            logger.error('left-overs after setstate: %s', pprint.pformat(state))
+            if _debug:
+                import pprint
+                logger.debug('left-overs after setstate: %s', pprint.pformat(state))
         except:
             logger.exception('exception during pickling {}'.format(self))
             raise

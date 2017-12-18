@@ -62,9 +62,10 @@ def topology_from_numpy(atoms, bonds=None):
     from mdtraj.core import element as elem
     out = mdtraj.Topology()
 
-    if not isinstance(bonds, np.ndarray):
-        raise TypeError('bonds must be an instance of numpy.ndarray. '
-                        'You supplied a %s' % type(bonds))
+    # TODO: allow for h5py data sets here, is there a way to check generic ndarray interface?
+    #if not isinstance(bonds, np.ndarray):
+    #    raise TypeError('bonds must be an instance of numpy.ndarray. '
+    #                    'You supplied a %s' % type(bonds))
 
     out._atoms = [None for _ in range(len(atoms))]
     atom_index = 0
