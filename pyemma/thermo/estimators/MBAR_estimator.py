@@ -162,13 +162,15 @@ class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
             models=models, f_therm=self.therm_energies,
             f=self.unbiased_conf_energies_full[self.active_set])
 
+        self.btrajs = btrajs
+
         # done
         return self
 
     def pointwise_free_energies(self, therm_state=None):
         if therm_state is not None:
             assert 0 <= therm_state < self.nthermo
-        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs]
+        mu = [_np.zeros(b.shape[0], dtype=_np.float64) for b in self.btrajs]
         _mbar.get_pointwise_unbiased_free_energies(therm_state,
             _np.log(self.therm_state_counts_full), self.btrajs,
             self.therm_energies, None, mu)
