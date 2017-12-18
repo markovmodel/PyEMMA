@@ -185,7 +185,8 @@ class MSM(_Model, SerializableMixIn):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
-            self.reversible = msmana.is_reversible(self._P)
+            if self.reversible is None:
+                self.reversible = msmana.is_reversible(self._P)
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
