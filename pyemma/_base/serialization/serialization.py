@@ -68,7 +68,7 @@ class Modifications(object):
         return self._ops
 
     @staticmethod
-    def apply(modifications:[()], state:dict):
+    def apply(modifications: [()], state:dict):
         """ applies modifications to given state
         Parameters
         ----------
@@ -183,7 +183,7 @@ class SerializableMixIn(object):
 
         Examples
         --------
-        >>> import pyemma, numpy as np, pprint
+        >>> import pyemma, numpy as np
         >>> from pyemma.util.contexts import named_temporary_file
         >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
 
@@ -264,7 +264,8 @@ class SerializableMixIn(object):
 
         klass_version = SerializableMixIn._get_version_for_class_from_state(state, klass)
         if klass_version > klass._serialize_version:
-            return
+            raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
+                                        'of PyEMMA. This is not supported! You need at least version {version}'.format(version=state['pyemma_version']))
 
         if _debug:
             logger.debug("input state: %s" % state)
@@ -349,6 +350,9 @@ class SerializableMixIn(object):
             for klass in classes_to_inspect:
                 self._get_state_of_serializeable_fields(klass, state)
 
+            from pyemma import version
+            state['pyemma_version'] = version
+
             # validation
             if _debug:
                 from pyemma.coordinates.data._base.datasource import DataSource
@@ -370,11 +374,11 @@ class SerializableMixIn(object):
 
             for klass in self._get_classes_to_inspect():
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
+            state.pop('class_tree_versions')
 
             if hasattr(self, 'data_producer') and 'data_producer' in state:
                 self.data_producer = state['data_producer']
 
-            state.pop('class_tree_versions')
             assert len(state) == 0, 'unhandled attributes in state'
         except AssertionError:
             if _debug:

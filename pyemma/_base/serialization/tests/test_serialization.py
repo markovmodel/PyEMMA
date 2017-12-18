@@ -144,17 +144,15 @@ class TestSerialisation(unittest.TestCase):
         # assert isinstance(restored, test_cls_with_old_locations)
         self.assertIsInstance(restored, test_cls_with_old_locations)
 
-    @unittest.skip("not yet impled")
     def test_recent_model_with_old_version(self):
         """ no backward compatibility, eg. recent models are not supported by old version of software. """
         inst = test_cls_v3()
         inst.save(self.fn)
         from pyemma._base.serialization.serialization import OldVersionUnsupported
         test_cls_v3._serialize_version = 0
-        if True:
-            with self.assertRaises(OldVersionUnsupported) as c:
-                pyemma.load(self.fn)
-        self.assertIn("need at least {version}".format(version=pyemma.version), c.exception.args[0])
+        with self.assertRaises(OldVersionUnsupported) as c:
+            pyemma.load(self.fn)
+        self.assertIn("need at least version {version}".format(version=pyemma.version), c.exception.args[0])
 
     def test_developer_forgot_to_add_version(self):
         """ we're not allowed to use an un-versioned class """
