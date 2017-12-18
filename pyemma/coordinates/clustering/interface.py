@@ -160,10 +160,10 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self._inst = ClusteringBase_f(self.metric, X.shape[1])
 
         # for performance reasons we pre-center the cluster centers for minRMSD.
-        if self.metric == 'minRMSD' and not self._pre_centered:
+        if self.metric == 'minRMSD' and not self._precentered:
             self.logger.debug("precentering cluster centers for minRMSD.")
             self._inst.precenter_centers(self.clustercenters)
-            self._pre_centered = True
+            self._precentered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function
