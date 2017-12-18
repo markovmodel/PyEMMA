@@ -359,24 +359,14 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         return res
 
 
+# we do not want to derive from Serializable here, because this would make all children serializable.
+# However we guide serializable children, what to store/restore.
 class Estimator(_BaseEstimator, Loggable):
     """ Base class for pyEMMA estimators
 
     """
     # flag indicating if estimator's estimate method has been called
     _estimated = False
-    _serialize_version = 0
-    _serialize_fields = ('_estimated', 'model')
-
-    def __new__(cls, *args, **kwargs):
-        if hasattr(cls, '_serialize_fields'):
-            new_fields = cls._get_param_names()
-            new_fields.extend(cls._serialize_fields)
-            new_fields = tuple(new_fields)
-        else:
-            new_fields = tuple(cls._get_param_names())
-        cls._serialize_fields = new_fields
-        return super(Estimator, cls).__new__(cls)
 
     def estimate(self, X, **params):
         """ Estimates the model given the data X
@@ -440,3 +430,19 @@ class Estimator(_BaseEstimator, Loggable):
     def _check_estimated(self):
         if not self._estimated:
             raise Exception("Estimator is not parametrized.")
+
+    # serialization handling
+    _serialize_version = 0
+    _serialize_fields = ('_estimated', 'model')
+
+    def __my_getstate__(self):
+        model_params = self.get_params(deep=False)
+        return model_params
+
+    def __my_setstate__(self, state):
+        if state:
+            params = {k: state[k] for k in self._get_param_names() if k in state}
+            if params:
+                for k in params:
+                    del state[k]
+                self.set_params(**params)

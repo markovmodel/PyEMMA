@@ -305,15 +305,13 @@ class SerializableMixIn(object):
         # handle field renames, deletion, transformations etc.
         SerializableMixIn.__interpolate(state, klass)
 
-        if hasattr(klass, '_get_param_names'):
-            for param in klass._get_param_names():
-                if param in state:
-                    pass
-                    #setattr(self, param, state.pop(param))
-
         for field in klass._serialize_fields:
             if field in state:
-                setattr(self, field, state.pop(field))
+                # ensure we can set attributes. Log culprits.
+                try:
+                    setattr(self, field, state.pop(field))
+                except AttributeError:
+                    logger.exception('field: %s' % field)
             else:
                 if _debug:
                     logger.debug("skipped %s, because it is not contained in state", field)
@@ -328,16 +326,16 @@ class SerializableMixIn(object):
             if not hasattr(self, '_serialize_version'):
                 raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                      .format(klass=self.__class__))
-            state = {}
+            state = {'class_tree_versions': {}}
             # currently it is used to handle class renames etc.
-            state['class_tree_versions'] = {}
+            versions = state['class_tree_versions']
             for c in self.__class__.mro():
                 name = _importable_name(c)
                 if hasattr(c, '_serialize_version'):
                     v = c._serialize_version
                 else:
                     v = -1
-                state['class_tree_versions'][name] = v
+                versions[name] = v
 
             # if we want to save the chain, do this now:
             if self._save_data_producer:
@@ -349,6 +347,14 @@ class SerializableMixIn(object):
                 logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
             for klass in classes_to_inspect:
                 self._get_state_of_serializeable_fields(klass, state)
+
+            from pyemma._base.estimator import Estimator
+            if isinstance(self, Estimator):
+                state.update(Estimator.__my_getstate__(self))
+
+            from pyemma._base.model import Model
+            if isinstance(self, Model):
+                state.update(Model.__my_getstate__(self))
 
             from pyemma import version
             state['pyemma_version'] = version
@@ -375,9 +381,18 @@ class SerializableMixIn(object):
             for klass in self._get_classes_to_inspect():
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
             state.pop('class_tree_versions')
+            state.pop('pyemma_version')
 
             if hasattr(self, 'data_producer') and 'data_producer' in state:
                 self.data_producer = state['data_producer']
+
+            from pyemma._base.estimator import Estimator
+            if isinstance(self, Estimator):
+                Estimator.__my_setstate__(self, state)
+
+            from pyemma._base.model import Model
+            if isinstance(self, Model):
+                Model.__my_setstate__(self, state)
 
             assert len(state) == 0, 'unhandled attributes in state'
         except AssertionError:

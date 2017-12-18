@@ -35,15 +35,18 @@ class Model(object):
 
     """
 
-    def __new__(cls, *args, **kwargs):
-        if hasattr(cls, '_serialize_fields'):
-            new_fields = cls._get_model_param_names()
-            new_fields.extend(cls._serialize_fields)
-            new_fields = tuple(new_fields)
-        else:
-            new_fields = tuple(cls._get_model_param_names())
-        cls._serialize_fields = new_fields
-        return super(Model, cls).__new__(cls)
+    def __my_getstate__(self):
+        # can not be called if self is also an estimator.
+        model_params = self.get_model_params(deep=False)
+        return model_params
+
+    def __my_setstate__(self, state):
+        if state:
+            params = {k: state[k] for k in self._get_model_param_names() if k in state}
+            if params:
+                for k in params:
+                    del state[k]
+                self.set_model_params(**params)
 
     @classmethod
     def _get_model_param_names(cls):
