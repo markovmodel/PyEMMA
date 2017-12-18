@@ -46,26 +46,26 @@ class Modifications(object):
     # class to create state modifications used to handle refactored classes.
 
     def __init__(self):
-        self.ops = []
+        self._ops = []
 
     def rm(self, name):
-        self.ops.append(('rm', name))
+        self._ops.append(('rm', name))
         return self
 
     def mv(self, name, new_name):
-        self.ops.append(('mv', name, new_name))
+        self._ops.append(('mv', name, new_name))
         return self
 
     def map(self, name, callable):
-        self.ops.append(('map', name, callable))
+        self._ops.append(('map', name, callable))
         return self
 
     def set(self, name, value):
-        self.ops.append(('set', name, value))
+        self._ops.append(('set', name, value))
         return self
 
     def list(self):
-        return self.ops
+        return self._ops
 
     @staticmethod
     def apply(modifications:[()], state:dict):
