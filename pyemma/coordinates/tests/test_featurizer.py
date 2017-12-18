@@ -1053,5 +1053,27 @@ class TestCustomFeature(unittest.TestCase):
 
         assert self.feat.dimension()==self.U.shape[1]
 
+    def test_serializable(self):
+        import tempfile
+        f = tempfile.mktemp()
+        try:
+            self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                  self.pairs,
+                                  self.means,
+                                  self.U
+                                  )
+            self.feat.save(f)
+            from pyemma import load
+            import warnings
+            with warnings.catch_warnings(record=True) as cw:
+                restored = load(f)
+                restored.transform(self.traj)
+            assert cw
+            self.assertIn('re-add your custom feature', cw[0].message.args[0])
+        finally:
+            import os
+            os.unlink(f)
+
+
 if __name__ == "__main__":
     unittest.main()
