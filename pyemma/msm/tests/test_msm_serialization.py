@@ -52,13 +52,6 @@ class TestMSMSerialization(unittest.TestCase):
         self.f = tempfile.mktemp()
 
     def tearDown(self):
-        debug = False
-        if debug:
-            import subprocess
-            #print(str(subprocess.check_output(['h5dump', self.f]), encoding='ascii'))
-            print(self.id())
-            kb = os.stat(self.f).st_size / 1024
-            print('size %s kb' % kb)
         try:
             os.unlink(self.f)
         except:
@@ -119,6 +112,7 @@ class TestMSMSerialization(unittest.TestCase):
             np.testing.assert_equal(x, y)
 
     def _compare_MLHMM(self, actual, desired):
+        assert actual._estimated == desired._estimated
         np.testing.assert_equal(actual.P, desired.P)
         from pyemma.msm import BayesianHMSM
         if not isinstance(desired, BayesianHMSM):
@@ -201,9 +195,9 @@ class TestMSMSerialization(unittest.TestCase):
 
     def test_its_bmsm_njobs(self):
         # triggers serialisation by using multiple jobs
-        lags = [1, 2, 3]
-        its_n1 = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', n_jobs=1)
-        its_n2 = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', n_jobs=2)
+        lags = [1, 2]
+        its_n1 = pyemma.msm.timescales_msm(self.obs_micro, nsamples=2, lags=lags, errors='bayes', n_jobs=1)
+        its_n2 = pyemma.msm.timescales_msm(self.obs_micro, nsamples=2, lags=lags, errors='bayes', n_jobs=2)
         np.testing.assert_allclose(its_n1.nits, its_n2.nits)
         np.testing.assert_allclose(its_n1.timescales, its_n2.timescales)
 

@@ -1,3 +1,22 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import numpy as np
 
 
@@ -62,9 +81,10 @@ def topology_from_numpy(atoms, bonds=None):
     from mdtraj.core import element as elem
     out = mdtraj.Topology()
 
-    if not isinstance(bonds, np.ndarray):
-        raise TypeError('bonds must be an instance of numpy.ndarray. '
-                        'You supplied a %s' % type(bonds))
+    # TODO: allow for h5py data sets here, is there a way to check generic ndarray interface?
+    #if not isinstance(bonds, np.ndarray):
+    #    raise TypeError('bonds must be an instance of numpy.ndarray. '
+    #                    'You supplied a %s' % type(bonds))
 
     out._atoms = [None for _ in range(len(atoms))]
     atom_index = 0

@@ -1,9 +1,28 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys
+
+from pyemma._base.serialization.h5file import H5Wrapper
 
 
 def main(argv=None):
     import argparse
-    from pyemma._base.serialization.serialization import list_models
     from pyemma import load
 
     parser = argparse.ArgumentParser()
@@ -21,7 +40,8 @@ def main(argv=None):
 
     for f in args.files:
         try:
-            m = list_models(f)
+            with H5Wrapper(f) as fh:
+                m = fh.models_descriptive
             for k in m:
                 models[f][k] = m[k]
             for model_name, values in m.items():
@@ -55,7 +75,7 @@ def main(argv=None):
                            'created: {created}\n'
                            '{repr}\n'.format(key=model_name, index=i+1,
                                              created=attrs['created'],
-                                             repr=attrs['repr']))
+                                             repr=attrs['class_str']))
                 if 'saved_streaming_chain' in attrs:
                     buff.write('\n---------Input chain---------\n')
                     for j, x in enumerate(attrs['input_chain']):
@@ -66,7 +86,6 @@ def main(argv=None):
         print(buff.read())
     else:
         import json
-
         json.dump(models, fp=sys.stdout)
     return 0
 

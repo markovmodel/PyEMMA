@@ -1,4 +1,23 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from collections import defaultdict
+
+__author_ = 'marscher'
 
 
 class _ClassRenameRegistry(object):
@@ -13,10 +32,8 @@ class _ClassRenameRegistry(object):
         if isinstance(location, str):
             location = [location]
         assert hasattr(new_cls, "__module__"), "makes only sense for importable classes."
-        from pyemma._base.serialization.serialization import _importable_name
-        new_cls_str = _importable_name(new_cls)
         for old in location:
-            self._old_to_new[old] = new_cls_str
+            self._old_to_new[old] = new_cls
             self._new_to_old[new_cls].append(old)
 
     def clear(self):
@@ -29,15 +46,6 @@ class _ClassRenameRegistry(object):
     def old_handled_by(self, klass):
         return self._new_to_old.get(klass, ())
 
-    def upgrade_old_names_in_json(self, data):
-
-        if isinstance(data, bytes):
-            data = data.decode('ascii')
-
-        for renamed in self._old_to_new:
-            new = self._old_to_new[renamed]
-            data = data.replace(renamed, new)
-        return data
 
 class_rename_registry = _ClassRenameRegistry()
 
@@ -63,3 +71,9 @@ class handle_old_classes(object):
     def __call__(self, cls):
         class_rename_registry.add_mapping(self.locations, cls)
         return cls
+
+
+def _importable_name(cls):
+    name = cls.__name__
+    module = cls.__module__
+    return '%s.%s' % (module, name)

@@ -1,10 +1,30 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import pickle
 from pickle import Pickler, Unpickler
 
 import mdtraj
 import numpy as np
 from pyemma._base.serialization.mdtraj_helpers import topology_to_numpy, topology_from_numpy
-from pyemma._base.serialization.util import class_rename_registry
+
+__author__ = 'marscher'
 
 
 class HDF5PersistentPickler(Pickler):
@@ -54,8 +74,8 @@ class HDF5PersistentUnpickler(Unpickler):
         if type_tag == "np_array":
             return self.group[str(key_id)][:]
         elif type_tag == 'md/Topology':
-            atoms = self.group[str(key_id[0])][:]
-            bonds = self.group[str(key_id[1])][:]
+            atoms = self.group[str(key_id[0])]
+            bonds = self.group[str(key_id[1])]
             return topology_from_numpy(atoms, bonds)
         else:
             # Always raises an error if you cannot return the correct object.
@@ -76,14 +96,8 @@ class HDF5PersistentUnpickler(Unpickler):
 
     def find_class(self, module, name):
         self._check_allowed(module)
+        from .util import class_rename_registry
         new_class = class_rename_registry.find_replacement_for_old('{}.{}'.format(module, name))
         if new_class:
-            from importlib import import_module
-            i = new_class.rfind('.')
-            mod = new_class[:i]
-            class_name = new_class[i+1:]
-            module = import_module(mod)
-            cls = getattr(module, class_name)
-            return cls
-
+            return new_class
         return super(HDF5PersistentUnpickler, self).find_class(module, name)
