@@ -4,7 +4,6 @@ from pickle import Pickler, Unpickler
 import mdtraj
 import numpy as np
 from pyemma._base.serialization.mdtraj_helpers import topology_to_numpy, topology_from_numpy
-from pyemma._base.serialization.util import class_rename_registry
 
 
 class HDF5PersistentPickler(Pickler):
@@ -76,14 +75,8 @@ class HDF5PersistentUnpickler(Unpickler):
 
     def find_class(self, module, name):
         self._check_allowed(module)
+        from .util import class_rename_registry
         new_class = class_rename_registry.find_replacement_for_old('{}.{}'.format(module, name))
         if new_class:
-            from importlib import import_module
-            i = new_class.rfind('.')
-            mod = new_class[:i]
-            class_name = new_class[i+1:]
-            module = import_module(mod)
-            cls = getattr(module, class_name)
-            return cls
-
+            return new_class
         return super(HDF5PersistentUnpickler, self).find_class(module, name)

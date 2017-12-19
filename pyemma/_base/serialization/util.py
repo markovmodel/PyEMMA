@@ -13,9 +13,8 @@ class _ClassRenameRegistry(object):
         if isinstance(location, str):
             location = [location]
         assert hasattr(new_cls, "__module__"), "makes only sense for importable classes."
-        new_cls_str = _importable_name(new_cls)
         for old in location:
-            self._old_to_new[old] = new_cls_str
+            self._old_to_new[old] = new_cls
             self._new_to_old[new_cls].append(old)
 
     def clear(self):
@@ -28,15 +27,6 @@ class _ClassRenameRegistry(object):
     def old_handled_by(self, klass):
         return self._new_to_old.get(klass, ())
 
-    def upgrade_old_names_in_json(self, data):
-
-        if isinstance(data, bytes):
-            data = data.decode('ascii')
-
-        for renamed in self._old_to_new:
-            new = self._old_to_new[renamed]
-            data = data.replace(renamed, new)
-        return data
 
 class_rename_registry = _ClassRenameRegistry()
 
