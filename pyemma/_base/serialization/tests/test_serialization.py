@@ -1,14 +1,15 @@
 import os
 import tempfile
 import unittest
+from contextlib import contextmanager
 
 import numpy as np
 
 import pyemma
-from pyemma._base.serialization.serialization import DeveloperError, Modifications
-from pyemma._base.serialization.serialization import SerializableMixIn, class_rename_registry
+from pyemma._base.serialization.serialization import DeveloperError
+from pyemma._base.serialization.serialization import SerializableMixIn
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
-                            to_interpolate_with_functions)
+                            to_interpolate_with_functions, test_cls_property, test_cls_property_v2)
 
 
 class np_container(SerializableMixIn):
@@ -30,33 +31,28 @@ class np_container(SerializableMixIn):
         return True
 
 
+@contextmanager
 def patch_old_location(faked_old_class, new_class):
-    from pyemma._base.serialization.util import handle_old_classes
-
+    # register new_class for current context as replacement for faked_old_class
+    from pyemma._base.serialization.util import handle_old_classes, class_rename_registry
+    import copy
+    from unittest import mock
+    my_copy = copy.deepcopy(class_rename_registry)
     # mark old_loc as being handled by new_class in newer software versions.
     old_loc = "{mod}.{cls}".format(mod=faked_old_class.__module__,
                                    cls=faked_old_class.__name__)
-    handle_old_classes(old_loc)(new_class)
-    return old_loc
+    with mock.patch('pyemma._base.serialization.util.class_rename_registry', my_copy):
+        handle_old_classes(old_loc)(new_class)
+        from pyemma._base.serialization.util import class_rename_registry as c
+        assert c.find_replacement_for_old(old_loc) == new_class
+
+        yield
 
 
 class TestSerialisation(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        # we do not want these global datastructures to be polluted.
-        import copy
-        cls.backup_cls_reg = copy.deepcopy(class_rename_registry)
-        return cls
-
-    @classmethod
-    def tearDownClass(cls):
-        class_rename_registry = cls.backup_cls_reg
-        # TODO: restore backup!
-
     def setUp(self):
         self.fn = tempfile.mktemp()
-        class_rename_registry.clear()
 
     def tearDown(self):
         try:
@@ -89,21 +85,19 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v1()
         inst.save(self.fn)
 
-        patch_old_location(test_cls_v1, test_cls_v2)
-
-        inst_restored = pyemma.load(self.fn)
+        with patch_old_location(test_cls_v1, test_cls_v2):
+            inst_restored = pyemma.load(self.fn)
 
         self.assertIsInstance(inst_restored, test_cls_v2)
         self.assertEqual(inst_restored.z, 42)
-        np.testing.assert_equal(inst_restored.b, [1, 2, 3])
+        np.testing.assert_equal(inst_restored.b, inst.a)
 
     def test_updated_class_v2_to_v3(self):
         inst = test_cls_v2()
         inst.save(self.fn)
 
-        patch_old_location(test_cls_v2, test_cls_v3)
-
-        inst_restored = pyemma.load(self.fn)
+        with patch_old_location(test_cls_v2, test_cls_v3):
+            inst_restored = pyemma.load(self.fn)
 
         self.assertIsInstance(inst_restored, test_cls_v3)
         self.assertEqual(inst_restored.z, 23)
@@ -113,9 +107,8 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v1()
         inst.save(self.fn)
 
-        patch_old_location(test_cls_v1, test_cls_v3)
-
-        inst_restored = pyemma.load(self.fn)
+        with patch_old_location(test_cls_v1, test_cls_v3):
+            inst_restored = pyemma.load(self.fn)
 
         self.assertIsInstance(inst_restored, test_cls_v3)
         self.assertEqual(inst_restored.z, 23)
@@ -125,8 +118,8 @@ class TestSerialisation(unittest.TestCase):
     def test_interpolation_with_map(self):
         c = test_cls_v1()
         c.save(self.fn)
-        patch_old_location(test_cls_v1, to_interpolate_with_functions)
-        inst_restored = pyemma.load(self.fn)
+        with patch_old_location(test_cls_v1, to_interpolate_with_functions):
+            inst_restored = pyemma.load(self.fn)
 
         self.assertIsInstance(inst_restored, to_interpolate_with_functions)
         self.assertEqual(inst_restored.y, to_interpolate_with_functions.map_y(None))
@@ -137,10 +130,9 @@ class TestSerialisation(unittest.TestCase):
         old.save(self.fn)
 
         # mark old_loc as being handled by test_cls_with_old_locations in newer versions.
-        patch_old_location(_deleted_in_old_version, test_cls_with_old_locations)
-
-        # now restore and check it got properly remapped to the new class
-        restored = pyemma.load(self.fn)
+        with patch_old_location(_deleted_in_old_version, test_cls_with_old_locations):
+            # now restore and check it got properly remapped to the new class
+            restored = pyemma.load(self.fn)
         # assert isinstance(restored, test_cls_with_old_locations)
         self.assertIsInstance(restored, test_cls_with_old_locations)
 
@@ -149,10 +141,23 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v3()
         inst.save(self.fn)
         from pyemma._base.serialization.serialization import OldVersionUnsupported
+        old = test_cls_v3._serialize_version
         test_cls_v3._serialize_version = 0
-        with self.assertRaises(OldVersionUnsupported) as c:
-            pyemma.load(self.fn)
-        self.assertIn("need at least version {version}".format(version=pyemma.version), c.exception.args[0])
+        try:
+            with self.assertRaises(OldVersionUnsupported) as c:
+                pyemma.load(self.fn)
+            self.assertIn("need at least version {version}".format(version=pyemma.version), c.exception.args[0])
+        finally:
+            test_cls_v3._serialize_version = old
+
+    @unittest.skip('')
+    def test_rename_property(self):
+        # note that that the property needs to have a setter if we want to be able
+        inst = test_cls_property()
+        inst.save(self.fn)
+        patch_old_location(test_cls_property, test_cls_property_v2)
+        restored = pyemma.load(self.fn)
+        assert hasattr(restored, 'foobar')
 
     def test_developer_forgot_to_add_version(self):
         """ we're not allowed to use an un-versioned class """
@@ -185,6 +190,7 @@ class TestSerialisation(unittest.TestCase):
         finally:
             SerializableMixIn.__getstate__ = old
             np_container.__reduce__ = old2
+
 
 if __name__ == '__main__':
     unittest.main()

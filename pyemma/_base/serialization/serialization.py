@@ -18,7 +18,7 @@
 import logging
 
 from pyemma._base.loggable import Loggable
-from pyemma._base.serialization.util import class_rename_registry, _importable_name
+from pyemma._base.serialization.util import _importable_name
 
 logger = logging.getLogger(__name__)
 _debug = False
@@ -264,6 +264,8 @@ class SerializableMixIn(object):
 
         klass_version = SerializableMixIn._get_version_for_class_from_state(state, klass)
         if klass_version > klass._serialize_version:
+            if _debug:
+                logger.debug('got class version {from_state}. Current version {cls}={current}'.format(cls=klass,from_state=klass_version, current=klass._serialize_version))
             raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
                                         'of PyEMMA. This is not supported! You need at least version {version}'.format(version=state['pyemma_version']))
 
@@ -288,6 +290,7 @@ class SerializableMixIn(object):
         # klass may have renamed, so we have to look this up in the class rename registry.
         names = [_importable_name(klass)]
         # lookup old names, handled by current klass.
+        from .util import class_rename_registry
         names.extend(class_rename_registry.old_handled_by(klass))
         for n in names:
             try:
@@ -295,6 +298,8 @@ class SerializableMixIn(object):
             except KeyError:
                 continue
         # if we did not find a suitable version number return infinity.
+        if _debug:
+            logger.debug('unable to obtain a _serialize_version for class %s', klass)
         return float('inf')
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
@@ -359,15 +364,10 @@ class SerializableMixIn(object):
             from pyemma import version
             state['pyemma_version'] = version
 
-            # validation
-            if _debug:
-                from pyemma.coordinates.data._base.datasource import DataSource
-                if isinstance(self, DataSource):
-                    assert '_is_reader' in state
-
             return state
         except:
             logger.exception('exception during pickling {}'.format(self))
+            raise
 
     def __setstate__(self, state):
         # handle exceptions here, because they will be sucked up by pickle and silently fail...
@@ -399,8 +399,11 @@ class SerializableMixIn(object):
             if _debug:
                 import pprint
                 logger.debug('left-overs after setstate: %s', pprint.pformat(state))
+        except OldVersionUnsupported as e:
+            logger.error(str(e))
+            raise
         except:
-            logger.exception('exception during pickling {}'.format(self))
+            logger.exception('exception during unpickling {}'.format(self))
             raise
 
     def _get_classes_to_inspect(self):
