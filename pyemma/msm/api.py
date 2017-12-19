@@ -1315,7 +1315,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
 def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
                           count_mode='sliding',  connectivity='largest',
-                          dt_traj='1 step', maxiter=500, maxcache=3000):
+                          dt_traj='1 step', maxiter=1000000, eps=0.05, maxcache=3000):
     r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
 
     Returns a :class:`AugmentedMarkovModel` that
@@ -1393,6 +1393,13 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
     maxiter : int, optional
         Optional parameter with specifies the maximum number of
         updates for Lagrange multiplier estimation.
+    
+    eps : float, optional
+        Additional convergence criterion used when some experimental data 
+        are outside the support of the simulation. The value of the eps
+        parameter is the threshold of the relative change in the predicted
+        observables as a function of fixed-point iteration:
+        $$ \mathrm{eps} > \frac{\mid o_{\mathrm{pred}}^{(i+1)}-o_{\mathrm{pred}}^{(i)}\mid }{\sigma}. $$
 
     maxcache : int, optional
         Parameter which specifies the maximum size of cache used
@@ -1426,16 +1433,18 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
 
     References
     ----------
-    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining Experimental and Simulation
-        Data via Augmented Markov Models" PNAS is revision.
+    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining experimental and simulation data 
+       of molecular processes via augmented Markov models" PNAS (2017), 114(31), pp. 8265-8270 
+       doi: 10.1073/pnas.1704803114 
 
     """
     # check input
     if _np.all(sigmas>0):
-      _w = 1./(2*sigmas**2.)
+        _w = 1./(2*sigmas**2.)
     else:
-      raise ValueError('Zero or negative standard errors supplied. Please revise input')
-
+        raise ValueError('Zero or negative standard errors supplied. Please revise input')
+    if ftrajs[0].ndim != 2:
+        raise ValueError("Supplied feature trajectories have inappropriate dimensions (%d) should be exactly 2."%ftrajs[0].ndim)
     if len(dtrajs) != len(ftrajs):
         raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.")
     elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):

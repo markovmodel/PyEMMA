@@ -1609,7 +1609,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _update_mhat(self):
         """ Updates mhat (expectation of observable of the Augmented Markov model) """
-        self.mhat = _np.dot(self.pihat.reshape((self.n_mstates_active,)), self.E_active[:])
+        self.mhat = self.pihat.dot(self.E_active)
         self._update_S()
 
     def _update_S(self):
@@ -1744,7 +1744,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         assert self.n_exp_active == len(self.w)
         assert self.n_exp_active == len(self.m)
 
-
         self.count_outside = []
         self.count_inside = []
         self._lls = []
@@ -1766,9 +1765,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.lagrange = _np.zeros(self.m.shape)
         self.pihat = self.pi.copy()
         self._update_mhat()
-        self._dmhat = _np.ones(_np.shape(self.mhat))
+        self._dmhat = 1e-6*_np.ones(_np.shape(self.mhat))
 
-        # Heuristic to determine number of slices of R-tensors computable at once with the given cache size
+        # Determine number of slices of R-tensors computable at once with the given cache size
         self._slicesz = _np.floor(self._max_cache/(self.P.nbytes/1.e6)).astype(int)
         # compute first bundle of slices
         self._update_Rslices(0)
@@ -1783,13 +1782,13 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self._ls = []
             self._rmss = []
             self._mhats = []
-
+        
         self._update_pihat()
         self._update_mhat()
 
         self._update_Q()
         self._update_X_and_pi()
-
+        
         self._ll_old = self._log_likelihood_biased(self._C_active, self.P, self.m, self.mhat, self.w)
         self._update_G()
 
@@ -1832,21 +1831,25 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 self._ls.append(self.lagrange.copy())
                 self._mhats.append(_np.array(self.mhat))
                 self._rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
-
-            if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged:
-                self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
-                self._converged = True
-                self._estimated = True
-                #die = True
+            if len(self.count_outside)>0:
+              if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged:
+                  self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
+                  self._converged = True
+                  self._estimated = True
+                  #die = True
+            if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
+              self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
+              self._converged = True
+              self._estimated = True
             if self._converged:
-                if _np.abs(self._lls[-2]-self._lls[-1])<1e-3:
+                if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
                    self.logger.info("Converged pihat after %i steps..."%i)
                    die = True
             if die:
                 break
             i = i + 1
             if i == self._max_iter:
-                self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self.max_iter))
+                self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self._max_iter))
 
         _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
 
