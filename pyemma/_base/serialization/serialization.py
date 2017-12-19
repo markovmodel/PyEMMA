@@ -68,7 +68,7 @@ class Modifications(object):
         return self._ops
 
     @staticmethod
-    def apply(modifications: [()], state:dict):
+    def apply(modifications: [()], state: dict):
         """ applies modifications to given state
         Parameters
         ----------
@@ -198,7 +198,7 @@ class SerializableMixIn(object):
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
             msg = ('During saving the object ("{error}") '
-                    'the following error occurred'.format(error=e))
+                   'the following error occurred'.format(error=e))
             if isinstance(self, Loggable):
                 self.logger.exception(msg)
             else:
@@ -237,7 +237,7 @@ class SerializableMixIn(object):
         self.__save_data_producer = value
         # forward flag to the next data producer
         if (value and
-            hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self):
+                hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self):
             # ensure the data_producer is serializable
             if not hasattr(self.data_producer.__class__, '_serialize_version'):
                 raise RuntimeError('class in chain is not serializable: {}'.format(self.data_producer.__class__))
@@ -265,9 +265,12 @@ class SerializableMixIn(object):
         klass_version = SerializableMixIn._get_version_for_class_from_state(state, klass)
         if klass_version > klass._serialize_version:
             if _debug:
-                logger.debug('got class version {from_state}. Current version {cls}={current}'.format(cls=klass,from_state=klass_version, current=klass._serialize_version))
+                logger.debug('got class version {from_state}. Current version {cls}={current}'.format(cls=klass,
+                                                                                                      from_state=klass_version,
+                                                                                                      current=klass._serialize_version))
             raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
-                                        'of PyEMMA. This is not supported! You need at least version {version}'.format(version=state['pyemma_version']))
+                                        'of PyEMMA. This is not supported! You need at least version {version}'.format(
+                version=state['pyemma_version']))
 
         if _debug:
             logger.debug("input state: %s" % state)
@@ -408,14 +411,13 @@ class SerializableMixIn(object):
 
     def _get_classes_to_inspect(self):
         """ gets classes self derives from which
-         1. are Estimators (or sub classes)
-         2. have custom fields (_serialize_fields
+         1. have custom fields: _serialize_fields
          """
+        from inspect import getmro
         # TODO: abcmeta will use the same serialize_fields for all subclasses of the super type...
-        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields)
-                                     or (hasattr(c, '_get_param_names')
-                                            and hasattr(c, '_serialize_version')),
-                           self.__class__.mro()))
+        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields
+                                     and hasattr(c, '_serialize_version')),
+                          self.__class__.__mro__))
         return res
 
     def __init_subclass__(self, *args, **kwargs):

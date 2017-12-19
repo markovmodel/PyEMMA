@@ -436,13 +436,19 @@ class Estimator(_BaseEstimator, Loggable):
     _serialize_fields = ('_estimated', 'model')
 
     def __my_getstate__(self):
-        model_params = self.get_params(deep=False)
-        return model_params
+        state = {}
+
+        inspect_classes = filter(lambda c: hasattr(c, '_get_param_names'), self.__class__.__mro__)
+        for c in inspect_classes:
+            state.update({k: getattr(self, k, None) for k in c._get_param_names()})
+
+        return state
 
     def __my_setstate__(self, state):
         if state:
-            params = {k: state[k] for k in self._get_param_names() if k in state}
-            if params:
-                for k in params:
-                    del state[k]
-                self.set_params(**params)
+            valid_parameters = list()
+            for c in filter(lambda c: hasattr(c, '_get_param_names'), self.__class__.__mro__):
+                valid_parameters.extend(c._get_param_names())
+            for param in valid_parameters:
+                if param in state:
+                    setattr(self, param, state.pop(param))
