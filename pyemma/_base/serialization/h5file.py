@@ -24,6 +24,24 @@ class H5Wrapper(object):
         self._parent = self._file.require_group('pyemma')
         self._current_model_group = model_name
 
+    def select_model(self, name):
+        """ choose an existing model """
+        if name not in self._parent:
+            raise KeyError('model "{}" not present'.format(name))
+        self._current_model_group = name
+
+    def _set_group(self, name, overwrite=False):
+        # used during saving.
+        if name in self._parent:
+            if overwrite:
+                logger.info('overwriting model "%s" in file %s', name, self._file.name)
+                self.__group = self._parent[name]
+                del self._current_model_group
+            else:
+                raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
+                                   ' or use a different name/file.')
+        self._current_model_group = name
+
     @property
     def _current_model_group(self):
         return self.__group
@@ -59,68 +77,9 @@ class H5Wrapper(object):
         self._hash(g.attrs, compare_to=g.attrs['digest'])
         unpickler = HDF5PersistentUnpickler(g, file=file)
         obj = unpickler.load()
-        obj._restored_from_pyemma_version = g.attrs['pyemma_version']
+        obj._restored_from_pyemma_version = self.pyemma_version
 
         return obj
-
-    @property
-    def created(self):
-        return self._current_model_group.attrs['created']
-
-    @created.setter
-    def created(self, value):
-        self._current_model_group.attrs['created'] = value
-
-    @property
-    def created_readable(self):
-        return self._current_model_group.attrs['created_readable']
-
-    @created_readable.setter
-    def created_readable(self, value:str):
-        self._current_model_group.attrs['created_readable'] = value
-
-    @property
-    def class_str(self):
-        return self._current_model_group.attrs['class_str']
-
-    @class_str.setter
-    def class_str(self, value:str):
-        self._current_model_group.attrs['class_str'] = value
-
-    @property
-    def class_repr(self):
-        return self._current_model_group.attrs['class_repr']
-
-    @class_repr.setter
-    def class_repr(self, value:str):
-        self._current_model_group.attrs['class_repr'] = value
-
-    @property
-    def save_streaming_chain(self):
-        return self._current_model_group.attrs['saved_streaming_chain']
-
-    @save_streaming_chain.setter
-    def save_streaming_chain(self, value:bool):
-        self._current_model_group.attrs['saved_streaming_chain'] = value
-
-    @property
-    def pyemma_version(self):
-        return self._current_model_group.attrs['pyemma_version']
-
-    @pyemma_version.setter
-    def pyemma_version(self, value:str):
-        self._current_model_group.attrs['pyemma_version'] = value
-
-    def _set_group(self, name, overwrite=False):
-        if name in self._parent:
-            if overwrite:
-                logger.info('overwriting model "%s" in file %s', name, self._file.name)
-                self._current_model_group = 'latest'
-                del self._current_model_group
-            else:
-                raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
-                                   ' or use a different name/file.')
-        self._current_model_group = name
 
     def add_serializable(self, name, obj, overwrite=False, save_streaming_chain=False):
         # create new group with given name and serialize the object in it.
@@ -179,11 +138,6 @@ class H5Wrapper(object):
     def models_descriptive(self):
         """ list all stored models in given file.
 
-        Parameters
-        ----------
-        file_name: str
-            path to file to list models for
-
         Returns
         -------
         dict: {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
@@ -214,6 +168,54 @@ class H5Wrapper(object):
             from pyemma._base.serialization.serialization import IntegrityError
             raise IntegrityError('mismatch:{} !=\n{}'.format(digest, compare_to))
         return digest.hexdigest()
+
+    @property
+    def created(self):
+        return self._current_model_group.attrs['created']
+
+    @created.setter
+    def created(self, value):
+        self._current_model_group.attrs['created'] = value
+
+    @property
+    def created_readable(self):
+        return self._current_model_group.attrs['created_readable']
+
+    @created_readable.setter
+    def created_readable(self, value:str):
+        self._current_model_group.attrs['created_readable'] = value
+
+    @property
+    def class_str(self):
+        return self._current_model_group.attrs['class_str']
+
+    @class_str.setter
+    def class_str(self, value:str):
+        self._current_model_group.attrs['class_str'] = value
+
+    @property
+    def class_repr(self):
+        return self._current_model_group.attrs['class_repr']
+
+    @class_repr.setter
+    def class_repr(self, value:str):
+        self._current_model_group.attrs['class_repr'] = value
+
+    @property
+    def save_streaming_chain(self):
+        return self._current_model_group.attrs['saved_streaming_chain']
+
+    @save_streaming_chain.setter
+    def save_streaming_chain(self, value:bool):
+        self._current_model_group.attrs['saved_streaming_chain'] = value
+
+    @property
+    def pyemma_version(self):
+        return self._current_model_group.attrs['pyemma_version']
+
+    @pyemma_version.setter
+    def pyemma_version(self, value:str):
+        self._current_model_group.attrs['pyemma_version'] = value
 
     def __enter__(self):
         return self
