@@ -26,9 +26,6 @@ _debug = False
 if _debug:
     logger.level = logging.DEBUG
 
-# indicate whether serialization handlers have already been registered
-_handlers_registered = False
-
 
 class DeveloperError(Exception):
     """ the devs have done something wrong. """
@@ -129,10 +126,6 @@ class SerializableMixIn(object):
     3. ('set', 'name', value) -> set an attribute with name 'name' to given value.
     4. ('map', 'name', func) -> apply the function 'func' to attribute 'name'. The function
       should accept one argument, namely the attribute and return the new value for it.
-
-    Similar to map, there are two callbacks to hook into the serialization process:
-    5. ('set_state_hook', func) -> a function which may transform the state dictionary
-       before __getstate__ returns.
 
     Example
     -------

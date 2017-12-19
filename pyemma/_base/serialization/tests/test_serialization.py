@@ -1,3 +1,20 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import tempfile
 import unittest
@@ -149,15 +166,6 @@ class TestSerialisation(unittest.TestCase):
             self.assertIn("need at least version {version}".format(version=pyemma.version), c.exception.args[0])
         finally:
             test_cls_v3._serialize_version = old
-
-    @unittest.skip('')
-    def test_rename_property(self):
-        # note that that the property needs to have a setter if we want to be able
-        inst = test_cls_property()
-        inst.save(self.fn)
-        patch_old_location(test_cls_property, test_cls_property_v2)
-        restored = pyemma.load(self.fn)
-        assert hasattr(restored, 'foobar')
 
     def test_developer_forgot_to_add_version(self):
         """ we're not allowed to use an un-versioned class """
