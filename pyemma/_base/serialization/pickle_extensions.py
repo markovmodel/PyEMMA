@@ -50,7 +50,7 @@ class HDF5PersistentPickler(Pickler):
             atoms, bonds = topology_to_numpy(obj)
             atom_i = self._store(atoms)
             bond_i = self._store(bonds)
-            return "md/Topology", (atom_i, bond_i)
+            return 'md/Topology', (atom_i, bond_i)
 
         return None
 
