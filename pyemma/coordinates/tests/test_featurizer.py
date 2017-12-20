@@ -85,6 +85,7 @@ class TestFeaturizer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.maxDiff = None
         import tempfile
         cls.asn_leu_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
         with open(cls.asn_leu_pdbfile, 'w') as fh:
@@ -783,8 +784,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
             return x - 1
 
         expected_active += 1
-        my_feature = CustomFeature(my_func)
-        my_feature.dimension = 3
+        my_feature = CustomFeature(my_func, dim=3)
         featurizer.add_custom_feature(my_feature)
 
         self.assertEqual(len(featurizer.active_features), expected_active)
@@ -1064,12 +1064,10 @@ class TestCustomFeature(unittest.TestCase):
                                   )
             self.feat.save(f)
             from pyemma import load
-            import warnings
-            with warnings.catch_warnings(record=True) as cw:
-                restored = load(f)
+            restored = load(f)
+            with self.assertRaises(NotImplementedError) as cw:
                 restored.transform(self.traj)
-            assert cw
-            self.assertIn('re-add your custom feature', cw[0].message.args[0])
+            self.assertIn('re-add your custom feature', cw.exception.args[0])
         finally:
             import os
             os.unlink(f)
