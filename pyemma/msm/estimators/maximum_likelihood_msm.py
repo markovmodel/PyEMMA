@@ -1601,7 +1601,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def _update_pihat(self):
         """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """
-        expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
+        expons = _np.einsum('i,ji->j', self.lagrange, self.E_active )
+        #expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
 
         _ph_unnom = self.pi*_np.exp(expons)
@@ -1837,10 +1838,11 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                   self._converged = True
                   self._estimated = True
                   #die = True
-            if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
-              self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
-              self._converged = True
-              self._estimated = True
+            else:
+              if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
+                self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
+                self._converged = True
+                self._estimated = True
             if self._converged:
                 if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
                    self.logger.info("Converged pihat after %i steps..."%i)

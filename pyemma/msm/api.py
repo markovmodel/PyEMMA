@@ -1329,13 +1329,14 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         or a single ndarray for only one trajectory.
     ftrajs : list of trajectories of microscopic observables. Has to have
         the same shape (number of trajectories and timesteps) as dtrajs.
-        Each timestep in each trajectory should match the shape of m and sigma.
+        Each timestep in each trajectory should match the shape of m and sigma, k.
     lag : int
         lag time at which transitions are counted and the transition matrix is
         estimated.
-    m   : Experimental averages.
-    sigmas : Standard error for each experimental observable, same shape as m,
-            number of experimental observables.
+    m   :  ndarray(k)
+        Experimental averages.
+    sigmas : ndarray(k)
+        Standard error for each experimental observable.
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
@@ -1443,8 +1444,8 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         _w = 1./(2*sigmas**2.)
     else:
         raise ValueError('Zero or negative standard errors supplied. Please revise input')
-    if ftrajs[0].ndim != 2:
-        raise ValueError("Supplied feature trajectories have inappropriate dimensions (%d) should be exactly 2."%ftrajs[0].ndim)
+    if ftrajs[0].ndim < 2:
+        raise ValueError("Supplied feature trajectories have inappropriate dimensions (%d) should be atleast 2."%ftrajs[0].ndim)
     if len(dtrajs) != len(ftrajs):
         raise ValueError("A different number of dtrajs and ftrajs were supplied as input. They must have exactly a one-to-one correspondence.")
     elif not _np.all([len(dt)==len(ft) for dt,ft in zip(dtrajs, ftrajs)]):
