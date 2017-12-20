@@ -280,9 +280,8 @@ class ReactiveFlux(Model, SerializableMixIn):
 
         Parameters
         ----------
-            (tpt_sets, A, B) with
-                tpt_sets : list of int-iterables
-                sets of states that shall be distinguished in the coarse-grained flux.
+        tpt_sets : list of int-iterables
+            sets of states that shall be distinguished in the coarse-grained flux.
 
         Returns
         -------
