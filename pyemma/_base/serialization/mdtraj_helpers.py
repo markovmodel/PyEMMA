@@ -87,7 +87,6 @@ def topology_from_numpy(atoms, bonds=None):
     #                    'You supplied a %s' % type(bonds))
 
     out._atoms = [None for _ in range(len(atoms))]
-    atom_index = 0
 
     N = np.arange(0, len(atoms))
 
@@ -112,10 +111,9 @@ def topology_from_numpy(atoms, bonds=None):
             for ix, atom in enumerate(residue_atoms):
                 e = atom['element'].decode('ascii')
                 a = Atom(atom['name'].decode('ascii'), elem.get_by_symbol(e),
-                         indices[ix], r, serial=atom['serial'])
+                         int(indices[ix]), r, serial=atom['serial'])
                 out._atoms[indices[ix]] = a
                 r._atoms.append(a)
-                atom_index += 1
 
     for ai1, ai2 in bonds:
         out.add_bond(out.atom(ai1), out.atom(ai2))
