@@ -25,7 +25,8 @@ def topology_to_numpy(top):
 
     Returns
     -------
-    atoms : pandas.DataFrame
+    atoms : np.ndarray dtype=[("serial", 'i4'), ("name", 'S4'), ("element", 'S3'),
+                              ("resSeq", 'i4'), ("resName",'S4'), ("chainID", 'i4'), ("segmentID", 'S4')]
         The atoms in the topology, represented as a data frame.
     bonds : np.ndarray
         The bonds in this topology, represented as an n_bonds x 2 array
@@ -35,8 +36,8 @@ def topology_to_numpy(top):
              atom.residue.resSeq, atom.residue.name,
              atom.residue.chain.index, atom.segment_id) for atom in top.atoms]
     atoms = np.array(data,
-                    dtype=[("serial", 'i4'), ("name", 'S4'), ("element", 'S3'),
-                           ("resSeq", 'i4'), ("resName",'S4'), ("chainID", 'i4'), ("segmentID", 'S4')])
+                     dtype=[("serial", 'i4'), ("name", 'S4'), ("element", 'S3'),
+                            ("resSeq", 'i4'), ("resName", 'S4'), ("chainID", 'i4'), ("segmentID", 'S4')])
 
     bonds = np.array([(a.index, b.index) for (a, b) in top.bonds])
     return atoms, bonds

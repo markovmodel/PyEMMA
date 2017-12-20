@@ -15,28 +15,52 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import os
 import tempfile
 import unittest
+import pkg_resources
+import mdtraj
 
 from pyemma._base.serialization.h5file import H5Wrapper
 
 
 class TestTopology(unittest.TestCase):
+    maxDiff = None
 
-    def test(self):
-        import pkg_resources
-        import mdtraj
+    def setUp(self):
+        self.f = tempfile.mktemp('.h5')
 
+    def tearDown(self):
+        os.unlink(self.f)
+
+    def _load_cmp(self, pdb):
+        top = mdtraj.load(pdb).top
+        with H5Wrapper(self.f) as fh:
+            fh.add_object('top', top)
+            restored = fh.model
+
+        assert top == restored
+        assert tuple(top.atoms) == tuple(restored.atoms)
+        assert tuple(top.bonds) == tuple(restored.bonds)
+
+        # mdtraj (1.9.1) does not impl eq for Residue...
+        def eq(self, other):
+            from mdtraj.core.topology import Residue
+            if not isinstance(other, Residue):
+                return False
+            return (self.index == other.index
+                    and self.resSeq == other.resSeq
+                    and other.name == self.name
+                    and tuple(other.atoms) == tuple(self.atoms))
+
+        from unittest import mock
+        with mock.patch('mdtraj.core.topology.Residue.__eq__', eq):
+            self.assertEqual(tuple(top.residues), tuple(restored.residues))
+
+    def test_opsin(self):
         traj = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/opsin_aa_1_frame.pdb.gz')
-        top = mdtraj.load(traj).top
-        f = tempfile.mktemp('.h5')
-        try:
-            with H5Wrapper(f) as fh:
-                fh.add_object('top', top)
-                restored = fh.model
+        self._load_cmp(traj)
 
-            assert top == restored
-        finally:
-            import os
-            os.unlink(f)
+    def test_bpti(self):
+        traj = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/bpti_ca.pdb')
+        self._load_cmp(traj)
