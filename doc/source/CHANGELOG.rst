@@ -13,7 +13,11 @@ your Python installation to at least version 3.5.
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
   a given threshold. #1106
-- featurizer: selection based features allow alignment to a reference structure. #1184
+- coodinates: selection based features allow alignment to a reference structure. #1184
+- coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
+- coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
+  extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
+
 
 - References:
 
@@ -34,6 +38,8 @@ your Python installation to at least version 3.5.
   multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
   If nothing is set, the physical cpu count is considered.
 - msm: calling score_cv does not modify the object anymore. #1178
+- base:estimator: fixed signature of fit function for compatability with scikit-learn. #1193
+- coordinates: assign_to_centers now handles stride argument again. #1190
 
 
 2.4 (05-19-2017)

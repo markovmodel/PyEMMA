@@ -13,18 +13,21 @@ build:
   script_env:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
-  script: python -B setup.py install --single-version-externally-managed --record record.txt
+   - PYEMMA_NJOBS
+  script: python setup.py install --single-version-externally-managed --record record.txt
 
 requirements:
   build:
     - cython
-    - gcc # [linux or osx]
     - mdtraj
-    - numpy x.x
-    - pybind11
+    # actually we could build with np18, but fastcluster (dep of mdtraj, we link against) is only avail for 1.9
+    - numpy 1.9.*  # [not (win and (py35 or py36))]
+    - numpy 1.9.*  # [win and py35]
+    - numpy 1.11.*  # [win and py36]
     - python >=3
     - scipy
     - setuptools
+    - gcc # [ not win ]
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
@@ -32,7 +35,9 @@ requirements:
     - matplotlib
     - mdtraj
     - msmtools >=1.2
-    - numpy x.x
+    - numpy >=1.9  # [not (win and (py35 or py36))]
+    - numpy >=1.9  # [win and py35]
+    - numpy >=1.11  # [win and py36]
     - pathos
     - psutil >3.1
     - python >=3
@@ -52,7 +57,12 @@ test:
     - h5py
     - pytest
     - pytest-cov
-    - pytest-faulthandler
+   # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
+    - pytest-faulthandler # [not win]
+    - pytest-xdist
+    - scikit-learn
+    # https://github.com/Frozenball/pytest-sugar/issues/124
+    #- pytest-sugar
 
 about:
   home: http://emma-project.org

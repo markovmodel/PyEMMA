@@ -26,7 +26,6 @@ from __future__ import absolute_import
 import unittest
 
 import numpy as np
-import scipy.sparse
 import warnings
 
 from msmtools.generation import generate_traj
@@ -90,7 +89,7 @@ class TestAMMSimple(unittest.TestCase):
         self.assertTrue(np.allclose(self.AMM.pi, amm.pi))
         self.assertTrue(np.allclose(self.AMM.lagrange, amm.lagrange))
 
-class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
+class TestAMMDoubleWell(_tmsm):
 
     @classmethod
     def setUpClass(cls):
@@ -335,6 +334,8 @@ class TestAMMDoubleWell(_tmsm):#unittest.TestCase):
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.amm)
 
+# avoid parent class being executed as additional test case
+del _tmsm
 
 if __name__ == "__main__":
     unittest.main()

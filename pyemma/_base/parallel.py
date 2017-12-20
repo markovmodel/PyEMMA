@@ -1,8 +1,8 @@
 
 def get_n_jobs(logger=None):
-    import psutil
 
     def _from_hardware():
+        import psutil
         return psutil.cpu_count(logical=False)
 
     def _from_env(var):
@@ -14,8 +14,8 @@ def get_n_jobs(logger=None):
             except ValueError as ve:
                 if logger is not None:
                     logger.warning("could not parse env variable '{var}'."
-                                   " Value='{val}'. Error={err}. Will use {val} jobs."
-                                   .format(err=ve, val=val, var=var))
+                                   " Value='{val}'. Error={err}."
+                                   .format(err=ve, val=e, var=var))
         return None
 
     slurm_njobs = _from_env('SLURM_CPUS_ON_NODE')  # Number of CPUS on the allocated SLURM node.
@@ -24,12 +24,14 @@ def get_n_jobs(logger=None):
     if slurm_njobs and pyemma_njobs:
         import warning
         warning.warn('two settings for n_jobs from environment: PYEMMA_NJOBS and SLURM_CPUS_ON_NODE. '
-                     'Respecting the SLURM setting to avoid overprovisioning')
+                     'Respecting the SLURM setting to avoid overprovisioning resources.')
 
     # slurm njobs will be used preferably.
     val = slurm_njobs or pyemma_njobs
     if not val:
         val = _from_hardware()
+    if logger is not None:
+        logger.debug('determined n_jobs: %s', val)
     return val
 
 
@@ -42,31 +44,21 @@ class NJobsMixIn(object):
 
         Returns
         -------
-        If None it will return number of processors /or cores or the setting of 'OMP_NUM_THREADS' env variable.
+        If None it will return the setting of 'PYEMMA_NJOBS' or
+        'SLURM_CPUS_ON_NODE' environment variable. If none of these environment variables exist,
+        the number of processors /or cores is returned.
 
         Notes
         -----
-        By setting the environment variable 'OMP_NUM_THREADS' to an integer,
-        one will override the default argument of n_jobs (currently None).
+        This setting will effectively be multiplied by the the number of threads used by NumPy for
+        algorithms which use multiple processes. So take care if you choose this manually.
         """
+        if not hasattr(self, '_n_jobs'):
+            self._n_jobs = get_n_jobs(logger=getattr(self, 'logger'))
         return self._n_jobs
 
     @n_jobs.setter
     def n_jobs(self, val):
-        """ set number of jobs (processes/threads) to use.
-
-        Note that NumPy also uses concurrency (set number of threads of NumPy by setting OMP_NUM_THREADS)
-        and this will then multiply with number of jobs set here.
-
-        Parameters
-        ----------
-        val: int or None
-            a positive int for the number of jobs. Or None to usage all available resources.
-
-        If set to None, this will use all available physical CPUs or respect the environment variable "PYEMMA_NJOBS"
-        to obtain a job number.
-
-        """
         if val is None:
             val = get_n_jobs(logger=getattr(self, 'logger'))
         self._n_jobs = int(val)

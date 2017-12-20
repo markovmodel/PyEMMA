@@ -10,12 +10,13 @@ SPHINXOPTS    = -j8 -v
 SPHINXBUILD   = LANG=C sphinx-build
 PAPER         =
 
+BUILD_DIR?=build
 FILES=
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+ALLSPHINXOPTS   = -d $(BUILD_DIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
 NBCONVERT_CONFIG = $(realpath jupyter_nbconvert_config.py)
@@ -31,11 +32,11 @@ help:
 	@echo "  latex     to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
 
 clean:
-	-rm -rf build/* source/generated source/api/generated
+	-rm -rf $(BUILD_DIR)/* source/generated source/api/generated
 
 html:
-	mkdir -p build/html build/doctrees
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) build/html $(FILES)
+	mkdir -p $(BUILD_DIR)/html $(BUILD_DIR)/doctrees
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILD_DIR)/html $(FILES)
 	@echo
 	@echo "Build finished. The HTML pages are in build/html."
 

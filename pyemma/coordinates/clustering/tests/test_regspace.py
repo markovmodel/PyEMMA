@@ -133,5 +133,12 @@ class TestRegSpaceClustering(unittest.TestCase):
             assert len(out) == self.clustering.number_of_trajectories()
             assert len(out[0]) == self.clustering.trajectory_lengths()[0]
 
+    def test_regspace_nthreads(self):
+        for metric in ('euclidean', 'minRMSD'):
+            self.clustering.estimate(self.src, n_jobs=1, dmin=self.dmin, metric=metric)
+            cl2 = cluster_regspace(self.src, n_jobs=2, dmin=self.dmin, metric=metric)
+            np.testing.assert_equal(self.clustering.clustercenters, cl2.clustercenters)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,8 @@ machine:
   environment:
     PATH: $HOME/miniconda/bin:$PATH
     PYTHONHASHSEED: 0
-    OMP_NUM_THREADS: 2
+    OMP_NUM_THREADS: 1
+    PYEMMA_NJOBS: 1
 
 dependencies:
   cache_directories:
@@ -15,11 +16,10 @@ checkout:
 dependencies:
   override:
     - devtools/ci/circle/install_miniconda.sh
-    - conda config --add channels conda-forge 
+    - conda config --add channels conda-forge
     - conda config --set always_yes true
     - conda install conda-build
 
 test:
   override:
-    - conda build devtools/conda-recipe --numpy=112 --python=3.6
-
+    - conda build devtools/conda-recipe --python=3.6

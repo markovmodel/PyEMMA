@@ -65,7 +65,8 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     class _centers_wrapper(object):
         def __init__(self, arr):
-            self.centers = np.asarray(arr, dtype='float32', order='C')
+            # take a copy, because centering is an inplace operation!
+            self.centers = np.asarray(arr, dtype='float32', order='C')[:]
             self.pre_centered = False
 
     @property
@@ -156,11 +157,10 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self._inst = ClusteringBase_f(self.metric, X.shape[1])
 
         # for performance reasons we pre-center the cluster centers for minRMSD.
-        if self.metric == 'minRMSD':
-            if not self._clustercenters.pre_centered:
-                self.logger.debug("precentering cluster centers for minRMSD.")
-                self._inst.precenter_centers(self.clustercenters)
-                self._clustercenters.pre_centered = True
+        if self.metric == 'minRMSD' and not self._clustercenters.pre_centered:
+            self.logger.debug("precentering cluster centers for minRMSD.")
+            self._inst.precenter_centers(self.clustercenters)
+            self._clustercenters.pre_centered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function

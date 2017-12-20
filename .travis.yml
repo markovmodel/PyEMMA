@@ -1,4 +1,4 @@
-language: c 
+language: c
 git:
   submodules: false
   depth: 500
@@ -8,29 +8,31 @@ os:
 
 sudo: false
 
+cache:
+  directories:
+    - $HOME/miniconda
+  timeout: 480
+before_cache:
+  # Remove since we're caching the extracted directories
+  - conda clean -ilps -v
+  - rm -rvf "${MINICONDA_DIR}/conda-bld/"
+
 env:
   global:
-    - PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="conda-build=3"
-    - PACKAGENAME=pyemma
-    - ORGNAME=omnia
+    - MINICONDA_DIR="$HOME/miniconda"
     - PYTHONHASHSEED=0
     - OMP_NUM_THREADS=2
+    - PYEMMA_NJOBS=1
     - MACOSX_DEPLOYMENT_TARGET=10.9
   matrix:
-    - CONDA_PY=3.5 CONDA_NPY=1.11
-    - CONDA_PY=3.6 CONDA_NPY=1.12
-    - CONDA_PY=3.6 CONDA_NPY=1.13
+    - CONDA_PY=3.5
+    - CONDA_PY=3.6
 
 before_install:
-- devtools/ci/travis/install_miniconda.sh
-- conda config --set always_yes true
-- conda config --add channels conda-forge
-- conda install -q $common_py_deps
+- source devtools/ci/travis/install_miniconda.sh
 
 script:
 - conda build -q devtools/conda-recipe
 
 after_script:
-- bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY,CONDA_NPY
-
+- bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY
