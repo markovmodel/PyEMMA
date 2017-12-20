@@ -31,8 +31,12 @@ class TestTopology(unittest.TestCase):
         traj = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/opsin_aa_1_frame.pdb.gz')
         top = mdtraj.load(traj).top
         f = tempfile.mktemp('.h5')
-        with H5Wrapper(f) as fh:
-            fh.add_object('top', top)
-            restored = fh.model
+        try:
+            with H5Wrapper(f) as fh:
+                fh.add_object('top', top)
+                restored = fh.model
 
-        assert top == restored
+            assert top == restored
+        finally:
+            import os
+            os.unlink(f)
