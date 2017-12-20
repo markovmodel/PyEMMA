@@ -47,6 +47,20 @@ class np_container(SerializableMixIn):
 
         return True
 
+class private_attr(SerializableMixIn):
+    _serialize_fields = ('_private_attr___foo', )
+    _serialize_version = 0
+
+    def __init__(self):
+        self.___foo = None
+
+    def has_private_attr(self):
+        try:
+            assert self.___foo is None
+            return True
+        except AttributeError:
+            return False
+
 
 @contextmanager
 def patch_old_location(faked_old_class, new_class):
@@ -199,6 +213,11 @@ class TestSerialisation(unittest.TestCase):
             SerializableMixIn.__getstate__ = old
             np_container.__reduce__ = old2
 
+    def test_private(self):
+        inst = private_attr()
+        inst.save(self.fn)
+        restore = pyemma.load(self.fn)
+        assert restore.has_private_attr()
 
 if __name__ == '__main__':
     unittest.main()
