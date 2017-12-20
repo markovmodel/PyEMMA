@@ -1759,7 +1759,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 self.count_inside.append(i)
             i = i + 1
 
-            self.logger.info("Total experimental constraints outside support %d of %d"%(len(self.count_outside),len(self.E_min)))
+        self.logger.info("Total experimental constraints outside support %d of %d"%(len(self.count_outside),len(self.E_min)))
 
         # A number of initializations
         self.P, self.pi = msmest.tmatrix(self._C_active, reversible = True, return_statdist = True)
