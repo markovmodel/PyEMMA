@@ -17,8 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pickle
-from pickle import Pickler, Unpickler
+from pickle import Pickler, Unpickler, UnpicklingError
 
 import mdtraj
 import numpy as np
@@ -81,10 +80,10 @@ class HDF5PersistentUnpickler(Unpickler):
             # Always raises an error if you cannot return the correct object.
             # Otherwise, the unpickler will think None is the object referenced
             # by the persistent ID.
-            raise pickle.UnpicklingError("unsupported persistent object")
+            raise UnpicklingError("unsupported persistent object")
 
     @staticmethod
-    def _check_allowed(module):
+    def __check_allowed(module):
         # check if we are allowed to unpickle from these modules.
         i = module.find('.')
         if i > 0:
@@ -92,10 +91,10 @@ class HDF5PersistentUnpickler(Unpickler):
         else:
             package = module
         if package not in HDF5PersistentUnpickler.__allowed_packages:
-            raise pickle.UnpicklingError('{mod} not allowed to unpickle'.format(mod=module))
+            raise UnpicklingError('{mod} not allowed to unpickle'.format(mod=module))
 
     def find_class(self, module, name):
-        self._check_allowed(module)
+        self.__check_allowed(module)
         from .util import class_rename_registry
         new_class = class_rename_registry.find_replacement_for_old('{}.{}'.format(module, name))
         if new_class:
