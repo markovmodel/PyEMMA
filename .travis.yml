@@ -8,14 +8,14 @@ os:
 
 sudo: false
 
-cache:
-  directories:
-    - $HOME/miniconda
-  timeout: 480
-before_cache:
-  # Remove since we're caching the extracted directories
-  - conda clean -ilps -v
-  - rm -rvf "${MINICONDA_DIR}/conda-bld/"
+#cache:
+#  directories:
+#    - $HOME/miniconda
+#  timeout: 480
+#before_cache:
+#  # Remove since we're caching the extracted directories
+#  - conda clean -ilps -v
+#  - rm -rvf "${MINICONDA_DIR}/conda-bld/"
 
 env:
   global:
