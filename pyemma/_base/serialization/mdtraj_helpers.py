@@ -43,11 +43,11 @@ def topology_to_numpy(top):
 
 
 def topology_from_numpy(atoms, bonds=None):
-    """Create a mdtraj topology from a pandas data frame
+    """Create a mdtraj topology from numpy arrays
 
     Parameters
     ----------
-    atoms : pandas.DataFrame
+    atoms : np.ndarray
         The atoms in the topology, represented as a data frame. This data
         frame should have columns "serial" (atom index), "name" (atom name),
         "element" (atom's element), "resSeq" (index of the residue)
@@ -89,12 +89,17 @@ def topology_from_numpy(atoms, bonds=None):
     out._atoms = [None for _ in range(len(atoms))]
     atom_index = 0
 
+    N = np.arange(0, len(atoms))
+
     for ci in np.unique(atoms['chainID']):
         chain_atoms = atoms[atoms['chainID'] == ci]
+        subN = N[atoms['chainID'] == ci]
         c = out.add_chain()
 
         for ri in np.unique(chain_atoms['resSeq']):
             residue_atoms = chain_atoms[chain_atoms['resSeq'] == ri]
+            mask = subN[chain_atoms['resSeq'] == ri]
+            indices = N[mask]
             rnames = residue_atoms['resName']
             residue_name = np.array(rnames)[0]
             segids = residue_atoms['segmentID']
@@ -102,13 +107,13 @@ def topology_from_numpy(atoms, bonds=None):
             if not np.all(rnames == residue_name):
                 raise ValueError('All of the atoms with residue index %d '
                                  'do not share the same residue name' % ri)
-            r = out.add_residue(residue_name.decode(), c, ri, segment_id.decode())
+            r = out.add_residue(residue_name.decode('ascii'), c, ri, segment_id.decode('ascii'))
 
-            for atom in residue_atoms:
-                e = atom['element'].decode()
-                a = Atom(atom['name'].decode(), elem.get_by_symbol(e),
-                         atom_index, r, serial=atom['serial'])
-                out._atoms[atom_index] = a
+            for ix, atom in enumerate(residue_atoms):
+                e = atom['element'].decode('ascii')
+                a = Atom(atom['name'].decode('ascii'), elem.get_by_symbol(e),
+                         indices[ix], r, serial=atom['serial'])
+                out._atoms[indices[ix]] = a
                 r._atoms.append(a)
                 atom_index += 1
 
