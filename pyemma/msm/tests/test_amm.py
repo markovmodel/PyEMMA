@@ -18,7 +18,7 @@
 
 r"""Unit test for the AMM module
 
-.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de> 
+.. moduleauthor:: S. Olsson <solsson AT zedat DOT fu DASH berlin DOT de>
 
 """
 
@@ -89,18 +89,19 @@ class TestAMMSimple(unittest.TestCase):
         self.assertTrue(np.allclose(self.AMM.pi, amm.pi))
         self.assertTrue(np.allclose(self.AMM.lagrange, amm.lagrange))
 
+
 class TestAMMDoubleWell(_tmsm):
 
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
         cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
-        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)    
-        cls.m = np.array([1.9]) 
-        cls.w = np.array([2.0]) 
+        cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)
+        cls.m = np.array([1.9])
+        cls.w = np.array([2.0])
         cls.sigmas = 1./np.sqrt(2)/np.sqrt(cls.w)
         _sd = list(set(cls.dtraj))
-        
+
         cls.ftraj = cls.E_[[_sd.index(d) for d in cls.dtraj], :]
         cls.tau = 10
         cls.amm = estimate_augmented_markov_model([cls.dtraj], [cls.ftraj], cls.tau, cls.m, cls.sigmas)
@@ -279,7 +280,7 @@ class TestAMMDoubleWell(_tmsm):
         if amm.is_sparse:
             k = 4
         else:
-            k = amm.nstates            
+            k = amm.nstates
         pi_perturbed = (amm.stationary_distribution ** 2)
         pi_perturbed /= pi_perturbed.sum()
         a = list(range(amm.nstates))[::-1]
@@ -333,6 +334,42 @@ class TestAMMDoubleWell(_tmsm):
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.amm)
+
+    def test_serialize(self):
+        import tempfile
+        import pyemma
+        f = tempfile.mktemp()
+        try:
+            self.amm.save(f)
+            restored = pyemma.load(f)
+
+            # check estimation parameters
+            np.testing.assert_equal(self.amm.lag, restored.lag)
+            np.testing.assert_equal(self.amm.count_mode, restored.count_mode)
+            np.testing.assert_equal(self.amm.connectivity, restored.connectivity)
+            np.testing.assert_equal(self.amm.dt_traj, restored.dt_traj)
+            np.testing.assert_equal(self.amm.E, restored.E)
+            np.testing.assert_equal(self.amm.m, restored.m)
+            np.testing.assert_equal(self.amm.w, restored.w)
+            np.testing.assert_equal(self.amm.eps, restored.eps)
+            np.testing.assert_equal(self.amm.support_ci, restored.support_ci)
+            np.testing.assert_equal(self.amm.maxiter, restored.maxiter)
+            np.testing.assert_equal(self.amm.debug, restored.debug)
+            np.testing.assert_equal(self.amm.max_cache, restored.max_cache)
+            np.testing.assert_equal(self.amm.mincount_connectivity, restored.mincount_connectivity)
+
+            # ensure we got the estimated quantities right
+            np.testing.assert_equal(self.amm.E_active, restored.E_active)
+            np.testing.assert_equal(self.amm.E_min, restored.E_min)
+            np.testing.assert_equal(self.amm.E_max, restored.E_max)
+            np.testing.assert_equal(self.amm.mhat, restored.mhat)
+            np.testing.assert_equal(self.amm.lagrange, restored.lagrange)
+            np.testing.assert_equal(self.amm.sigmas, restored.sigmas)
+            np.testing.assert_equal(self.amm.count_inside, restored.count_inside)
+            np.testing.assert_equal(self.amm.count_outside, restored.count_outside)
+        finally:
+            import os
+            os.unlink(f)
 
 # avoid parent class being executed as additional test case
 del _tmsm

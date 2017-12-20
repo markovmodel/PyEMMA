@@ -1434,7 +1434,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     _serialize_version = 0
     # TODO: ask Simon what should go here.
-    _serialize_fields = ('E_active', 'pi_hat')
+    _serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
+
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
                  E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache=3000,
@@ -1539,7 +1540,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
 
-        super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False, connectivity=connectivity, dt_traj=dt_traj, score_method=None, score_k=None)
+        super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False,
+                                                   connectivity=connectivity, dt_traj=dt_traj, score_method=None,
+                                                   score_k=None, mincount_connectivity=mincount_connectivity)
 
         self.E = E
         if E is not None:
@@ -1555,7 +1558,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.w = w
 
         # Relative error for lagrange convergence assessment.
-        self._eps = eps
+        self.eps = eps
 
         # Specifies the confidence interval of experimental values consider inside or outside support of the simulation
         # Is used to identify experimental data which have values never visited in the simulation, user is informed about these,
@@ -1564,7 +1567,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         # check for zero weights
         if w is not None:
-            if _np.any(w<1e-12):
+            if _np.any(w < 1e-12):
                 raise ValueError("Some weights are close to zero or negative. Please remove these from input.")
             #compute uncertainties
             self.sigmas = _np.sqrt(1./2./self.w)
@@ -1574,12 +1577,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         # Convergence flag for lagrange multipliers
         self._converged = False
         # Convergence flag for hatpi
-        self._estimated = False
         self._max_iter = maxiter
         self.debug = debug
-        self._max_cache = max_cache
-        self._is_estimated = False
-        self.mincount_connectivity = mincount_connectivity
+        self.max_cache = max_cache
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
         """ Evaluate AMM likelihood. """
@@ -1800,7 +1800,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self._dmhat = _np.ones(_np.shape(self.mhat))
 
         # Heuristic to determine number of slices of R-tensors computable at once with the given cache size
-        self._slicesz = _np.floor(self._max_cache/(self.P.nbytes/1.e6)).astype(int)
+        self._slicesz = _np.floor(self.max_cache / (self.P.nbytes / 1.e6)).astype(int)
         # compute first bundle of slices
         self._update_Rslices(0)
 
@@ -1864,7 +1864,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 self._mhats.append(_np.array(self.mhat))
                 self._rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
 
-            if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged:
+            if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self.eps) and not self._converged:
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
                 self._converged = True
                 self._estimated = True
