@@ -1553,8 +1553,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             Observable covariance.
             See SI of [1].
         """
-        _tmp = self.E_active*self.pihat[:, None]
-        self._G = _np.dot(self.E_active.T, self.E_active*self.pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
+        self._G = _np.dot(self.E_active.T, self.E_active*self._pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
 
     def _update_Q(self):
         """ Compute Q, a weighted sum of the R-tensor.
@@ -1575,8 +1574,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
              For equations check SI of [1].
 
         """
-        pek = self.pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
-        pp = (self.pihat[:, None] + self.pihat[None, :])
+        pek = self._pihat[:, None]*self.E_active[:,i*self._slicesz:(i+1)*self._slicesz]
+        pp = (self._pihat[:, None] + self._pihat[None, :])
         ppmhat = pp*self.mhat[i*self._slicesz:(i+1)*self._slicesz, None, None]
         self._Rs=(pek[:, None,:]+pek[None, :, :]).T - ppmhat
         self._Rsi = i
@@ -1600,11 +1599,11 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         expons = expons - expons.max()
 
         _ph_unnom = self.pi*_np.exp(expons)
-        self.pihat = (_ph_unnom/_ph_unnom.sum()).reshape(-1,)
+        self._pihat = (_ph_unnom/_ph_unnom.sum()).reshape(-1,)
 
     def _update_mhat(self):
         """ Updates mhat (expectation of observable of the Augmented Markov model) """
-        self.mhat = self.pihat.dot(self.E_active)
+        self.mhat = self._pihat.dot(self.E_active)
         self._update_S()
 
     def _update_S(self):
@@ -1638,7 +1637,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         #slopesum is the sum-of-slopes it is used as an additional ad hoc convergence criterion
         old_slopesum = _np.abs(self._S).sum()
         slopesum = old_slopesum+1
-        while((self._ll_old>_ll_new) or (_np.any(self.pihat<1e-12)) or slopesum>old_slopesum):
+        while((self._ll_old>_ll_new) or (_np.any(self._pihat<1e-12)) or slopesum>old_slopesum):
             self._update_pihat()
             self._update_G()
             # Lagrange slope calculation
@@ -1647,7 +1646,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.lagrange = l_old - frac*dl
             self._update_pihat()
             # a number of sanity checks
-            while(_np.any(self.pihat<1e-12)):
+            while(_np.any(self._pihat<1e-12)):
                 frac = frac*0.5
                 self.lagrange = l_old - frac*dl
                 self._update_pihat()
@@ -1758,7 +1757,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         # A number of initializations
         self.P, self.pi = msmest.tmatrix(self._C_active, reversible = True, return_statdist = True)
         self.lagrange = _np.zeros(self.m.shape)
-        self.pihat = self.pi.copy()
+        self._pihat = self.pi.copy()
         self._update_mhat()
         self._dmhat = 1e-6*_np.ones(_np.shape(self.mhat))
 
@@ -1793,10 +1792,10 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         #
 
         while i < self._max_iter:
-            pihat_old = self.pihat.copy()
+            pihat_old = self._pihat.copy()
             self._update_pihat()
-            if not _np.all(self.pihat>0):
-                self.pihat = pihat_old.copy()
+            if not _np.all(self._pihat>0):
+                self._pihat = pihat_old.copy()
                 die = True
                 self.logger.warn("pihat does not have a finite probability for all states, terminating")
             self._update_mhat()
@@ -1838,11 +1837,11 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             if i == self._max_iter:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self._max_iter))
 
-        _P = msmest.tmatrix(self._C_active, reversible = True, mu = self.pihat)
+        _P = msmest.tmatrix(self._C_active, reversible = True, mu = self._pihat)
 
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
-        self.set_model_params(P=_P, pi=self.pihat, reversible=True,
+        self.set_model_params(P=_P, pi=self._pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
         return self
