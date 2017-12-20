@@ -1403,7 +1403,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
-                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, debug=False, max_cache=3000,
+                 E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, max_cache=3000,
                  mincount_connectivity='1/n'):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
@@ -1481,9 +1481,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         maxiter : int, default=500
           Maximum number of iterations
 
-        debug : bool, default=False
-          Debug mode. Saves a number of quantities as a function of iteration.
-
         max_cache : int, default=3000
           Maximum size (in megabytes) of cache when computing R tensor (Supporting information in [1]).
 
@@ -1496,9 +1493,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         References
         ----------
-        .. [1] Olsson, Wu, Paul, Clementi and Noe "Combining Experimental and Simulation Data via Augmented Markov Models"
-               In revision, PNAS (2017)
-
+        .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining experimental and simulation data of molecular
+            processes via augmented Markov models. PNAS 114, 8265-8270 (2017).
         """
         # Check count mode:
         self.count_mode = str(count_mode).lower()
@@ -1539,10 +1535,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         # Convergence flag for lagrange multipliers
         self._converged = False
-        # Convergence flag for hatpi
+        # Convergence flag for pihat 
         self._estimated = False
         self._max_iter = maxiter
-        self.debug = debug
         self._max_cache = max_cache
         self._is_estimated = False
         self.mincount_connectivity = mincount_connectivity
@@ -1557,7 +1552,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         """ Update G.
             Observable covariance.
             See SI of [1].
-
         """
         _tmp = self.E_active*self.pihat[:, None]
         self._G = _np.dot(self.E_active.T, self.E_active*self.pihat[:, None])-self.mhat[:, None]*self.mhat[None, :]
@@ -1776,13 +1770,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self._ll_old = self._log_likelihood_biased(self._C_active, self.P, self.m, self.mhat, self.w)
 
         self._lls = [self._ll_old]
-        self.count_low_frac = 0
-
-        if self.debug:
-            self._phs = []
-            self._ls = []
-            self._rmss = []
-            self._mhats = []
+        
+        # make sure everything is initialized
         
         self._update_pihat()
         self._update_mhat()
@@ -1809,7 +1798,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             if not _np.all(self.pihat>0):
                 self.pihat = pihat_old.copy()
                 die = True
-                self.logger.warn("hat pi does not have a finite probability for all states, terminating")
+                self.logger.warn("pihat does not have a finite probability for all states, terminating")
             self._update_mhat()
             self._update_Q()
             if i>1:
@@ -1827,17 +1816,13 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 _ll_new = self._log_likelihood_biased(self._C_active, P, self.m, self.mhat, self.w)
                 self._lls.append(_ll_new)
 
-            if self.debug:
-                self._phs.append(self.pihat)
-                self._ls.append(self.lagrange.copy())
-                self._mhats.append(_np.array(self.mhat))
-                self._rmss.append(_np.average(self.E, weights=self.pihat.reshape((self.n_mstates_active,)), axis=0))
+            #General case fixed-point iteration
             if len(self.count_outside)>0:
               if i>1 and _np.all((_np.abs(self._dmhat)/self.sigmas)<self._eps) and not self._converged:
                   self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
                   self._converged = True
                   self._estimated = True
-                  #die = True
+            #Special case
             else:
               if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
@@ -1865,13 +1850,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     def hmm(self, n):
         self.logger.info("Not Implemented - Please use PCCA for now.")
 
-    @property
-    def debug_information(self):
-        self._check_is_estimated()
-        if self.debug:
-            return {"log-likelihoods": self._lls, "pihats": self._phs, "mhats": self._mhats, "lagrange-multipliers": self._ls, "rms": self._rmss}
-        else:
-            return {"log-likelihoods": self._lls}
 
     @property
     def largest_connected_set(self):
