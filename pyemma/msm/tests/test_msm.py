@@ -1007,7 +1007,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
 
-    def _two_state_kinetics(self, msm):
+    def _two_state_kinetics(self, msm, eps=0.001):
         if msm.is_sparse:
             k = 4
         else:
@@ -1026,7 +1026,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # therefore underestimate rates
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
-        assert (np.abs(k2 - ksum) < 0.001)
+        assert (np.abs(k2 - ksum) < eps)
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)

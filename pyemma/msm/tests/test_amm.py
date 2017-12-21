@@ -332,8 +332,8 @@ class TestAMMDoubleWell(_tmsm):
     # ----------------------------------
 
     def test_two_state_kinetics(self):
-        pass
-#        self._two_state_kinetics(self.amm)
+        #pass
+        self._two_state_kinetics(self.amm, eps=0.01)
 
 # avoid parent class being executed as additional test case
 del _tmsm
