@@ -133,7 +133,7 @@ class SerializableMixIn(object):
     >>> import pyemma
     >>> from pyemma.util.contexts import named_temporary_file
     >>> class MyClass(SerializableMixIn):
-    ...    _serialize_version = 0
+    ...    __serialize_version = 0
     ...    __serialize_fields = ['x']
     ...    def __init__(self, x=42):
     ...        self.x = x
