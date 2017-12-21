@@ -39,7 +39,7 @@ def topology_to_numpy(top):
                      dtype=[("serial", 'i4'), ("name", 'S4'), ("element", 'S3'),
                             ("resSeq", 'i4'), ("resName", 'S4'), ("chainID", 'i4'), ("segmentID", 'S4')])
 
-    bonds = np.array([(a.index, b.index) for (a, b) in top.bonds])
+    bonds = np.fromiter(((a.index, b.index) for (a, b) in top.bonds), dtype='i4,i4', count=top.n_bonds)
     return atoms, bonds
 
 
