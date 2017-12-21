@@ -28,7 +28,7 @@ __author__ = 'noe'
 
 class TimeUnit(SerializableMixIn):
     __serialize_version = 0
-    _serialize_fields = ('_unit', '_factor')
+    __serialize_fields = ('_unit', '_factor')
 
     _UNIT_STEP = -1
     _UNIT_FS = 0

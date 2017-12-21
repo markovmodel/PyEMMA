@@ -433,7 +433,7 @@ class Estimator(_BaseEstimator, Loggable):
 
     # serialization handling
     _serialize_version = 0
-    _serialize_fields = ('_estimated', 'model')
+    __serialize_fields = ('_estimated', 'model')
 
     def __my_getstate__(self):
         state = {}

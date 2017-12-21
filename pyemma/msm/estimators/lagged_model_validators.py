@@ -69,7 +69,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
 
     """
     __serialize_version = 0
-    _serialize_fields = ('test_model', 'test_estimator', '_lags',
+    __serialize_fields = ('test_model', 'test_estimator', '_lags',
                          '_pred', '_pred_L', '_pred_R',
                          '_est', '_est_L', '_est_R')
 
@@ -343,7 +343,7 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
 class ChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_version = 0
-    _serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
+    __serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
     def __init__(self, model, estimator, memberships, mlags=None, conf=0.95,
                  err_est=False, n_jobs=1, show_progress=True):

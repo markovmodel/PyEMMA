@@ -31,7 +31,7 @@ from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_o
 
 class np_container(SerializableMixIn):
     __serialize_version = 0
-    _serialize_fields = ('x', 'y', 'z')
+    __serialize_fields = ('x', 'y', 'z')
 
     def __init__(self, x):
         self.x = x
@@ -48,7 +48,7 @@ class np_container(SerializableMixIn):
         return True
 
 class private_attr(SerializableMixIn):
-    _serialize_fields = ('_private_attr___foo', )
+    __serialize_fields = ('_private_attr___foo',)
     __serialize_version = 0
 
     def __init__(self):

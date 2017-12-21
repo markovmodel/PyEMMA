@@ -21,7 +21,7 @@ from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.util import _importable_name
 
 logger = logging.getLogger(__name__)
-_debug = False
+_debug = True
 
 if _debug:
     logger.level = logging.DEBUG
@@ -91,7 +91,7 @@ class Modifications(object):
                         count += 1
                     except KeyError:
                         raise ClassVersionException("the previous version didn't "
-                                             "store an attribute named '{}'".format(a[1]))
+                                                    "store an attribute named '{}'".format(a[1]))
                 elif operation == 'map':
                     func = value
                     if hasattr(func, '__func__'):
@@ -112,7 +112,7 @@ class SerializableMixIn(object):
 
     Derive from this class to make your class serializable. Do not forget to
     add a version number to your class to distinguish old and new copies of the
-    source code. The static attribute '_serialize_fields' is a iterable of names,
+    source code. The static attribute '__serialize_fields' is a iterable of names,
     which are preserved during serialization.
 
     To aid the process of loading old models in a new version of the software, there
@@ -134,7 +134,7 @@ class SerializableMixIn(object):
     >>> from pyemma.util.contexts import named_temporary_file
     >>> class MyClass(SerializableMixIn):
     ...    _serialize_version = 0
-    ...    _serialize_fields = ['x']
+    ...    __serialize_fields = ['x']
     ...    def __init__(self, x=42):
     ...        self.x = x
 
@@ -144,10 +144,10 @@ class SerializableMixIn(object):
     ...    inst_restored = pyemma.load(file) # doctest: +SKIP
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
-
     """
-    #__serialize_version = 0
-    _serialize_fields = ()
+    # __serialize_version = 42
+
+    #__serialize_fields = ()
     """ attribute names to serialize """
 
     _serialize_interpolation_map = {}
@@ -171,6 +171,16 @@ class SerializableMixIn(object):
             raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
         # check for int
         return version
+
+    @classmethod
+    def _get_serialize_fields(cls):
+        name = cls.__name__
+        if name.startswith('_'):
+            name = name[1:]
+        attr = '_%s__serialize_fields' % name
+        fields = getattr(cls, attr, ())
+        assert all(isinstance(f, str) for f in fields)
+        return fields
 
     def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
         r"""
@@ -250,8 +260,7 @@ class SerializableMixIn(object):
 
     def _get_state_of_serializeable_fields(self, klass, state):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
-        assert all(isinstance(f, str) for f in klass._serialize_fields)
-        for field in klass._serialize_fields:
+        for field in klass._get_serialize_fields():
             # only try to get fields, we actually have.
             if hasattr(self, field):
                 if _debug and field in state:
@@ -277,7 +286,7 @@ class SerializableMixIn(object):
                                                                                                       current=klass_version_current))
             raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
                                         'of PyEMMA. This is not supported! You need at least version {version}'.format(
-                                         version=state['pyemma_version']))
+                version=state['pyemma_version']))
 
         if _debug:
             logger.debug("input state: %s" % state)
@@ -313,14 +322,14 @@ class SerializableMixIn(object):
         return float('inf')
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
-        """ set only fields from state, which are present in klass._serialize_fields """
+        """ set only fields from state, which are present in klass.__serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
-
+        assert issubclass(klass, SerializableMixIn)
         # handle field renames, deletion, transformations etc.
         SerializableMixIn.__interpolate(state, klass)
 
-        for field in klass._serialize_fields:
+        for field in klass._get_serialize_fields():
             if field in state:
                 # ensure we can set attributes. Log culprits.
                 try:
@@ -346,6 +355,7 @@ class SerializableMixIn(object):
                 name = _importable_name(c)
                 try:
                     v = c._version_check()
+                # tODO: class version exception should not b e catched?
                 except (AttributeError, ClassVersionException):
                     v = -1
                 versions[name] = v
@@ -416,9 +426,10 @@ class SerializableMixIn(object):
 
     def _get_classes_to_inspect(self):
         """ gets classes self derives from which
-         1. have custom fields: _serialize_fields
+         1. have custom fields: __serialize_fields
          """
-        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields),
+        res = list(filter(lambda c: issubclass(c, SerializableMixIn) and
+                                    (c._get_serialize_fields() or hasattr(c, '_serialize_interpolation_map')),
                           self.__class__.__mro__))
         return res
 

@@ -48,7 +48,7 @@ class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
     __serialize_version = 0
 
-    _serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
+    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
                          '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
                          '_metastable_memberships', '_metastable_sets', '_pcca',
                          '_nstates', '_timeunit_model')

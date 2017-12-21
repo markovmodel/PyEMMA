@@ -81,9 +81,9 @@ def _hash_dtrajs(dtraj_list):
 @aliased
 class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, SerializableMixIn):
     __serialize_version = 0
-    _serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
+    __serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
                          '_its', '_its_samples',
-                         )
+                          )
     r"""Implied timescales for a series of lag times.
 
     Parameters

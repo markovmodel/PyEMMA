@@ -38,7 +38,7 @@ class _MSMEstimator(_Estimator, _MSM):
     # version for serialization
     __serialize_version = 0
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
-    _serialize_fields = ('_active_set', '_active_state_indexes',
+    __serialize_fields = ('_active_set', '_active_state_indexes',
                          '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
                          '_nstates_full',
                          '_is_estimated',
@@ -872,7 +872,7 @@ class _MSMEstimator(_Estimator, _MSM):
 @aliased
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
-    _serialize_fields = ('_C_active', '_C_full',
+    __serialize_fields = ('_C_active', '_C_full',
                          '_full2active', '_connected_sets',
                          '_nstates', '_nstates_full',
                          )
@@ -1142,7 +1142,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
     __serialize_version = 0
-    _serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
+    __serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
                          '_active_set', '_connected_sets',
                          '_eigenvalues_OOM', '_full2_active',
                          '_is_estimated', '_nstates', '_nstates_full',
@@ -1431,7 +1431,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     __serialize_version = 0
     # TODO: ask Simon what should go here.
-    _serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
+    __serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
 
     def __init__(self,  lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',

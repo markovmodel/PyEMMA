@@ -38,7 +38,7 @@ __author__ = 'noe'
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
     r"""Estimator for a Bayesian Hidden Markov state model"""
     __serialize_version = 0
-    _serialize_fields = ('accuracy',
+    __serialize_fields = ('accuracy',
                          'count_matrix',
                          'hidden_state_probabilities',
                          'hidden_state_trajectories',
