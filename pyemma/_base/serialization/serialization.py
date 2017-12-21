@@ -229,6 +229,7 @@ class SerializableMixIn(object):
                 self.logger.exception(msg)
             else:
                 logger.exception(msg)
+            raise
 
     @classmethod
     def load(cls, file_name, model_name='latest'):
