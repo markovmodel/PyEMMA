@@ -1560,10 +1560,10 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             See SI of [1].
         """
-        self.Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
+        self._Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
         for k in range(self.n_exp_active):
-          self.Q = self.Q + self.w[k]*self._S[k]*self._get_Rk(k)
-        self.Q = -2.*self.Q
+          self._Q = self._Q + self.w[k]*self._S[k]*self._get_Rk(k)
+        self._Q = -2.*self._Q
 
     def _update_Rslices(self, i):
         """ Computation of multiple slices of R tensor.
@@ -1613,7 +1613,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     def _update_X_and_pi(self):
         #evaluate count-over-pi
         c_over_pi = self._csum/self.pi
-        D = c_over_pi[:, None] + c_over_pi + self.Q
+        D = c_over_pi[:, None] + c_over_pi + self._Q
         # update estimate
         self.X = self._C2 / D
 
@@ -1634,10 +1634,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         frac = 1.
         mhat_old = self.mhat.copy()
         dmhat_old = self._dmhat.copy()
-        #slopesum is the sum-of-slopes it is used as an additional ad hoc convergence criterion
-        old_slopesum = _np.abs(self._S).sum()
-        slopesum = old_slopesum+1
-        while((self._ll_old>_ll_new) or (_np.any(self._pihat<1e-12)) or slopesum>old_slopesum):
+        while((self._ll_old>_ll_new) or (_np.any(self._pihat<1e-12))):
             self._update_pihat()
             self._update_G()
             # Lagrange slope calculation
@@ -1646,10 +1643,11 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.lagrange = l_old - frac*dl
             self._update_pihat()
             # a number of sanity checks
-            while(_np.any(self._pihat<1e-12)):
+            while(_np.any(self._pihat<1e-12) and frac>0.05):
                 frac = frac*0.5
                 self.lagrange = l_old - frac*dl
                 self._update_pihat()
+                
 
             self.lagrange = l_old - frac*dl
             self._update_pihat()
@@ -1668,8 +1666,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             self._dmhat = self.mhat - mhat_old
             self._ll_old = float(_ll_new)
-            slopesum = _np.abs(self._S).sum()
-
+        
         self._lls.append(_ll_new)
 
     def _estimate(self, dtrajs):
@@ -1759,7 +1756,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self.lagrange = _np.zeros(self.m.shape)
         self._pihat = self.pi.copy()
         self._update_mhat()
-        self._dmhat = 1e-6*_np.ones(_np.shape(self.mhat))
+        self._dmhat = 1e-1*_np.ones(_np.shape(self.mhat))
 
         # Determine number of slices of R-tensors computable at once with the given cache size
         self._slicesz = _np.floor(self._max_cache/(self.P.nbytes/1.e6)).astype(int)
@@ -1791,7 +1788,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         # which are seconds instead of tens of minutes.
         #
 
-        while i < self._max_iter:
+        i = 0
+        while i <= self._max_iter:
             pihat_old = self._pihat.copy()
             self._update_pihat()
             if not _np.all(self._pihat>0):
@@ -1810,10 +1808,11 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             if not self._converged:
                 self._newton_lagrange()
-            else:
+            else: # once Lagrange multipliers are converged compute likelihood here
                 P = self.X / self.pi[:, None]
                 _ll_new = self._log_likelihood_biased(self._C_active, P, self.m, self.mhat, self.w)
                 self._lls.append(_ll_new)
+            
 
             #General case fixed-point iteration
             if len(self.count_outside)>0:
@@ -1823,19 +1822,20 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                   self._estimated = True
             #Special case
             else:
-              if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
+              if _np.abs(self._lls[-2]-self._lls[-1])<1e-8:
                 self.logger.info("Converged Lagrange multipliers after %i steps..."%i)
                 self._converged = True
                 self._estimated = True
+            #if Lagrange multipliers are converged, check whether log-likelihood has converged
             if self._converged:
-                if _np.abs(self._lls[-2]-self._lls[-1])<1e-10:
+                if _np.abs(self._lls[-2]-self._lls[-1])<1e-8:
                    self.logger.info("Converged pihat after %i steps..."%i)
                    die = True
             if die:
                 break
-            i = i + 1
-            if i == self._max_iter:
+            if i >= self._max_iter-1:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self._max_iter))
+            i = i + 1
 
         _P = msmest.tmatrix(self._C_active, reversible = True, mu = self._pihat)
 
