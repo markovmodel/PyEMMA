@@ -21,8 +21,8 @@ your Python installation to at least version 3.5.
 
 - References:
 
-  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining Experimental and Simulation Data
-      via Augmented Markov Models" In revision.
+  [1] Olsson S, Wu H, Paul F, Clementi C, Noe F: Combining experimental and simulation data of molecular
+      processes via augmented Markov models. PNAS 114, 8265-8270 (2017).
 
 **Fixes**:
 

@@ -214,12 +214,12 @@ class TestAMMDoubleWell(_tmsm):
         assert (np.all(ts > 0))
         # REVERSIBLE: should be all real
         if amm.is_reversible:
-            ts_ref = np.array([ 299.11,    8.58,    5.1 ])
+            ts_ref = np.array([  270.83,    8.77,    5.21 ])
             assert (np.all(np.isreal(ts)))
             # HERE:
             np.testing.assert_almost_equal(ts[:3], ts_ref, decimal=2)
         else:
-            ts_ref = np.array([ 299.11,    8.58,    5.1 ])
+            ts_ref = np.array([  270.83,    8.77,    5.21 ])
             # HERE:
             np.testing.assert_almost_equal(ts[:3], ts_ref, decimal=2)
 
@@ -239,7 +239,7 @@ class TestAMMDoubleWell(_tmsm):
         t = amm.mfpt(a, b)
         assert (t > 0)
         # HERE:
-        np.testing.assert_allclose(t, 709.76, rtol=1e-3, atol=1e-6)
+        np.testing.assert_allclose(t, 546.81, rtol=1e-3, atol=1e-6)
 
     def test_mfpt(self):
         self._mfpt(self.amm)
@@ -267,7 +267,7 @@ class TestAMMDoubleWell(_tmsm):
     def _expectation(self, amm):
         e = amm.expectation(list(range(amm.nstates)))
         # approximately equal for both
-        assert (np.abs(e - 34.92) < 0.01)
+        assert (np.abs(e - 39.02) < 0.01)
 
     def test_expectation(self):
         self._expectation(self.amm)
@@ -332,7 +332,8 @@ class TestAMMDoubleWell(_tmsm):
     # ----------------------------------
 
     def test_two_state_kinetics(self):
-        self._two_state_kinetics(self.amm)
+        #pass
+        self._two_state_kinetics(self.amm, eps=0.01)
 
 # avoid parent class being executed as additional test case
 del _tmsm
