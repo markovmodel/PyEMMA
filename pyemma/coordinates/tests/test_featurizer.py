@@ -26,7 +26,7 @@ import mdtraj
 from itertools import combinations, product
 
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
-from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom, hash_top
 
 from pyemma.coordinates.data.featurization.util import _atoms_in_residues
 import pkg_resources
@@ -168,6 +168,10 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
+
+    def test_hashing_top(self):
+        import copy
+        assert hash_top(self.feat.topology) == hash_top(copy.deepcopy(self.feat.topology))
 
     def test_select_non_symmetry_heavy_atoms(self):
         try:
@@ -501,42 +505,47 @@ class TestFeaturizer(unittest.TestCase):
         # TODO: test me
         pass
 
-    def test_MinRmsd(self):
+    def test_MinRmsd_ref_traj(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame])
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
-        test_Y = self.feat.transform(self.traj).squeeze()
+
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
+
+    def test_MinRmsd_ref_file(self):
+        # and the file-input variant
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
+
+        test_Y = self.feat.transform(self.traj)
+        # now the reference
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_MinRmsd_with_atom_indices(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices)
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices)
-        test_Y = self.feat.transform(self.traj).squeeze()
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_MinRmsd_with_atom_indices_precentered(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices,
-                                     precentered=True)
-        test_Y = self.feat.transform(self.traj).squeeze()
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_Residue_Mindist_Ca_all(self):
         n_ca = self.feat.topology.n_atoms
