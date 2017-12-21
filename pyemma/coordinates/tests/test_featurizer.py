@@ -1,5 +1,4 @@
-# This file is part of PyEMMA.
-#
+# This file is part ofsynthetic#
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
@@ -55,8 +54,23 @@ ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C
 ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
 ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
 ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
-
-""" * 2  ### asn-leu-asn-leu
+ATOM    659  N   ASN A  71      19.168  -0.936 -10.274  1.00 27.50           N  
+ATOM    660  CA  ASN A  71      20.356  -0.049 -10.419  1.00 25.52           C  
+ATOM    661  C   ASN A  71      21.572  -0.418  -9.653  1.00 24.26           C  
+ATOM    662  O   ASN A  71      22.687  -0.336 -10.171  1.00 24.33           O  
+ATOM    663  CB  ASN A  71      19.965   1.410 -10.149  1.00 26.49           C  
+ATOM    664  CG  ASN A  71      18.932   1.881 -11.124  1.00 26.35           C  
+ATOM    665  OD1 ASN A  71      18.835   1.322 -12.224  1.00 26.77           O  
+ATOM    666  ND2 ASN A  71      18.131   2.864 -10.745  1.00 24.85           N  
+ATOM    667  N   LEU A  72      21.419  -0.824  -8.404  1.00 23.02           N  
+ATOM    668  CA  LEU A  72      22.592  -1.275  -7.656  1.00 23.37           C  
+ATOM    669  C   LEU A  72      23.391  -2.325  -8.448  1.00 25.78           C  
+ATOM    670  O   LEU A  72      24.647  -2.315  -8.430  1.00 25.47           O  
+ATOM    671  CB  LEU A  72      22.202  -1.897  -6.306  1.00 22.17           C  
+ATOM    672  CG  LEU A  72      23.335  -2.560  -5.519  1.00 22.49           C  
+ATOM    673  CD1 LEU A  72      24.578  -1.665  -5.335  1.00 22.56           C  
+ATOM    674  CD2 LEU A  72      22.853  -3.108  -4.147  1.00 24.47           C
+"""
 
 bogus_geom_pdbfile = """
 ATOM    000  MW  ACE A  00      0.0000   0.000  0.0000  1.00 0.000           X
