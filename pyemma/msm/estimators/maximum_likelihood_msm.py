@@ -1833,7 +1833,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                    die = True
             if die:
                 break
-            if i >= self._max_iter-1:
+            if i == self._max_iter:
                 self.logger.info("Failed to converge within %i iterations. Consider increasing max_iter(now=%i)"%(i,self._max_iter))
             i = i + 1
 
