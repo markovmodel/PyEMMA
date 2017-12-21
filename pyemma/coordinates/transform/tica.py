@@ -39,7 +39,7 @@ __all__ = ['TICA']
 
 
 class TICAModel(Model, SerializableMixIn):
-    _serialize_version = 0
+    __serialize_version = 0
 
     def set_model_params(self, mean=None, cov_tau=None, cov=None,
                          cumvar=None, eigenvalues=None, eigenvectors=None):
@@ -60,7 +60,7 @@ def _lazy_estimation(func, *args, **kw):
 @fix_docs
 class TICA(StreamingEstimationTransformer, SerializableMixIn):
     r""" Time-lagged independent component analysis (TICA)"""
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
                  stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):

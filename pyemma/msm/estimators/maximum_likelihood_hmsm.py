@@ -36,7 +36,7 @@ from pyemma.util.units import TimeUnit
 @fix_docs
 class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('_active_set', '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
                          '_nstates_obs', '_nstates_obs_full',
                          'count_matrix', 'count_matrix_EM',

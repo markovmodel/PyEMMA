@@ -22,7 +22,7 @@ from pyemma._base.serialization.serialization import SerializableMixIn, Modifica
 
 class test_cls_v1(SerializableMixIn):
     _serialize_fields = ('a', 'x', 'y')
-    _serialize_version = 1
+    __serialize_version = 1
 
     def __init__(self):
         self.a = np.array([1, 2, 3])
@@ -37,7 +37,7 @@ class test_cls_v1(SerializableMixIn):
 #@handle_old_classes('pyemma._base.serialization.tests.test_serialization.test_cls_v1')
 class test_cls_v2(SerializableMixIn):
     _serialize_fields = ('b', 'y', 'z')
-    _serialize_version = 2
+    __serialize_version = 2
     # interpolate from version 1: add attr z with value 42
     _serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list()}
 
@@ -53,7 +53,7 @@ class test_cls_v2(SerializableMixIn):
 class test_cls_v3(SerializableMixIn):
     # should fake the refactoring of new_cls
     _serialize_fields = ('c', 'z')
-    _serialize_version = 3
+    __serialize_version = 3
     # interpolate from version 1 and 2
     _serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list(),
                                     2: Modifications().set('z', 23).mv('b', 'c').rm('y').list()}
@@ -67,14 +67,14 @@ class test_cls_v3(SerializableMixIn):
 
 
 class _deleted_in_old_version(test_cls_v3):
-    _serialize_version = 4
+    __serialize_version = 4
 
     def __init__(self):
         super(_deleted_in_old_version, self).__init__()
 
 
 class test_cls_with_old_locations(_deleted_in_old_version):
-    _serialize_version = 5
+    __serialize_version = 5
 
     def __init__(self):
         super(test_cls_with_old_locations, self).__init__()
@@ -86,6 +86,6 @@ class to_interpolate_with_functions(test_cls_v1):
     def map_y(x):
         return 42
 
-    _serialize_version = 2
+    __serialize_version = 2
     # map from version 1 to 2
     _serialize_interpolation_map = {1: Modifications().map('y', map_y).list()}

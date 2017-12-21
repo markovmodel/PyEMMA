@@ -27,7 +27,7 @@ if _debug:
     logger.level = logging.DEBUG
 
 
-class DeveloperError(Exception):
+class ClassVersionException(Exception):
     """ the devs have done something wrong. """
 
 
@@ -90,7 +90,7 @@ class Modifications(object):
                         state[value] = arg
                         count += 1
                     except KeyError:
-                        raise DeveloperError("the previous version didn't "
+                        raise ClassVersionException("the previous version didn't "
                                              "store an attribute named '{}'".format(a[1]))
                 elif operation == 'map':
                     func = value
@@ -146,19 +146,31 @@ class SerializableMixIn(object):
     # skipped because MyClass is not importable.
 
     """
-
+    #__serialize_version = 0
     _serialize_fields = ()
     """ attribute names to serialize """
 
     _serialize_interpolation_map = {}
 
     def __new__(cls, *args, **kwargs):
-        assert cls != SerializableMixIn.__class__
-        if not hasattr(cls, '_serialize_version'):
-            raise DeveloperError('your class {cls} does not have a _serialize_version field!'.format(cls=cls))
-
+        assert cls != SerializableMixIn.__class__  # don't allow direct instances of this class.
+        cls._version_check()
         res = super(SerializableMixIn, cls).__new__(cls)
         return res
+
+    @classmethod
+    def _version_check(cls):
+        name = cls.__name__
+        if name.startswith('_'):
+            name = name[1:]
+        attr = '_%s__serialize_version' % name
+        version = getattr(cls, attr, None)
+        if version is None:
+            raise ClassVersionException('{} does not have the private field __serialize_version'.format(cls))
+        if not isinstance(version, int):
+            raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
+        # check for int
+        return version
 
     def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
         r"""
@@ -254,22 +266,24 @@ class SerializableMixIn(object):
         # Drag in all prior versions attributes
         if not hasattr(klass, '_serialize_interpolation_map'):
             return
+        assert issubclass(klass, SerializableMixIn)
 
         klass_version = SerializableMixIn._get_version_for_class_from_state(state, klass)
-        if klass_version > klass._serialize_version:
+        klass_version_current = klass._version_check()
+        if klass_version > klass_version_current:
             if _debug:
                 logger.debug('got class version {from_state}. Current version {cls}={current}'.format(cls=klass,
                                                                                                       from_state=klass_version,
-                                                                                                      current=klass._serialize_version))
+                                                                                                      current=klass_version_current))
             raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
                                         'of PyEMMA. This is not supported! You need at least version {version}'.format(
-                version=state['pyemma_version']))
+                                         version=state['pyemma_version']))
 
         if _debug:
             logger.debug("input state: %s" % state)
         sorted_keys = sorted(klass._serialize_interpolation_map.keys())
         for key in sorted_keys:
-            if not (klass._serialize_version > key >= klass_version):
+            if not (klass_version_current > key >= klass_version):
                 if _debug:
                     logger.debug("skipped interpolation rules for version %s" % key)
                 continue
@@ -324,17 +338,15 @@ class SerializableMixIn(object):
         try:
             if _debug:
                 logger.debug('get state of %s' % self)
-            if not hasattr(self, '_serialize_version'):
-                raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
-                                     .format(klass=self.__class__))
+            self._version_check()
             state = {'class_tree_versions': {}}
             # currently it is used to handle class renames etc.
             versions = state['class_tree_versions']
             for c in self.__class__.mro():
                 name = _importable_name(c)
-                if hasattr(c, '_serialize_version'):
-                    v = c._serialize_version
-                else:
+                try:
+                    v = c._version_check()
+                except (AttributeError, ClassVersionException):
                     v = -1
                 versions[name] = v
 
@@ -406,14 +418,10 @@ class SerializableMixIn(object):
         """ gets classes self derives from which
          1. have custom fields: _serialize_fields
          """
-        from inspect import getmro
-        # TODO: abcmeta will use the same serialize_fields for all subclasses of the super type...
-        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields
-                                     and hasattr(c, '_serialize_version')),
+        res = list(filter(lambda c: (hasattr(c, '_serialize_fields') and c._serialize_fields),
                           self.__class__.__mro__))
         return res
 
-    def __init_subclass__(self, *args, **kwargs):
+    def __init_subclass__(cls, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
-        if not hasattr(self, '_serialize_version'):
-            raise DeveloperError('{} does not have field _serialize_version'.format(self))
+        cls._version_check()

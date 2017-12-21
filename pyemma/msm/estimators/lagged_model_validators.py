@@ -68,7 +68,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
         Show progressbars for calculation?
 
     """
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('test_model', 'test_estimator', '_lags',
                          '_pred', '_pred_L', '_pred_R',
                          '_est', '_est_L', '_est_R')
@@ -303,6 +303,8 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
 
 class EigenvalueDecayValidator(LaggedModelValidator):
 
+    __serialize_version = 0
+
     def __init__(self, model, estimator, nits=1, mlags=None, conf=0.95,
                  exclude_stat=True, err_est=False, show_progress=True):
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
@@ -340,7 +342,7 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
 
 class ChapmanKolmogorovValidator(LaggedModelValidator):
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
     def __init__(self, model, estimator, memberships, mlags=None, conf=0.95,

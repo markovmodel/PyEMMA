@@ -33,7 +33,7 @@ __author__ = 'noe'
 @fix_docs
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
     r"""Bayesian Markov state model estimator"""
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,

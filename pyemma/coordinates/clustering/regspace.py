@@ -40,7 +40,7 @@ __all__ = ['RegularSpaceClustering']
 @fix_docs
 class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1, n_jobs=None, skip=0):
         """Clusters data objects in such a way, that cluster centers are at least in

@@ -16,13 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 import numpy as _np
 import warnings
 from msmtools import estimation as msmest
 
-from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -39,7 +36,7 @@ from pyemma.util.statistics import confidence_interval as _ci
 class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
     # version for serialization
-    _serialize_version = 0
+    __serialize_version = 0
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
     _serialize_fields = ('_active_set', '_active_state_indexes',
                          '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
@@ -879,7 +876,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
                          '_full2active', '_connected_sets',
                          '_nstates', '_nstates_full',
                          )
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
@@ -1144,7 +1141,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 @aliased
 class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
                          '_active_set', '_connected_sets',
                          '_eigenvalues_OOM', '_full2_active',
@@ -1432,7 +1429,7 @@ class OOMReweightedMSM(_MSMEstimator):
 class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
-    _serialize_version = 0
+    __serialize_version = 0
     # TODO: ask Simon what should go here.
     _serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
 

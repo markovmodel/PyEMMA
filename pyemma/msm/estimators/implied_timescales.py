@@ -80,7 +80,7 @@ def _hash_dtrajs(dtraj_list):
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
 class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, SerializableMixIn):
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
                          '_its', '_its_samples',
                          )

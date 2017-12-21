@@ -45,6 +45,7 @@ class HMSM(_MSM):
         Hidden Markov Model
 
     """
+    __serialize_version = 0
 
     def __init__(self, P, pobs, pi=None, dt_model='1 step'):
         """

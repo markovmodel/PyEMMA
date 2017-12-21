@@ -23,14 +23,14 @@ from contextlib import contextmanager
 import numpy as np
 
 import pyemma
-from pyemma._base.serialization.serialization import DeveloperError
+from pyemma._base.serialization.serialization import ClassVersionException
 from pyemma._base.serialization.serialization import SerializableMixIn
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
                             to_interpolate_with_functions, )
 
 
 class np_container(SerializableMixIn):
-    _serialize_version = 0
+    __serialize_version = 0
     _serialize_fields = ('x', 'y', 'z')
 
     def __init__(self, x):
@@ -49,7 +49,7 @@ class np_container(SerializableMixIn):
 
 class private_attr(SerializableMixIn):
     _serialize_fields = ('_private_attr___foo', )
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self):
         self.___foo = None
@@ -172,18 +172,20 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v3()
         inst.save(self.fn)
         from pyemma._base.serialization.serialization import OldVersionUnsupported
-        old = test_cls_v3._serialize_version
-        test_cls_v3._serialize_version = 0
+        old = test_cls_v3._version_check()
+        def _set_version(cls, val):
+            setattr(cls, '_%s__serialize_version' % cls.__name__, val)
+        _set_version(test_cls_v3, 0)
         try:
             with self.assertRaises(OldVersionUnsupported) as c:
                 pyemma.load(self.fn)
             self.assertIn("need at least version {version}".format(version=pyemma.version), c.exception.args[0])
         finally:
-            test_cls_v3._serialize_version = old
+            _set_version(test_cls_v3, old)
 
     def test_developer_forgot_to_add_version(self):
         """ we're not allowed to use an un-versioned class """
-        with self.assertRaises(DeveloperError):
+        with self.assertRaises(ClassVersionException):
             class broken(SerializableMixIn): pass
             x = broken()
 

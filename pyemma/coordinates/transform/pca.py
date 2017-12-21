@@ -46,7 +46,7 @@ def _lazy_estimation(func, *args, **kw):
 
 
 class PCAModel(Model, SerializableMixIn):
-    _serialize_version = 0
+    __serialize_version = 0
 
     def set_model_params(self, mean, eigenvectors):
         self.mean = mean
@@ -56,7 +56,7 @@ class PCAModel(Model, SerializableMixIn):
 @fix_docs
 class PCA(StreamingEstimationTransformer, SerializableMixIn):
     r""" Principal component analysis."""
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.

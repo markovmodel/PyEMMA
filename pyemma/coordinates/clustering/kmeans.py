@@ -45,7 +45,7 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
 
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
@@ -336,7 +336,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
 class MiniBatchKmeansClustering(KmeansClustering):
     r"""Mini-batch k-means clustering"""
 
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
                  batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None, n_jobs=None, skip=0,

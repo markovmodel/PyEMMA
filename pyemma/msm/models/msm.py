@@ -46,7 +46,7 @@ from pyemma.util import types as _types
 @aliased
 class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
-    _serialize_version = 0
+    __serialize_version = 0
 
     _serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
                          '_metastable_assignments', '_metastable_computed', '_metastable_distributions',

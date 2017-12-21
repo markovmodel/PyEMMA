@@ -77,7 +77,7 @@ class ReactiveFlux(Model, SerializableMixIn):
     msmtools.tpt
 
     """
-    _serialize_version = 0
+    __serialize_version = 0
 
     def __init__(self, A, B, flux,
                  mu=None, qminus=None, qplus=None, gross_flux=None, dt_model='1 step'):

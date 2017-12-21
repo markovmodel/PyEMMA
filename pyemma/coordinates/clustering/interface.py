@@ -66,7 +66,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         self.n_jobs = n_jobs
 
     _serialize_fields = ('_dtrajs', '_previous_stride', '_index_states', '_overwrite_dtrajs', '_precentered')
-    _serialize_version = 0
+    __serialize_version = 0
 
     def set_model_params(self, clustercenters):
         self.clustercenters = clustercenters
