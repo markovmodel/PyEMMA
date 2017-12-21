@@ -172,7 +172,7 @@ class TestSerialisation(unittest.TestCase):
         inst = test_cls_v3()
         inst.save(self.fn)
         from pyemma._base.serialization.serialization import OldVersionUnsupported
-        old = test_cls_v3._get_version()
+        old = SerializableMixIn._get_version(inst.__class__)
         def _set_version(cls, val):
             setattr(cls, '_%s__serialize_version' % cls.__name__, val)
         _set_version(test_cls_v3, 0)

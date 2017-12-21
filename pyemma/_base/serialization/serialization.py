@@ -21,7 +21,7 @@ from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.util import _importable_name
 
 logger = logging.getLogger(__name__)
-_debug = True
+_debug = False
 
 if _debug:
     logger.level = logging.DEBUG
@@ -145,12 +145,13 @@ class SerializableMixIn(object):
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
     """
-    # __serialize_version = 42
+    __serialize_version = None
+    """ version of class definition """
 
-    #__serialize_fields = ()
+    __serialize_fields = ()
     """ attribute names to serialize """
 
-    #__serialize_interpolation_map = {}
+    __serialize_modifications_map = {}
 
     def __new__(cls, *args, **kwargs):
         assert cls != SerializableMixIn.__class__  # don't allow direct instances of this class.
@@ -188,7 +189,7 @@ class SerializableMixIn(object):
         name = cls.__name__
         if name.startswith('_'):
             name = name[1:]
-        attr = '_%s__serialize_interpolation_map' % name
+        attr = '_%s__serialize_modifications_map' % name
         map = getattr(cls, attr, {})
         return map
 
@@ -291,12 +292,11 @@ class SerializableMixIn(object):
         klass_version_current = SerializableMixIn._get_version(klass)
         if klass_version > klass_version_current:
             if _debug:
-                logger.debug('got class version {from_state}. Current version {cls}={current}'.format(cls=klass,
-                                                                                                      from_state=klass_version,
-                                                                                                      current=klass_version_current))
+                logger.debug('got class version {from_state}. Current version {cls}={current}'
+                             .format(cls=klass, from_state=klass_version, current=klass_version_current))
             raise OldVersionUnsupported('Tried to restore a model created with a more recent version '
-                                        'of PyEMMA. This is not supported! You need at least version {version}'.format(
-                version=state['pyemma_version']))
+                                        'of PyEMMA. This is not supported! You need at least version {version}'
+                                        .format(version=state['pyemma_version']))
 
         if _debug:
             logger.debug("input state: %s" % state)

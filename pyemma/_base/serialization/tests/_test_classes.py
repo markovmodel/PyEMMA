@@ -39,7 +39,7 @@ class test_cls_v2(SerializableMixIn):
     __serialize_fields = ('b', 'y', 'z')
     __serialize_version = 2
     # interpolate from version 1: add attr z with value 42
-    __serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list()}
+    __serialize_modifications_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list()}
 
     def __init__(self):
         self.b = np.array([1, 2, 3])
@@ -55,7 +55,7 @@ class test_cls_v3(SerializableMixIn):
     __serialize_fields = ('c', 'z')
     __serialize_version = 3
     # interpolate from version 1 and 2
-    __serialize_interpolation_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list(),
+    __serialize_modifications_map = {1: Modifications().set('z', 42).mv('a', 'b').rm('x').list(),
                                      2: Modifications().set('z', 23).mv('b', 'c').rm('y').list()}
 
     def __init__(self):
@@ -88,4 +88,4 @@ class to_interpolate_with_functions(test_cls_v1):
 
     __serialize_version = 2
     # map from version 1 to 2
-    __serialize_interpolation_map = {1: Modifications().map('y', map_y).list()}
+    __serialize_modifications_map = {1: Modifications().map('y', map_y).list()}
