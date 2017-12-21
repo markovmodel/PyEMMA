@@ -858,11 +858,6 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         self.assertEqual(len(self.feat.active_features), expected_active)
 
         expected_active += 1
-        self.feat.add_minrmsd_to_ref(pdbfile)
-        self.feat.add_minrmsd_to_ref(pdbfile)
-        self.assertEqual(len(self.feat.active_features), expected_active)
-
-        expected_active += 1
         self.feat.add_residue_mindist()
         self.feat.add_residue_mindist()
         self.assertEqual(len(self.feat.active_features), expected_active)
