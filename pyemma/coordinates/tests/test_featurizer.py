@@ -102,7 +102,11 @@ def check_serialized_equal(self):
         self.assertEqual(a.dimension(), b.dimension())
         self.assertListEqual(a.describe(), b.describe())
         self.assertEqual(a.topology, b.topology)
-        self.assertEqual(a.active_features, b.active_features)
+        for f1, f2 in zip(a.active_features, b.active_features):
+            if isinstance(f1, CustomFeature) or isinstance(f2, CustomFeature):
+                # CustomFeatures are not equal after restoration, because we refuse to pickle functions (contexts).
+                continue
+            self.assertEqual(f1, f2, msg='%s != %s' %(f1,f2))
     feat = self.feat
 
     from pyemma.util.contexts import named_temporary_file
