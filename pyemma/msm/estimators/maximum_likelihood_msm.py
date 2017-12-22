@@ -38,10 +38,10 @@ class _MSMEstimator(_Estimator, _MSM):
     __serialize_version = 0
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
     __serialize_fields = ('_active_set', '_active_state_indexes',
-                         '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
-                         '_nstates_full',
-                         '_is_estimated',
-                         )
+                          '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
+                          '_nstates_full',
+                          '_is_estimated',
+                          )
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
@@ -183,8 +183,8 @@ class _MSMEstimator(_Estimator, _MSM):
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
                 self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                    'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                    'Consider using sparse=True.')
+                                                                                             'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                                                                             'Consider using sparse=True.')
 
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
@@ -872,9 +872,9 @@ class _MSMEstimator(_Estimator, _MSM):
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
     __serialize_fields = ('_C_active', '_C_full',
-                         '_full2active', '_connected_sets',
-                         '_nstates', '_nstates_full',
-                         )
+                          '_full2active', '_connected_sets',
+                          '_nstates', '_nstates_full',
+                          )
     __serialize_version = 0
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
@@ -1142,10 +1142,10 @@ class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
     __serialize_version = 0
     __serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
-                         '_active_set', '_connected_sets',
-                         '_eigenvalues_OOM', '_full2_active',
-                         '_is_estimated', '_nstates', '_nstates_full',
-                         '_omega', '_sigma', '_oom_rank', '_rank_ind')
+                          '_active_set', '_connected_sets',
+                          '_eigenvalues_OOM', '_full2_active',
+                          '_is_estimated', '_nstates', '_nstates_full',
+                          '_omega', '_sigma', '_oom_rank', '_rank_ind')
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
@@ -1431,7 +1431,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
     __serialize_version = 0
     # TODO: ask Simon what should go here.
-    __serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
+    __serialize_fields = (
+    'E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
 
     def __init__(self, lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
@@ -1535,7 +1536,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False,
                                                    connectivity=connectivity, dt_traj=dt_traj, score_method=None,
-                                                   score_k=None, mincount_connectivity=mincount_connectivity)
+                                                   score_k=None, mincount_connectivity=mincount_connectivity,
+                                                   maxiter=maxiter)
 
         self.E = E
         if E is not None:
@@ -1547,7 +1549,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             self.logger.info("AugmentedMarkovModel instance initialized without experimental values (m). "
                              "This necessary for estimation.")
         if w is None:
-            self.logger.info(      "AugmentedMarkovModel instance initialized without experimental weights (w). This is necessary for estimation.")
+            self.logger.info("AugmentedMarkovModel instance initialized without experimental weights (w). "
+                             "This is necessary for estimation.")
 
         self.m = m
         self.w = w
@@ -1569,13 +1572,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         else:
             self.sigmas = None
 
-        # Convergence flag for lagrange multipliers
-        self._converged = False
-        # Convergence flag for pihat 
-        self._max_iter = maxiter
+        # Convergence flag for pihat
         self.max_cache = max_cache
-        self._is_estimated = False
-        self.mincount_connectivity = mincount_connectivity
 
     def _log_likelihood_biased(self, C, T, E, mhat, ws):
         """ Evaluate AMM likelihood. """
@@ -1588,8 +1586,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             Observable covariance.
             See SI of [1].
         """
-        self._G = _np.dot(self.E_active.T, self.E_active * self._pihat[:, None]) - self.mhat[:, None] * self.mhat[None,
-                                                                                                        :]
+        self._G = (_np.dot(self.E_active.T, self.E_active * self._pihat[:, None]) -
+                   self.mhat[:, None] * self.mhat[None, :])
 
     def _update_Q(self):
         """ Compute Q, a weighted sum of the R-tensor.
@@ -1599,7 +1597,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self._Q = _np.zeros((self.n_mstates_active, self.n_mstates_active))
         for k in range(self.n_exp_active):
             self._Q = self._Q + self.w[k] * self._S[k] * self._get_Rk(k)
-        self._Q = -2. * self._Q
+        self._Q *= -2.
 
     def _update_Rslices(self, i):
         """ Computation of multiple slices of R tensor.
@@ -1611,7 +1609,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         """
         pek = self._pihat[:, None] * self.E_active[:, i * self._slicesz:(i + 1) * self._slicesz]
-        pp = (self._pihat[:, None] + self._pihat[None, :])
+        pp = self._pihat[:, None] + self._pihat[None, :]
         ppmhat = pp * self.mhat[i * self._slicesz:(i + 1) * self._slicesz, None, None]
         self._Rs = (pek[:, None, :] + pek[None, :, :]).T - ppmhat
         self._Rsi = i
@@ -1622,7 +1620,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
           If we are outside cache, update the cache and return appropriate slice.
 
         """
-        if k > (self._Rsi + 1) * self._slicesz or k < (self._Rsi) * self._slicesz:
+        if k > (self._Rsi + 1) * self._slicesz or k < self._Rsi * self._slicesz:
             self._update_Rslices(_np.floor(k / self._slicesz).astype(int))
             return self._Rs[k % self._slicesz]
         else:
@@ -1669,7 +1667,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         _ll_new = -_np.inf
         frac = 1.
         mhat_old = self.mhat.copy()
-        dmhat_old = self._dmhat.copy()
         while self._ll_old > _ll_new or _np.any(self._pihat < 1e-12):
             self._update_pihat()
             self._update_G()
@@ -1707,7 +1704,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     def _estimate(self, dtrajs):
         if self.E is None or self.w is None or self.m is None:
             raise ValueError("E, w or m was not specified. Stopping.")
-        die = False
 
         # get trajectory counts. This sets _C_full and _nstates_full
         dtrajstats = self._get_dtraj_stats(dtrajs)
@@ -1824,8 +1820,10 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         # which are seconds instead of tens of minutes.
         #
 
+        converged = False  # Convergence flag for lagrange multipliers
         i = 0
-        while i <= self._max_iter:
+        die = False
+        while i <= self.maxiter:
             pihat_old = self._pihat.copy()
             self._update_pihat()
             if not _np.all(self._pihat > 0):
@@ -1843,7 +1841,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                         "Warning: new X is not proportional to C... reverting to previous step and terminating")
                     self.X = X_old.copy()
 
-            if not self._converged:
+            if not converged:
                 self._newton_lagrange()
             else:  # once Lagrange multipliers are converged compute likelihood here
                 P = self.X / self.pi[:, None]
@@ -1854,21 +1852,19 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             if len(self.count_outside) > 0:
                 if i > 1 and _np.all((_np.abs(self._dmhat) / self.sigmas) < self._eps) and not self._converged:
                     self.logger.info("Converged Lagrange multipliers after %i steps..." % i)
-                    self._converged = True
-                    self._estimated = True
+                    converged = True
             # Special case
             else:
                 if _np.abs(self._lls[-2] - self._lls[-1]) < 1e-8:
                     self.logger.info("Converged Lagrange multipliers after %i steps..." % i)
-                    self._converged = True
-                    self._estimated = True
+                    converged = True
             # if Lagrange multipliers are converged, check whether log-likelihood has converged
-            if self._converged and _np.abs(self._lls[-2] - self._lls[-1]) < 1e-8:
+            if converged and _np.abs(self._lls[-2] - self._lls[-1]) < 1e-8:
                 self.logger.info("Converged pihat after %i steps..." % i)
                 die = True
             if die:
                 break
-            if i == self.max_iter:
+            if i == self.maxiter:
                 self.logger.info("Failed to converge within %i iterations. "
                                  "Consider increasing max_iter(now=%i)" % (i, self.max_iter))
             i += 1
@@ -1885,24 +1881,5 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     def hmm(self, n):
         self.logger.info("Not Implemented - Please use PCCA for now.")
 
-    @property
-    def largest_connected_set(self):
-        """
-        The largest reversible connected set of states
-
-        """
-        self._check_is_estimated()
-        return self._connected_sets[0]
-
-    @property
-    def connected_sets(self):
-        """
-        The reversible connected sets of states, sorted by size (descending)
-
-        """
-        self._check_is_estimated()
-        return self._connected_sets
-
     def score(self, dtrajs, score_method=None, score_k=None):
         self.logger.info("Not Implemented.")
-

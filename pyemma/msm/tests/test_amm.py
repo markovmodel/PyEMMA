@@ -355,7 +355,6 @@ class TestAMMDoubleWell(_tmsm):
             np.testing.assert_equal(self.amm.eps, restored.eps)
             np.testing.assert_equal(self.amm.support_ci, restored.support_ci)
             np.testing.assert_equal(self.amm.maxiter, restored.maxiter)
-            np.testing.assert_equal(self.amm.debug, restored.debug)
             np.testing.assert_equal(self.amm.max_cache, restored.max_cache)
             np.testing.assert_equal(self.amm.mincount_connectivity, restored.mincount_connectivity)
 
@@ -368,6 +367,9 @@ class TestAMMDoubleWell(_tmsm):
             np.testing.assert_equal(self.amm.sigmas, restored.sigmas)
             np.testing.assert_equal(self.amm.count_inside, restored.count_inside)
             np.testing.assert_equal(self.amm.count_outside, restored.count_outside)
+            # derived from msm_estimator
+            np.testing.assert_equal(self.amm.P, restored.P)
+            np.testing.assert_equal(self.amm.pi, restored.pi)
         finally:
             import os
             os.unlink(f)
