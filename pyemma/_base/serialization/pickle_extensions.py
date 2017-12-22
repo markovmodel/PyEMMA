@@ -19,9 +19,8 @@
 
 from pickle import Pickler, Unpickler, UnpicklingError
 
-import mdtraj
 import numpy as np
-from pyemma._base.serialization.mdtraj_helpers import topology_to_numpy, topology_from_numpy
+
 
 __author__ = 'marscher'
 
@@ -31,13 +30,26 @@ class HDF5PersistentPickler(Pickler):
     def __init__(self, group, file):
         super().__init__(file=file, protocol=4)
         self.group = group
-        self._seen_ids = []
+        self._seen_ids = set()
+
+    def dump(self, *args, **kwargs):
+        # we temporarily patch mdtraj.Topology to save state to numpy array
+        from unittest import mock
+        from pyemma._base.serialization.mdtraj_helpers import getstate
+        with mock.patch('mdtraj.Topology.__getstate__', getstate, create=True):
+            super(HDF5PersistentPickler, self).dump(*args, **kwargs)
 
     def _store(self, array):
         id_ = id(array)
-        self.group.create_dataset(name=str(id_), data=array,
+        key = str(id_)
+        # this actually makes no sense to check it here, however it is needed,
+        # since there seems to be some race condition in h5py...
+        if key in self.group:
+            assert id_ in self._seen_ids
+            return id_
+        self.group.create_dataset(name=key, data=array,
                                   chunks=True, compression='gzip', compression_opts=4, shuffle=True)
-        self._seen_ids.append(id_)
+        self._seen_ids.add(id_)
         return id_
 
     def persistent_id(self, obj):
@@ -45,13 +57,6 @@ class HDF5PersistentPickler(Pickler):
                 and id(obj) not in self._seen_ids):
             array_id = self._store(obj)
             return 'np_array', array_id
-
-        if isinstance(obj, mdtraj.Topology) and id(obj) not in self._seen_ids:
-            atoms, bonds = topology_to_numpy(obj)
-            atom_i = self._store(atoms)
-            bond_i = self._store(bonds)
-            self._seen_ids.append(id(obj))
-            return 'md/Topology', (atom_i, bond_i)
 
         return None
 
@@ -74,15 +79,18 @@ class HDF5PersistentUnpickler(Unpickler):
         type_tag, key_id = pid
         if type_tag == "np_array":
             return self.group[str(key_id)][:]
-        elif type_tag == 'md/Topology':
-            atoms = self.group[str(key_id[0])][:]
-            bonds = self.group[str(key_id[1])][:]
-            return topology_from_numpy(atoms, bonds)
         else:
             # Always raises an error if you cannot return the correct object.
             # Otherwise, the unpickler will think None is the object referenced
             # by the persistent ID.
             raise UnpicklingError("unsupported persistent object")
+
+    def load(self, *args, **kwargs):
+        # we temporarily patch mdtraj.Topology to load state from numpy array
+        from unittest import mock
+        from pyemma._base.serialization.mdtraj_helpers import setstate
+        with mock.patch('mdtraj.Topology.__setstate__', setstate, create=True):
+            return super(HDF5PersistentUnpickler, self).load(*args, **kwargs)
 
     @staticmethod
     def __check_allowed(module):
