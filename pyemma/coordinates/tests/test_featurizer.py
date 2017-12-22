@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -72,7 +71,7 @@ ATOM    671  CB  LEU A  72      22.202  -1.897  -6.306  1.00 22.17           C
 ATOM    672  CG  LEU A  72      23.335  -2.560  -5.519  1.00 22.49           C  
 ATOM    673  CD1 LEU A  72      24.578  -1.665  -5.335  1.00 22.56           C  
 ATOM    674  CD2 LEU A  72      22.853  -3.108  -4.147  1.00 24.47           C
-"""
+"""  ### asn-leu-asn-leu
 
 bogus_geom_pdbfile = """
 ATOM    000  MW  ACE A  00      0.0000   0.000  0.0000  1.00 0.000           X
@@ -171,6 +170,7 @@ class TestFeaturizer(unittest.TestCase):
         serialization and restore it to check for equality.
         """
         check_serialized_equal(self)
+
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
@@ -525,7 +525,6 @@ class TestFeaturizer(unittest.TestCase):
     def test_MinRmsd_ref_file(self):
         # and the file-input variant
         self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
-
         test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
@@ -1129,7 +1128,6 @@ class TestCustomFeature(unittest.TestCase):
         finally:
             import os
             os.unlink(f)
-
 
 if __name__ == "__main__":
     unittest.main()
