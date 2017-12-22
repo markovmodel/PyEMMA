@@ -1,4 +1,6 @@
-# This file is part ofsynthetic#
+
+# This file is part of PyEMMA.
+#
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
