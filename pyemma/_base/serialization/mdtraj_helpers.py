@@ -126,11 +126,7 @@ def topology_from_numpy(atoms, bonds=None):
 def setstate(self, state):
     atoms, bonds = state['atoms'], state['bonds']
     out = topology_from_numpy(atoms, bonds)
-    self._atoms = out._atoms
-    self._bonds = out._bonds
-    self._residues = out._residues
-    self._chains = out._chains
-    assert self.n_atoms
+    self.__dict__ = out.__dict__
 
 
 def getstate(self):
