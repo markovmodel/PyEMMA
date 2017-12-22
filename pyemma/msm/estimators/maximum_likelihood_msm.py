@@ -182,9 +182,9 @@ class _MSMEstimator(_Estimator, _MSM):
             dtrajstats = _DiscreteTrajectoryStats(dtrajs)
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                                                                             'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                                                                             'Consider using sparse=True.')
+                self.logger.warning('Building a dense MSM with {nstates} states. This can be '
+                                    'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                    'Consider using sparse=True.'.format(nstates=dtrajstats.nstates))
 
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
@@ -1430,9 +1430,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
     __serialize_version = 0
-    # TODO: ask Simon what should go here.
-    __serialize_fields = (
-    'E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange', 'sigmas', 'count_inside', 'count_outside')
+    __serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange',
+                          'sigmas', 'count_inside', 'count_outside')
 
     def __init__(self, lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
