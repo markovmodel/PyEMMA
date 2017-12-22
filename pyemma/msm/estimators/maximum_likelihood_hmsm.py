@@ -36,6 +36,16 @@ from pyemma.util.units import TimeUnit
 @fix_docs
 class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
+    __serialize_version = 0
+    __serialize_fields = ('_active_set', '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
+                         '_nstates_obs', '_nstates_obs_full',
+                         'count_matrix', 'count_matrix_EM',
+                         'hidden_state_probabilities', 'hidden_state_trajectories',
+                         '_observable_set', '_observable_state_indexes',
+                         'initial_count', 'initial_distribution',
+                         'likelihood', 'likelihoods',
+                         'timestep_traj',
+                         )
 
     def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
                  connectivity=None, mincount_connectivity='1/n', observe_nonempty=True, separate=None,
@@ -138,9 +148,17 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         self.separate = separate
         self.observe_nonempty = observe_nonempty
         self.dt_traj = dt_traj
-        self.timestep_traj = TimeUnit(dt_traj)
         self.accuracy = accuracy
         self.maxit = maxit
+
+    @property
+    def dt_traj(self):
+        return self._dt_traj
+
+    @dt_traj.setter
+    def dt_traj(self, value):
+        self._dt_traj = value
+        self.timestep_traj = TimeUnit(value)
 
     #TODO: store_data is mentioned but not implemented or used!
     def _estimate(self, dtrajs):
@@ -573,12 +591,10 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     # TODO: sample_by_state. How should that be defined?
 
     def sample_by_observation_probabilities(self, nsample):
-        r"""Generates samples according to given probability distributions
+        r"""Generates samples according to the current observation probability distribution
 
         Parameters
         ----------
-        distributions : list or array of ndarray ( (n) )
-            m distributions over states. Each distribution must be of length n and must sum up to 1.0
         nsample : int
             Number of samples per distribution. If replace = False, the number of returned samples per state could be
             smaller if less than nsample indexes are available for a state.

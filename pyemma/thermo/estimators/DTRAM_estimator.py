@@ -234,14 +234,14 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
-        self.increments, self.loglikelihoods = _dtram.estimate(
-            self.count_matrices, self.bias_energies,
-            maxiter=self.maxiter, maxerr=self.maxerr,
-            log_lagrangian_mult=self.log_lagrangian_mult,
-            conf_energies=self.conf_energies,
-            save_convergence_info=self.save_convergence_info,
-            callback=_ConvergenceProgressIndicatorCallBack(
-                self, 'DTRAM', self.maxiter, self.maxerr))
+            self.increments, self.loglikelihoods = _dtram.estimate(
+                self.count_matrices, self.bias_energies,
+                maxiter=self.maxiter, maxerr=self.maxerr,
+                log_lagrangian_mult=self.log_lagrangian_mult,
+                conf_energies=self.conf_energies,
+                save_convergence_info=self.save_convergence_info,
+                callback=_ConvergenceProgressIndicatorCallBack(
+                    self, 'DTRAM', self.maxiter, self.maxerr))
         self._progress_force_finish(stage='DTRAM', description='DTRAM')
 
         # compute models

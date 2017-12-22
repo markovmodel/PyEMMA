@@ -336,6 +336,44 @@ class TestAMMDoubleWell(_tmsm):
         #pass
         self._two_state_kinetics(self.amm, eps=0.01)
 
+    def test_serialize(self):
+        import tempfile
+        import pyemma
+        f = tempfile.mktemp()
+        try:
+            self.amm.save(f)
+            restored = pyemma.load(f)
+
+            # check estimation parameters
+            np.testing.assert_equal(self.amm.lag, restored.lag)
+            np.testing.assert_equal(self.amm.count_mode, restored.count_mode)
+            np.testing.assert_equal(self.amm.connectivity, restored.connectivity)
+            np.testing.assert_equal(self.amm.dt_traj, restored.dt_traj)
+            np.testing.assert_equal(self.amm.E, restored.E)
+            np.testing.assert_equal(self.amm.m, restored.m)
+            np.testing.assert_equal(self.amm.w, restored.w)
+            np.testing.assert_equal(self.amm.eps, restored.eps)
+            np.testing.assert_equal(self.amm.support_ci, restored.support_ci)
+            np.testing.assert_equal(self.amm.maxiter, restored.maxiter)
+            np.testing.assert_equal(self.amm.max_cache, restored.max_cache)
+            np.testing.assert_equal(self.amm.mincount_connectivity, restored.mincount_connectivity)
+
+            # ensure we got the estimated quantities right
+            np.testing.assert_equal(self.amm.E_active, restored.E_active)
+            np.testing.assert_equal(self.amm.E_min, restored.E_min)
+            np.testing.assert_equal(self.amm.E_max, restored.E_max)
+            np.testing.assert_equal(self.amm.mhat, restored.mhat)
+            np.testing.assert_equal(self.amm.lagrange, restored.lagrange)
+            np.testing.assert_equal(self.amm.sigmas, restored.sigmas)
+            np.testing.assert_equal(self.amm.count_inside, restored.count_inside)
+            np.testing.assert_equal(self.amm.count_outside, restored.count_outside)
+            # derived from msm_estimator
+            np.testing.assert_equal(self.amm.P, restored.P)
+            np.testing.assert_equal(self.amm.pi, restored.pi)
+        finally:
+            import os
+            os.unlink(f)
+
 # avoid parent class being executed as additional test case
 del _tmsm
 

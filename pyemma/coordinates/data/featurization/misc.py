@@ -20,17 +20,17 @@ Created on 15.02.2016
 
 @author: marscher
 '''
-import numpy as np
-import mdtraj
 from itertools import count
-from pyemma.coordinates.data.featurization.util import (_catch_unhashable,
-                                                        _describe_atom,
-                                                        hash_top, _hash_numpy_array)
+
+import mdtraj
+import numpy as np
+
 from pyemma.coordinates.data.featurization._base import Feature
-from .util import _atoms_in_residues
+from pyemma.coordinates.data.featurization.util import (_describe_atom,
+                                                        cmp_traj)
+
 
 class CustomFeature(Feature):
-
     """
     A CustomFeature is the base class for user-defined features. If you want to
     implement a new fancy feature, derive from this class, calculate the quantity
@@ -74,24 +74,30 @@ class CustomFeature(Feature):
 
     """
     _id = count(0)
+    __serialize_version = 0
+    __serialize_fields = ('_desc',)
 
-    def __init__(self, func=None, *args, **kwargs):
-        self._func = func
-        self._args = args
-        self._kwargs = kwargs
-        self._dim = kwargs.pop('dim', 0)
-        desc = kwargs.pop('description', [])
+    def __init__(self, fun, dim, description=None, fun_args=(), fun_kwargs=None):
+        # we set topology to None here
+        self.top = None
+        if fun_kwargs is None:
+            fun_kwargs = {}
+        self._fun = fun
+        self._args = fun_args
+        self._kwargs = fun_kwargs
+        self._dim = dim
+        desc = description
         if isinstance(desc, str):
             desc = [desc]
         self.id = next(CustomFeature._id)
         if not desc:
             arg_str = "{args}, {kw}" if self._kwargs else "{args}"
-            desc = ["CustomFeature[{id}][0] calling {func} with args {arg_str}".format(
+            desc = ["CustomFeature[{id}][0] calling {fun} with args {arg_str}".format(
                 id=self.id,
-                func=self._func,
+                fun=self._fun,
                 arg_str=arg_str, args=self._args, kw=self._kwargs)]
-            if self.dimension > 1:
-                desc.extend(('CustomFeature[{id}][{i}]'.format(id=self.id, i=i) for i in range(1, self.dimension)))
+            #if self.dimension > 1:
+            #    desc.extend(('CustomFeature[{id}][{i}]'.format(id=self.id, i=i) for i in range(1, self.dimension)))
         elif desc and not (len(desc) == self._dim or len(desc) == 1):
             raise ValueError("to avoid confusion, ensure the lengths of 'description' "
                              "list matches dimension - or give a single element which will be repeated."
@@ -106,18 +112,34 @@ class CustomFeature(Feature):
         return self._desc
 
     def transform(self, traj):
-        feature = self._func(traj, *self._args, **self._kwargs)
+        feature = self._fun(traj, *self._args, **self._kwargs)
         if not isinstance(feature, np.ndarray):
             raise ValueError("your function should return a NumPy array!")
         return feature
 
-    def __hash__(self):
-        hash_value = hash(self._func)
-        # if key contains numpy arrays, we hash their data arrays
-        key = tuple(list(map(_catch_unhashable, self._args)) +
-                    list(map(_catch_unhashable, sorted(self._kwargs.items()))))
-        hash_value ^= hash(key)
-        return hash_value
+    def __eq__(self, other):
+        eq = super(CustomFeature, self).__eq__(other)
+        if not eq or not isinstance(other, CustomFeature):
+            return False
+        return self._fun == other._fun and self._args == other._args and self._kwargs == other._kwargs
+
+    def __getstate__(self):
+        import warnings
+        warnings.warn('We can not save custom functions by now and probably never will. '
+                      'Please re-add your custom function after you have restored your Featurizer.')
+        return super(CustomFeature, self).__getstate__()
+
+    def __setstate__(self, state):
+        super(CustomFeature, self).__setstate__(state)
+
+        def _warn(_):
+            raise NotImplementedError('Please re-add your custom feature again! Description was: {}\n'
+                                      '>>> featurizer.remove_all_custom_funcs()\n'
+                                      '>>> featurizer.add_custom_func(...)'
+                                      .format(self.describe()[:30]))
+        self._fun = _warn
+        self._args = ()
+        self._kwargs = {}
 
 
 class SelectionFeature(Feature):
@@ -127,12 +149,16 @@ class SelectionFeature(Feature):
     The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
 
     """
+    __serialize_version = 0
+    __serialize_fields = ('indexes',)
+    prefix_label = "ATOM:"
+
     def __init__(self, top, indexes):
         self.top = top
         self.indexes = np.array(indexes)
         if len(self.indexes) == 0:
             raise ValueError("empty indices")
-        self.prefix_label = "ATOM:"
+        self.dimension = 3 * len(indexes)
 
     def describe(self):
         labels = []
@@ -145,31 +171,27 @@ class SelectionFeature(Feature):
                           (self.prefix_label, _describe_atom(self.top, i)))
         return labels
 
-    @property
-    def dimension(self):
-        return 3 * self.indexes.shape[0]
-
     def transform(self, traj):
         newshape = (traj.xyz.shape[0], 3 * self.indexes.shape[0])
         return np.reshape(traj.xyz[:, self.indexes, :], newshape)
 
-    def __hash__(self):
-        hash_value = hash(self.prefix_label)
-        hash_value ^= hash_top(self.top)
-        hash_value ^= _hash_numpy_array(self.indexes)
-
-        return hash_value
+    def __eq__(self, other):
+        eq = super(SelectionFeature, self).__eq__(other)
+        if not eq or not isinstance(other, SelectionFeature):
+            return False
+        return np.all(self.indexes == other.indexes)
 
 
 class MinRmsdFeature(Feature):
 
+    __serialize_version = 0
+    __serialize_fields = ('ref', 'ref_frame', 'name', 'precentered', 'atom_indices',)
+
     def __init__(self, ref, ref_frame=0, atom_indices=None, topology=None, precentered=False):
+        self.top = topology
 
         assert isinstance(
             ref_frame, int), "ref_frame has to be of type integer, and not %s" % type(ref_frame)
-
-        # Will be needing the hashed input parameter
-        self.__hashed_input__ = hash(ref)
 
         # Types of inputs
         # 1. Filename+top
@@ -191,6 +213,7 @@ class MinRmsdFeature(Feature):
         self.ref_frame = ref_frame
         self.atom_indices = atom_indices
         self.precentered = precentered
+        self.dimension = 1
 
     def describe(self):
         label = "minrmsd to frame %u of %s" % (self.ref_frame, self.name)
@@ -200,41 +223,39 @@ class MinRmsdFeature(Feature):
             label += ', subset of atoms  '
         return [label]
 
-    @property
-    def dimension(self):
-        return 1
-
     def transform(self, traj):
         return np.array(mdtraj.rmsd(traj, self.ref, atom_indices=self.atom_indices), ndmin=2).T
 
-    def __hash__(self):
-        hash_value = hash(self.__hashed_input__)
-        # TODO: identical md.Trajectory objects have different hashes need a
-        # way to differentiate them here
-        hash_value ^= hash(self.ref_frame)
-        if self.atom_indices is None:
-            hash_value ^= _hash_numpy_array(np.arange(self.ref.n_atoms))
-        else:
-            hash_value ^= _hash_numpy_array(np.array(self.atom_indices))
-        hash_value ^= hash(self.precentered)
-
-        return hash_value
+    def __eq__(self, other):
+        if not isinstance(other, MinRmsdFeature):
+            return False
+        eq = super(MinRmsdFeature, self).__eq__(other)
+        return (eq and cmp_traj(self.ref, other.ref)
+                and self.ref_frame == other.ref_frame
+                and np.all(self.atom_indices == other.atom_indices)
+                and self.precentered == other.precentered
+                )
 
 
 class AlignFeature(SelectionFeature):
+    __serialize_version = 0
+    __serialize_fields = ('ref', 'atom_indices', 'ref_atom_indices', 'in_place')
+
+    prefix_label = 'aligned ATOM:'
 
     def __init__(self, reference, indexes, atom_indices=None, ref_atom_indices=None, in_place=True):
         super(AlignFeature, self).__init__(top=reference.topology, indexes=indexes)
         self.ref = reference
         self.atom_indices = atom_indices
         self.ref_atom_indices = ref_atom_indices
-        self.prefix_label = 'aligned ATOM:'
         self.in_place = in_place
 
-    def __hash__(self):
-        h = super(AlignFeature, self).__hash__()
-        h ^= hash(self.ref)
-        return h
+    def __eq__(self, other):
+        if not isinstance(other, AlignFeature):
+            return False
+        return (cmp_traj(self.ref, other.ref)
+                and np.all(self.atom_indices == other.atom_indices)
+                and self.in_place == other.in_place)
 
     def transform(self, traj):
         if not self.in_place:
@@ -246,14 +267,17 @@ class AlignFeature(SelectionFeature):
 
 
 class GroupCOMFeature(Feature):
+    __serialize_version = 0
+    __serialize_fields = ('ref_geom', 'image_molecules', 'group_definitions', 'atom_masses',
+                          'masses_in_groups', '_describe')
 
     def __init__(self, topology, group_definitions, ref_geom=None, image_molecules=False, mass_weighted=True):
-
-        assert ref_geom is None or isinstance(ref_geom, mdtraj.Trajectory), "argument ref_geom has to be either " \
-                                                                            "None or and mdtraj.Trajectory, got instead %s"%type(ref_geom)
+        if not (ref_geom is None or isinstance(ref_geom, mdtraj.Trajectory)):
+            raise ValueError("argument ref_geom has to be either None or and mdtraj.Trajectory,"
+                             " got instead %s" % type(ref_geom))
 
         self.ref_geom = ref_geom
-        self.topology = topology
+        self.top = topology
         self.image_molecules = image_molecules
         self.group_definitions = [np.asarray(gf) for gf in group_definitions]
         self.atom_masses = np.array([aa.element.mass for aa in topology.atoms])
@@ -269,21 +293,10 @@ class GroupCOMFeature(Feature):
             for coor in 'xyz':
                 self._describe.append('COM-%s of atom group [%s..%s] '%(coor, group[:3], group[-3:]))
                 # TODO consider including the ref_geom and image_molecule arsg here?
-
-        self.__hashed_input__ = hash_top(topology)
-        self.__hashed_input__ ^= _hash_numpy_array(np.hstack(self.group_definitions))
-        self.__hashed_input__ ^= _hash_numpy_array(np.hstack([len(gd) for gd in self.group_definitions]))
-        self.__hashed_input__ ^= hash(tuple((mass_weighted, image_molecules)))
-        if ref_geom is not None:
-            self.__hashed_input__ ^= _hash_numpy_array(ref_geom.xyz[0])
-            # Hashing xyz instead of the top allows for different refs in the same featurizer
+        self.dimension = 3 * len(self.group_definitions)
 
     def describe(self):
         return self._describe
-
-    @property
-    def dimension(self):
-        return 3*len(self.group_definitions)
 
     def transform(self, traj):
         # TODO: is it possible to avoid copy? Otherwise the trajectory is altered...
@@ -297,22 +310,29 @@ class GroupCOMFeature(Feature):
             COM_xyz.append(np.average(traj_copy.xyz[:, aas, ], axis=1, weights=mms))
         return np.hstack(COM_xyz)
 
-    def __hash__(self):
-        hash_value = hash(self.__hashed_input__)
+    def __eq__(self, other):
+        eq = super(GroupCOMFeature, self).__eq__(other)
+        if not eq or not isinstance(other, GroupCOMFeature):
+            return False
+        return (cmp_traj(self.ref_geom, other.ref_geom) and self.image_molecules == other.image_molecules
+                and all(np.array_equal(g1, g2) for g1, g2 in zip(self.group_definitions, other.group_definitions))
+                and all(np.array_equal(m1, m2) for m1, m2 in zip(self.masses_in_groups, other.masses_in_groups))
+        )
 
-        return hash_value
 
 class ResidueCOMFeature(GroupCOMFeature):
 
-    def __init__(self, topology, residue_indices, residue_atoms, scheme, ref_geom=None, image_molecules=False, mass_weighted = True):
-        GroupCOMFeature.__init__(self, topology, residue_atoms, mass_weighted=mass_weighted, ref_geom=ref_geom, image_molecules=image_molecules)
+    __serialize_version = 0
+    __serialize_fields = ('residue_indices', 'scheme')
+
+    def __init__(self, topology, residue_indices, residue_atoms, scheme, ref_geom=None, image_molecules=False,
+                 mass_weighted=True):
+        super(ResidueCOMFeature, self).__init__(topology, residue_atoms, mass_weighted=mass_weighted, ref_geom=ref_geom,
+                                                image_molecules=image_molecules)
 
         # This are the only extra attributes that residueCOMFeature should have
         self.residue_indices = residue_indices
         self.scheme = scheme
-
-        # Add the scheme to the hash
-        self.__hashed_input__ ^= hash(scheme)
 
         # Overwrite the self._describe attribute, this way the method of the superclass can be used "as is"
         self._describe = []
@@ -320,3 +340,9 @@ class ResidueCOMFeature(GroupCOMFeature):
             for coor in 'xyz':
                 self._describe.append('%s COM-%s (%s)' % (topology.residue(ri), coor, self.scheme))
                 # TODO consider including the ref_geom and image_molecule arsg here?
+
+    def __eq__(self, other):
+        eq = super(ResidueCOMFeature, self).__eq__(other)
+        if not eq or not isinstance(other, ResidueCOMFeature):
+            return False
+        return np.all(self.residue_indices == other.residue_indices) and self.scheme == other.scheme

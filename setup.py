@@ -258,8 +258,6 @@ metadata = dict(
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     keywords='Markov State Model Algorithms',
-    # packages are found if their folder contains an __init__.py,
-    packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
@@ -271,7 +269,7 @@ metadata = dict(
         'matplotlib',
         'mdtraj>=1.8.0',
         'msmtools>=1.2',
-        'numpy>=1.7.0',
+        'numpy>=1.8.0',
         'pathos',
         'psutil>=3.1.1',
         'pyyaml',
@@ -280,6 +278,9 @@ metadata = dict(
         'thermotools>=0.2.6',
     ],
     zip_safe=False,
+    entry_points = {
+        'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
+    }
 )
 
 # this is only metadata and not used by setuptools
@@ -320,6 +321,8 @@ else:
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
+    # packages are found if their folder contains an __init__.py,
+    metadata['packages'] = find_packages()
 
 setup(**metadata)
 

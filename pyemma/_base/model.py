@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import numpy as _np
-#import inspect
 import warnings
 
+from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member, getargspec_no_self
 
@@ -36,27 +35,43 @@ class Model(object):
 
     """
 
-    def _get_model_param_names(self):
+    def __my_getstate__(self):
+        # can not be called if self is also an estimator.
+        model_params = self.get_model_params(deep=False)
+        return model_params
+
+    def __my_setstate__(self, state):
+        if state:
+            params = {k: state[k] for k in self._get_model_param_names() if k in state}
+            if params:
+                for k in params:
+                    del state[k]
+                self.set_model_params(**params)
+
+    @classmethod
+    def _get_model_param_names(cls):
         r"""Get parameter names for the model"""
         # fetch model parameters
-        if hasattr(self, 'set_model_params'):
-            set_model_param_method = getattr(self, 'set_model_params')
+        if hasattr(cls, 'set_model_params'):
+            set_model_param_method = getattr(cls, 'set_model_params')
             # introspect the constructor arguments to find the model parameters
             # to represent
             args, varargs, kw, default = getargspec_no_self(set_model_param_method)
             if varargs is not None:
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
-                                   % (self, ))
-            args.sort()
+                                   % (cls,))
             return args
         else:
             # No parameters known
             return []
 
+    def set_model_params(self, **kw):
+        raise NotImplementedError()
+
     def update_model_params(self, **params):
         r"""Update given model parameter if they are set to specific values"""
-        for key, value in list(params.items()):
+        for key, value in params.items():
             if not hasattr(self, key):
                 setattr(self, key, value)  # set parameter for the first time.
             elif getattr(self, key) is None:
@@ -100,43 +115,10 @@ class Model(object):
             out[key] = value
         return out
 
-    # def set_model_params(self, **params):
-    #     """Set the parameters of this estimator.
-    #     The method works on simple estimators as well as on nested objects
-    #     (such as pipelines). The former have parameters of the form
-    #     ``<component>__<parameter>`` so that it's possible to update each
-    #     component of a nested object.
-    #     Returns
-    #     -------
-    #     self
-    #     """
-    #     if not params:
-    #         # Simple optimisation to gain speed (inspect is slow)
-    #         return self
-    #     valid_params = self.get_model_params(deep=True)
-    #     for key, value in six.iteritems(params):
-    #         split = key.split('__', 1)
-    #         if len(split) > 1:
-    #             # nested objects case
-    #             name, sub_name = split
-    #             if name not in valid_params:
-    #                 raise ValueError('Invalid parameter %s for estimator %s' %
-    #                                  (name, self))
-    #             sub_object = valid_params[name]
-    #             sub_object.set_params(**{sub_name: value})
-    #         else:
-    #             # simple objects case
-    #             if key not in valid_params:
-    #                 raise ValueError('Invalid parameter %s ' 'for estimator %s'
-    #                                  % (key, self.__class__.__name__))
-    #             setattr(self, key, value)
-    #     return self
-
-    # FIXME: __repr__ is incompatible with Estimator __repr__. Need a general fix for a nice representation
-#    def __repr__(self):
-#        class_name = self.__class__.__name__
-#        return '%s(%s)' % (class_name, _pprint(self.get_model_params(deep=False),
-#                                               offset=len(class_name),),)
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        return '%s(%s)' % (class_name, _pprint(self.get_model_params(deep=False),
+                                               offset=len(class_name),),)
 
 
 class SampledModel(Model):
@@ -153,10 +135,6 @@ class SampledModel(Model):
     def _check_samples_available(self):
         if self.samples is None:
             raise AttributeError('Model samples not available in '+str(self)+'. Call set_model_params with samples.')
-
-#    def mean_model(self):
-#        """Computes the mean model from the given samples"""
-#        raise NotImplementedError('mean_model is not implemented in class '+str(self.__class__))
 
     def sample_f(self, f, *args, **kwargs):
         r"""Evaluated method f for all samples

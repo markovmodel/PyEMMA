@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 from pyemma._base.model import SampledModel
 from pyemma.msm.models.msm import MSM
-from pyemma.util.types import is_iterable
+
 __author__ = 'noe'
 
 
 class SampledMSM(MSM, SampledModel):
     r""" Sampled Markov state model """
+
+    __serialize_version = 0
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95,

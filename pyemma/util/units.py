@@ -16,15 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 from __future__ import absolute_import
-__author__ = 'noe'
+
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 import numpy as np
 import math
 
-class TimeUnit(object):
+__author__ = 'noe'
+
+
+class TimeUnit(SerializableMixIn):
+    __serialize_version = 0
+    __serialize_fields = ('_unit', '_factor')
 
     _UNIT_STEP = -1
     _UNIT_FS = 0
@@ -55,7 +59,7 @@ class TimeUnit(object):
         if isinstance(unit, TimeUnit):  # copy constructor
             self._factor = unit._factor
             self._unit = unit._unit
-        else:  # construct from string
+        elif isinstance(unit, str):  # construct from string
             lunit = unit.lower()
             words = lunit.split(' ')
 
@@ -84,8 +88,13 @@ class TimeUnit(object):
                 self._unit = self._UNIT_S
             else:
                 raise ValueError('Time unit is not understood: '+unit)
+        else:
+            raise ValueError('Unknown type: %s' % unit)
 
     def __str__(self):
+        if not hasattr(self, '_unit'):
+            return "[TimeUnit {unknown}]"
+
         if self._unit == -1:
             return str(self._factor)+' step'
         else:
@@ -93,6 +102,9 @@ class TimeUnit(object):
 
     def __repr__(self):
         return "[TimeUnit {}]".format(self)
+
+    def __eq__(self, other):
+        return isinstance(other, TimeUnit) and self.dt == other.dt and self.unit == other.unit
 
     @property
     def dt(self):
@@ -104,9 +116,9 @@ class TimeUnit(object):
 
     def get_scaled(self, factor):
         """ Get a new time unit, scaled by the given factor """
-        import copy
-        res = copy.deepcopy(self)
-        res._factor *= factor
+        res = self.__new__(self.__class__)
+        res._factor = self._factor * factor
+        res._unit = self._unit
         return res
 
     def rescale_around1(self, times):
@@ -142,13 +154,6 @@ class TimeUnit(object):
 
         # nothing to do
         return times, self._unit
-
-    def __eq__(self, other):
-        if not isinstance(other, TimeUnit):
-            return False
-
-        return self._unit == other._unit and self._factor == other._factor
-
 
 def bytes_to_string(num, suffix='B'):
     """

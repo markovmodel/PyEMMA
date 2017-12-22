@@ -34,6 +34,14 @@ from pyemma.util.statistics import confidence_interval as _ci
 @aliased
 class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
+    # version for serialization
+    __serialize_version = 0
+    # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
+    __serialize_fields = ('_active_set', '_active_state_indexes',
+                          '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
+                          '_nstates_full',
+                          '_is_estimated',
+                          )
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
@@ -174,9 +182,9 @@ class _MSMEstimator(_Estimator, _MSM):
             dtrajstats = _DiscreteTrajectoryStats(dtrajs)
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
+                self.logger.warning('Building a dense MSM with {nstates} states. This can be '
                                     'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                    'Consider using sparse=True.')
+                                    'Consider using sparse=True.'.format(nstates=dtrajstats.nstates))
 
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
@@ -863,6 +871,11 @@ class _MSMEstimator(_Estimator, _MSM):
 @aliased
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+    __serialize_fields = ('_C_active', '_C_full',
+                          '_full2active', '_connected_sets',
+                          '_nstates', '_nstates_full',
+                          )
+    __serialize_version = 0
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
@@ -1127,6 +1140,12 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 @aliased
 class OOMReweightedMSM(_MSMEstimator):
     r"""OOM based estimator for MSMs given discrete trajectory statistics"""
+    __serialize_version = 0
+    __serialize_fields = ('_C2t', '_C_active', '_C_full', '_Xi',
+                          '_active_set', '_connected_sets',
+                          '_eigenvalues_OOM', '_full2_active',
+                          '_is_estimated', '_nstates', '_nstates_full',
+                          '_omega', '_sigma', '_oom_rank', '_rank_ind')
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
@@ -1410,6 +1429,10 @@ class OOMReweightedMSM(_MSMEstimator):
 class AugmentedMarkovModel(MaximumLikelihoodMSM):
     r"""AMM estimator given discrete trajectory statistics and stationary expectation values from experiments"""
 
+    __serialize_version = 0
+    __serialize_fields = ('E_active', 'E_min', 'E_max', 'mhat', 'm', 'lagrange',
+                          'sigmas', 'count_inside', 'count_outside')
+
     def __init__(self, lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
                  E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, max_cache=3000,
@@ -1674,7 +1697,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             self._dmhat = self.mhat - mhat_old
             self._ll_old = float(_ll_new)
-            slopesum = _np.abs(self._S).sum()
 
         self._lls.append(_ll_new)
 

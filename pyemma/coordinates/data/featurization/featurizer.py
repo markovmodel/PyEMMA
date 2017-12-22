@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import warnings
 
 from pyemma._base.loggable import Loggable
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.types import is_string
 import mdtraj
 
@@ -36,24 +37,42 @@ __author__ = 'Frank Noe, Martin Scherer'
 __all__ = ['MDFeaturizer']
 
 
-class MDFeaturizer(Loggable):
+class MDFeaturizer(SerializableMixIn, Loggable):
     r"""Extracts features from MD trajectories."""
+    __serialize_version = 0
+    __serialize_fields = ('use_topology_cache',
+                         '_topologyfile',
+                         'topology',
+                         'active_features',
+                          )
 
     def __init__(self, topfile, use_cache=True):
         """extracts features from MD trajectories.
 
-       Parameters
-       ----------
+        Parameters
+        ----------
 
-       topfile : str or mdtraj.Topology
+        topfile : str or mdtraj.Topology
            a path to a topology file (pdb etc.) or an mdtraj Topology() object
-       use_cache : boolean, default=True
+        use_cache : boolean, default=True
            cache already loaded topologies, if file contents match.
-       """
-        self.topologyfile = None
+        """
+        self.use_topology_cache = use_cache
+        self.topology = None
+        self.topologyfile = topfile
+        self.active_features = []
+
+    @property
+    def topologyfile(self):
+        return self._topologyfile
+
+    @topologyfile.setter
+    def topologyfile(self, topfile):
+        self._topologyfile = topfile
         if isinstance(topfile, str):
-            self.topology = load_topology_cached(topfile) if use_cache else load_topology_uncached(topfile)
-            self.topologyfile = topfile
+            self.topology = load_topology_cached(topfile) if self.use_topology_cache \
+                else load_topology_uncached(topfile)
+            self._topologyfile = topfile
         elif isinstance(topfile, mdtraj.Topology):
             self.topology = topfile
         elif isinstance(topfile, mdtraj.Trajectory):
@@ -61,9 +80,6 @@ class MDFeaturizer(Loggable):
         else:
             raise ValueError("no valid topfile arg: type was %s, "
                              "but only string or mdtraj.Topology allowed." % type(topfile))
-        self.active_features = []
-        self._dim = 0
-        self._showed_warning_empty_feature_list = False
 
     def __add_feature(self, f):
         # perform sanity checks
@@ -569,12 +585,7 @@ class MDFeaturizer(Loggable):
 
         self.__add_feature(f)
 
-    def add_group_mindist(self,
-                            group_definitions,
-                            group_pairs='all',
-                            threshold=None,
-                            periodic=True,
-                            ):
+    def add_group_mindist(self, group_definitions, group_pairs='all', threshold=None, periodic=True):
         r"""
         Adds the minimum distance between groups of atoms to the feature list. If the groups of
         atoms are identical to residues, use :py:obj:`add_residue_mindist <pyemma.coordinates.data.featurizer.MDFeaturizer.add_residue_mindist>`.
@@ -582,7 +593,7 @@ class MDFeaturizer(Loggable):
         Parameters
         ----------
 
-        group_definition : list of 1D-arrays/iterables containing the group definitions via atom indices.
+        group_definitions : list of 1D-arrays/iterables containing the group definitions via atom indices.
             If there is only one group_definition, it is assumed the minimum distance within this group (excluding the
             self-distance) is wanted. In this case, :py:obj:`group_pairs` is ignored.
 
@@ -734,11 +745,10 @@ class MDFeaturizer(Loggable):
             raise ValueError("Dimension has to be positive. "
                              "Please override dimension attribute in feature!")
 
-        if not hasattr(feature, 'map'):
-            raise ValueError("no map method in given feature")
-        else:
-            if not callable(getattr(feature, 'map')):
-                raise ValueError("map exists but is not a method")
+        if not hasattr(feature, 'transform'):
+            raise ValueError("no 'transform' method in given feature")
+        elif not callable(getattr(feature, 'transform')):
+            raise ValueError("'transform' attribute exists but is not a method")
 
         self.__add_feature(feature)
 
@@ -786,6 +796,8 @@ class MDFeaturizer(Loggable):
             Has to return a numpy.ndarray ndim=2.
         dim : int
             output dimension of :py:obj:`function`
+        description: str or None
+            a message for the describe feature list.
         args : any number of positional arguments
             these have to be in the same order as :py:obj:`func` is expecting them
         kwargs : dictionary
@@ -798,9 +810,16 @@ class MDFeaturizer(Loggable):
         Alternatively a single element list or str will be expanded to match the output dimension.
 
         """
-        f = CustomFeature(func, dim=dim, *args, **kwargs)
-
+        description = kwargs.pop('description', None)
+        f = CustomFeature(func, dim=dim, description=description, fun_args=args, fun_kwargs=kwargs)
         self.add_custom_feature(f)
+
+    def remove_all_custom_funcs(self):
+        """ Remove all instances of CustomFeature from the active feature list.
+        """
+        custom_feats = [f for f in self.active_features if isinstance(f, CustomFeature)]
+        for f in custom_feats:
+            self.active_features.remove(f)
 
     def dimension(self):
         """ current dimension due to selected features

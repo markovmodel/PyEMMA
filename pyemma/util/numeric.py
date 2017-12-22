@@ -37,9 +37,23 @@ def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
 
 
 def _hash_numpy_array(x):
-    hash_value = hash(x.shape)
-    hash_value ^= hash(x.strides)
-
-    hash_value ^= hash(x.data.tobytes())  # this makes a copy!
+    import numpy as np
+    x = np.ascontiguousarray(x)
+    import hashlib
+    old = x.flags.writeable
+    try:
+        x.flags.writeable = False
+        v = hashlib.sha1(x)
+    finally:
+        x.flags.writeable = old
+    hash_value = hash((x.shape, x.strides, v.digest()))
 
     return hash_value
+
+
+if __name__ == '__main__':
+    import numpy as np
+
+    x = np.random.random((1000000, 10))
+    y = x.copy()
+    _hash_numpy_array(x) == _hash_numpy_array(y)

@@ -1,3 +1,4 @@
+
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -19,23 +20,37 @@ Created on 15.02.2016
 
 @author: marscher
 '''
-from pyemma.util.annotators import deprecated
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 
-class Feature(object):
+class Feature(SerializableMixIn):
+    __serialize_version = 0
+    __serialize_fields = ('dimension', 'top')
 
     @property
     def dimension(self):
         return self._dim
 
     @dimension.setter
-    def dimension(self, val):
-        assert isinstance(val, int)
+    def dimension(self, val: int):
         self._dim = val
 
-    @deprecated('use transform(traj)')
-    def map(self, traj):
-        return self.transform(traj)
+    @property
+    def top(self):
+        return self._top
+
+    @top.setter
+    def top(self, value):
+        self._top = value
+
+    def describe(self):
+        raise NotImplementedError()
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        if not isinstance(other, Feature):
+            return False
+        from pyemma.coordinates.data.featurization.util import hash_top
+        return self.dimension == other.dimension and hash_top(self.top) == hash_top(other.top)
+
+    def __repr__(self):
+        return str(self.describe())

@@ -23,6 +23,8 @@ import math
 
 import numpy as np
 from decorator import decorator
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma._base.model import Model
 from pyemma._ext.variational.estimators.running_moments import running_covar
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
@@ -37,21 +39,24 @@ __author__ = 'noe'
 @decorator
 def _lazy_estimation(func, *args, **kw):
     assert isinstance(args[0], PCA)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
+    obj = args[0]
+    if not obj._estimated:
+        obj._diagonalize()
     return func(*args, **kw)
 
 
-class PCAModel(Model):
+class PCAModel(Model, SerializableMixIn):
+    __serialize_version = 0
+
     def set_model_params(self, mean, eigenvectors):
         self.mean = mean
         self.eigenvectors = eigenvectors
 
 
 @fix_docs
-class PCA(StreamingEstimationTransformer):
+class PCA(StreamingEstimationTransformer, SerializableMixIn):
     r""" Principal component analysis."""
+    __serialize_version = 0
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.
@@ -89,6 +94,9 @@ class PCA(StreamingEstimationTransformer):
         mean : ndarray, optional, default None
             Optionally pass pre-calculated means to avoid their re-computation.
             The shape has to match the input dimension.
+
+        skip: int, default 0
+            skip the first n frames of each trajectory.
 
         """
         super(PCA, self).__init__()

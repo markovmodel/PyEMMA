@@ -27,6 +27,8 @@ from __future__ import absolute_import
 import os
 
 import numpy as np
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma._base.model import Model
 from pyemma._base.parallel import NJobsMixIn
 from pyemma._ext.sklearn.base import ClusterMixin
@@ -38,7 +40,7 @@ from pyemma.util.files import mkdir_p
 
 @fix_docs
 @aliased
-class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJobsMixIn):
+class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJobsMixIn, SerializableMixIn):
 
     """
     provides a common interface for cluster algorithms.
@@ -56,28 +58,29 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
     def __init__(self, metric='euclidean', n_jobs=None):
         super(AbstractClustering, self).__init__()
         self.metric = metric
-        self._clustercenters = None
+        self.clustercenters = None
         self._previous_stride = -1
         self._dtrajs = []
         self._overwrite_dtrajs = False
         self._index_states = []
         self.n_jobs = n_jobs
 
-    class _centers_wrapper(object):
-        def __init__(self, arr):
-            # take a copy, because centering is an inplace operation!
-            self.centers = np.asarray(arr, dtype='float32', order='C')[:]
-            self.pre_centered = False
+    __serialize_fields = ('_dtrajs', '_previous_stride', '_index_states', '_overwrite_dtrajs', '_precentered')
+    __serialize_version = 0
+
+    def set_model_params(self, clustercenters):
+        self.clustercenters = clustercenters
 
     @property
     @alias('cluster_centers_')  # sk-learn compat.
     def clustercenters(self):
         """ Array containing the coordinates of the calculated cluster centers. """
-        return self._clustercenters.centers
+        return self._clustercenters
 
     @clustercenters.setter
     def clustercenters(self, val):
-        self._clustercenters = AbstractClustering._centers_wrapper(val)
+        self._clustercenters = np.asarray(val, dtype='float32', order='C')[:] if val is not None else None
+        self._precentered = False
 
     @property
     def overwrite_dtrajs(self):
@@ -157,10 +160,10 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             self._inst = ClusteringBase_f(self.metric, X.shape[1])
 
         # for performance reasons we pre-center the cluster centers for minRMSD.
-        if self.metric == 'minRMSD' and not self._clustercenters.pre_centered:
+        if self.metric == 'minRMSD' and not self._precentered:
             self.logger.debug("precentering cluster centers for minRMSD.")
             self._inst.precenter_centers(self.clustercenters)
-            self._clustercenters.pre_centered = True
+            self._precentered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function

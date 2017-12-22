@@ -24,6 +24,7 @@ from __future__ import absolute_import
 
 import numpy as np
 from decorator import decorator
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 from pyemma._base.model import Model
 from pyemma._ext.variational.solvers.direct import eig_corr
@@ -37,11 +38,15 @@ import warnings
 __all__ = ['TICA']
 
 
-class TICAModel(Model):
-    def set_model_params(self, mean, cov, cov_tau):
-        self.mean = mean
-        self.cov = cov
-        self.cov_tau = cov_tau
+class TICAModel(Model, SerializableMixIn):
+    __serialize_version = 0
+
+    def set_model_params(self, mean=None, cov_tau=None, cov=None,
+                         cumvar=None, eigenvalues=None, eigenvectors=None):
+        self.update_model_params(cov=cov, cov_tau=cov_tau,
+                                 mean=mean, cumvar=cumvar,
+                                 eigenvalues=eigenvalues,
+                                 eigenvectors=eigenvectors)
 
 @decorator
 def _lazy_estimation(func, *args, **kw):
@@ -53,8 +58,9 @@ def _lazy_estimation(func, *args, **kw):
 
 
 @fix_docs
-class TICA(StreamingEstimationTransformer):
+class TICA(StreamingEstimationTransformer, SerializableMixIn):
     r""" Time-lagged independent component analysis (TICA)"""
+    __serialize_version = 0
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
                  stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):

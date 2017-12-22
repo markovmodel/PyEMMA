@@ -31,6 +31,7 @@ requirements:
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
+    - h5py
     - libgcc # [linux or osx]
     - matplotlib
     - mdtraj
@@ -54,7 +55,6 @@ test:
   files:
     - matplotlibrc
   requires:
-    - h5py
     - pytest
     - pytest-cov
    # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.

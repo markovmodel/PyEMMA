@@ -27,6 +27,8 @@ and provides them for later access.
 
 from __future__ import absolute_import
 
+from pyemma._base.serialization.serialization import SerializableMixIn
+
 from pyemma.util.annotators import aliased, alias
 
 
@@ -42,8 +44,14 @@ from pyemma.util import types as _types
 # TODO: Explain concept of an active set
 
 @aliased
-class MSM(_Model):
+class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
+    __serialize_version = 0
+
+    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
+                         '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
+                         '_metastable_memberships', '_metastable_sets', '_pcca',
+                         '_nstates', '_timeunit_model')
 
     def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
         r"""Markov model with a given transition matrix
@@ -143,6 +151,20 @@ class MSM(_Model):
         # pi might be derived from P, if None was given.
         self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
 
+    def __eq__(self, other):
+        if not isinstance(other, MSM):
+            return False
+        if id(self) == id(other):
+            return True
+        if self.P is not None and other.P is not None:
+            P_equal = _np.allclose(self.P, other.P)
+        else:
+            P_equal = True
+        return (P_equal and
+                self.sparse == other.sparse and self.neig == other.neig and
+                self.reversible == other.reversible and
+                self.timestep_model == other.timestep_model)
+
     ################################################################################
     # Basic attributes
     ################################################################################
@@ -168,6 +190,10 @@ class MSM(_Model):
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
+        else:
+            # set dummy values for not yet known attributes.
+            self.nstates = 0
+            self.sparse = False
 
         # TODO: if spectral decomp etc. already has been computed, reset its state.
 
@@ -216,10 +242,11 @@ class MSM(_Model):
     def neig(self, value):
         # set or correct eig param
         if value is None:
-            if self.sparse:
-                value = 10
-            else:
-                value = self._nstates
+            if self.P is not None:
+                if self.sparse:
+                    value = 10
+                else:
+                    value = self._nstates
 
         # set ncv for consistency
         if not hasattr(self, 'ncv'):
@@ -237,7 +264,8 @@ class MSM(_Model):
         self._dt_model = value
         from pyemma.util.units import TimeUnit
         # this is used internally to scale output times to a physical time unit.
-        self._timeunit_model = TimeUnit(self.dt_model)
+        if value is not None:
+            self._timeunit_model = TimeUnit(self.dt_model)
 
 
     ################################################################################

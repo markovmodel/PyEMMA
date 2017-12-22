@@ -19,15 +19,15 @@
 from __future__ import absolute_import
 import unittest
 import numpy as np
+import pyemma
 
 import os
 import mdtraj
 
 from itertools import combinations, product
 
-# from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
-from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom, hash_top
 
 from pyemma.coordinates.data.featurization.util import _atoms_in_residues
 import pkg_resources
@@ -55,8 +55,23 @@ ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C
 ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
 ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
 ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
-
-""" * 2  ### asn-leu-asn-leu
+ATOM    659  N   ASN A  71      19.168  -0.936 -10.274  1.00 27.50           N  
+ATOM    660  CA  ASN A  71      20.356  -0.049 -10.419  1.00 25.52           C  
+ATOM    661  C   ASN A  71      21.572  -0.418  -9.653  1.00 24.26           C  
+ATOM    662  O   ASN A  71      22.687  -0.336 -10.171  1.00 24.33           O  
+ATOM    663  CB  ASN A  71      19.965   1.410 -10.149  1.00 26.49           C  
+ATOM    664  CG  ASN A  71      18.932   1.881 -11.124  1.00 26.35           C  
+ATOM    665  OD1 ASN A  71      18.835   1.322 -12.224  1.00 26.77           O  
+ATOM    666  ND2 ASN A  71      18.131   2.864 -10.745  1.00 24.85           N  
+ATOM    667  N   LEU A  72      21.419  -0.824  -8.404  1.00 23.02           N  
+ATOM    668  CA  LEU A  72      22.592  -1.275  -7.656  1.00 23.37           C  
+ATOM    669  C   LEU A  72      23.391  -2.325  -8.448  1.00 25.78           C  
+ATOM    670  O   LEU A  72      24.647  -2.315  -8.430  1.00 25.47           O  
+ATOM    671  CB  LEU A  72      22.202  -1.897  -6.306  1.00 22.17           C  
+ATOM    672  CG  LEU A  72      23.335  -2.560  -5.519  1.00 22.49           C  
+ATOM    673  CD1 LEU A  72      24.578  -1.665  -5.335  1.00 22.56           C  
+ATOM    674  CD2 LEU A  72      22.853  -3.108  -4.147  1.00 24.47           C
+"""  ### asn-leu-asn-leu
 
 bogus_geom_pdbfile = """
 ATOM    000  MW  ACE A  00      0.0000   0.000  0.0000  1.00 0.000           X
@@ -81,10 +96,32 @@ def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
              ref_Y[ii], test_Y[ii, jj], ii)
 
 
+def check_serialized_equal(self):
+    def feat_equal(a, b):
+        assert isinstance(a, MDFeaturizer)
+        assert isinstance(b, MDFeaturizer)
+        self.assertEqual(a.dimension(), b.dimension())
+        self.assertListEqual(a.describe(), b.describe())
+        self.assertEqual(a.topology, b.topology)
+        for f1, f2 in zip(a.active_features, b.active_features):
+            if isinstance(f1, CustomFeature) or isinstance(f2, CustomFeature):
+                # CustomFeatures are not equal after restoration, because we refuse to pickle functions (contexts).
+                continue
+            self.assertEqual(f1, f2, msg='%s != %s' %(f1,f2))
+    feat = self.feat
+
+    from pyemma.util.contexts import named_temporary_file
+    with named_temporary_file() as buff:
+        feat.save(buff)
+        restored = pyemma.load(buff)
+    feat_equal(restored, feat)
+
+
 class TestFeaturizer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.maxDiff = None
         import tempfile
         cls.asn_leu_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
         with open(cls.asn_leu_pdbfile, 'w') as fh:
@@ -127,8 +164,20 @@ class TestFeaturizer(unittest.TestCase):
         self.ref_frame = 0
         self.atom_indices = np.arange(0, self.traj.n_atoms / 2)
 
+    def tearDown(self):
+        """
+        before we destroy the featurizer created in each test, we dump it via
+        serialization and restore it to check for equality.
+        """
+        check_serialized_equal(self)
+
+
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
+
+    def test_hashing_top(self):
+        import copy
+        assert hash_top(self.feat.topology) == hash_top(copy.deepcopy(self.feat.topology))
 
     def test_select_non_symmetry_heavy_atoms(self):
         try:
@@ -462,42 +511,46 @@ class TestFeaturizer(unittest.TestCase):
         # TODO: test me
         pass
 
-    def test_MinRmsd(self):
+    def test_MinRmsd_ref_traj(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame])
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
-        test_Y = self.feat.transform(self.traj).squeeze()
+
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
+
+    def test_MinRmsd_ref_file(self):
+        # and the file-input variant
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
+        test_Y = self.feat.transform(self.traj)
+        # now the reference
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_MinRmsd_with_atom_indices(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices)
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices)
-        test_Y = self.feat.transform(self.traj).squeeze()
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_MinRmsd_with_atom_indices_precentered(self):
         # Test the Trajectory-input variant
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
-        # and the file-input variant
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices,
-                                     precentered=True)
-        test_Y = self.feat.transform(self.traj).squeeze()
+        test_Y = self.feat.transform(self.traj)
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
-        assert self.feat.dimension() == 2
-        assert len(self.feat.describe()) == 2
+        assert self.feat.dimension() == 1
+        assert len(self.feat.describe()) == 1
 
     def test_Residue_Mindist_Ca_all(self):
         n_ca = self.feat.topology.n_atoms
@@ -740,41 +793,47 @@ class TestAtomsInResidues(unittest.TestCase):
 
 
 class TestFeaturizerNoDubs(unittest.TestCase):
+    def tearDown(self):
+        """
+        before we destroy the featurizer created in each test, we dump it via
+        serialization and restore it to check for equality.
+        """
+        check_serialized_equal(self)
 
     def testAddFeaturesWithDuplicates(self):
         """this tests adds multiple features twice (eg. same indices) and
         checks whether they are rejected or not"""
-        featurizer = MDFeaturizer(pdbfile)
+        self.feat = MDFeaturizer(pdbfile)
         expected_active = 1
 
-        featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
-        featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.feat.add_angles([[0, 1, 2], [0, 3, 4]])
+        self.feat.add_angles([[0, 1, 2], [0, 3, 4]])
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
-        featurizer.add_contacts([[0, 1], [0, 3]])
+        self.feat.add_contacts([[0, 1], [0, 3]])
         expected_active += 1
-        self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_contacts([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
+        self.feat.add_contacts([[0, 1], [0, 3]])
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         # try to fool it with ca selection
-        ca = featurizer.select_Ca()
-        ca = featurizer.pairs(ca, excluded_neighbors=0)
-        featurizer.add_distances(ca)
+        ca = self.feat.select_Ca()
+        ca = self.feat.pairs(ca, excluded_neighbors=0)
+        self.feat.add_distances(ca)
         expected_active += 1
-        self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_distances_ca(excluded_neighbors=0)
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
+        self.feat.add_distances_ca(excluded_neighbors=0)
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
-        featurizer.add_inverse_distances([[0, 1], [0, 3]])
+        self.feat.add_inverse_distances([[0, 1], [0, 3]])
         expected_active += 1
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
-        featurizer.add_distances([[0, 1], [0, 3]])
+        self.feat.add_distances([[0, 1], [0, 3]])
         expected_active += 1
-        self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_distances([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
+        self.feat.add_distances([[0, 1], [0, 3]])
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         def my_func(x):
             return x - 1
@@ -783,79 +842,73 @@ class TestFeaturizerNoDubs(unittest.TestCase):
             return x - 1
 
         expected_active += 1
-        my_feature = CustomFeature(my_func)
-        my_feature.dimension = 3
-        featurizer.add_custom_feature(my_feature)
+        my_feature = CustomFeature(my_func, dim=3)
+        self.feat.add_custom_feature(my_feature)
 
-        self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_custom_feature(my_feature)
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
+        self.feat.add_custom_feature(my_feature)
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         # since myfunc and foo are different functions, it should be added
         expected_active += 1
         foo_feat = CustomFeature(foo, dim=3)
-        featurizer.add_custom_feature(foo_feat)
+        self.feat.add_custom_feature(foo_feat)
 
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         expected_active += 1
         ref = mdtraj.load(xtcfile, top=pdbfile)
-        featurizer.add_minrmsd_to_ref(ref)
-        featurizer.add_minrmsd_to_ref(ref)
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.feat.add_minrmsd_to_ref(ref)
+        self.feat.add_minrmsd_to_ref(ref)
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         expected_active += 1
-        featurizer.add_minrmsd_to_ref(pdbfile)
-        featurizer.add_minrmsd_to_ref(pdbfile)
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.feat.add_residue_mindist()
+        self.feat.add_residue_mindist()
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         expected_active += 1
-        featurizer.add_residue_mindist()
-        featurizer.add_residue_mindist()
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.feat.add_group_mindist([[0, 1], [0, 2]])
+        self.feat.add_group_mindist([[0, 1], [0, 2]])
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
         expected_active += 1
-        featurizer.add_group_mindist([[0, 1], [0, 2]])
-        featurizer.add_group_mindist([[0, 1], [0, 2]])
-        self.assertEqual(len(featurizer.active_features), expected_active)
-
-        expected_active += 1
-        featurizer.add_residue_COM([10, 20])
-        featurizer.add_residue_COM([10, 20])
-        self.assertEqual(len(featurizer.active_features), expected_active)
+        self.feat.add_residue_COM([10, 20])
+        self.feat.add_residue_COM([10, 20])
+        self.assertEqual(len(self.feat.active_features), expected_active)
 
     def testAddVerySimilarResidueCOMs(self):
         traj = mdtraj.load(pdbfile_ops_aa)
         traj = traj.join(traj)
         traj._xyz[-1] = traj.xyz[0] + np.array([10, 10, 10])  # The second frame's COM is the first plus 10
 
-        feat = MDFeaturizer(traj.topology)
-        feat.add_residue_COM([0, 1, 2])
-        feat.add_residue_COM([0, 1])
-        feat.add_residue_COM([0, 1, ], mass_weighted=False)
-        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone')
-        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[0])
-        feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[1])
-        assert len(feat.active_features) == 6
+        self.feat = MDFeaturizer(traj.topology)
+        self.feat.add_residue_COM([0, 1, 2])
+        self.feat.add_residue_COM([0, 1])
+        self.feat.add_residue_COM([0, 1, ], mass_weighted=False)
+        self.feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone')
+        self.feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[0])
+        self.feat.add_residue_COM([0, 1, ], mass_weighted=False, image_molecules=True, scheme='backbone', ref_geom=traj[1])
+        assert len(self.feat.active_features) == 6
 
     def test_labels(self):
         """ just checks for exceptions """
-        featurizer = MDFeaturizer(pdbfile)
-        featurizer.add_angles([[1, 2, 3], [4, 5, 6]])
+        self.feat = MDFeaturizer(pdbfile)
+        self.feat.add_angles([[1, 2, 3], [4, 5, 6]])
         with self.assertRaises(ValueError) as cm:
-            featurizer.add_backbone_torsions()
+            self.feat.add_backbone_torsions()
             assert 'emtpy indices' in cm.exception.message
-        featurizer.add_contacts([[0, 1], [0, 3]])
-        featurizer.add_distances([[0, 1], [0, 3]])
-        featurizer.add_inverse_distances([[0, 1], [0, 3]])
+        self.feat.add_contacts([[0, 1], [0, 3]])
+        self.feat.add_distances([[0, 1], [0, 3]])
+        self.feat.add_inverse_distances([[0, 1], [0, 3]])
         cs = CustomFeature(lambda x: x - 1, dim=3)
-        featurizer.add_custom_feature(cs)
-        featurizer.add_minrmsd_to_ref(pdbfile)
-        featurizer.add_residue_mindist()
-        featurizer.add_group_mindist([[0, 1], [0, 2]])
-        featurizer.add_residue_COM([0, 1, 2])
+        self.feat.add_custom_feature(cs)
+        self.feat.add_minrmsd_to_ref(pdbfile)
+        self.feat.add_residue_mindist()
+        self.feat.add_group_mindist([[0, 1], [0, 2]])
+        self.feat.add_residue_COM([0, 1, 2])
 
-        featurizer.describe()
+        self.feat.describe()
 
 
 class TestPairwiseInputParser(unittest.TestCase):
@@ -1057,6 +1110,24 @@ class TestCustomFeature(unittest.TestCase):
 
         assert self.feat.dimension() == self.U.shape[1]
 
+    def test_serializable(self):
+        import tempfile
+        f = tempfile.mktemp()
+        try:
+            self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                      self.pairs,
+                                      self.means,
+                                      self.U
+                                      )
+            self.feat.save(f)
+            from pyemma import load
+            restored = load(f)
+            with self.assertRaises(NotImplementedError) as cw:
+                restored.transform(self.traj)
+            self.assertIn('re-add your custom feature', cw.exception.args[0])
+        finally:
+            import os
+            os.unlink(f)
 
 if __name__ == "__main__":
     unittest.main()

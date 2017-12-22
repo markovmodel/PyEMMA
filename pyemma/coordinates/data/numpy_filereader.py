@@ -26,6 +26,7 @@ import functools
 
 import numpy as np
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
 from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
 from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
@@ -33,7 +34,8 @@ from pyemma.util.annotators import fix_docs
 
 
 @fix_docs
-class NumPyFileReader(DataSource):
+class NumPyFileReader(DataSource, SerializableMixIn):
+    __serialize_version = 0
 
     """reads NumPy files in chunks. Supports .npy files
 
@@ -105,6 +107,10 @@ class NumPyFileReader(DataSource):
         length, ndim = np.shape(array)
 
         return TrajInfo(ndim, length)
+
+    def __reduce__(self):
+        # serialize only the constructor arguments.
+        return NumPyFileReader, (self.filenames, self.chunksize, self.mmap_mode)
 
 
 class NPYIterator(DataInMemoryIterator):

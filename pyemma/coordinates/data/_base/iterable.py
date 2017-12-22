@@ -70,6 +70,8 @@ class Iterable(Loggable, metaclass=ABCMeta):
     @property
     def in_memory(self):
         r"""are results stored in memory?"""
+        if not hasattr(self, '_in_memory'):
+            self._in_memory = False
         return self._in_memory
 
     @in_memory.setter
@@ -77,7 +79,7 @@ class Iterable(Loggable, metaclass=ABCMeta):
         r"""
         If set to True, the output will be stored in memory.
         """
-        old_state = self._in_memory
+        old_state = self.in_memory
         if not old_state and op_in_mem:
             self._map_to_memory()
         elif not op_in_mem and old_state:
