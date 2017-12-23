@@ -1849,7 +1849,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             # General case fixed-point iteration
             if len(self.count_outside) > 0:
-                if i > 1 and _np.all((_np.abs(self._dmhat) / self.sigmas) < self._eps) and not self._converged:
+                if i > 1 and _np.all((_np.abs(self._dmhat) / self.sigmas) < self.eps) and not self._converged:
                     self.logger.info("Converged Lagrange multipliers after %i steps..." % i)
                     converged = True
             # Special case
