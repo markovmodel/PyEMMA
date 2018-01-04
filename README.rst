@@ -51,7 +51,7 @@ With pip::
 
 with conda::
 
-   conda install -c omnia pyemma
+   conda install -c conda-forge pyemma
 
 or install latest devel branch with pip::
 
