@@ -70,3 +70,8 @@ class ConfigDirectoryException(Exception):
 class PyEMMA_DeprecationWarning(UserWarning):
     """You are using a feature, which will be removed in a future release. You have been warned!"""
     pass
+
+
+class PyEMMA_UserWarning(UserWarning):
+    """ general user warning."""
+    pass

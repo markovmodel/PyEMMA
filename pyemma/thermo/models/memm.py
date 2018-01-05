@@ -26,6 +26,8 @@ from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 @_add_full_state_methods
 @_aliased
 class ThermoMSM(_MSM, _SubSet):
+    __serialize_version = 0
+
     def __init__(
         self, P, active_set, nstates_full,
         pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):

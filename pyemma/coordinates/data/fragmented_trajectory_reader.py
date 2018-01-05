@@ -19,7 +19,8 @@ import itertools
 
 import numpy as np
 
-from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
+from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
 from pyemma.coordinates.data.util.reader_utils import preallocate_empty_trajectory
 from pyemma.util.annotators import fix_docs
 
@@ -319,21 +320,24 @@ class FragmentIterator(DataSourceIterator):
 
 
 @fix_docs
-class FragmentedTrajectoryReader(DataSource):
-    """
+class FragmentedTrajectoryReader(DataSource, SerializableMixIn):
+    __serialize_version = 0
+    """ Reader for fragmented trajectory data eg. (traj0_part0.xtc, traj_0_part1.xtc, ... )
+
     Parameters
     ----------
     trajectories: nested list or nested tuple, 1 level depth
-
+        grouped trajectory parts, eg.:
+        [['traj1_0.xtc', 'traj1_1.xtc'], 'traj2_full.xtc'], ['traj3_0.xtc, ...]]
     topologyfile, str, default None
 
     chunksize: int, default 1000
 
     featurizer: MDFeaturizer, default None
-
     """
 
     def __init__(self, trajectories, topologyfile=None, chunksize=1000, featurizer=None):
+        self._args = (trajectories, topologyfile, chunksize, featurizer)
         # sanity checks
         assert isinstance(trajectories, (list, tuple)), "input trajectories should be of list or tuple type"
         # if it contains no further list: treat as single trajectory
@@ -366,14 +370,12 @@ class FragmentedTrajectoryReader(DataSource):
                         raise ValueError("%s has different dimension (%i) than expected (%i)"
                                          % (itraj_r.describe(), itraj_r.ndim, last_dim))
 
-        self._reader_by_filename = {}
+        from collections import defaultdict
+        self._reader_by_filename = defaultdict(list)
         for r in self._readers:
             for itraj_r in r:
                 for filename in itraj_r.filenames:
-                    if filename in self._reader_by_filename:
-                        self._reader_by_filename[filename].append(itraj_r)
-                    else:
-                        self._reader_by_filename[filename] = [itraj_r]
+                    self._reader_by_filename[filename].append(itraj_r)
 
         # lengths array per reader
         self._reader_lengths = [[reader.trajectory_length(0, 1)
@@ -428,3 +430,7 @@ class FragmentedTrajectoryReader(DataSource):
         # get info for a fragment from specific reader
         reader = self._reader_by_filename[filename]
         return reader._get_traj_info(filename)
+
+    def __reduce__(self):
+        # serialization by storing constructor arguments
+        return FragmentedTrajectoryReader, self._args

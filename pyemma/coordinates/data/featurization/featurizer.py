@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import warnings
 
 from pyemma._base.loggable import Loggable
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.types import is_string
 import mdtraj
 
@@ -36,24 +37,42 @@ __author__ = 'Frank Noe, Martin Scherer'
 __all__ = ['MDFeaturizer']
 
 
-class MDFeaturizer(Loggable):
+class MDFeaturizer(SerializableMixIn, Loggable):
     r"""Extracts features from MD trajectories."""
+    __serialize_version = 0
+    __serialize_fields = ('use_topology_cache',
+                         '_topologyfile',
+                         'topology',
+                         'active_features',
+                          )
 
     def __init__(self, topfile, use_cache=True):
         """extracts features from MD trajectories.
 
-       Parameters
-       ----------
+        Parameters
+        ----------
 
-       topfile : str or mdtraj.Topology
+        topfile : str or mdtraj.Topology
            a path to a topology file (pdb etc.) or an mdtraj Topology() object
-       use_cache : boolean, default=True
+        use_cache : boolean, default=True
            cache already loaded topologies, if file contents match.
-       """
-        self.topologyfile = None
+        """
+        self.use_topology_cache = use_cache
+        self.topology = None
+        self.topologyfile = topfile
+        self.active_features = []
+
+    @property
+    def topologyfile(self):
+        return self._topologyfile
+
+    @topologyfile.setter
+    def topologyfile(self, topfile):
+        self._topologyfile = topfile
         if isinstance(topfile, str):
-            self.topology = load_topology_cached(topfile) if use_cache else load_topology_uncached(topfile)
-            self.topologyfile = topfile
+            self.topology = load_topology_cached(topfile) if self.use_topology_cache \
+                else load_topology_uncached(topfile)
+            self._topologyfile = topfile
         elif isinstance(topfile, mdtraj.Topology):
             self.topology = topfile
         elif isinstance(topfile, mdtraj.Trajectory):
@@ -61,9 +80,6 @@ class MDFeaturizer(Loggable):
         else:
             raise ValueError("no valid topfile arg: type was %s, "
                              "but only string or mdtraj.Topology allowed." % type(topfile))
-        self.active_features = []
-        self._dim = 0
-        self._showed_warning_empty_feature_list = False
 
     def __add_feature(self, f):
         # perform sanity checks
@@ -238,16 +254,27 @@ class MDFeaturizer(Loggable):
 
         return pair_inds
 
-    def add_all(self):
+    def add_all(self, reference=None, atom_indices=None, ref_atom_indices=None):
         """
         Adds all atom coordinates to the feature list.
         The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
 
+        Parameters
+        ----------
+        reference: mdtraj.Trajectory or None, default=None
+            if given, all data is being aligned to the given reference with Trajectory.superpose
+        atom_indices : array_like, or None
+            The indices of the atoms to superpose. If not
+            supplied, all atoms will be used.
+        ref_atom_indices : array_like, or None
+            Use these atoms on the reference structure. If not supplied,
+            the same atom indices will be used for this trajectory and the
+            reference one.
         """
-        # TODO: add possibility to align to a reference structure
-        self.add_selection(list(range(self.topology.n_atoms)))
+        self.add_selection(list(range(self.topology.n_atoms)), reference=reference,
+                           atom_indices=atom_indices, ref_atom_indices=ref_atom_indices)
 
-    def add_selection(self, indexes):
+    def add_selection(self, indexes, reference=None, atom_indices=None, ref_atom_indices=None):
         """
         Adds the coordinates of the selected atom indexes to the feature list.
         The coordinates of the selection [1, 2, ...] are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
@@ -256,11 +283,24 @@ class MDFeaturizer(Loggable):
         ----------
         indexes : ndarray((n), dtype=int)
             array with selected atom indexes
-
+        reference: mdtraj.Trajectory or None, default=None
+            if given, all data is being aligned to the given reference with Trajectory.superpose
+        atom_indices : array_like, or None
+            The indices of the atoms to superpose. If not
+            supplied, all atoms will be used.
+        ref_atom_indices : array_like, or None
+            Use these atoms on the reference structure. If not supplied,
+            the same atom indices will be used for this trajectory and the
+            reference one.
         """
-        # TODO: add possibility to align to a reference structure
-        from .misc import SelectionFeature
-        f = SelectionFeature(self.topology, indexes)
+        from .misc import SelectionFeature, AlignFeature
+        if reference is None:
+            f = SelectionFeature(self.topology, indexes)
+        else:
+            if not isinstance(reference, mdtraj.Trajectory):
+                raise ValueError('reference is not a mdtraj.Trajectory object, but {}'.format(reference))
+            f = AlignFeature(reference=reference, indexes=indexes,
+                             atom_indices=atom_indices, ref_atom_indices=ref_atom_indices)
         self.__add_feature(f)
 
     def add_distances(self, indices, periodic=True, indices2=None):
@@ -397,6 +437,7 @@ class MDFeaturizer(Loggable):
             If set to true, this feature will return the number of formed contacts (and not feature values with either 1.0 or 0)
             The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts)
 
+
         .. note::
             When using the *iterable of integers* input, :py:obj:`indices` and :py:obj:`indices2`
             will be sorted numerically and made unique before converting them to a pairlist.
@@ -447,6 +488,7 @@ class MDFeaturizer(Loggable):
             information, we will treat dihedrals that cross periodic images
             using the minimum image convention.
 
+
         .. note::
             Using :py:obj:`scheme` = 'closest' or 'closest-heavy' with :py:obj:`residue pairs` = 'all'
             will compute nearly all interatomic distances, for every frame, before extracting the closest pairs.
@@ -464,12 +506,86 @@ class MDFeaturizer(Loggable):
         f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold, periodic)
         self.__add_feature(f)
 
-    def add_group_mindist(self,
-                            group_definitions,
-                            group_pairs='all',
-                            threshold=None,
-                            periodic=True,
-                            ):
+    def add_group_COM(self, group_definitions, ref_geom=None, image_molecules=False, mass_weighted=True,):
+        r"""
+        Adds the centers of mass (COM) in cartesian coordinates of a group or groups of atoms.
+        If these group definitions coincide directly with residues, use :obj:`add_residue_COM` instead. No periodic
+        boundaries are taken into account.
+
+        Parameters
+        ----------
+
+        group_definitions : iterable of integers
+            List of the groups of atom indices for which the COM will be computed. The atoms are zero-indexed.
+
+        ref_geom : :obj:`mdtraj.Trajectory`, default is None
+            The coordinates can be centered to a reference geometry before computing the COM.
+
+        image_molecules : boolean, default is False
+            The method traj.image_molecules will be called before computing averages. The method tries to correct
+            for molecules broken across periodic boundary conditions, but can be time consuming. See
+            http://mdtraj.org/latest/api/generated/mdtraj.Trajectory.html#mdtraj.Trajectory.image_molecules
+            for more details
+
+        mass_weighted : boolean, default is True
+            Set to False if you want the geometric center and not the COM
+
+
+        .. note::
+            Centering (with :obj:`ref_geom`) and imaging (:obj:`image_molecules=True`) the trajectories can sometimes be time consuming. Consider doing that to your trajectory-files prior to the featurization.
+        """
+
+        from .misc import GroupCOMFeature
+
+        f = GroupCOMFeature(self.topology, group_definitions , ref_geom=ref_geom, image_molecules=image_molecules, mass_weighted=mass_weighted)
+        self.__add_feature(f)
+
+    def add_residue_COM(self, residue_indices, scheme='all', ref_geom=None, image_molecules=False, mass_weighted=True,):
+        r"""
+        Adds a per-residue center of mass (COM) in cartesian coordinates.
+        No periodic boundaries are taken into account.
+
+        Parameters
+        ----------
+
+        residue_indices : iterable of integers
+            The residue indices for which the COM will be computed. These are always zero-indexed that **are not
+            necessarily** the residue sequence record of the topology (resSeq). resSeq indices start at least at 1
+            but can depend on the topology. See http://mdtraj.org/latest/atom_selection.html for more details.
+
+        scheme : str, default is 'all'
+            What atoms contribute to the COM computation. The supported keywords are:
+            'all', 'backbone', 'sidechain' . If the scheme yields no atoms for some residue, the selection
+            falls back to 'all' for that residue.
+
+        ref_geom : obj:`mdtraj.Trajectory`, default is None
+            The coordinates can be centered to a reference geometry before computing the COM.
+
+        image_molecules : boolean, default is False
+            The method traj.image_molecules will be called before computing averages. The method tries to correct
+            for molecules broken across periodic boundary conditions, but can be time consuming. See
+            http://mdtraj.org/latest/api/generated/mdtraj.Trajectory.html#mdtraj.Trajectory.image_molecules
+            for more details
+
+        mass_weighted : boolean, default is True
+            Set to False if you want the geometric center and not the COM
+
+
+        .. note::
+            Centering (with :obj:`ref_geom`) and imaging (:obj:`image_molecules=True`) the trajectories can sometimes be time consuming. Consider doing that to your trajectory-files prior to the featurization.
+        """
+
+        from .misc import ResidueCOMFeature
+        from pyemma.coordinates.data.featurization.util import _atoms_in_residues
+        assert scheme in ['all', 'backbone', 'sidechain']
+
+        residue_atoms = _atoms_in_residues(self.topology, residue_indices, subset_of_atom_idxs=self.topology.select(scheme), MDlogger=self.logger)
+
+        f = ResidueCOMFeature(self.topology, np.asarray(residue_indices), residue_atoms, scheme, ref_geom=ref_geom, image_molecules=image_molecules, mass_weighted=mass_weighted)
+
+        self.__add_feature(f)
+
+    def add_group_mindist(self, group_definitions, group_pairs='all', threshold=None, periodic=True):
         r"""
         Adds the minimum distance between groups of atoms to the feature list. If the groups of
         atoms are identical to residues, use :py:obj:`add_residue_mindist <pyemma.coordinates.data.featurizer.MDFeaturizer.add_residue_mindist>`.
@@ -477,7 +593,7 @@ class MDFeaturizer(Loggable):
         Parameters
         ----------
 
-        group_definition : list of 1D-arrays/iterables containing the group definitions via atom indices.
+        group_definitions : list of 1D-arrays/iterables containing the group definitions via atom indices.
             If there is only one group_definition, it is assumed the minimum distance within this group (excluding the
             self-distance) is wanted. In this case, :py:obj:`group_pairs` is ignored.
 
@@ -629,11 +745,10 @@ class MDFeaturizer(Loggable):
             raise ValueError("Dimension has to be positive. "
                              "Please override dimension attribute in feature!")
 
-        if not hasattr(feature, 'map'):
-            raise ValueError("no map method in given feature")
-        else:
-            if not callable(getattr(feature, 'map')):
-                raise ValueError("map exists but is not a method")
+        if not hasattr(feature, 'transform'):
+            raise ValueError("no 'transform' method in given feature")
+        elif not callable(getattr(feature, 'transform')):
+            raise ValueError("'transform' attribute exists but is not a method")
 
         self.__add_feature(feature)
 
@@ -681,6 +796,8 @@ class MDFeaturizer(Loggable):
             Has to return a numpy.ndarray ndim=2.
         dim : int
             output dimension of :py:obj:`function`
+        description: str or None
+            a message for the describe feature list.
         args : any number of positional arguments
             these have to be in the same order as :py:obj:`func` is expecting them
         kwargs : dictionary
@@ -693,9 +810,16 @@ class MDFeaturizer(Loggable):
         Alternatively a single element list or str will be expanded to match the output dimension.
 
         """
-        f = CustomFeature(func, dim=dim, *args, **kwargs)
-
+        description = kwargs.pop('description', None)
+        f = CustomFeature(func, dim=dim, description=description, fun_args=args, fun_kwargs=kwargs)
         self.add_custom_feature(f)
+
+    def remove_all_custom_funcs(self):
+        """ Remove all instances of CustomFeature from the active feature list.
+        """
+        custom_feats = [f for f in self.active_features if isinstance(f, CustomFeature)]
+        for f in custom_feats:
+            self.active_features.remove(f)
 
     def dimension(self):
         """ current dimension due to selected features

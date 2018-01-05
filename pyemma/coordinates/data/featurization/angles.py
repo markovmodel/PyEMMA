@@ -19,22 +19,22 @@ Created on 15.02.2016
 
 @author: marscher
 '''
-import functools
 import itertools
 
+import mdtraj
+import numpy as np
 from mdtraj.geometry.dihedral import (indices_phi,
                                       indices_psi,
                                       indices_chi1,
                                       )
-import mdtraj
 
 from pyemma.coordinates.data.featurization._base import Feature
-from pyemma.coordinates.data.featurization.util import (_hash_numpy_array,
-                                                        hash_top, _describe_atom)
-import numpy as np
+from pyemma.coordinates.data.featurization.util import _describe_atom
 
 
 class AngleFeature(Feature):
+    __serialize_version = 0
+    __serialize_fields = ('angle_indexes', 'deg', 'cossin', 'periodic')
 
     def __init__(self, top, angle_indexes, deg=False, cossin=False, periodic=True):
         self.top = top
@@ -75,16 +75,15 @@ class AngleFeature(Feature):
         else:
             return rad
 
-    def __hash__(self):
-        hash_value = _hash_numpy_array(self.angle_indexes)
-        hash_value ^= hash_top(self.top)
-        hash_value ^= hash(self.deg)
-        hash_value ^= hash(self.cossin)
-
-        return hash_value
+    def __eq__(self, other):
+        eq = super(AngleFeature, self).__eq__(other)
+        if not eq or not isinstance(other, AngleFeature):
+            return False
+        return self.cossin == other.cossin and np.all(self.angle_indexes == other.angle_indexes)
 
 
 class DihedralFeature(AngleFeature):
+    __serialize_version = 0
 
     def __init__(self, top, dih_indexes, deg=False, cossin=False, periodic=True):
         super(DihedralFeature, self).__init__(top=top,
@@ -126,31 +125,34 @@ class DihedralFeature(AngleFeature):
 
 
 class BackboneTorsionFeature(DihedralFeature):
+    __serialize_version = 0
+    __serialize_fields = ('selstr', '_phi_inds', '_psi_inds')
 
     def __init__(self, topology, selstr=None, deg=False, cossin=False, periodic=True):
-        indices = indices_phi(topology)
+        self.top = topology
+        indices = indices_phi(self.top)
+        self.selstr = selstr
 
         if not selstr:
             self._phi_inds = indices
         else:
             self._phi_inds = indices[np.in1d(indices[:, 1],
-                                             topology.select(selstr), assume_unique=True)]
+                                             self.top.select(selstr), assume_unique=True)]
 
-        indices = indices_psi(topology)
+        indices = indices_psi(self.top)
         if not selstr:
             self._psi_inds = indices
         else:
             self._psi_inds = indices[np.in1d(indices[:, 1],
-                                             topology.select(selstr), assume_unique=True)]
+                                             self.top.select(selstr), assume_unique=True)]
 
         # alternate phi, psi pairs (phi_1, psi_1, ..., phi_n, psi_n)
         dih_indexes = np.array(list(phi_psi for phi_psi in
                                     zip(self._phi_inds, self._psi_inds))).reshape(-1, 4)
 
-        super(BackboneTorsionFeature, self).__init__(topology, dih_indexes,
+        super(BackboneTorsionFeature, self).__init__(self.top, dih_indexes,
                                                      deg=deg, cossin=cossin,
                                                      periodic=periodic)
-
     def describe(self):
         top = self.top
         getlbl = lambda at: "%i %s %i" % (at.residue.chain.index, at.residue.name, at.residue.resSeq)
@@ -178,16 +180,19 @@ class BackboneTorsionFeature(DihedralFeature):
 
 
 class Chi1TorsionFeature(DihedralFeature):
+    __serialize_version = 0
 
     def __init__(self, topology, selstr=None, deg=False, cossin=False, periodic=True):
-        indices = indices_chi1(topology)
+        self.top = topology
+        self.selstr = selstr
+        indices = indices_chi1(self.top)
         if not selstr:
             dih_indexes = indices
         else:
             dih_indexes = indices[np.in1d(indices[:, 1],
-                                          topology.select(selstr),
+                                          self.top.select(selstr),
                                           assume_unique=True)]
-        super(Chi1TorsionFeature, self).__init__(topology, dih_indexes,
+        super(Chi1TorsionFeature, self).__init__(self.top, dih_indexes,
                                                  deg=deg, cossin=cossin,
                                                  periodic=periodic)
 
