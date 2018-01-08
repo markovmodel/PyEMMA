@@ -255,5 +255,13 @@ class TestMSMSerialization(unittest.TestCase):
             restored = load(self.f)
             assert restored.sparse
 
+    def test_msm_coarse_grain(self):
+        pcca = self.msm.pcca(2)
+        self.msm.save(self.f)
+        restored = load(self.f)
+        np.testing.assert_equal(restored.metastable_memberships, pcca.memberships)
+        np.testing.assert_equal(restored.metastable_distributions, pcca.output_probabilities)
+
+
 if __name__ == '__main__':
     unittest.main()
