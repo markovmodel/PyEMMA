@@ -18,7 +18,8 @@
 import numpy as _np
 
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporterMixin as _ProgressReporter
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
+from pyemma._base.serialization.serialization import SerializableMixIn as _SerializableMixIn
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -30,12 +31,27 @@ from thermotools import util as _util
 __author__ = 'wehmeyer, mey'
 
 
-class WHAM(_Estimator, _MultiThermModel, _ProgressReporter):
+class WHAM(_Estimator, _MultiThermModel, _SerializableMixIn):
     r"""Weighted Histogram Analysis Method."""
 
+    __serialize_version = 0
+    __serialize_fields = ('active_set',
+                          'bias_energies',
+                          'conf_energies',
+                          'increments',
+                          'loglikelihoods',
+                          'nstates_full',
+                          'nthermo',
+                          'state_counts',
+                          'state_counts_full',
+                          'therm_energies',
+                          'timestep_traj',
+                          'temperatures', # this attribute is attached dynamically in pyemma.thermo.api
+                          )
+
     def __init__(
-        self, bias_energies_full,
-        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', stride=1):
+            self, bias_energies_full,
+            maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', stride=1):
         r"""Weighted Histogram Analysis Method
 
         Parameters
@@ -151,15 +167,16 @@ class WHAM(_Estimator, _MultiThermModel, _ProgressReporter):
             self.bias_energies_full[:, self.active_set], dtype=_np.float64)
 
         # run estimator
-        self.therm_energies, self.conf_energies, self.increments, self.loglikelihoods = \
-            _wham.estimate(
-                self.state_counts, self.bias_energies,
-                maxiter=self.maxiter, maxerr=self.maxerr,
-                therm_energies=self.therm_energies, conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(
-                    self, 'WHAM', self.maxiter, self.maxerr))
-        self._progress_force_finish(stage='WHAM', description='WHAM')
+        pg = _ProgressReporter()
+        with pg.context(stage='WHAM'):
+            self.therm_energies, self.conf_energies, self.increments, self.loglikelihoods = \
+                _wham.estimate(
+                    self.state_counts, self.bias_energies,
+                    maxiter=self.maxiter, maxerr=self.maxerr,
+                    therm_energies=self.therm_energies, conf_energies=self.conf_energies,
+                    save_convergence_info=self.save_convergence_info,
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        pg, 'WHAM', self.maxiter, self.maxerr))
 
         # get stationary models
         models = [_StationaryModel(

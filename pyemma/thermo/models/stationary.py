@@ -16,20 +16,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
+
 from pyemma._base.model import Model as _Model
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.msm.util.subset import SubSet as _SubSet
 from pyemma.msm.util.subset import add_full_state_methods as _add_full_state_methods
 from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util import types as _types
 from pyemma.util.annotators import aliased as _aliased, alias as _alias
+
 from thermotools.util import logsumexp as _logsumexp
 
 __author__ = 'noe'
 
+
 @_add_full_state_methods
 @_aliased
-class StationaryModel(_Model, _SubSet):
+class StationaryModel(_Model, _SubSet, SerializableMixIn):
     r"""StationaryModel combines a stationary vector with discrete-state free energies."""
+    __serialize_version = 0
 
     def __init__(self, pi=None, f=None, normalize_energy=True, label='ground state'):
         r"""StationaryModel combines a stationary vector with discrete-state free energies.

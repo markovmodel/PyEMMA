@@ -27,6 +27,7 @@ __author__ = 'noe'
 
 class MultiThermModel(_StationaryModel):
     r"""Coupled set of stationary models at multiple thermodynamic states"""
+    __serialize_version = 0
 
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
@@ -74,13 +75,14 @@ class MultiThermModel(_StationaryModel):
     @_deprecated("model_active_set is deprecated as all models now contain their own active_set.")
     def model_active_set(self):
         return [model.active_set for model in self.models]
+
     @property
     @_deprecated("msm_active_set is deprecated as the msm object now contains its own active_set.")
     def msm_active_set(self):
         try: return self.msm.active_set
         except AttributeError: return None
     # LEGACY STUFF ====================================================== DELETE WHENEVER CONVENIENT
-    
+
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):
         # don't normalize f, because in a multiensemble the relative energy levels matter

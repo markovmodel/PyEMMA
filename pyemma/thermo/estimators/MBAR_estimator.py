@@ -18,12 +18,13 @@
 import numpy as _np
 
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporterMixin as _ProgressReporter
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
+from pyemma._base.serialization.serialization import SerializableMixIn as _SerializableMixIn
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
-from pyemma.util.units import TimeUnit as _TimeUnit
+
 from thermotools import mbar as _mbar
 from thermotools import mbar_direct as _mbar_direct
 from thermotools import util as _util
@@ -31,8 +32,24 @@ from thermotools import util as _util
 __author__ = 'wehmeyer'
 
 
-class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
+class MBAR(_Estimator, _MultiThermModel, _SerializableMixIn):
     r"""Multi-state Bennet Acceptance Ratio Method."""
+    __serialize_version = 0
+    __serialize_fields = ('active_set',
+                          'biased_conf_energies_full',
+                          'btrajs',
+                          'conf_energies',
+                          'increments',
+                          'loglikelihoods',
+                          'nstates_full',
+                          'nthermo',
+                          'state_counts',
+                          'state_counts_full',
+                          'therm_energies',
+                          'therm_state_counts_full',
+                          'unbiased_conf_energies_full',
+                          'temperatures', # this attribute is attached dynamically in pyemma.thermo.api
+                          )
 
     def __init__(
         self,
@@ -138,19 +155,20 @@ class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
             mbar = _mbar_direct
         else:
             mbar = _mbar
-        self.therm_energies, self.unbiased_conf_energies_full, self.biased_conf_energies_full, \
-            self.increments = mbar.estimate(
-                self.state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                maxiter=self.maxiter, maxerr=self.maxerr,
-                save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(
-                    self, 'MBAR', self.maxiter, self.maxerr),
-                n_conf_states=self.nstates_full)
+        pg = _ProgressReporter()
+        with pg.context():
+            self.therm_energies, self.unbiased_conf_energies_full, self.biased_conf_energies_full, \
+                self.increments = mbar.estimate(
+                    self.state_counts_full.sum(axis=1), btrajs, dtrajs_full,
+                    maxiter=self.maxiter, maxerr=self.maxerr,
+                    save_convergence_info=self.save_convergence_info,
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        pg, 'MBAR', self.maxiter, self.maxerr),
+                    n_conf_states=self.nstates_full)
         try:
             self.loglikelihoods = _np.nan * self.increments
         except TypeError:
             self.loglikelihoods = None
-        self._progress_force_finish(stage='MBAR', description='MBAR')
 
         # get stationary models
         models = [_StationaryModel(

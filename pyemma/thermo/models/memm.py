@@ -23,6 +23,7 @@ from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util.annotators import aliased as _aliased, alias as _alias
 from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 
+
 @_add_full_state_methods
 @_aliased
 class ThermoMSM(_MSM, _SubSet):
@@ -78,8 +79,13 @@ class ThermoMSM(_MSM, _SubSet):
             be greater than k; it is recommended that ncv > 2*k.
 
         """
-        super(ThermoMSM, self).__init__(
-            P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, ncv=ncv)
+        self.set_model_params(P, active_set, nstates_full, pi=None, reversible=None, dt_model='1 step',
+                              neig=None)
+
+    def set_model_params(self, P, active_set, nstates_full,
+            pi=None, reversible=None, dt_model='1 step', neig=None):
+        super(ThermoMSM, self).set_model_params(P=P, pi=pi, reversible=reversible,
+                                                dt_model=dt_model, neig=neig)
         self.active_set = active_set
         self.nstates_full = nstates_full
 
@@ -96,20 +102,20 @@ class ThermoMSM(_MSM, _SubSet):
     def f(self):
         r"""The free energies (in units of kT) on the configuration states."""
         return -_np.log(self.pi)
-    
+
     @_map_to_full_state(default_arg=_np.inf)
     def eigenvectors_right(self, k=None):
         r'''Get the first k (all all) right eigenvectors.'''
         return super(ThermoMSM, self).eigenvectors_right(k=k)
-    
+
     @_map_to_full_state(default_arg=_np.inf, extend_along_axis=1)
     def eigenvectors_left(self, k=None):
         r'''Get the first k (all all) left eigenvectors.'''
         return super(ThermoMSM, self).eigenvectors_left(k=k)
 
 
-
 class MEMM(_MultiThermModel):
+    __serialize_version = 0
     r""" Coupled set of Markov state models at multiple thermodynamic states
 
     Parameters
