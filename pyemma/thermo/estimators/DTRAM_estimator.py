@@ -242,17 +242,19 @@ class DTRAM(_Estimator, _MEMM):
         pg = _ProgressReporter()
 
         if self.init is not None and self.init == 'wham':
-            with pg.context(stage='WHAM init.'):
+            stage = 'WHAM init.'
+            with pg.context(stage=stage):
                 self.therm_energies, self.conf_energies, _increments, _loglikelihoods = \
                     _wham.estimate(
                         self.state_counts, self.bias_energies,
                         maxiter=self.init_maxiter, maxerr=self.init_maxerr, save_convergence_info=0,
                         therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                         callback=_ConvergenceProgressIndicatorCallBack(
-                            pg, 'WHAM init.', self.init_maxiter, self.init_maxerr))
+                            pg, stage, self.init_maxiter, self.init_maxerr))
 
         # run estimator
-        with pg.context(stage='DTRAM'):
+        stage = 'DTRAM'
+        with pg.context(stage=stage):
             self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
                 self.increments, self.loglikelihoods = _dtram.estimate(
                     self.count_matrices, self.bias_energies,
@@ -261,7 +263,7 @@ class DTRAM(_Estimator, _MEMM):
                     conf_energies=self.conf_energies,
                     save_convergence_info=self.save_convergence_info,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        pg, 'DTRAM', self.maxiter, self.maxerr))
+                        pg, stage, self.maxiter, self.maxerr))
 
         # compute models
         fmsms = [_dtram.estimate_transition_matrix(

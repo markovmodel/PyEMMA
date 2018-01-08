@@ -168,7 +168,8 @@ class WHAM(_Estimator, _MultiThermModel, _SerializableMixIn):
 
         # run estimator
         pg = _ProgressReporter()
-        with pg.context(stage='WHAM'):
+        stage = 'WHAM'
+        with pg.context(stage=stage):
             self.therm_energies, self.conf_energies, self.increments, self.loglikelihoods = \
                 _wham.estimate(
                     self.state_counts, self.bias_energies,
@@ -176,7 +177,7 @@ class WHAM(_Estimator, _MultiThermModel, _SerializableMixIn):
                     therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                     save_convergence_info=self.save_convergence_info,
                     callback=_ConvergenceProgressIndicatorCallBack(
-                        pg, 'WHAM', self.maxiter, self.maxerr))
+                        pg, stage, self.maxiter, self.maxerr))
 
         # get stationary models
         models = [_StationaryModel(
