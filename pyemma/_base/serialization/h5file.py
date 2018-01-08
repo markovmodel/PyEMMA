@@ -32,7 +32,7 @@ class H5Wrapper(object):
                          'class_str',
                          'class_repr',
                          'saved_streaming_chain',
-                         'model',
+                         #'model',
                          'pyemma_version',
                          'digest',
                          )
@@ -88,12 +88,12 @@ class H5Wrapper(object):
     def model(self):
         # restore pickled object.
         g = self._current_model_group
-        inp = g.attrs['model']
+        inp = g['model'].value
         from .pickle_extensions import HDF5PersistentUnpickler
         from io import BytesIO
         file = BytesIO(inp)
         # validate hash.
-        self._hash(g.attrs, compare_to=g.attrs['digest'])
+        self._hash(g.attrs, inp, compare_to=g.attrs['digest'])
         unpickler = HDF5PersistentUnpickler(g, file=file)
         obj = unpickler.load()
         obj._restored_from_pyemma_version = self.pyemma_version
@@ -149,9 +149,10 @@ class H5Wrapper(object):
         flat = file.read()
         # attach the pickle byte string to the H5 file.
         attrs = self._current_model_group.attrs
-        attrs['model'] = np.void(flat)
+        model = np.void(flat)
         # integrity check
-        attrs['digest'] = H5Wrapper._hash(attrs)
+        attrs['digest'] = H5Wrapper._hash(attrs, flat)
+        self._current_model_group['model'] = model
 
     @property
     def models_descriptive(self):
@@ -168,10 +169,11 @@ class H5Wrapper(object):
                 for name in f.keys()}
 
     @staticmethod
-    def _hash(attributes, compare_to=None):
+    def _hash(attributes, model, compare_to=None):
         # hashes the attributes in the hdf5 file (also binary data), to make it harder to manipulate them.
         import hashlib
         digest = hashlib.sha256()
+        digest.update(model)
         for attr in H5Wrapper.stored_attributes:
             if attr == 'digest' or attr == 'saved_streaming_chain':
                 continue

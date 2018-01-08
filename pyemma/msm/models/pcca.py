@@ -3,20 +3,25 @@ import warnings
 import numpy as np
 
 from pyemma._base.model import Model
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 
-class PCCA(Model):
+class PCCA(Model, SerializableMixIn):
+    __serialize_version = 0
+
     """
     PCCA+ spectral clustering method with optimized memberships [1]_
     Clusters the first m eigenvectors of a transition matrix in order to cluster the states.
     This function does not assume that the transition matrix is fully connected. Disconnected sets
     will automatically define the first metastable states, with perfect membership assignments.
+
     Parameters
     ----------
     P : ndarray (n,n)
         Transition matrix.
     m : int
         Number of clusters to group to.
+
     References
     ----------
     [1] S. Roeblitz and M. Weber, Fuzzy spectral clustering by PCCA+:
@@ -27,14 +32,25 @@ class PCCA(Model):
         Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
         J. Chem. Phys. 139, 184114 (2013)
     """
+    def __init__(self, P, m):
+        self.set_model_params(P, m)
 
-    def __init__(self, msm, m):
+    def set_model_params(self, P, m):
+        """
+
+        Parameters
+        ----------
+        P : ndarray (n,n)
+            Transition matrix.
+        m : int
+            Number of clusters to group to.
+        """
         # remember input
-        P = msm.P
-        if msm.sparse:
-            warnings.warn('pcca is only implemented for dense matrices, '
+        from scipy.sparse import issparse
+        if issparse(P):
+            warnings.warn('PCCA is only implemented for dense matrices, '
                           'converting sparse transition matrix to dense ndarray.')
-            P = msm.P.toarray()
+            P = P.toarray()
         self.P = P
         self.m = m
 
@@ -46,7 +62,9 @@ class PCCA(Model):
         self._M = pcca(P, m)
 
         # stationary distribution
-        self._pi = msm.pi
+        # TODO: in msmtools we recomputed this from P, we actually want to use pi from the msm obj, but this caused #1208
+        from msmtools.analysis import stationary_distribution
+        self._pi = stationary_distribution(P)
 
         # coarse-grained stationary distribution
         self._pi_coarse = np.dot(self._M.T, self._pi)
