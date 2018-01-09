@@ -49,9 +49,9 @@ class MSM(_Model, SerializableMixIn):
     __serialize_version = 0
 
     __serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
-                         '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
-                         '_metastable_memberships', '_metastable_sets', '_pcca',
-                         '_nstates', '_timeunit_model')
+                          '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
+                          '_metastable_memberships', '_metastable_sets', '_pcca',
+                          '_nstates', '_timeunit_model')
 
     def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
         r"""Markov model with a given transition matrix
@@ -937,10 +937,10 @@ class MSM(_Model, SerializableMixIn):
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m or self._pcca.P is not self.P:
                 # incorrect number of states or new transition matrix -> recompute
-                self._pcca = PCCA(self, m)
+                self._pcca = PCCA(self.P, m)
         except AttributeError:
             # didn't have a pcca object yet - compute
-            self._pcca = PCCA(self, m)
+            self._pcca = PCCA(self.P, m)
 
         # set metastable properties
         self._metastable_computed = True

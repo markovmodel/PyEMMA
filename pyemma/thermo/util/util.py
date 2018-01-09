@@ -322,7 +322,7 @@ def _get_multi_temperature_bias_sequences(
                     * energy_traj[:, _np.newaxis])
     else:
         # non-reduced case and temperatures given
-        kT = temperatures
+        kT = temperatures.copy()
         rT = reference_temperature
         if temp_unit.lower() == 'c':
             kT += conversion_shift_Celsius_to_Kelvin
