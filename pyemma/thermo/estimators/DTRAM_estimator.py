@@ -20,9 +20,9 @@ import numpy as _np
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
+from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
-from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 
 from msmtools.estimation import largest_connected_set as _largest_connected_set
@@ -35,24 +35,20 @@ from thermotools import cset as _cset
 __author__ = 'noe, wehmeyer'
 
 
-class DTRAM(_Estimator, _MEMM):
+class DTRAM(_Estimator, _MEMM, ThermoBase):
     r""" Discrete Transition(-based) Reweighting Analysis Method."""
     __serialize_version = 0
-    __serialize_fields = ('active_set',
-                          'bias_energies',
+    __serialize_fields = ('bias_energies',
                           'conf_energies',
                           'count_matrices',
                           'count_matrices_full',
                           'increments',
                           'log_lagrangian_mult',
                           'loglikelihoods',
-                          'nstates_full',
                           'nthermo',
                           'state_counts',
                           'state_counts_full',
                           'therm_energies',
-                          'timestep_traj',
-                          'temperatures',  # this attribute is attached dynamically in pyemma.thermo.api
                           )
 
     def __init__(
@@ -177,7 +173,6 @@ class DTRAM(_Estimator, _MEMM):
         self.init_maxerr = init_maxerr
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
-        self.timestep_traj = _TimeUnit(dt_traj)
         # set iteration variables
         self.therm_energies = None
         self.conf_energies = None

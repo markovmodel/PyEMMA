@@ -21,6 +21,7 @@ import warnings as _warnings
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
+from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
@@ -43,11 +44,10 @@ class EmptyState(RuntimeWarning):
     pass
 
 
-class TRAM(_Estimator, _MEMM):
+class TRAM(_Estimator, _MEMM, ThermoBase):
     r"""Transition(-based) Reweighting Analysis Method."""
     __serialize_version = 0
-    __serialize_fields = ('active_set',
-                          'biased_conf_energies',
+    __serialize_fields = ('biased_conf_energies',
                           'btrajs',
                           'count_matrices',
                           'csets',
@@ -66,8 +66,6 @@ class TRAM(_Estimator, _MEMM):
                           'state_counts',
                           'therm_energies',
                           'therm_state_counts_full',
-                          'timestep_traj',
-                          'temperatures', # this attribute is attached dynamically in pyemma.thermo.api
                           )
 
     def __init__(
@@ -218,7 +216,6 @@ class TRAM(_Estimator, _MEMM):
         self.nn = nn
         self.connectivity_factor = connectivity_factor
         self.dt_traj = dt_traj
-        self.timestep_traj = _TimeUnit(dt_traj)
         self.nstates_full = nstates_full
         self.equilibrium = equilibrium
         self.maxiter = maxiter

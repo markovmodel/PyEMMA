@@ -22,6 +22,7 @@ from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma._base.serialization.serialization import SerializableMixIn as _SerializableMixIn
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
+from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
@@ -31,22 +32,18 @@ from thermotools import util as _util
 __author__ = 'wehmeyer, mey'
 
 
-class WHAM(_Estimator, _MultiThermModel, _SerializableMixIn):
+class WHAM(_Estimator, _MultiThermModel, ThermoBase, _SerializableMixIn):
     r"""Weighted Histogram Analysis Method."""
 
     __serialize_version = 0
-    __serialize_fields = ('active_set',
-                          'bias_energies',
+    __serialize_fields = ('bias_energies',
                           'conf_energies',
                           'increments',
                           'loglikelihoods',
-                          'nstates_full',
                           'nthermo',
                           'state_counts',
                           'state_counts_full',
                           'therm_energies',
-                          'timestep_traj',
-                          'temperatures', # this attribute is attached dynamically in pyemma.thermo.api
                           )
 
     def __init__(
@@ -121,7 +118,6 @@ class WHAM(_Estimator, _MultiThermModel, _SerializableMixIn):
         self.save_convergence_info = save_convergence_info
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
-        self.timestep_traj = _TimeUnit(dt_traj)
         # set iteration variables
         self.therm_energies = None
         self.conf_energies = None

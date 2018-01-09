@@ -22,6 +22,7 @@ from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma._base.serialization.serialization import SerializableMixIn as _SerializableMixIn
 from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
+from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
 
@@ -32,23 +33,20 @@ from thermotools import util as _util
 __author__ = 'wehmeyer'
 
 
-class MBAR(_Estimator, _MultiThermModel, _SerializableMixIn):
+class MBAR(_Estimator, _MultiThermModel, ThermoBase, _SerializableMixIn):
     r"""Multi-state Bennet Acceptance Ratio Method."""
     __serialize_version = 0
-    __serialize_fields = ('active_set',
-                          'biased_conf_energies_full',
+    __serialize_fields = ('biased_conf_energies_full',
                           'btrajs',
                           'conf_energies',
                           'increments',
                           'loglikelihoods',
-                          'nstates_full',
                           'nthermo',
                           'state_counts',
                           'state_counts_full',
                           'therm_energies',
                           'therm_state_counts_full',
                           'unbiased_conf_energies_full',
-                          'temperatures', # this attribute is attached dynamically in pyemma.thermo.api
                           )
 
     def __init__(
