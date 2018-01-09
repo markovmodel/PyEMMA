@@ -29,13 +29,15 @@ from msmtools import flux as tptapi
 
 
 # we use a order preserving set data structure here, because we would loose order eg. in _compute_coarse_sets
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.orderedset import OrderedSet as set
 from pyemma._base.model import Model
+from pyemma.util.annotators import alias, aliased
 
 __all__ = ['ReactiveFlux']
 
-
-class ReactiveFlux(Model):
+@aliased
+class ReactiveFlux(Model, SerializableMixIn):
     r"""A->B reactive flux from transition path theory (TPT)
 
     This object describes a reactive flux, i.e. a network of fluxes from a set of source states A, to a set of
@@ -75,9 +77,14 @@ class ReactiveFlux(Model):
     msmtools.tpt
 
     """
+    __serialize_version = 0
 
     def __init__(self, A, B, flux,
                  mu=None, qminus=None, qplus=None, gross_flux=None, dt_model='1 step'):
+        self.set_model_params(A, B, flux,
+                              mu=mu, qminus=qminus, qplus=qplus, gross_flux=gross_flux, dt_model=dt_model)
+
+    def set_model_params(self, A, B, flux, mu, qminus=None, qplus=None, gross_flux=None, dt_model='1 step'):
         # set data
         self._A = A
         self._B = B
@@ -86,12 +93,20 @@ class ReactiveFlux(Model):
         self._qminus = qminus
         self._qplus = qplus
         self._gross_flux = gross_flux
-        from pyemma.util.units import TimeUnit
         self.dt_model = dt_model
-        self._timeunit_model = TimeUnit(self.dt_model)
         # compute derived quantities:
         self._totalflux = tptapi.total_flux(flux, A)
         self._kAB = tptapi.rate(self._totalflux, mu, qminus)
+
+    @property
+    def dt_model(self):
+        return self._dt_model
+
+    @dt_model.setter
+    def dt_model(self, value):
+        self._dt_model = value
+        from pyemma.util.units import TimeUnit
+        self._timeunit_model = TimeUnit(self._dt_model)
 
     @property
     def nstates(self):
@@ -130,10 +145,15 @@ class ReactiveFlux(Model):
         return list(set(range(self.nstates)) - set(self._A) - set(self._B))
 
     @property
+    @alias('mu')
     def stationary_distribution(self):
         r"""Returns the stationary distribution
         """
         return self._mu
+
+    @stationary_distribution.setter
+    def stationary_distribution(self, val):
+        self._mu = val
 
     @property
     def flux(self):
@@ -154,18 +174,14 @@ class ReactiveFlux(Model):
         return self._gross_flux / self._timeunit_model.dt
 
     @property
+    @alias('forward_committor', 'qplus')
     def committor(self):
         r"""Returns the forward committor probability
         """
         return self._qplus
 
     @property
-    def forward_committor(self):
-        r"""Returns the forward committor probability
-        """
-        return self._qplus
-
-    @property
+    @alias('qminus')
     def backward_committor(self):
         r"""Returns the backward committor probability
         """
@@ -236,7 +252,7 @@ class ReactiveFlux(Model):
             the flux containing the summed path fluxes
 
         """
-        if (n is None):
+        if n is None:
             n = 0
             for p in paths:
                 n = max(n, np.max(p))
@@ -255,7 +271,7 @@ class ReactiveFlux(Model):
         at most the requested fraction of the full flux.
 
         """
-        (paths, pathfluxes) = self.pathways(fraction=fraction)
+        paths, pathfluxes = self.pathways(fraction=fraction)
         return self._pathways_to_flux(paths, pathfluxes, n=self.nstates)
 
     # this will be a private function in tpt. only Parameter left will be the sets to be distinguished
@@ -264,13 +280,8 @@ class ReactiveFlux(Model):
 
         Parameters
         ----------
-            (tpt_sets, A, B) with
-                tpt_sets : list of int-iterables
-                sets of states that shall be distinguished in the coarse-grained flux.
-            A : int-iterable
-                set indexes in A
-            B : int-iterable
-                set indexes in B
+        tpt_sets : list of int-iterables
+            sets of states that shall be distinguished in the coarse-grained flux.
 
         Returns
         -------
@@ -326,7 +337,7 @@ class ReactiveFlux(Model):
         Aindexes = list(range(0, len(Asets)))
         Bindexes = list(range(len(Asets) + len(Isets), len(tpt_sets)))
 
-        return (tpt_sets, Aindexes, Bindexes)
+        return tpt_sets, Aindexes, Bindexes
 
     def coarse_grain(self, user_sets):
         r"""Coarse-grains the flux onto user-defined sets.
@@ -366,9 +377,9 @@ class ReactiveFlux(Model):
         Fnet_coarse = tptapi.to_netflux(F_coarse)
 
         # coarse-grain stationary probability and committors - this can be done all dense
-        pstat_coarse = np.zeros((nnew))
-        forward_committor_coarse = np.zeros((nnew))
-        backward_committor_coarse = np.zeros((nnew))
+        pstat_coarse = np.zeros(nnew)
+        forward_committor_coarse = np.zeros(nnew)
+        backward_committor_coarse = np.zeros(nnew)
         for i in range(0, nnew):
             I = list(tpt_sets[i])
             muI = self._mu[I]
@@ -380,4 +391,4 @@ class ReactiveFlux(Model):
         res = ReactiveFlux(Aindexes, Bindexes, Fnet_coarse, mu=pstat_coarse,
                            qminus=backward_committor_coarse, qplus=forward_committor_coarse, gross_flux=F_coarse,
                            dt_model=self.dt_model)
-        return (tpt_sets, res)
+        return tpt_sets, res

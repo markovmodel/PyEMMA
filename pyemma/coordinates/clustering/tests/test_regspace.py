@@ -37,6 +37,8 @@ import pyemma.util.types as types
 
 class RandomDataSource(DataInMemory):
 
+    __serialize_version = 0
+
     def __init__(self, a=None, b=None, chunksize=100, n_samples=1000, dim=3):
         """
         creates random values in interval [a,b]

@@ -142,6 +142,8 @@ class TestSourceCallAll(unittest.TestCase):
         assert isinstance(self.inp.in_memory, bool)
 
     def test_iterator(self):
+        self.inp.chunksize = 100
+        assert self.inp.chunksize == 100
         for itraj, chunk in self.inp:
             assert types.is_int(itraj)
             assert types.is_float_matrix(chunk)

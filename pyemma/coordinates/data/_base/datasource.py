@@ -33,8 +33,10 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
     data it holds. The difference to Iterable is that DataSource is specialized for trajectories, whereas the concept
     of trajectories is generally unknown for Iterable.
     """
+    _serialize_version = 0
+    __serialize_fields = ('_is_reader', ) # other private fields are not needed, because they are set by child impl ctors.
 
-    def __init__(self, chunksize=1000):
+    def __init__(self, chunksize=None):
         super(DataSource, self).__init__(chunksize=chunksize)
 
         # following properties have to be set in subclass
@@ -177,6 +179,28 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         This data source's data producer.
         """
         return self
+
+    def _data_flow_chain(self):
+        """
+        Get a list of all elements in the data flow graph.
+        The first element is the original source, the next one reads from the prior and so on and so forth.
+
+        Returns
+        -------
+        list: list of data sources
+
+        """
+        if self.data_producer is None:
+            return []
+
+        res = []
+        ds = self.data_producer
+        while not ds.is_reader:
+            res.append(ds)
+            ds = ds.data_producer
+        res.append(ds)
+        res = res[::-1]
+        return res
 
     def number_of_trajectories(self, stride=None):
         r""" Returns the number of trajectories.

@@ -7,8 +7,8 @@
 
 using dtype = float;
 
-PYBIND11_PLUGIN(_ext) {
-    py::module m("_ext", "module containing clustering algorithms.");
+PYBIND11_MODULE(_ext, m) {
+    m.doc() = "module containing clustering algorithms.";
 
     auto regspace_mod = m.def_submodule("regspace");
     auto kmeans_mod = m.def_submodule("kmeans");
@@ -29,12 +29,11 @@ PYBIND11_PLUGIN(_ext) {
     // kmeans
     typedef KMeans<dtype> kmeans_f;
     py::class_<kmeans_f, cbase_f>(kmeans_mod, "Kmeans_f")
-            .def(py::init<int, const std::string&, std::size_t>(),
+            .def(py::init<unsigned int, const std::string&, std::size_t>(),
                  py::arg("k"), py::arg("metric"), py::arg("dim"))
              // py::arg("callback") = py::none()
             .def("cluster", &kmeans_f::cluster)
             .def("cluster_loop", &kmeans_f::cluster_loop)
             .def("init_centers_KMpp", &kmeans_f::initCentersKMpp)
             .def("cost_function", &kmeans_f::costFunction);
-    return m.ptr();
 }

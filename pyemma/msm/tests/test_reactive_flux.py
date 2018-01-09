@@ -62,7 +62,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
 
         self.ref_paths = [[0, 1, 4], [0, 2, 4], [0, 1, 2, 4]]
         self.ref_pathfluxes = np.array([0.00720338983051, 0.00308716707022, 0.000514527845036])
-        
+
         self.ref_paths_95percent = [[0, 1, 4], [0, 2, 4]]
         self.ref_pathfluxes_95percent = np.array([0.00720338983051, 0.00308716707022])
         self.ref_majorflux_95percent = np.array([[0., 0.00720339, 0.00308717, 0., 0.],
@@ -197,6 +197,25 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(cgRF.flux, self.ref2_cgnetflux, rtol=1.e-5, atol=1.e-8)
         assert_allclose(cgRF.net_flux, self.ref2_cgnetflux, rtol=1.e-5, atol=1.e-8)
         assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux, rtol=1.e-5, atol=1.e-8)
+
+    def test_serialization(self):
+        import pyemma
+        import tempfile
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as ntf:
+                self.tpt2.save(ntf.name)
+                restored = pyemma.load(ntf.name)
+                public_attrs = ('stationary_distribution', 'flux', 'gross_flux', 'committor', 'backward_committor',
+                                'dt_model', 'total_flux')
+                for attr in public_attrs:
+                    value = getattr(self.tpt2, attr)
+                    if isinstance(value, np.ndarray):
+                        np.testing.assert_equal(value, getattr(restored, attr))
+                    else:
+                        self.assertEqual(value, getattr(restored, attr))
+        finally:
+            import os
+            os.unlink(ntf.name)
 
 
 if __name__ == "__main__":

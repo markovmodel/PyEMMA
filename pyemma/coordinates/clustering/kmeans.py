@@ -29,6 +29,7 @@ import random
 import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporterMixin
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
@@ -43,6 +44,8 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
+
+    __serialize_version = 0
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
@@ -332,6 +335,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
 
 class MiniBatchKmeansClustering(KmeansClustering):
     r"""Mini-batch k-means clustering"""
+
+    __serialize_version = 0
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
                  batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None, n_jobs=None, skip=0,

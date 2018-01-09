@@ -56,13 +56,35 @@ def _catch_unhashable(x):
 
     return x
 
+
 def hash_top(top):
-    # this is a temporary workaround for py3
+    if top is None:
+        return hash(None)
     hash_value = hash(top.n_atoms)
     hash_value ^= hash(tuple(top.atoms))
     hash_value ^= hash(tuple(top.residues))
     hash_value ^= hash(tuple(top.bonds))
     return hash_value
+
+
+def cmp_traj(traj_a, traj_b):
+    """
+    Parameters
+    ----------
+    traj_a, traj_b: mdtraj.Trajectory
+    """
+    if traj_a is None and traj_b is None:
+        return True
+    if traj_a is None and traj_b is not None:
+        return False
+    if traj_a is not None and traj_b is None:
+        return False
+    equal_top = hash_top(traj_a.top) == hash_top(traj_b.top)
+    xyz_close = np.allclose(traj_a.xyz, traj_b.xyz)
+    equal_time = np.all(traj_a.time == traj_b.time)
+    equal_unitcell_angles = np.array_equal(traj_a.unitcell_angles, traj_b.unitcell_angles)
+    equal_unitcell_lengths = np.array_equal(traj_a.unitcell_lengths, traj_b.unitcell_lengths)
+    return np.all([equal_top, equal_time, xyz_close, equal_time, equal_unitcell_angles, equal_unitcell_lengths])
 
 
 def _parse_pairwise_input(indices1, indices2, MDlogger, fname=''):
@@ -190,3 +212,39 @@ def _parse_groupwise_input(group_definitions, group_pairs, MDlogger, mname=''):
 
     return parsed_group_definitions, parsed_group_pairs, np.vstack(distance_pairs), group_membership
 
+    # TODO: consider this a method of an MDFeaturizer (such as 'pairs')
+def _atoms_in_residues(top, residue_idxs, subset_of_atom_idxs=None, fallback_to_full_residue=True, MDlogger=None):
+    r"""Returns a list of ndarrays containing the atom indices in each residue of :obj:`residue_idxs`
+
+    :param top: mdtraj.Topology
+    :param residue_idxs: list or ndarray (ndim=1) of integers
+    :param subset_of_atom_idxs : iterable of atom_idxs to which the selection has to be restricted. If None, all atoms considered
+    :param fallback_to_full_residue : it is possible that some residues don't yield any atoms with some subsets. Take
+           all atoms in that case. If False, then [] is returned for that residue
+    :param MDlogger: If provided, a warning will be issued when falling back to full residue
+    :return: list of length==len(residue_idxs)) of ndarrays (ndim=1) containing the atom indices in each residue of residue_idxs
+    """
+    atoms_in_residues = []
+    if subset_of_atom_idxs is None:
+        subset_of_atom_idxs = np.arange(top.n_atoms)
+    special_residues = []
+    for rr in top.residues:
+        if rr.index in residue_idxs:
+            toappend = np.array([aa.index for aa in rr.atoms if aa.index in subset_of_atom_idxs])
+            if len(toappend) == 0:
+                special_residues.append(rr)
+                if fallback_to_full_residue:
+                    toappend = np.array([aa.index for aa in rr.atoms])
+
+            atoms_in_residues.append(toappend)
+
+    # Any special cases?
+    if len(special_residues) != 0 and hasattr(MDlogger, 'warning'):
+        if fallback_to_full_residue:
+            msg = 'the full residue'
+        else:
+            msg = 'emtpy lists'
+        MDlogger.warning("These residues yielded no atoms in the subset and were returned as %s: %s " % (
+        msg, ''.join(['%s, ' % rr for rr in special_residues])[:-2]))
+
+    return atoms_in_residues

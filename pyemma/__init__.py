@@ -38,6 +38,27 @@ from . import plots
 from . import thermo
 
 
+def load(filename, model_name='latest'):
+    """ Restores a previously saved model or estimator from disk.
+
+    Parameters
+    ----------
+    filename : str
+        path to filename, where the model has been stored.
+    model_name: str, default='latest'
+        if multiple versions are contained in the file, older versions can be accessed by
+        their name. Use func:`list_models` to get a representation of all stored models.
+
+    Returns
+    -------
+    obj : Model or Estimator
+        the instance containing the same parameters as the saved model/estimator.
+
+    """
+    from ._base.serialization.serialization import SerializableMixIn
+    return SerializableMixIn.load(file_name=filename, model_name=model_name)
+
+
 def _version_check(current, testing=False):
     """ checks latest version online from http://emma-project.org.
 

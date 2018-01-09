@@ -22,6 +22,7 @@ from __future__ import absolute_import
 import math
 import numpy as np
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
 from pyemma._base.progress import ProgressReporterMixin
@@ -31,47 +32,50 @@ from pyemma.util import types
 __author__ = 'noe'
 
 
-class LaggedModelValidator(Estimator, ProgressReporterMixin):
+class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
     r""" Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
 
+    Parameters
+    ----------
+    model : Model
+        Model to be tested
+
+    estimator : Estimator
+        Parametrized Estimator that has produced the model
+
+    mlags : int or int-array, default=10
+        multiples of lag times for testing the Model, e.g. range(10).
+        A single int will trigger a range, i.e. mlags=10 maps to
+        mlags=range(10). The setting None will choose mlags automatically
+        according to the longest available trajectory
+        Note that you need to be able to do a model prediction for each
+        of these lag time multiples, e.g. the value 0 only make sense
+        if _predict_observables(0) will work.
+
+    conf : float, default = 0.95
+        confidence interval for errors
+
+    err_est : bool, default=False
+        if the Estimator is capable of error calculation, will compute
+        errors for each tau estimate. This option can be computationally
+        expensive.
+
+    n_jobs : int, default=1
+        how many jobs to use during calculation
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
+
     """
+    __serialize_version = 0
+    __serialize_fields = ('test_model', 'test_estimator', '_lags',
+                         '_pred', '_pred_L', '_pred_R',
+                         '_est', '_est_L', '_est_R')
 
     def __init__(self, model, estimator, mlags=None, conf=0.95, err_est=False,
                  n_jobs=1, show_progress=True):
-        r"""
-        Parameters
-        ----------
-        model : Model
-            Model to be tested
 
-        estimator : Estimator
-            Parametrized Estimator that has produced the model
-
-        mlags : int or int-array, default=10
-            multiples of lag times for testing the Model, e.g. range(10).
-            A single int will trigger a range, i.e. mlags=10 maps to
-            mlags=range(10). The setting None will choose mlags automatically
-            according to the longest available trajectory
-            Note that you need to be able to do a model prediction for each
-            of these lag time multiples, e.g. the value 0 only make sense
-            if _predict_observables(0) will work.
-
-        conf : float, default = 0.95
-            confidence interval for errors
-
-        err_est : bool, default=False
-            if the Estimator is capable of error calculation, will compute
-            errors for each tau estimate. This option can be computationally
-            expensive.
-
-        n_jobs : int, default=1
-            how many jobs to use during calculation
-
-        show_progress : bool, default=True
-            Show progressbars for calculation?
-
-        """
         # set model and estimator
         self.test_model = model
         self.test_estimator = estimator
@@ -299,6 +303,8 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin):
 
 class EigenvalueDecayValidator(LaggedModelValidator):
 
+    __serialize_version = 0
+
     def __init__(self, model, estimator, nits=1, mlags=None, conf=0.95,
                  exclude_stat=True, err_est=False, show_progress=True):
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
@@ -336,6 +342,8 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
 
 class ChapmanKolmogorovValidator(LaggedModelValidator):
+    __serialize_version = 0
+    __serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
     def __init__(self, model, estimator, memberships, mlags=None, conf=0.95,
                  err_est=False, n_jobs=1, show_progress=True):

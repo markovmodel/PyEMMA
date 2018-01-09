@@ -33,6 +33,7 @@ __author__ = 'noe'
 @fix_docs
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
     r"""Bayesian Markov state model estimator"""
+    __serialize_version = 0
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
@@ -206,8 +207,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
 
         # construct sampled MSMs
         samples = []
-        for i in range(self.nsamples):
-            samples.append(_MSM(sample_Ps[i], pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
+        for i, sample in enumerate(sample_Ps):
+            samples.append(_MSM(sample, pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
 
         # update self model
         self.update_model_params(samples=samples)
