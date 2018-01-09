@@ -115,6 +115,7 @@ class StationaryModel(_Model, _SubSet, SerializableMixIn):
     def label(self):
         r"""Human-readable description for the thermodynamic state of this model."""
         return self._label
+
     @label.setter
     def label(self, value):
         self._label = value
@@ -125,6 +126,7 @@ class StationaryModel(_Model, _SubSet, SerializableMixIn):
     def pi(self):
         r"""The stationary distribution on the configuration states."""
         return self._pi
+
     @pi.setter
     def pi(self, value):
         # always normalize when setting pi!
@@ -136,6 +138,7 @@ class StationaryModel(_Model, _SubSet, SerializableMixIn):
     def f(self):
         r"""The free energies (in units of kT) on the configuration states."""
         return self._f
+
     @f.setter
     def f(self, value):
         self._f = value
@@ -163,3 +166,8 @@ class StationaryModel(_Model, _SubSet, SerializableMixIn):
         # check input and go
         a = _types.ensure_ndarray(a, ndim=1, size=self.nstates, kind='numeric')
         return _np.dot(a, self.stationary_distribution)
+
+    def __eq__(self, other):
+        if not isinstance(other, StationaryModel):
+            return False
+        return _np.array_equal(self.pi, other.pi) and _np.array_equal(self.f, other.f) and self.label == other.label
