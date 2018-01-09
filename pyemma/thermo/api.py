@@ -452,7 +452,7 @@ def estimate_multi_temperature(
             **parsed_kwargs)
     try:
         estimator_obj.temperatures = temperatures
-    except AttributeError: # TODO: this code is never executed, historic?
+    except AttributeError:
         for obj in estimator_obj:
             obj.temperatures = temperatures
     return estimator_obj
