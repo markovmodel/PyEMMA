@@ -89,7 +89,7 @@ def check_serialization(estimator):
             assert a == b
         else:
             raise ValueError('dunno how to compare %s' %a)
-    to_compare = []
+
     if isinstance(estimator, WHAM):
         to_compare = ['active_set', 'bias_energies', 'bias_energies_full', 'conf_energies',
                       'dt_traj', 'increments', 'loglikelihoods', 'maxerr', 'maxiter', 'nstates_full',
@@ -113,7 +113,13 @@ def check_serialization(estimator):
                       'therm_state_counts_full', 'unbiased_conf_energies_full']
     else:
         raise ValueError('unknown estimator')
-
+    # base attrs
+    to_compare.extend(('umbrella_centers', 'force_constants', 'temperatures', 'dt_traj'))
+    # inherited from SubSet
+    to_compare.extend(['active_set', 'nstates_full'])
+    # inherited from MultiThermModel
+    to_compare.extend(['models', 'f_therm', 'pi', 'f', 'label'])
+    # estimator parameters
     to_compare.extend(estimator.get_params(deep=False).keys())
 
     for k in to_compare:
@@ -196,6 +202,7 @@ class TestProtectedUmbrellaSamplingCenters(unittest.TestCase):
                 us_trajs, us_dtrajs, us_centers, us_force_constants,
                 md_trajs=md_trajs[0], md_dtrajs=md_dtrajs[0])
 
+
 class TestUmbrellaSampling(unittest.TestCase):
 
     @classmethod
@@ -228,6 +235,14 @@ class TestUmbrellaSampling(unittest.TestCase):
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=100000, maxerr=1e-13, estimator='wham')
+        validate_thermodynamics(self, wham, strict=False) # not strict because out of global eq.
+        check_serialization(wham)
+
+    def test_wham_multi_lag(self):
+        wham = estimate_umbrella_sampling(
+            self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
+            md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
+            maxiter=100000, maxerr=1e-13, estimator='wham', lag=[1, 2])
         validate_thermodynamics(self, wham, strict=False) # not strict because out of global eq.
         check_serialization(wham)
 
@@ -297,7 +312,6 @@ class TestMultiTemperature(unittest.TestCase):
         validate_thermodynamics(self, wham)
         check_serialization(wham)
 
-
     def test_mbar(self):
         mbar = estimate_multi_temperature(
             self.energy_trajs, self.temp_trajs, self.dtrajs,
@@ -314,6 +328,15 @@ class TestMultiTemperature(unittest.TestCase):
         validate_thermodynamics(self, dtram)
         validate_kinetics(self, dtram)
         check_serialization(dtram)
+
+    def test_dtram2(self):
+        ''' check we have the temperatures attribute for every estimated lag time'''
+        dtram = estimate_multi_temperature(
+            self.energy_trajs, self.temp_trajs, self.dtrajs,
+            energy_unit='kT', temp_unit='kT',
+            maxiter=50000, maxerr=1.0E-10, estimator='dtram', lag=[10, 11])
+        for t in dtram:
+            assert hasattr(t, 'temperatures')
 
     def test_tram(self):
         tram = estimate_multi_temperature(
