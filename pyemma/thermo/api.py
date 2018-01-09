@@ -45,7 +45,7 @@ def estimate_umbrella_sampling(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     width=None, **kwargs):
     r"""
-    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar``, and ``wham()`` and
+    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar()``, and ``wham()`` and
     handles the calculation of bias energies (``bias``) and thermodynamic state trajectories
     (``ttrajs``) when the data comes from umbrella sampling and (optional) unbiased simulations.
 
