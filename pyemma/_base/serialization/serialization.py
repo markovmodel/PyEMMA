@@ -344,7 +344,7 @@ class SerializableMixIn(object):
             if field in state:
                 # ensure we can set attributes. Log culprits.
                 try:
-                    setattr(self, field, state.pop(field))
+                    setattr(self, field, state.get(field))
                 except AttributeError:
                     logger.exception('field: %s' % field)
             else:
@@ -422,12 +422,6 @@ class SerializableMixIn(object):
             from pyemma._base.model import Model
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
-
-            assert len(state) == 0, 'unhandled attributes in state'
-        except AssertionError:
-            if _debug:
-                import pprint
-                logger.debug('left-overs after setstate: %s', pprint.pformat(state))
         except OldVersionUnsupported as e:
             logger.error(str(e))
             raise

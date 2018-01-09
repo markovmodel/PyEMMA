@@ -450,4 +450,4 @@ class Estimator(_BaseEstimator, Loggable):
                 valid_parameters.extend(c._get_param_names())
             for param in valid_parameters:
                 if param in state:
-                    setattr(self, param, state.pop(param))
+                    setattr(self, param, state.get(param))

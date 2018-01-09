@@ -48,7 +48,7 @@ class Model(object):
         if state:
             for c in filter(lambda c: hasattr(c, '_get_model_param_names'), self.__class__.__mro__):
                 # TODO: actually we would desire to pop from state, but this can't be done because of ThermoMSM (would pop pi twice)
-                params_for_c = { k: state.get(k, None) for k in c._get_model_param_names()}
+                params_for_c = { k: state.get(k) for k in c._get_model_param_names()}
                 c.set_model_params(self, **params_for_c)
 
     @classmethod
