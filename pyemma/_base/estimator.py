@@ -432,7 +432,6 @@ class Estimator(_BaseEstimator, Loggable):
             raise Exception("Estimator is not parametrized.")
 
     # serialization handling
-    _serialize_version = 0
     __serialize_fields = ('_estimated', 'model')
 
     def __my_getstate__(self):
