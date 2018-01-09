@@ -36,17 +36,20 @@ class Model(object):
     """
 
     def __my_getstate__(self):
-        # can not be called if self is also an estimator.
-        model_params = self.get_model_params(deep=False)
-        return model_params
+        state = {}
+
+        inspect_classes = filter(lambda c: hasattr(c, '_get_model_param_names'), self.__class__.__mro__)
+        for c in inspect_classes:
+            state.update({k: getattr(self, k, None) for k in c._get_model_param_names()})
+
+        return state
 
     def __my_setstate__(self, state):
         if state:
-            params = {k: state[k] for k in self._get_model_param_names() if k in state}
-            if params:
-                for k in params:
-                    del state[k]
-                self.set_model_params(**params)
+            for c in filter(lambda c: hasattr(c, '_get_model_param_names'), self.__class__.__mro__):
+                # TODO: actually we would desire to pop from state, but this can't be done because of ThermoMSM (would pop pi twice)
+                params_for_c = { k: state.get(k, None) for k in c._get_model_param_names()}
+                c.set_model_params(self, **params_for_c)
 
     @classmethod
     def _get_model_param_names(cls):
@@ -67,7 +70,8 @@ class Model(object):
             return []
 
     def set_model_params(self, **kw):
-        raise NotImplementedError()
+        for k in kw:
+            setattr(k, kw[k])
 
     def update_model_params(self, **params):
         r"""Update given model parameter if they are set to specific values"""
