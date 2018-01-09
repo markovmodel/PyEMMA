@@ -38,3 +38,4 @@ from .kmeans import KmeansClustering
 from .kmeans import MiniBatchKmeansClustering
 from .regspace import RegularSpaceClustering
 from .uniform_time import UniformTimeClustering
+from .ndgrid import NDGrid
