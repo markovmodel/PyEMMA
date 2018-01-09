@@ -79,8 +79,9 @@ class ThermoMSM(_MSM, _SubSet):
             be greater than k; it is recommended that ncv > 2*k.
 
         """
-        self.set_model_params(P, active_set, nstates_full, pi=None, reversible=None, dt_model='1 step',
-                              neig=None)
+        self.set_model_params(P, active_set, nstates_full, pi=pi,
+                              reversible=reversible, dt_model=dt_model,
+                              neig=neig)
 
     def set_model_params(self, P, active_set, nstates_full,
             pi=None, reversible=None, dt_model='1 step', neig=None):
@@ -115,7 +116,6 @@ class ThermoMSM(_MSM, _SubSet):
 
 
 class MEMM(_MultiThermModel):
-    __serialize_version = 0
     r""" Coupled set of Markov state models at multiple thermodynamic states
 
     Parameters
@@ -146,6 +146,7 @@ class MEMM(_MultiThermModel):
         description, such as '300 K' or a description of bias energy such
         as 'unbiased'.
     """
+    __serialize_version = 0
     # THIS CLASS EXTENDS MultiThermModel AND JUST ADDS ANOTHER GETTER
     @property
     def msm(self):
