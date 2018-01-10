@@ -19,6 +19,9 @@ import numpy as _np
 
 
 class SubSet(object):
+    # note: we do not derive from SerializableMixIn, since this class is not intended to be saved (just its derivatives)
+    __serialize_version = 0
+    __serialize_fields = ('active_set', 'nstates_full')
 
     @property
     def active_set(self):

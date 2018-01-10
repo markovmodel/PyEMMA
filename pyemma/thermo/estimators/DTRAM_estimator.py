@@ -18,14 +18,15 @@
 import numpy as _np
 
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporterMixin as _ProgressReporter
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
+from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
-from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
-from pyemma.thermo.estimators._callback import _IterationProgressIndicatorCallBack
+
 from msmtools.estimation import largest_connected_set as _largest_connected_set
+
 from thermotools import dtram as _dtram
 from thermotools import wham as _wham
 from thermotools import util as _util
@@ -34,8 +35,21 @@ from thermotools import cset as _cset
 __author__ = 'noe, wehmeyer'
 
 
-class DTRAM(_Estimator, _MEMM, _ProgressReporter):
+class DTRAM(_Estimator, _MEMM, ThermoBase):
     r""" Discrete Transition(-based) Reweighting Analysis Method."""
+    __serialize_version = 0
+    __serialize_fields = ('bias_energies',
+                          'conf_energies',
+                          'count_matrices',
+                          'count_matrices_full',
+                          'increments',
+                          'log_lagrangian_mult',
+                          'loglikelihoods',
+                          'nthermo',
+                          'state_counts',
+                          'state_counts_full',
+                          'therm_energies',
+                          )
 
     def __init__(
         self, bias_energies_full, lag, count_mode='sliding', connectivity='reversible_pathways',
@@ -159,7 +173,6 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init_maxerr = init_maxerr
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
-        self.timestep_traj = _TimeUnit(dt_traj)
         # set iteration variables
         self.therm_energies = None
         self.conf_energies = None
@@ -221,28 +234,31 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.state_counts = _np.require(self.state_counts, dtype=_np.intc ,requirements=['C', 'A'])
 
         # run initialisation
-        if self.init is not None:
-            if self.init == 'wham':
+        pg = _ProgressReporter()
+
+        if self.init is not None and self.init == 'wham':
+            stage = 'WHAM init.'
+            with pg.context(stage=stage):
                 self.therm_energies, self.conf_energies, _increments, _loglikelihoods = \
                     _wham.estimate(
                         self.state_counts, self.bias_energies,
                         maxiter=self.init_maxiter, maxerr=self.init_maxerr, save_convergence_info=0,
                         therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                         callback=_ConvergenceProgressIndicatorCallBack(
-                            self, 'WHAM init.', self.init_maxiter, self.init_maxerr))
-                self._progress_force_finish(stage='WHAM init.', description='WHAM init.')
+                            pg, stage, self.init_maxiter, self.init_maxerr))
 
         # run estimator
-        self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
-            self.increments, self.loglikelihoods = _dtram.estimate(
-                self.count_matrices, self.bias_energies,
-                maxiter=self.maxiter, maxerr=self.maxerr,
-                log_lagrangian_mult=self.log_lagrangian_mult,
-                conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(
-                    self, 'DTRAM', self.maxiter, self.maxerr))
-        self._progress_force_finish(stage='DTRAM', description='DTRAM')
+        stage = 'DTRAM'
+        with pg.context(stage=stage):
+            self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
+                self.increments, self.loglikelihoods = _dtram.estimate(
+                    self.count_matrices, self.bias_energies,
+                    maxiter=self.maxiter, maxerr=self.maxerr,
+                    log_lagrangian_mult=self.log_lagrangian_mult,
+                    conf_energies=self.conf_energies,
+                    save_convergence_info=self.save_convergence_info,
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        pg, stage, self.maxiter, self.maxerr))
 
         # compute models
         fmsms = [_dtram.estimate_transition_matrix(
