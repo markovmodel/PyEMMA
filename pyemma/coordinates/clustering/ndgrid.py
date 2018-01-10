@@ -10,7 +10,7 @@
 from __future__ import absolute_import, print_function, division
 import numbers
 import numpy as np
-from sklearn.base import ClusterMixin, TransformerMixin
+from sklearn.base import ClusterMixin, TransformerMixin, BaseEstimator
 # from pyemma.coordinates import MultiSequenceClusterMixin
 # from ..base import BaseEstimator
 # from ..utils import array2d
@@ -43,7 +43,7 @@ def _assert_all_finite(X):
                          " or a value too large for %r." % X.dtype)
 
 
-class NDGrid(ClusterMixin, TransformerMixin):
+class NDGrid(ClusterMixin, TransformerMixin, BaseEstimator):
     """Discretize continuous data points onto an N-dimensional
     grid.
 
@@ -123,6 +123,9 @@ class NDGrid(ClusterMixin, TransformerMixin):
 
         return self
 
+    def transform(self, X):
+        self.predict(X)
+
     def predict(self, X):
         """Get the index of the grid cell containing each sample in X
 
@@ -149,6 +152,10 @@ class NDGrid(ClusterMixin, TransformerMixin):
 
     def fit_predict(self, X, y=None):
         return self.fit(X).predict(X)
+
+    def fit_transform(self, X, y=None, **fit_params):
+        self.fit_predict(X, y)
+
 
 
 # class NDGrid(MultiSequenceClusterMixin, _NDGrid, BaseEstimator):
