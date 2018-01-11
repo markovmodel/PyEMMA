@@ -43,6 +43,8 @@ class H5Wrapper(object):
         self._parent = self._file.require_group('pyemma')
         self._current_model_group = model_name
 
+    # TODO: add rename and delete methods
+
     def select_model(self, name):
         """ choose an existing model """
         if name not in self._parent:
@@ -58,7 +60,7 @@ class H5Wrapper(object):
                 del self._current_model_group
             else:
                 raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
-                                   ' or use a different name/file.')
+                                   ' or use a different name/file.'.format(name=name))
         self._current_model_group = name
 
     @property
@@ -165,7 +167,7 @@ class H5Wrapper(object):
         """
         f = self._parent
         return {name: {a: f[name].attrs[a]
-                       for a in H5Wrapper.stored_attributes if a != 'model'}
+                       for a in H5Wrapper.stored_attributes}
                 for name in f.keys()}
 
     @staticmethod

@@ -223,8 +223,8 @@ class SerializableMixIn(object):
             with H5Wrapper(file_name=file_name) as f:
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
-            msg = ('During saving the object ("{error}") '
-                   'the following error occurred'.format(error=e))
+            msg = ('During saving the object {obj}") '
+                   'the following error occurred: {error}'.format(obj=self, error=e))
             if isinstance(self, Loggable):
                 self.logger.exception(msg)
             else:
