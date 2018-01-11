@@ -42,6 +42,11 @@ except ImportError as ie:
     print("PyEMMA requires setuptools. Please install it with conda or pip.")
     sys.exit(1)
 
+if sys.version_info[0] < 3:
+    print('PyEMMA requires Python3k')
+    sys.exit(2)
+
+
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
@@ -324,5 +329,5 @@ else:
     # packages are found if their folder contains an __init__.py,
     metadata['packages'] = find_packages()
 
-setup(**metadata)
-
+if __name__ == '__main__':
+    setup(**metadata)

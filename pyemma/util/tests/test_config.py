@@ -20,7 +20,6 @@ Created on 11.06.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import, print_function
 
 import configparser
 import os

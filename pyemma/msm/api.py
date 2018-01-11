@@ -20,7 +20,6 @@ r"""User API for the pyemma.msm package
 
 """
 
-from __future__ import absolute_import
 from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from .estimators import BayesianMSM as _Bayes_MSM
 from .estimators import BayesianHMSM as _Bayes_HMSM
