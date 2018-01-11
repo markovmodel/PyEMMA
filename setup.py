@@ -326,3 +326,4 @@ else:
 
 setup(**metadata)
 
+print('done')
