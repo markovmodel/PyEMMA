@@ -46,6 +46,8 @@ In this section we will give you in-depth tutorials on specific methods or conce
    generated/model_selection_validation
    generated/tpt
    generated/amm
+   generated/storage
+
 
 Multi-Ensemble Markov state models
 ----------------------------------
