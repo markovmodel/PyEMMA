@@ -71,8 +71,8 @@ def list_models(filename):
         A mapping by name and a comprehensive description like this:
         {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
     """
-    from ._base.serialization.h5file import H5Wrapper
-    with H5Wrapper(filename) as f:
+    from ._base.serialization.h5file import H5File
+    with H5File(filename) as f:
         return f.models_descriptive
 
 

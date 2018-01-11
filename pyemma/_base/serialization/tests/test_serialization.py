@@ -221,5 +221,24 @@ class TestSerialisation(unittest.TestCase):
         restore = pyemma.load(self.fn)
         assert restore.has_private_attr()
 
+    def test_rename(self):
+        inst = np_container(None)
+        inst.save(self.fn, model_name='a')
+        from pyemma._base.serialization.h5file import H5File
+        with H5File(self.fn) as f:
+            f.rename('a', 'b')
+            models = f.models_descriptive.keys()
+        self.assertIn('b', models)
+        self.assertNotIn('a', models)
+
+    def test_delete(self):
+        inst = np_container(None)
+        inst.save(self.fn, model_name='a')
+        from pyemma._base.serialization.h5file import H5File
+        with H5File(self.fn) as f:
+            f.delete('a')
+            self.assertNotIn('a', f.models_descriptive.keys())
+
+
 if __name__ == '__main__':
     unittest.main()

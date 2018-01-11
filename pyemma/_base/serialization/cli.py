@@ -18,7 +18,7 @@
 
 import sys
 
-from pyemma._base.serialization.h5file import H5Wrapper
+from pyemma._base.serialization.h5file import H5File
 
 
 def main(argv=None):
@@ -40,7 +40,7 @@ def main(argv=None):
 
     for f in args.files:
         try:
-            with H5Wrapper(f) as fh:
+            with H5File(f) as fh:
                 m = fh.models_descriptive
             for k in m:
                 models[f][k] = m[k]

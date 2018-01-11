@@ -218,9 +218,9 @@ class SerializableMixIn(object):
         ...    inst_restored = pyemma.load(file, 'simple')
         >>> np.testing.assert_equal(m.P, inst_restored.P)
         """
-        from pyemma._base.serialization.h5file import H5Wrapper
+        from pyemma._base.serialization.h5file import H5File
         try:
-            with H5Wrapper(file_name=file_name) as f:
+            with H5File(file_name=file_name) as f:
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
             msg = ('During saving the object {obj}") '
@@ -247,8 +247,8 @@ class SerializableMixIn(object):
         -------
         obj : the de-serialized object
         """
-        from .h5file import H5Wrapper
-        with H5Wrapper(file_name, model_name=model_name, mode='r') as f:
+        from .h5file import H5File
+        with H5File(file_name, model_name=model_name, mode='r') as f:
             return f.model
 
     @property
