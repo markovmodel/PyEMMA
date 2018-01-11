@@ -21,7 +21,6 @@ r"""Unit test for the OOM-based MSM estimation.
 
 """
 
-from __future__ import absolute_import
 import unittest
 
 import numpy as np
