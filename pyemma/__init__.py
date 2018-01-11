@@ -37,16 +37,16 @@ from . import plots
 from . import thermo
 
 
-def load(filename, model_name='latest'):
+def load(filename, model_name='default'):
     """ Restores a previously saved model or estimator from disk.
 
     Parameters
     ----------
     filename : str
         path to filename, where the model has been stored.
-    model_name: str, default='latest'
-        if multiple versions are contained in the file, older versions can be accessed by
-        their name. Use func:`list_models` to get a representation of all stored models.
+    model_name: str, default='default'
+        if multiple models are contained in the file, these can be accessed by
+        their name. Use func:`pyemma.list_models` to get a representation of all stored models.
 
     Returns
     -------

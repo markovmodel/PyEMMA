@@ -193,15 +193,15 @@ class SerializableMixIn(object):
         map = getattr(cls, attr, {})
         return map
 
-    def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
+    def save(self, file_name, model_name='default', overwrite=False, save_streaming_chain=False):
         r"""
         Parameters
         -----------
         file_name: str
             path to desired output file
-        model_name: str, default=latest
+        model_name: str, default='default'
             creates a group named 'model_name' in the given file, which will contain all of the data.
-            If the name already exists, and overwrite is False (default) will raise.
+            If the name already exists, and overwrite is False (default) will raise a RuntimeError.
         overwrite: bool, default=False
             Should overwrite existing model names?
         save_streaming_chain : boolean, default=False
@@ -232,16 +232,16 @@ class SerializableMixIn(object):
             raise
 
     @classmethod
-    def load(cls, file_name, model_name='latest'):
+    def load(cls, file_name, model_name='default'):
         """ loads a previously saved object of this class from a file.
 
         Parameters
         ----------
         file_name : str or file like object (has to provide read method).
             The file like object tried to be read for a serialized object.
-        model_name: str, default='latest'
-            if multiple versions are contained in the file, older versions can be accessed by
-            their name. Use func:list_models to get a representation of all stored models.
+        model_name: str, default='default'
+            if multiple models are contained in the file, these can be accessed by
+            their name. Use func:`pyemma.list_models` to get a representation of all stored models.
 
         Returns
         -------
