@@ -35,6 +35,6 @@ on_finish:
   # upload test results to AppVeyor
  - ps: |
      $wc = New-Object 'System.Net.WebClient';
-     $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", 
+     $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", \
         C:\Users\appveyor\reports\junit.xml)
 
