@@ -21,7 +21,6 @@ r"""
 PyEMMA - Emma's Markov Model Algorithms
 =======================================
 """
-from __future__ import absolute_import
 
 # set version from versioneer.
 from ._version import get_versions
@@ -38,16 +37,16 @@ from . import plots
 from . import thermo
 
 
-def load(filename, model_name='latest'):
+def load(filename, model_name='default'):
     """ Restores a previously saved model or estimator from disk.
 
     Parameters
     ----------
     filename : str
         path to filename, where the model has been stored.
-    model_name: str, default='latest'
-        if multiple versions are contained in the file, older versions can be accessed by
-        their name. Use func:`list_models` to get a representation of all stored models.
+    model_name: str, default='default'
+        if multiple models are contained in the file, these can be accessed by
+        their name. Use func:`pyemma.list_models` to get a representation of all stored models.
 
     Returns
     -------
@@ -57,6 +56,24 @@ def load(filename, model_name='latest'):
     """
     from ._base.serialization.serialization import SerializableMixIn
     return SerializableMixIn.load(file_name=filename, model_name=model_name)
+
+
+def list_models(filename):
+    """ Lists all models in given filename.
+    Parameters
+    ----------
+    filename: str
+        path to filename, where the model has been stored.
+
+    Returns
+    -------
+    obj: dict
+        A mapping by name and a comprehensive description like this:
+        {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
+    """
+    from ._base.serialization.h5file import H5File
+    with H5File(filename) as f:
+        return f.models_descriptive
 
 
 def _version_check(current, testing=False):

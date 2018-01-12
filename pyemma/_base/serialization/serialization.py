@@ -193,15 +193,15 @@ class SerializableMixIn(object):
         map = getattr(cls, attr, {})
         return map
 
-    def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
+    def save(self, file_name, model_name='default', overwrite=False, save_streaming_chain=False):
         r"""
         Parameters
         -----------
         file_name: str
             path to desired output file
-        model_name: str, default=latest
+        model_name: str, default='default'
             creates a group named 'model_name' in the given file, which will contain all of the data.
-            If the name already exists, and overwrite is False (default) will raise.
+            If the name already exists, and overwrite is False (default) will raise a RuntimeError.
         overwrite: bool, default=False
             Should overwrite existing model names?
         save_streaming_chain : boolean, default=False
@@ -218,13 +218,13 @@ class SerializableMixIn(object):
         ...    inst_restored = pyemma.load(file, 'simple')
         >>> np.testing.assert_equal(m.P, inst_restored.P)
         """
-        from pyemma._base.serialization.h5file import H5Wrapper
+        from pyemma._base.serialization.h5file import H5File
         try:
-            with H5Wrapper(file_name=file_name) as f:
+            with H5File(file_name=file_name) as f:
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
-            msg = ('During saving the object ("{error}") '
-                   'the following error occurred'.format(error=e))
+            msg = ('During saving the object {obj}") '
+                   'the following error occurred: {error}'.format(obj=self, error=e))
             if isinstance(self, Loggable):
                 self.logger.exception(msg)
             else:
@@ -232,23 +232,23 @@ class SerializableMixIn(object):
             raise
 
     @classmethod
-    def load(cls, file_name, model_name='latest'):
+    def load(cls, file_name, model_name='default'):
         """ loads a previously saved object of this class from a file.
 
         Parameters
         ----------
         file_name : str or file like object (has to provide read method).
             The file like object tried to be read for a serialized object.
-        model_name: str, default='latest'
-            if multiple versions are contained in the file, older versions can be accessed by
-            their name. Use func:list_models to get a representation of all stored models.
+        model_name: str, default='default'
+            if multiple models are contained in the file, these can be accessed by
+            their name. Use func:`pyemma.list_models` to get a representation of all stored models.
 
         Returns
         -------
         obj : the de-serialized object
         """
-        from .h5file import H5Wrapper
-        with H5Wrapper(file_name, model_name=model_name, mode='r') as f:
+        from .h5file import H5File
+        with H5File(file_name, model_name=model_name, mode='r') as f:
             return f.model
 
     @property
