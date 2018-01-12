@@ -494,7 +494,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIn("COS", desc[0])
         self.assertIn("SIN", desc[1])
 
-    def test_backbone_dihedrials_chi(self):
+    def test_backbone_dihedrials_chi1(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_chi1_torsions()
 
@@ -505,7 +505,7 @@ class TestFeaturizer(unittest.TestCase):
         desc = self.feat.describe()
         self.assertEqual(len(desc), self.feat.dimension())
 
-    def test_backbone_dihedrials_chi_cossin(self):
+    def test_backbone_dihedrials_chi1_cossin(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_chi1_torsions(cossin=True)
 
@@ -520,13 +520,15 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_all_dihedrals(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_sidechain_torsions()
-        assert self.feat.dimension() == 4 * 2 + 5 # 5 residues, chi1, chi2 (for 2*[asn, leu]), chi1-5 for arg
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 4 * 3  # 5 residues, chi1, chi2 (for 2*[asn, leu]), chi1-5 for arg
 
     def test_all_dihedrals_cossin(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_sidechain_torsions(cossin=True)
-        assert self.feat.dimension() == 2 * (4 * 2 + 5)
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(cossin=True, which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 2 * (4 * 3)
         desc = self.feat.describe()
         assert 'COS' in desc[0]
         assert 'SIN' in desc[1]
