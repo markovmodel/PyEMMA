@@ -239,8 +239,10 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        np.testing.assert_array_less(L, estimator.timescales)
-        np.testing.assert_array_less(estimator.timescales, R)
+        # we only test the first timescale, because the second is already ambiguous (deviations after the first place),
+        # which makes this tests fail stochastically.
+        np.testing.assert_array_less(L[0], estimator.timescales[0])
+        np.testing.assert_array_less(estimator.timescales[0], R[0])
 
     def test_its_hmsm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])
