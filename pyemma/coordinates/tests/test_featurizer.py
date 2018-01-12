@@ -496,7 +496,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_backbone_dihedrials_chi1(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions()
+        self.feat.add_sidechain_torsions(which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
@@ -507,7 +507,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_backbone_dihedrials_chi1_cossin(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions(cossin=True)
+        self.feat.add_sidechain_torsions(cossin=True, which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
