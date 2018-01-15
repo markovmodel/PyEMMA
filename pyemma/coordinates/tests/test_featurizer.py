@@ -543,11 +543,21 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_sidechain_torsions_which2(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.active_features = []
         self.feat.add_sidechain_torsions(which=['chi1', 'chi3'])
         assert self.feat.dimension() == 6
         desc = self.feat.describe()
         assert len(desc) == 6
+
+    def test_sidechain_torsions_selstr(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(selstr='resid == 0', which=['chi1'])
+        assert self.feat.dimension() == 1
+        assert all('CHI1' in d for d in self.feat.describe())
+
+    def test_sidechain_torsions_invalid_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        with self.assertRaises(ValueError):
+            self.feat.add_sidechain_torsions(selstr='resid == 0', which=['garbage'])
 
     def test_custom_feature(self):
         # TODO: test me
