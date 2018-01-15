@@ -44,8 +44,7 @@ source/generated:
 	mkdir -p source/generated
 
 ipython-rst: source/generated
-	@$(eval nb_names:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\/\1.ipynb|/g'))
-	@$(eval notebooks:= $$(shell find ../pyemma-ipython -name *.ipynb | grep -E "$(nb_names)" ))
+	@$(eval notebooks:= $$(shell python grep_active_notebooks.py))
 	cd source/generated
 	pwd
 	set -x; for nb in $(notebooks); do $(NBCONVERT_CMD) $$nb || true; done
@@ -55,6 +54,6 @@ latex:
 	mkdir -p build/latex build/doctrees
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) build/latex $(FILES)
 
-html_check: 
+html_check:
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) build/html $(FILES)
 
