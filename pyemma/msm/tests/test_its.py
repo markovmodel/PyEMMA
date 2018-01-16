@@ -208,6 +208,12 @@ class TestITS_MSM(unittest.TestCase):
 
         np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
+    def test_errors(self):
+        dtraj_disconnected = [0, 0, 0, 0, -1, 1, 1, 1, 1]
+        with self.assertRaises(RuntimeError) as e:
+            timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
+        self.assertIn('negative row index', e.exception.args[0])
+
 
 class TestITS_AllEstimators(unittest.TestCase):
     """ Integration tests for various estimators

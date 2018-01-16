@@ -125,7 +125,7 @@ def _call_member(obj, name, failfast=True, *args, **kwargs):
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
-                                failfast):
+                                failfast, return_exceptions):
     """ Method that runs estimation for several parameter settings.
 
     Defined as a worker for parallelization
@@ -145,6 +145,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
             estimator.logger.warning("Ignored error during estimation: %s" % e)
         if failfast:
             raise  # re-raise
+        elif return_exceptions:
+            model = e
         else:
             pass  # just return model=None
 
@@ -190,7 +192,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
-                        return_estimators=False, n_jobs=1, progress_reporter=None, show_progress=True):
+                        return_estimators=False, n_jobs=1, progress_reporter=None, show_progress=True,
+                        return_exceptions=False):
     """ Runs multiple estimations using a list of parameter settings
 
     Parameters
@@ -229,8 +232,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         if the given estimator supports show_progress interface, we set the flag
         prior doing estimations.
 
-    Return
-    ------
+    return_exceptions: bool, default=False
+        if failfast is False while this setting is True, returns the exception thrown at the actual grid element,
+        instead of None.
+
+    Returns
+    -------
     models : list of model objects or evaluated function values
         A list of estimated models in the same order as param_sets. If evaluate
         is given, each element will contain the results from these method
@@ -303,7 +310,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                       param_set, X,
                       evaluate,
                       evaluate_args,
-                      failfast)
+                      failfast, return_exceptions)
                      for estimator, param_set in zip(estimators, param_sets))
 
         from pathos.multiprocessing import Pool as Parallel
@@ -344,7 +351,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
-                                                   evaluate, evaluate_args, failfast))
+                                                   evaluate, evaluate_args, failfast, return_exceptions))
             if progress_reporter is not None and show_progress:
                 progress_reporter._progress_update(1, stage=0)
 
@@ -361,7 +368,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 # we do not want to derive from Serializable here, because this would make all children serializable.
 # However we guide serializable children, what to store/restore.
 class Estimator(_BaseEstimator, Loggable):
-    """ Base class for pyEMMA estimators
+    """ Base class for PyEMMA estimators
 
     """
     # flag indicating if estimator's estimate method has been called
