@@ -38,6 +38,17 @@ pdbfile_ops_aa = os.path.join(path, 'opsin_aa_1_frame.pdb.gz')
 pdbfile_ops_Ca = os.path.join(path, 'opsin_Ca_1_frame.pdb.gz')
 
 asn_leu_pdb = """
+ATOM    548  N   ARG A  68       5.907  -1.379  53.221  1.00 39.48           N  
+ATOM    549  CA  ARG A  68       6.781  -2.058  54.196  1.00 40.75           C  
+ATOM    550  C   ARG A  68       7.205  -3.453  53.719  1.00 40.21           C  
+ATOM    551  O   ARG A  68       8.381  -3.819  53.821  1.00 37.97           O  
+ATOM    552  CB  ARG A  68       6.101  -2.190  55.568  1.00 42.54           C  
+ATOM    553  CG  ARG A  68       5.835  -0.874  56.293  1.00 44.54           C  
+ATOM    554  CD  ARG A  68       5.539  -1.081  57.777  1.00 45.95           C  
+ATOM    555  NE  ARG A  68       4.549  -2.141  58.029  1.00 47.49           N  
+ATOM    556  CZ  ARG A  68       3.238  -1.977  58.259  1.00 48.16           C  
+ATOM    557  NH1 ARG A  68       2.664  -0.774  58.288  1.00 48.92           N  
+ATOM    558  NH2 ARG A  68       2.478  -3.050  58.470  1.00 48.77           N  
 ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
 ATOM    560  CA  ASN A  69      20.356  -0.049 -10.419  1.00 25.52           C  
 ATOM    561  C   ASN A  69      21.572  -0.418  -9.653  1.00 24.26           C  
@@ -474,7 +485,7 @@ class TestFeaturizer(unittest.TestCase):
 
         traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
-        self.assertEqual(Y.shape, (len(traj), 3 * 4))  # (3 phi + 3 psi)*2 [cos, sin]
+        self.assertEqual(Y.shape, (len(traj), 2 * 8))  # (4 phi + 4 psi)*2 [cos, sin]
         assert (np.alltrue(Y >= -np.pi))
         assert (np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -482,9 +493,9 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIn("COS", desc[0])
         self.assertIn("SIN", desc[1])
 
-    def test_backbone_dihedrials_chi(self):
+    def test_backbone_dihedrials_chi1(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions()
+        self.feat.add_sidechain_torsions(which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
@@ -493,9 +504,9 @@ class TestFeaturizer(unittest.TestCase):
         desc = self.feat.describe()
         self.assertEqual(len(desc), self.feat.dimension())
 
-    def test_backbone_dihedrials_chi_cossin(self):
+    def test_backbone_dihedrials_chi1_cossin(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions(cossin=True)
+        self.feat.add_sidechain_torsions(cossin=True, which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
@@ -505,6 +516,47 @@ class TestFeaturizer(unittest.TestCase):
         assert "COS" in desc[0]
         assert "SIN" in desc[1]
         self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_all_dihedrals(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 4 * 3  # 5 residues, chi1, chi2 (for 2*[asn, leu]), chi1-5 for arg
+
+    def test_all_dihedrals_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(cossin=True, which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 2 * (4 * 3)
+        desc = self.feat.describe()
+        assert 'COS' in desc[0]
+        assert 'SIN' in desc[1]
+
+    def test_sidechain_torsions_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(which='chi2')
+        assert self.feat.dimension() == 5
+        desc = self.feat.describe()
+        assert all('CHI2' in d for d in desc)
+        assert len(desc) == 5
+
+    def test_sidechain_torsions_which2(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(which=['chi1', 'chi3'])
+        assert self.feat.dimension() == 6
+        desc = self.feat.describe()
+        assert len(desc) == 6
+
+    def test_sidechain_torsions_selstr(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(selstr='resid == 0', which=['chi1'])
+        assert self.feat.dimension() == 1
+        assert all('CHI1' in d for d in self.feat.describe())
+
+    def test_sidechain_torsions_invalid_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        with self.assertRaises(ValueError):
+            self.feat.add_sidechain_torsions(selstr='resid == 0', which=['garbage'])
 
     def test_custom_feature(self):
         # TODO: test me
