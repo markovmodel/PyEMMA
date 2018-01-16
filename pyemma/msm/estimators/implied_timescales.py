@@ -81,7 +81,7 @@ def _hash_dtrajs(dtraj_list):
 class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
-                         '_its', '_its_samples',
+                          '_its', '_its_samples',
                           )
     r"""Implied timescales for a series of lag times.
 
@@ -90,9 +90,10 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
     estimator : Estimator
         Estimator to be used for estimating timescales at each lag time.
 
-    lags : array-like with integers or None, optional
+    lags : int, array-like with integers or None, optional
         integer lag times at which the implied timescales will be calculated. If set to None (default)
-        as list of lagtimes will be automatically generated.
+        as list of lag times will be automatically generated. For a single int, generate a set of lag times starting 
+        from 1 to lags, using a multiplier of 1.5 between successive lags.
 
     nits : int, optional
         maximum number of implied timescales to be computed and stored. If less

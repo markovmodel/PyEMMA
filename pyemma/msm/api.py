@@ -69,8 +69,10 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     dtrajs : array-like or list of array-likes
         discrete trajectories
 
-    lags : array-like of integers, optional
-        integer lag times at which the implied timescales will be calculated
+    lags : int, array-like with integers or None, optional
+        integer lag times at which the implied timescales will be calculated. If set to None (default)
+        as list of lag times will be automatically generated. For a single int, generate a set of lag times starting
+        from 1 to lags, using a multiplier of 1.5 between successive lags.
 
     nits : int, optional
         number of implied timescales to be computed. Will compute less
@@ -833,8 +835,10 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
         discrete trajectories
     nstates : int
         number of hidden states
-    lags : array-like of integers (optional)
-        integer lag times at which the implied timescales will be calculated
+    lags : int, array-like with integers or None, optional
+        integer lag times at which the implied timescales will be calculated. If set to None (default)
+        as list of lag times will be automatically generated. For a single int, generate a set of lag times starting
+        from 1 to lags, using a multiplier of 1.5 between successive lags.
     nits : int (optional)
         number of implied timescales to be computed. Will compute less if the
         number of states are smaller. None means the number of timescales will
@@ -1393,9 +1397,9 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
     maxiter : int, optional
         Optional parameter with specifies the maximum number of
         updates for Lagrange multiplier estimation.
-    
+
     eps : float, optional
-        Additional convergence criterion used when some experimental data 
+        Additional convergence criterion used when some experimental data
         are outside the support of the simulation. The value of the eps
         parameter is the threshold of the relative change in the predicted
         observables as a function of fixed-point iteration:
@@ -1433,9 +1437,9 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
 
     References
     ----------
-    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining experimental and simulation data 
-       of molecular processes via augmented Markov models" PNAS (2017), 114(31), pp. 8265-8270 
-       doi: 10.1073/pnas.1704803114 
+    .. [1] Olsson S, Wu H, Paul F, Clementi C, Noe F "Combining experimental and simulation data
+       of molecular processes via augmented Markov models" PNAS (2017), 114(31), pp. 8265-8270
+       doi: 10.1073/pnas.1704803114
 
     """
     # check input
