@@ -694,7 +694,7 @@ def tram(
                 callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
                 equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
             tram_estimators.append(t)
-        pg.update(1)
+            pg.update(1)
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:

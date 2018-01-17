@@ -33,7 +33,7 @@ from pyemma.util.annotators import alias, aliased
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.progress import ProgressReporter
 from pyemma._base.model import SampledModel
 
 __docformat__ = "restructuredtext en"
@@ -78,10 +78,10 @@ def _hash_dtrajs(dtraj_list):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, SerializableMixIn):
+class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
-                         '_its', '_its_samples',
+                          '_its', '_its_samples',
                           )
     r"""Implied timescales for a series of lag times.
 
@@ -90,9 +90,10 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
     estimator : Estimator
         Estimator to be used for estimating timescales at each lag time.
 
-    lags : array-like with integers or None, optional
+    lags : int, array-like with integers or None, optional
         integer lag times at which the implied timescales will be calculated. If set to None (default)
-        as list of lagtimes will be automatically generated.
+        as list of lag times will be automatically generated. For a single int, generate a set of lag times starting 
+        from 1 to lags, using a multiplier of 1.5 between successive lags.
 
     nits : int, optional
         maximum number of implied timescales to be computed and stored. If less
@@ -192,9 +193,11 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         param_sets = tuple(param_grid({'lag': lags}))
 
         # run estimation on all lag times
-        models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
-                                                 return_estimators=True, n_jobs=self.n_jobs,
-                                                 progress_reporter=self)
+        pg = ProgressReporter()
+        with pg.context():
+            models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
+                                                     return_estimators=True, n_jobs=self.n_jobs,
+                                                     progress_reporter=pg, return_exceptions=True)
         self._estimators = estimators
 
         self._postprocess_results(models)
@@ -202,15 +205,23 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
     def _postprocess_results(self, models):
         ### PROCESS RESULTS
         # if some results are None, estimation has failed. Warn and truncate models and lag times
-        good = np.array([i for i, m in enumerate(models) if m is not None], dtype=int)
-        bad = np.array([i for i, m in enumerate(models) if m is None], dtype=int)
-        if good.size == 0:
-            raise RuntimeError('Estimation has failed at ALL lagtimes. Check for errors.')
-        if bad.size > 0:
-            self.logger.warning('Estimation has failed at lagtimes: {lags}. '
-                                'Run single-lag estimation at these lags to track down the '
-                                'error.'.format(lags=self._lags[bad]))
-            models = list(np.array(models)[good])
+        check = lambda m: m is not None and not isinstance(m, Exception)
+        good = np.array([i for i, m in enumerate(models) if check(m)], dtype=int)
+        bad = np.array([i for i, m in enumerate(models) if not check(m)], dtype=int)
+
+        if len(good) != len(models):
+            def _format_failed_models():
+                errors = []
+                for b in bad:
+                    errors.append('Error at lag time {lag}: {err}'.format(lag=self._lags[b], err=models[b]))
+                from pprint import pformat
+                return pformat(errors)
+            if good.size == 0:
+                raise RuntimeError('Estimation has failed at ALL lagtimes. Details:\n{}'.format(_format_failed_models()))
+            if bad:
+                self.logger.warning('Estimation has failed at lagtimes: {lags}. Details:\n{details}'
+                                    .format(lags=self._lags[bad], details=_format_failed_models()))
+                models = list(np.array(models)[good])
 
         # merge models prior evaluation
         if self._estimated:
