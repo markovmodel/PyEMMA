@@ -102,15 +102,17 @@ class Model(object):
             # catch deprecated param values.
             # This is set in utils/__init__.py but it gets overwritten
             # when running under python3 somehow.
+            from pyemma.util.exceptions import PyEMMA_DeprecationWarning
             warnings.simplefilter("always", DeprecationWarning)
+            warnings.simplefilter("always", PyEMMA_DeprecationWarning)
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
-                from pyemma.util.exceptions import PyEMMA_DeprecationWarning
-                if len(w) and w[0].category == DeprecationWarning or w[0].category == PyEMMA_DeprecationWarning:
+                if len(w) and w([0].category == DeprecationWarning or w[0].category == PyEMMA_DeprecationWarning):
                     # if the parameter is deprecated, don't show it
                     continue
             finally:
+                warnings.filters.pop(0)
                 warnings.filters.pop(0)
 
             # XXX: should we rather test if instance of estimator?
@@ -143,6 +145,8 @@ class SampledModel(Model):
     def samples(self, value):
         if value is not None:
             self.nsamples = len(value)
+        else:
+            self.nsamples = 0
         self._samples = value
 
     def _check_samples_available(self):
