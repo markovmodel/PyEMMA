@@ -17,6 +17,7 @@ your Python installation to at least version 3.5.
 - coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
 - coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
   extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
+- datasets: added Prinz potential (quadwell). #1226
 
 
 - References:
