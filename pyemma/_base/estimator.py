@@ -437,6 +437,49 @@ class Estimator(_BaseEstimator, Loggable):
         if not self._estimated:
             raise Exception("Estimator is not parametrized.")
 
+    # override get_params here, to handle PyEMMA_DeprecationWarnings as well
+    def get_params(self, deep=True):
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep: boolean, optional
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params : mapping of string to any
+            Parameter names mapped to their values.
+        """
+        out = dict()
+        import warnings
+        from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+
+        for key in self._get_param_names():
+            # We need deprecation warnings to always be on in order to
+            # catch deprecated param values.
+            # This is set in utils/__init__.py but it gets overwritten
+            # when running under python3 somehow.
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.simplefilter("always", PyEMMA_DeprecationWarning)
+            try:
+                with warnings.catch_warnings(record=True) as w:
+                    value = getattr(self, key, None)
+                if len(w) and w[0].category in (DeprecationWarning, PyEMMA_DeprecationWarning):
+                    # if the parameter is deprecated, don't show it
+                    continue
+            finally:
+                warnings.filters.pop(0)
+                warnings.filters.pop(0)
+
+            # XXX: should we rather test if instance of estimator?
+            if deep and hasattr(value, 'get_params'):
+                deep_items = list(value.get_params().items())
+                out.update((key + '__' + k, val) for k, val in deep_items)
+            out[key] = value
+        return out
+
     # serialization handling
     __serialize_fields = ('_estimated', 'model')
 
