@@ -27,7 +27,7 @@ __author__ = 'noe'
 
 
 class Model(object):
-    """ Base class for pyEMMA models
+    """ Base class for PyEMMA models
 
     This class is inspired by sklearn's BaseEstimator class. However, we define parameter names not by the
     current class' __init__ but have to announce them. This allows us to also remember the parameters of model
@@ -48,7 +48,7 @@ class Model(object):
         if state:
             for c in filter(lambda c: hasattr(c, '_get_model_param_names'), self.__class__.__mro__):
                 # TODO: actually we would desire to pop from state, but this can't be done because of ThermoMSM (would pop pi twice)
-                params_for_c = { k: state.get(k) for k in c._get_model_param_names()}
+                params_for_c = {k: state.get(k) for k in c._get_model_param_names()}
                 c.set_model_params(self, **params_for_c)
 
     @classmethod
@@ -56,12 +56,11 @@ class Model(object):
         r"""Get parameter names for the model"""
         # fetch model parameters
         if hasattr(cls, 'set_model_params'):
-            set_model_param_method = getattr(cls, 'set_model_params')
             # introspect the constructor arguments to find the model parameters
             # to represent
-            args, varargs, kw, default = getargspec_no_self(set_model_param_method)
+            args, varargs, kw, default = getargspec_no_self(cls.set_model_params)
             if varargs is not None:
-                raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
+                raise RuntimeError("PyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
                                    % (cls,))
             return args
@@ -71,7 +70,7 @@ class Model(object):
 
     def set_model_params(self, **kw):
         for k in kw:
-            setattr(k, kw[k])
+            setattr(self, k, kw[k])
 
     def update_model_params(self, **params):
         r"""Update given model parameter if they are set to specific values"""
@@ -91,6 +90,7 @@ class Model(object):
         deep: boolean, optional
             If True, will return the parameters for this estimator and
             contained subobjects that are estimators.
+
         Returns
         -------
         params : mapping of string to any
@@ -106,7 +106,8 @@ class Model(object):
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
-                if len(w) and w[0].category == DeprecationWarning:
+                from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+                if len(w) and w[0].category == DeprecationWarning or w[0].category == PyEMMA_DeprecationWarning:
                     # if the parameter is deprecated, don't show it
                     continue
             finally:
@@ -133,8 +134,16 @@ class SampledModel(Model):
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95):
         self.update_model_params(samples=samples, conf=conf)
-        if samples is not None:
-            self.nsamples = len(samples)
+
+    @property
+    def samples(self):
+        return self._samples
+
+    @samples.setter
+    def samples(self, value):
+        if value is not None:
+            self.nsamples = len(value)
+        self._samples = value
 
     def _check_samples_available(self):
         if self.samples is None:
