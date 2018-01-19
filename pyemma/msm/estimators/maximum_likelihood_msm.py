@@ -1064,6 +1064,15 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+
+        # continue sparse or dense?
+        if not self.sparse:
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+
         self._nstates = self._C_active.shape[0]
 
         # computed derived quantities
@@ -1093,19 +1102,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
                                          mu=statdist_active,
                                          maxiter=self.maxiter, maxerr=self.maxerr)
-        else:
-            raise NotImplementedError(
-                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
-
-        # continue sparse or dense?
-        if not self.sparse:
-            # converting count matrices to arrays. As a result the
-            # transition matrix and all subsequent properties will be
-            # computed using dense arrays and dense matrix algebra.
-            self._C_full = self._C_full.toarray()
-            self._C_active = self._C_active.toarray()
-            P = P.toarray()
-
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
