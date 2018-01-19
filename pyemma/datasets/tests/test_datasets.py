@@ -21,6 +21,7 @@ from pyemma.thermo import estimate_umbrella_sampling
 from pyemma.thermo import estimate_multi_temperature
 from numpy.testing import assert_allclose
 
+
 def test_umbrella_sampling_data():
     req_keys = (
         'us_trajs',
@@ -51,6 +52,7 @@ def test_umbrella_sampling_data():
     pi = [memm.msm.pi[s].sum() for s in memm.msm.metastable_sets]
     assert_allclose(pi, [0.3, 0.7], rtol=0.25, atol=0.1)
 
+
 def test_multi_temperature_data():
     req_keys = (
         'trajs',
@@ -79,3 +81,7 @@ def test_multi_temperature_data():
     pi = [memm.msm.pi[s].sum() for s in memm.msm.metastable_sets]
     assert_allclose(pi, [0.3, 0.7], rtol=0.25, atol=0.1)
 
+
+def test_prinz_potential():
+    from pyemma.datasets import get_quadwell_data
+    get_quadwell_data()
