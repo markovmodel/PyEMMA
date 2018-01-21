@@ -270,8 +270,8 @@ class _MSMEstimator(_Estimator, _MSM):
         if self.score_k is None:
             self.score_k = self.nstates
         if self.score_k > self.nstates:
-            self.logger.warning('Requested scoring rank ' + str(self.score_k) +
-                                'exceeds number of MSM states. Reduced to score_k = ' + str(self.nstates))
+            self.logger.warning('Requested scoring rank {rank} exceeds number of MSM states. '
+                                'Reduced to score_k = {nstates}'.format(rank=self.score_k, nstates=self.nstates))
             self.score_k = self.nstates  # limit to nstates
 
         # training data
