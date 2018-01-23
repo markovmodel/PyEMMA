@@ -271,6 +271,7 @@ metadata = dict(
     install_requires=[
         'bhmm>=0.6,<0.7',
         'decorator>=4.0.0',
+        'h5py>=2.7.1',
         'matplotlib',
         'mdtraj>=1.8.0',
         'msmtools>=1.2',
@@ -279,8 +280,8 @@ metadata = dict(
         'psutil>=3.1.1',
         'pyyaml',
         'scipy>=0.11',
-        'tqdm',
         'thermotools>=0.2.6',
+        'tqdm',
     ],
     zip_safe=False,
     entry_points = {
