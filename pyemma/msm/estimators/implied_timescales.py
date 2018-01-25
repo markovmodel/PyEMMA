@@ -67,9 +67,9 @@ def _generate_lags(maxlag, multiplier):
 
 
 def _hash_dtrajs(dtraj_list):
-    x = 0
     from pyemma.util.numeric import _hash_numpy_array
-    for d in dtraj_list:
+    x = _hash_numpy_array(dtraj_list[0])
+    for d in dtraj_list[1:]:
         x ^= _hash_numpy_array(d)
     return x
 
@@ -81,7 +81,7 @@ def _hash_dtrajs(dtraj_list):
 class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
-                          '_its', '_its_samples',
+                          '_its', '_its_samples', '_last_dtrajs_input_hash',
                           )
     r"""Implied timescales for a series of lag times.
 
