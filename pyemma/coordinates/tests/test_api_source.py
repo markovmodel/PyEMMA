@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 import unittest
 import os
 import tempfile
@@ -29,7 +27,7 @@ import numpy as np
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader as CSVReader
 import shutil
-
+import pkg_resources
 
 logger = getLogger('pyemma.'+'TestReaderUtils')
 
@@ -59,7 +57,6 @@ class TestApiSourceFileReader(unittest.TestCase):
         np.savez(cls.npz, data_np, data_np)
         np.savetxt(cls.dat, data_raw)
         np.savetxt(cls.csv, data_raw)
-
         path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.bpti_pdbfile = os.path.join(path, 'bpti_ca.pdb')
         extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr']
@@ -113,8 +110,19 @@ class TestApiSourceFileReader(unittest.TestCase):
         self.assertIsInstance(r.exception, (IOError, ValueError))
         self.assertIn('could not parse', str(r.exception))
 
+    def test_source_set_chunksize(self):
+        x = np.zeros(10)
+        r = api.source(x, chunk_size=1)
+        assert r.chunksize == 1
+        r2 = api.source(r, chunk_size=2)
+        assert r2 is r
+        assert r2.chunksize == 2
 
-import pkg_resources
+        # reset to default chunk size.
+        r3 = api.source(r, chunk_size=None)
+        assert r3.chunksize is not None
+
+
 class TestApiSourceFeatureReader(unittest.TestCase):
 
     def setUp(self):
@@ -125,9 +133,6 @@ class TestApiSourceFeatureReader(unittest.TestCase):
             os.path.join(path, 'bpti_001-033.xtc'),
             os.path.join(path, 'bpti_067-100.xtc')
         ]
-
-    def tearDown(self):
-        pass
 
     def test_read_multiple_files_topology_file(self):
         reader = api.source(self.traj_files, top=self.pdb_file)
