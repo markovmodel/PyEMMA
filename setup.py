@@ -101,8 +101,8 @@ def extensions():
     assert os.path.exists(pybind_inc)
 
     exts = []
-
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
+    common_cflags = ['-O3', ]
 
     clustering_module = \
         Extension('pyemma.coordinates.clustering._ext',
@@ -116,7 +116,7 @@ def extensions():
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=common_cflags)
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c._covartools',
@@ -126,19 +126,19 @@ def extensions():
                                 pybind_inc,
                                 ],
                   language='c++',
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=common_cflags)
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
                   include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
-                  extra_compile_args=['-std=c99', '-O3'])
+                  extra_compile_args=['-std=c99'] + common_cflags)
 
     orderedset = \
         Extension('pyemma._ext.orderedset._orderedset',
                   sources=['pyemma/_ext/orderedset/_orderedset.pyx'],
                   include_dirs=[np_inc],
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=['-std=c99'] + common_cflags)
 
     exts += [clustering_module,
              covar_module,
@@ -229,15 +229,20 @@ def get_cmdclass():
 
             # setup OpenMP support
             openmp_enabled, needs_gomp = detect_openmp()
+            if openmp_enabled:
+                warnings.warn('enabled openmp')
+                omp_compiler_args = ['-fopenmp']
+                omp_libraries = ['-lgomp'] if needs_gomp else []
+                omp_defines = [('USE_OPENMP', None)]
+            # debug
+            dbg_flag = ['-g0' if not self.debug else '-g']
 
             for ext in self.extensions:
                 if ext.language == 'c++':
-                    ext.extra_compile_args = opts
+                    ext.extra_compile_args = opts + dbg_flag
+                elif ext.language is None:  # C
+                    ext.extra_compile_args += dbg_flag
                 if openmp_enabled:
-                    warnings.warn('enabled openmp')
-                    omp_compiler_args = ['-fopenmp']
-                    omp_libraries = ['-lgomp'] if needs_gomp else []
-                    omp_defines = [('USE_OPENMP', None)]
                     ext.extra_compile_args += omp_compiler_args
                     ext.extra_link_args += omp_libraries
                     ext.define_macros += omp_defines
@@ -284,7 +289,7 @@ metadata = dict(
         'tqdm',
     ],
     zip_safe=False,
-    entry_points = {
+    entry_points={
         'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
     }
 )
