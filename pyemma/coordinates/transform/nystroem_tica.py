@@ -226,8 +226,12 @@ class NystroemTICA(StreamingEstimationTransformer):
         return super(NystroemTICA, self).estimate(X, **kwargs)
 
     def _estimate(self, iterable, **kw):
-        indim = iterable.dimension()
+        from pyemma.coordinates.data import DataInMemory
+        if not isinstance(iterable, DataInMemory):
+            self._logger.warning('Every iteration of the selection process involves streaming of all data and featurization. '+
+                                 'Depending on your setup, this might be inefficient.')
 
+        indim = iterable.dimension()
         if not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
@@ -251,7 +255,7 @@ class NystroemTICA(StreamingEstimationTransformer):
             if cols is None:
                 break
             if len(cols) == 0 or np.all(np.in1d(cols, self._oasis.column_indices)):
-                self._logger.warning("oASIS iteration ended prematurely: No more columns to select.")
+                self._logger.warning("Iteration ended prematurely: No more columns to select.")
                 break
             self._covar.column_selection = cols
             self._covar.estimate(iterable, **kw)
