@@ -56,10 +56,10 @@ def _lazy_estimation(func, *args, **kw):
 class NystroemTICA(StreamingEstimationTransformer):
     r""" Sparse sampling implementation of time-lagged independent component analysis (TICA)"""
 
-    def __init__(self, lag, max_columns, initial_columns=None, nsel=1, neig=None,
+    def __init__(self, lag, max_columns,
                  dim=-1, var_cutoff=0.95, epsilon=1e-6,
-                 stride=1, skip=0, reversible=True,
-                 ncov_max=float('inf')):
+                 stride=1, skip=0, reversible=True, ncov_max=float('inf'),
+                 initial_columns=None, nsel=1, selection_strategy='spectral-oasis', neig=None):
         r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
 
         Parameters
@@ -68,17 +68,6 @@ class NystroemTICA(StreamingEstimationTransformer):
             lag time
         max_columns : int
             Maximum number of columns (features) to use in the approximation.
-        initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
-            Columns used for an initial approximation. If a list or an 1-d ndarray
-            of integers is given, use these column indices. If an integer is given,
-            use that number of randomly selected indices. If None is given, use
-            one randomly selected column.
-        nsel : int, optional, default 1
-            Number of columns to select and add per iteration and pass through the data.
-            Larger values provide for better pass-efficiency.
-        neig : int or None, optional, default None
-            Number of eigenvalues to be optimized by the selection process.
-            If None, use the whole available eigenspace
         dim : int, optional, default -1
             Maximum number of significant independent components to use to reduce dimension of input data. -1 means
             all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
@@ -97,6 +86,20 @@ class NystroemTICA(StreamingEstimationTransformer):
             Skip the first initial n frames per trajectory.
         reversible: bool, optional, default True
             Symmetrize correlation matrices :math:`C_0`, :math:`C_{\tau}`.
+        initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
+            Columns used for an initial approximation. If a list or an 1-d ndarray
+            of integers is given, use these column indices. If an integer is given,
+            use that number of randomly selected indices. If None is given, use
+            one randomly selected column.
+        nsel : int, optional, default 1
+            Number of columns to select and add per iteration and pass through the data.
+            Larger values provide for better pass-efficiency.
+        selection_strategy : str, optional, default 'spectral-oasis'
+            Strategy to use for selecting new columns for the approximation.
+            Can be 'random', 'oasis' or 'spectral-oasis'.
+        neig : int or None, optional, default None
+            Number of eigenvalues to be optimized by the selection process.
+            If None, use the whole available eigenspace
 
         Notes
         -----
@@ -120,7 +123,8 @@ class NystroemTICA(StreamingEstimationTransformer):
 
         References
         ----------
-        .. [1] upcoming paper
+        .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+           Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
         .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
            Identification of slow molecular order parameters for Markov model construction
            J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
@@ -161,10 +165,11 @@ class NystroemTICA(StreamingEstimationTransformer):
 
         # empty dummy model instance
         self._model = NystroemTICAModel()
-        self.set_params(lag=lag, max_columns=max_columns, initial_columns=initial_columns, nsel=nsel, neig=neig,
+        self.set_params(lag=lag, max_columns=max_columns,
                         dim=dim, var_cutoff=var_cutoff,
                         epsilon=epsilon, reversible=reversible, stride=stride, skip=skip,
-                        ncov_max=ncov_max)
+                        ncov_max=ncov_max,
+                        initial_columns=initial_columns, nsel=nsel, selection_strategy=selection_strategy, neig=neig)
 
     @property
     def lag(self):
@@ -239,7 +244,7 @@ class NystroemTICA(StreamingEstimationTransformer):
         self._model.update_model_params(cov_tau=self._covar.cov_tau)
 
         self._oasis = oASIS_Nystroem(self._diag.cov, self._covar.cov, self.initial_columns)
-        self._oasis.set_selection_strategy(strategy='spectral-oasis', nsel=self.nsel, neig=self.neig)
+        self._oasis.set_selection_strategy(strategy=self.selection_strategy, nsel=self.nsel, neig=self.neig)
 
         while len(self._oasis.column_indices) < self.max_columns:
             cols = self._oasis.select_columns()
@@ -448,7 +453,8 @@ class oASIS_Nystroem:
     .. [2] Raajen Patel, Thomas A. Goldstein, Eva L. Dyer, Azalia Mirhoseini, Richard G. Baraniuk.
        oASIS: Adaptive Column Sampling for Kernel Matrix Approximation.
        arXiv: 1505.05208 [stat.ML].
-    .. [3] upcoming paper
+    .. [3] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+       Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
 
     """
 

@@ -1415,10 +1415,10 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     return res
 
 
-def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=None,
+def nystroem_tica(data, lag, max_columns,
                   dim=-1, var_cutoff=0.95, epsilon=1e-6,
-                  stride=1, skip=0, reversible=True,
-                  ncov_max=float('inf')):
+                  stride=1, skip=0, reversible=True, ncov_max=float('inf'),
+                  initial_columns=None, nsel=1, neig=None):
     r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
 
     Parameters
@@ -1430,17 +1430,6 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=Non
         lag time
     max_columns : int
         Maximum number of columns (features) to use in the approximation.
-    initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
-        Columns used for an initial approximation. If a list or an 1-d ndarray
-        of integers is given, use these column indices. If an integer is given,
-        use that number of randomly selected indices. If None is given, use
-        one randomly selected column.
-    nsel : int, optional, default 1
-        Number of columns to select and add per iteration and pass through the data.
-        Larger values provide for better pass-efficiency.
-    neig : int or None, optional, default None
-        Number of eigenvalues to be optimized by the selection process.
-        If None, use the whole available eigenspace.
     dim : int, optional, default -1
         Maximum number of significant independent components to use to reduce dimension of input data. -1 means
         all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
@@ -1459,6 +1448,17 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=Non
         Skip the first initial n frames per trajectory.
     reversible: bool, optional, default True
         Symmetrize correlation matrices :math:`C_0`, :math:`C_{\tau}`.
+    initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
+        Columns used for an initial approximation. If a list or an 1-d ndarray
+        of integers is given, use these column indices. If an integer is given,
+        use that number of randomly selected indices. If None is given, use
+        one randomly selected column.
+    nsel : int, optional, default 1
+        Number of columns to select and add per iteration and pass through the data.
+        Larger values provide for better pass-efficiency.
+    neig : int or None, optional, default None
+        Number of eigenvalues to be optimized by the selection process.
+        If None, use the whole available eigenspace.
 
     Returns
     -------
@@ -1490,7 +1490,8 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=Non
 
     References
     ----------
-    .. [1] upcoming paper
+    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+       Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
     .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
        Identification of slow molecular order parameters for Markov model construction
        J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
@@ -1509,10 +1510,11 @@ def nystroem_tica(data, lag, max_columns, initial_columns=None, nsel=1, neig=Non
 
     """
     from pyemma.coordinates.transform.nystroem_tica import NystroemTICA
-    res = NystroemTICA(lag, max_columns, initial_columns=initial_columns, nsel=nsel, neig=neig,
+    res = NystroemTICA(lag, max_columns,
                        dim=dim, var_cutoff=var_cutoff, epsilon=epsilon,
                        stride=stride, skip=skip, reversible=reversible,
-                       ncov_max=ncov_max)
+                       ncov_max=ncov_max,
+                       initial_columns=initial_columns, nsel=nsel, neig=neig)
     return _param_stage(data, res, stride=stride)
 
 
