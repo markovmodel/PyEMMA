@@ -96,16 +96,18 @@ function install_pyemma {
     packages="pyemma numpy"
     if [ ! minimal ]; then
         # add optional packages.
-        packages="$packages notebook"
+        packages="$packages notebook ipython"
     fi
     # we add numpy here to get the openblas variant (instead of MKL).
     echo "creating pyemma environment..."
     conda=${target}/bin/conda
-    # &> /dev/null
     if [[ -z $($conda env list | grep ${env_name}) ]]; then
         echo "env '$env_name' does not exist. Create new one."
         $conda create -n ${env_name} ${packages} -y -c conda-forge
+	source activate ${env_name}
         $conda config --env --add channels conda-forge
+	echo "execute the following command to activate your newly created pyemma environment:"
+	echo "> source activate ${env_name}"
     else
         echo "environment with name='${env_name}' already exists. Please specify a different name by -e new_name"
         exit 1
@@ -113,7 +115,7 @@ function install_pyemma {
 }
 
 # probe for conda, install miniconda otherwise.
-if hash conda 2>/dev/null && [ $ignore -eq 0 ]; then
+if [ -x "$(command -v conda)" ] && [ $ignore -eq 1 ]; then
     echo "Found conda. Will install to a new environment named ${env_name}"
     install_pyemma
 else
