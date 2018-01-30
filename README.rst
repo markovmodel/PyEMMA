@@ -45,24 +45,28 @@ If you use PyEMMA in scientific work, please cite:
 
 Installation
 ------------
+If you want to use Miniconda on Linux or OSX, you can run this script to download and install everything::
+
+   curl -s https://raw.githubusercontent.com/markovmodel/PyEMMA/devel/install_miniconda%2Bpyemma.sh | bash
+
+If you have Anaconda/Miniconda installed, use the following::
+
+   conda install -c conda-forge pyemma
+
 With pip::
 
    pip install pyemma
-
-with conda::
-
-   conda install -c conda-forge pyemma
 
 or install latest devel branch with pip::
 
    pip install git+https://github.com/markovmodel/PyEMMA.git@devel
 
-For a complete guide to installation, please have a look at the version 
+For a complete guide to installation, please have a look at the version
 `online <http://www.emma-project.org/latest/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst
 
 To build the documentation offline you should install the requirements with::
-   
+
    pip install -r requirements-build-doc.txt
 
 Then build with make::
@@ -72,7 +76,7 @@ Then build with make::
 
 Support and development
 -----------------------
-For bug reports/suggestions/complaints please file an issue on 
+For bug reports/suggestions/complaints please file an issue on
 `GitHub <http://github.com/markovmodel/PyEMMA>`__.
 
 Or start a discussion on our mailing list: pyemma-users@lists.fu-berlin.de
