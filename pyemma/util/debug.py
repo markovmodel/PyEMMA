@@ -26,6 +26,7 @@ Created on 15.10.2015
 
 @author: marscher
 '''
+from __future__ import absolute_import, print_function
 
 import signal
 from logging import getLogger

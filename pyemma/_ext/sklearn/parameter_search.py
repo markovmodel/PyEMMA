@@ -12,6 +12,7 @@ and
 Parameter estimation tools
 """
 
+from __future__ import absolute_import
 # Author: Alexandre Gramfort <alexandre.gramfort@inria.fr>,
 #         Gael Varoquaux <gael.varoquaux@normalesup.org>
 #         Andreas Mueller <amueller@ais.uni-bonn.de>

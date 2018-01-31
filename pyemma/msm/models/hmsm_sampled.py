@@ -25,6 +25,7 @@ and provides them for later access.
 
 """
 
+from __future__ import absolute_import
 
 from pyemma._base.model import SampledModel as _SampledModel
 from pyemma.msm.models.hmsm import HMSM as _HMSM

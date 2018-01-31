@@ -22,7 +22,9 @@ Test feature reader and Tica with a set of cosine time series.
 @author: Fabian Paul
 '''
 
+from __future__ import print_function
 
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile

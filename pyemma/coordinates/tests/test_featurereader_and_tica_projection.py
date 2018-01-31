@@ -23,6 +23,8 @@ cov(ic_i,ic_j) = delta_ij and cov(ic_i,ic_j,tau) = lambda_i delta_ij
 @author: Fabian Paul
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 
 import os
 import tempfile

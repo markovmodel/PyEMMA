@@ -20,6 +20,7 @@ Created on 22.01.2015
 @author: clonker, marscher, noe
 """
 
+from __future__ import absolute_import
 
 import math
 import os

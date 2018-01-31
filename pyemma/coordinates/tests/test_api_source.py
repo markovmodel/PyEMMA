@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -57,6 +60,7 @@ class TestApiSourceFileReader(unittest.TestCase):
         np.savez(cls.npz, data_np, data_np)
         np.savetxt(cls.dat, data_raw)
         np.savetxt(cls.csv, data_raw)
+
         path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.bpti_pdbfile = os.path.join(path, 'bpti_ca.pdb')
         extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr']

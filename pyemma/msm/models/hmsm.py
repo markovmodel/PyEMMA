@@ -25,6 +25,7 @@ and provides them for later access.
 
 """
 
+from __future__ import absolute_import
 
 import numpy as _np
 

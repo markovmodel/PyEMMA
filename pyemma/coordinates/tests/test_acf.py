@@ -18,6 +18,7 @@
 
 
 
+from __future__ import absolute_import
 import unittest
 import numpy as np
 
@@ -42,6 +43,6 @@ class TestACF(unittest.TestCase):
         refacf /= refacf[0]  # normalize
 
         np.testing.assert_allclose(refacf, testacf)
-
+        
 if __name__ == "__main__":
     unittest.main()

@@ -20,6 +20,7 @@ Created on 30.04.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import, print_function
 
 from tempfile import NamedTemporaryFile
 

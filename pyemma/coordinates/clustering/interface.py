@@ -22,6 +22,7 @@ Created on 18.02.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import
 
 import os
 

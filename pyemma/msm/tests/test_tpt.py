@@ -24,6 +24,7 @@ r"""Unit test for the tpt-function
 
 """
 
+from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma.util.numeric import assert_allclose
