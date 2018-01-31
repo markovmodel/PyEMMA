@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-
+import six
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.util import _importable_name
 
@@ -272,7 +272,9 @@ class SerializableMixIn(object):
 
     def _get_state_of_serializeable_fields(self, klass, state):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
-        for field in SerializableMixIn._get_serialize_fields(klass):
+        res = {}
+        assert all(isinstance(f, str) for f in klass._serialize_fields)
+        for field in klass._serialize_fields:
             # only try to get fields, we actually have.
             if hasattr(self, field):
                 if _debug and field in state:
