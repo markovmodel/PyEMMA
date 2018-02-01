@@ -29,7 +29,7 @@ import mdtraj
 from itertools import combinations, product
 
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
-from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom, hash_top
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
 
 from pyemma.coordinates.data.featurization.util import _atoms_in_residues
 import pkg_resources
@@ -188,10 +188,6 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
-
-    def test_hashing_top(self):
-        import copy
-        assert hash_top(self.feat.topology) == hash_top(copy.deepcopy(self.feat.topology))
 
     def test_select_non_symmetry_heavy_atoms(self):
         try:
