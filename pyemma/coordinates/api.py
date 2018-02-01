@@ -1256,17 +1256,72 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     return res
 
 
-def vamp(data=None, lag=10, dim=None, scaling=None, right=True,
-         stride=1, skip=0, ncov_max=float('inf')):
+def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('inf'),
+         stride=1, skip=0, chunksize=None):
+    r""" Variational approach for Markov processes (VAMP) [1]_.
+
+    Parameters
+    ----------
+    lag : int
+        lag time
+    dim : float or int
+        Number of dimensions to keep:
+        * if dim is not set all available ranks are kept:
+            n_components == min(n_samples, n_features)
+        * if dim is an integer >= 1, this number specifies the number
+          of dimensions to keep. By default this will use the kinetic
+          variance.
+        * if dim is a float with ``0 < dim < 1``, select the number
+          of dimensions such that the amount of kinetic variance
+          that needs to be explained is greater than the percentage
+          specified by dim.
+    scaling : None or string
+        Scaling to be applied to the VAMP modes upon transformation
+        * None: no scaling will be applied, variance along the mode is 1
+        * 'kinetic map' or 'km': modes are scaled by singular value
+    right : boolean
+        Whether to compute the right singular functions.
+        If right==True, get_output() will return the right singular
+        functions. Otherwise, get_output() will return the left singular
+        functions.
+        Beware that only frames[tau:, :] of each trajectory returned
+        by get_output() contain valid values of the right singular
+        functions. Conversely, only frames[0:-tau, :] of each
+        trajectory returned by get_output() contain valid values of
+        the left singular functions. The remaining frames might
+        possibly be interpreted as some extrapolation.
+    epsilon : float
+        singular value cutoff. Singular values of C0 with norms <= epsilon
+        will be cut off. The remaining number of singular values define
+        the size of the output.
+    stride: int, optional, default = 1
+        Use only every stride-th time step. By default, every time step is used.
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
+    ncov_max : int, default=infinity
+        limit the memory usage of the algorithm from [3]_ to an amount that corresponds
+        to ncov_max additional copies of each correlation matrix
+
+    References
+    ----------
+    .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+        arXiv:1707.04659v1
+    .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+        J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+    .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+        computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
+    """
     from pyemma.coordinates.transform.vamp import VAMP
     res = VAMP(lag, dim=dim, scaling=scaling, right=right, skip=skip, ncov_max=ncov_max)
-    return _param_stage(data, res, stride=stride)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    return res
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
-    """
-    Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None,
+                      ncov_max=float('inf')):
+    r"""Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
     number of time steps and N the number of dimensions, this function can compute lagged covariances like
 
     .. math::
@@ -1314,6 +1369,9 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
         disable chunking at all.
+    ncov_max : int, default=infinity
+        limit the memory usage of the algorithm from [2]_ to an amount that corresponds
+        to ncov_max additional copies of each correlation matrix
 
     Returns
     -------
@@ -1322,8 +1380,9 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 
     .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
-
-    """
+    .. [2] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+        computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
+        """
 
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
@@ -1332,7 +1391,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         if weights== "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
-            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
             koop.estimate(data, chunksize=chunksize)
             weights = koop.weights
         elif weights == "empirical":
@@ -1350,7 +1409,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip)
+                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
     return lc
