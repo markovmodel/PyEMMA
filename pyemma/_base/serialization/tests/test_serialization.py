@@ -194,14 +194,13 @@ class TestSerialisation(unittest.TestCase):
         """ overwrite the pickling procedure with something an evil method. Ensure it raises."""
         import subprocess
         from pickle import UnpicklingError
-        called = False
+        import types
+        called = {'result': False}
         def evil(self):
-            global called
-            called = True
+            called['result'] = True
             return subprocess.Popen, ('/bin/sh', )
 
         inst = np_container(np.empty(0))
-        import types
         old = SerializableMixIn.__getstate__
         old2 = inst.__class__.__reduce__
         try:
