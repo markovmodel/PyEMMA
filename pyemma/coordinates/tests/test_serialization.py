@@ -23,12 +23,13 @@ import unittest
 
 import numpy as np
 import pkg_resources
+import six
 
 import pyemma
 import pyemma.coordinates as coor
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 
-
+@unittest.skipIf(six.PY2, 'only py3')
 class TestSerializationCoordinates(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

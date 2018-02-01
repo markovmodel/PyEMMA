@@ -18,6 +18,8 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
+import six
+
 from pyemma.thermo.models.memm import ThermoMSM
 from pyemma.msm import MSM
 
@@ -67,6 +69,7 @@ class TestThermoMSM(unittest.TestCase):
         npt.assert_allclose(
             self.msm.eigenvectors_right_full_state(k=self.nstates-1), self.eigvec_r_full)
 
+    @unittest.skipIf(six.PY2, 'only py3')
     def test_serialization(self):
         ''' check if the test still hold for a restored model. '''
         import tempfile

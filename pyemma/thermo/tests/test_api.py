@@ -69,6 +69,10 @@ def validate_kinetics(obj, estimator):
 
 def check_serialization(estimator):
     # check if the serialized and restored estimator still holds the derived quantities.
+    import six
+    if six.PY2:
+        return
+
     import pyemma
     from pyemma.thermo import WHAM, TRAM, DTRAM, MBAR
     from pyemma._base.serialization.serialization import SerializableMixIn

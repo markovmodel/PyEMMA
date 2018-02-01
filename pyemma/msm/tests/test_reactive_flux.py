@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from __future__ import division
 import unittest
 import numpy as np
+import six
 from numpy.testing import assert_allclose
 
 from pyemma import msm as msmapi
@@ -198,6 +199,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(cgRF.net_flux, self.ref2_cgnetflux, rtol=1.e-5, atol=1.e-8)
         assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux, rtol=1.e-5, atol=1.e-8)
 
+    @unittest.skipIf(six.PY2, 'only py3')
     def test_serialization(self):
         import pyemma
         import tempfile
