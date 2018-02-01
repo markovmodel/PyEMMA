@@ -205,7 +205,8 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
 
-    if isinstance(trajfiles, str) or (
+    import six
+    if isinstance(trajfiles, six.string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
                  or len(trajfiles) is 0)):
