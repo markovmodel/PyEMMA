@@ -853,7 +853,9 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         before we destroy the featurizer created in each test, we dump it via
         serialization and restore it to check for equality.
         """
-        check_serialized_equal(self)
+        import six
+        if six.PY3:
+            check_serialized_equal(self)
 
     def testAddFeaturesWithDuplicates(self):
         """this tests adds multiple features twice (eg. same indices) and
