@@ -137,7 +137,7 @@ def is_float_array(l):
     return False
 
 def is_string(s):
-    return isinstance(s, str)
+    return isinstance(s, string_types)
 
 def is_iterable(I):
     return isinstance(I, collections.Iterable)
@@ -147,7 +147,7 @@ def is_list(S):
     return isinstance(S, (list, tuple))
 
 def is_list_of_string(S):
-    return isinstance(S, (list, tuple)) and (all(isinstance(s, str) for s in S))
+    return isinstance(S, (list, tuple)) and (all(isinstance(s, string_types) for s in S))
 
 def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)

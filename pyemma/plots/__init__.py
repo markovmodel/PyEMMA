@@ -62,7 +62,6 @@ Classes
    NetworkPlot
 
 """
-from __future__ import absolute_import
 from .timescales import plot_implied_timescales
 from .plots2d import contour, scatter_contour, plot_free_energy
 from .networks import plot_markov_model, plot_flux, plot_network, NetworkPlot

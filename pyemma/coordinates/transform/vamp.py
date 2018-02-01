@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import numpy as np
 
 from pyemma._base.model import Model
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
 from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
@@ -36,9 +37,11 @@ import warnings
 __all__ = ['VAMP']
 
 
-class VAMPModel(Model):
-    # TODO: remove dummy when bugfix from Martin is committed
-    def set_model_params(self, dummy, mean_0, mean_t, C00, Ctt, C0t, U, V, singular_values, cumvar, dim, epsilon):
+class VAMPModel(Model, SerializableMixIn):
+    __serialize_version = 0
+    __serialize_fields = ('_U', '_V', '_svd_performed')
+
+    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, U, V, singular_values, cumvar, dim, epsilon):
         self.mean_0 = mean_0
         self.mean_t = mean_t
         self.C00 = C00
@@ -291,8 +294,10 @@ class VAMPModel(Model):
 
 
 @fix_docs
-class VAMP(StreamingEstimationTransformer):
+class VAMP(StreamingEstimationTransformer, SerializableMixIn):
     r"""Variational approach for Markov processes (VAMP)"""
+
+    __serialize_version = 0
 
     def describe(self):
         return "[VAMP, lag = %i; max. output dim. = %s]" % (self._lag, str(self.dim))
@@ -519,10 +524,6 @@ class VAMP(StreamingEstimationTransformer):
 
     def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True,
                iterable=None):
-        # drop reference to LaggedCovariance to avoid problems during cloning
-        # In future pyemma versions, this will be no longer a problem...
-        self._covar = None
-
         if n_observables is not None:
             if n_observables > self.dimension():
                 warnings.warn('Selected singular functions as observables but dimension '
@@ -557,10 +558,6 @@ class VAMP(StreamingEstimationTransformer):
 
     def score(self, test_data=None, score_method='VAMP2'):
         from pyemma._ext.sklearn.base import clone as clone_estimator
-        # drop reference to LaggedCovariance to avoid problems during cloning
-        # In future pyemma versions, this will be no longer a problem...
-        self._covar = None
-
         est = clone_estimator(self)
 
         if test_data is None:
@@ -571,6 +568,9 @@ class VAMP(StreamingEstimationTransformer):
 
 
 class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
+    __serialize_version = 0
+    __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
+
     def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
                  mlags=10, n_jobs=1, show_progress=True):
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,

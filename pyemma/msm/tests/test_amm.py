@@ -334,8 +334,7 @@ class TestAMMDoubleWell(_tmsm):
     # ----------------------------------
 
     def test_two_state_kinetics(self):
-        #pass
-        self._two_state_kinetics(self.amm, eps=0.01)
+        self._two_state_kinetics(self.amm)
 
     @unittest.skipIf(six.PY2, 'only py3')
     def test_serialize(self):

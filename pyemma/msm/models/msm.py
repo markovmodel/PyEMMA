@@ -25,7 +25,8 @@ and provides them for later access.
 
 """
 
-from __future__ import absolute_import
+
+from pyemma._base.serialization.serialization import SerializableMixIn
 
 from pyemma._base.serialization.serialization import SerializableMixIn
 

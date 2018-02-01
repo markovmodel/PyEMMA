@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import numpy as _np
 import warnings
 
@@ -102,7 +103,6 @@ class Model(object):
             # catch deprecated param values.
             # This is set in utils/__init__.py but it gets overwritten
             # when running under python3 somehow.
-            from pyemma.util.exceptions import PyEMMA_DeprecationWarning
             warnings.simplefilter("always", DeprecationWarning)
             warnings.simplefilter("always", PyEMMA_DeprecationWarning)
             try:

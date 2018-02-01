@@ -77,8 +77,8 @@ class LaggedCovariance(StreamingEstimator):
          Use only every stride-th time step. By default, every time step is used.
      skip : int, optional, default=0
          skip the first initial n frames per trajectory.
-     chunksize : deprecated, default=NoTImplemented
-         The chunk size can be se during estimation.
+     chunksize : deprecated, default=NotImplemented
+         The chunk size can be set during estimation.
 
      """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,

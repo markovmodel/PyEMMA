@@ -20,7 +20,6 @@ Created on 15.10.2013
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 import logging
 from logging.config import dictConfig

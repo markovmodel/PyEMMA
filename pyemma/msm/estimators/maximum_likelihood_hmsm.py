@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-# 
+from six.moves import range
 from pyemma.util.annotators import alias, aliased, fix_docs
 
 import numpy as _np
