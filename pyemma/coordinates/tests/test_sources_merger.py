@@ -17,8 +17,6 @@ class TestSourcesMerger(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         config.coordinates_check_output = False
-        import shutil
-        shutil.rmtree(cls.testdir)
 
     def setUp(self):
         self.readers = []
