@@ -376,9 +376,9 @@ def source(inp, features=None, top=None, chunksize=None, **kw):
 
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, str) or (
+    if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
         reader = create_file_reader(inp, top, features, chunksize=cs, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
@@ -717,7 +717,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, 
         # Do we have what we need?
         if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
-        if not isinstance(top, (str, Topology, Trajectory)):
+        if not isinstance(top, (_string_types, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
                             "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
                             "Got type %s instead" % type(top))

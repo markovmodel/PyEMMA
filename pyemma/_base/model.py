@@ -103,6 +103,7 @@ class Model(object):
             # catch deprecated param values.
             # This is set in utils/__init__.py but it gets overwritten
             # when running under python3 somehow.
+            from pyemma.util.exceptions import PyEMMA_DeprecationWarning
             warnings.simplefilter("always", DeprecationWarning)
             warnings.simplefilter("always", PyEMMA_DeprecationWarning)
             try:
