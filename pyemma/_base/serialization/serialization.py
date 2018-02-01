@@ -213,10 +213,10 @@ class SerializableMixIn(object):
         >>> from pyemma.util.contexts import named_temporary_file
         >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
 
-        >>> with named_temporary_file() as file: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
-        ...    m.save(file, 'simple')
-        ...    inst_restored = pyemma.load(file, 'simple')
-        >>> np.testing.assert_equal(m.P, inst_restored.P)
+        >>> with named_temporary_file() as file: # doctest: +SKIP
+        ...    m.save(file, 'simple') # doctest: +SKIP
+        ...    inst_restored = pyemma.load(file, 'simple') # doctest: +SKIP
+        >>> np.testing.assert_equal(m.P, inst_restored.P) # doctest: +SKIP
         """
         import six
         if six.PY2:
