@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import six
+
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.util import _importable_name
 
@@ -65,7 +65,7 @@ class Modifications(object):
         return self._ops
 
     @staticmethod
-    def apply(modifications: [()], state: dict):
+    def apply(modifications, state):
         """ applies modifications to given state
         Parameters
         ----------
@@ -218,6 +218,9 @@ class SerializableMixIn(object):
         ...    inst_restored = pyemma.load(file, 'simple')
         >>> np.testing.assert_equal(m.P, inst_restored.P)
         """
+        import six
+        if six.PY2:
+            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
         from pyemma._base.serialization.h5file import H5File
         try:
             with H5File(file_name=file_name) as f:
@@ -247,6 +250,9 @@ class SerializableMixIn(object):
         -------
         obj : the de-serialized object
         """
+        import six
+        if six.PY2:
+            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
         from .h5file import H5File
         with H5File(file_name, model_name=model_name, mode='r') as f:
             return f.model
@@ -272,9 +278,7 @@ class SerializableMixIn(object):
 
     def _get_state_of_serializeable_fields(self, klass, state):
         """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
-        res = {}
-        assert all(isinstance(f, str) for f in klass._serialize_fields)
-        for field in klass._serialize_fields:
+        for field in SerializableMixIn._get_serialize_fields(klass):
             # only try to get fields, we actually have.
             if hasattr(self, field):
                 if _debug and field in state:
