@@ -312,10 +312,17 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         elif last_chunk and self.init_strategy == 'kmeans++':
             if self.init_strategy == 'kmeans++' and self.show_progress:
                 callback = lambda: self._progress_update(1, stage=0)
+                context = self._progress_context(stage=0)
             else:
                 callback = None
-            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
-                                                               callback)
+                from contextlib import contextmanager
+                @contextmanager
+                def dummy():
+                    yield
+                context = dummy()
+            with context:
+                self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
+                                                                   callback)
 
     def _collect_data(self, X, first_chunk, last_chunk):
         # beginning - compute
