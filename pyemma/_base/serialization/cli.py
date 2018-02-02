@@ -18,12 +18,16 @@
 
 import sys
 
-from pyemma._base.serialization.h5file import H5File
-
 
 def main(argv=None):
+    import six
+    if six.PY2:
+        print('This tool is only available for Python3.')
+        sys.exit(1)
+
     import argparse
     from pyemma import load
+    from pyemma._base.serialization.h5file import H5File
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', action='store_true', default=False)
@@ -50,7 +54,7 @@ def main(argv=None):
                     models[f][model_name]['input_chain'] = [repr(x) for x in restored._data_flow_chain()]
         except BaseException as e:
             print('{} did not contain a valid PyEMMA model. Error was {err}. '
-                  'If you are sure, that it does, please post an issue on Github'.format(f, err=e), file=sys.stderr)
+                  'If you are sure, that it does, please post an issue on Github'.format(f, err=e))
             if args.verbose:
                 import traceback
                 traceback.print_exc()

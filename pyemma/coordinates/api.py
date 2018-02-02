@@ -205,7 +205,8 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
 
-    if isinstance(trajfiles, str) or (
+    import six
+    if isinstance(trajfiles, six.string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
                  or len(trajfiles) is 0)):
@@ -937,23 +938,6 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_s
 
     See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
     for more theory and references.
-
-    Examples
-    --------
-    Create some input data:
-
-    >>> import numpy as np
-    >>> from pyemma.coordinates import pca
-    >>> data = np.ones((1000, 2))
-    >>> data[0, -1] = 0
-
-    Project all input data on the first principal component:
-
-    >>> pca_obj = pca(data, dim=1)
-    >>> pca_obj.get_output() # doctest: +ELLIPSIS
-    [array([[-0.99900001],
-           [ 0.001     ],
-           [ 0.001     ],...
 
     See also
     --------

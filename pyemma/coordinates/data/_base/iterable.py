@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 import numpy as np
+import six
 
 from pyemma._base.loggable import Loggable
 from pyemma.util.contexts import attribute
 from pyemma.util.types import is_int
 
 
-class Iterable(Loggable, metaclass=ABCMeta):
+class Iterable(six.with_metaclass(ABCMeta, Loggable)):
 
     def __init__(self, chunksize=None):
         super(Iterable, self).__init__()

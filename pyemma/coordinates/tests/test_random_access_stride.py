@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 
 import os
 import tempfile
@@ -468,7 +469,7 @@ class TestRandomAccessStride(TestCase):
         for ext in savable_formats_mdtra_18:
             traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
 
-            from unittest.mock import patch
+            from mock import patch
             # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
             with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
                 r = coor.source(traj, top=get_top())

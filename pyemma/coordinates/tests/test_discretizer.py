@@ -22,6 +22,7 @@ Created on 19.01.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import
 import os
 import tempfile
 import unittest

@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, print_function
 
-import configparser
+from six.moves.configparser import ConfigParser
 import os
 import shutil
 import warnings
@@ -351,7 +352,7 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
-        config = configparser.ConfigParser()
+        config = ConfigParser()
 
         try:
             self._used_filenames = config.read(filenames)

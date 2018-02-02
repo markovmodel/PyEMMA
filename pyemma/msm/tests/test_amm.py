@@ -22,11 +22,13 @@ r"""Unit test for the AMM module
 
 """
 
+from __future__ import absolute_import
 import unittest
 
 import numpy as np
 import warnings
 
+import six
 from msmtools.generation import generate_traj
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
@@ -335,6 +337,7 @@ class TestAMMDoubleWell(_tmsm):
         #pass
         self._two_state_kinetics(self.amm, eps=0.01)
 
+    @unittest.skipIf(six.PY2, 'only py3')
     def test_serialize(self):
         import tempfile
         import pyemma

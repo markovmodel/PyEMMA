@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, print_function
 
 
 import inspect
@@ -328,14 +329,22 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         else:
             callback = None
 
-        def error_callback(*args, **kw):
-            if failfast:
-                raise Exception('something failed')
+        import six
+        if six.PY3:
+            def error_callback(*args, **kw):
+                if failfast:
+                    raise Exception('something failed')
 
-        with pool:
-            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
-                                          error_callback=error_callback) for a in args]
-            res = [x.get() for x in res_async]
+            with pool:
+                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
+                                              error_callback=error_callback) for a in args]
+                res = [x.get() for x in res_async]
+        else:
+            try:
+                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback) for a in args]
+                res = [x.get() for x in res_async]
+            finally:
+                pool.close()
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:

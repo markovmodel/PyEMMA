@@ -20,6 +20,7 @@ Created on 28.01.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import
 
 import os
 import random
@@ -87,11 +88,9 @@ class TestKmeans(unittest.TestCase):
             np.testing.assert_equal(km1.initial_centers_, km2.initial_centers_)
 
             while not km1.converged:
-                km1.estimate(X=X, clustercenters=km1.clustercenters)
-            assert km1.converged
+                km1.estimate(X=X, clustercenters=km1.clustercenters, keep_data=True)
             while not km2.converged:
-                km2.estimate(X=X, clustercenters=km2.clustercenters)
-            assert km2.converged
+                km2.estimate(X=X, clustercenters=km2.clustercenters, keep_data=True)
 
             assert np.linalg.norm(km1.clustercenters - km1.initial_centers_) > 0
             np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,

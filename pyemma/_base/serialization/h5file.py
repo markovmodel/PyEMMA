@@ -36,13 +36,13 @@ class H5File(object):
                          'digest',
                          )
 
-    def __init__(self, file_name: str, model_name=None, mode=None):
+    def __init__(self, file_name, model_name=None, mode=None):
         import h5py
         self._file = h5py.File(file_name, mode=mode)
         self._parent = self._file.require_group('pyemma')
         self._current_model_group = model_name
 
-    def rename(self, old: str, new: str, overwrite=False):
+    def rename(self, old, new, overwrite=False):
         if not old in self._parent:
             raise KeyError('model "{}" not present'.format(old))
 
@@ -54,7 +54,7 @@ class H5File(object):
         del self._parent[old]
         self._current_model_group = new
 
-    def delete(self, name: str):
+    def delete(self, name):
         """ deletes model with given name """
         if name not in self._parent:
             raise KeyError('model "{}" not present'.format(name))
@@ -62,7 +62,7 @@ class H5File(object):
         if self._current_model_group == name:
             self._current_model_group = None
 
-    def select_model(self, name: str):
+    def select_model(self, name):
         """ choose an existing model """
         if name not in self._parent:
             raise KeyError('model "{}" not present'.format(name))
@@ -85,7 +85,7 @@ class H5File(object):
         return self.__group
 
     @_current_model_group.setter
-    def _current_model_group(self, model_name: str):
+    def _current_model_group(self, model_name):
         if model_name is None:
             self.__group = None
         else:
@@ -119,7 +119,7 @@ class H5File(object):
 
         return obj
 
-    def add_serializable(self, name: str, obj, overwrite=False, save_streaming_chain=False):
+    def add_serializable(self, name, obj, overwrite=False, save_streaming_chain=False):
         # create new group with given name and serialize the object in it.
         from pyemma._base.serialization.serialization import SerializableMixIn
         assert isinstance(obj, SerializableMixIn)
@@ -222,7 +222,7 @@ class H5File(object):
         return self._current_model_group.attrs['created_readable']
 
     @created_readable.setter
-    def created_readable(self, value:str):
+    def created_readable(self, value):
         self._current_model_group.attrs['created_readable'] = value
 
     @property
@@ -230,7 +230,7 @@ class H5File(object):
         return self._current_model_group.attrs['class_str']
 
     @class_str.setter
-    def class_str(self, value:str):
+    def class_str(self, value):
         self._current_model_group.attrs['class_str'] = value
 
     @property
@@ -238,7 +238,7 @@ class H5File(object):
         return self._current_model_group.attrs['class_repr']
 
     @class_repr.setter
-    def class_repr(self, value:str):
+    def class_repr(self, value):
         self._current_model_group.attrs['class_repr'] = value
 
     @property
@@ -246,7 +246,7 @@ class H5File(object):
         return self._current_model_group.attrs['saved_streaming_chain']
 
     @save_streaming_chain.setter
-    def save_streaming_chain(self, value:bool):
+    def save_streaming_chain(self, value):
         self._current_model_group.attrs['saved_streaming_chain'] = value
 
     @property
@@ -254,7 +254,7 @@ class H5File(object):
         return self._current_model_group.attrs['pyemma_version']
 
     @pyemma_version.setter
-    def pyemma_version(self, value:str):
+    def pyemma_version(self, value):
         self._current_model_group.attrs['pyemma_version'] = value
 
     def __enter__(self):

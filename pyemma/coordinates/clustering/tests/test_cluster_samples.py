@@ -24,6 +24,7 @@ the retrival via save_trajs
 @author: gph82, clonker
 """
 
+from __future__ import absolute_import
 
 import unittest
 

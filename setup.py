@@ -42,9 +42,9 @@ except ImportError as ie:
     print("PyEMMA requires setuptools. Please install it with conda or pip.")
     sys.exit(1)
 
-if sys.version_info[0] < 3:
-    print('PyEMMA requires Python3k')
-    sys.exit(2)
+#if sys.version_info[0] < 3:
+#    print('PyEMMA requires Python3k')
+#    sys.exit(2)
 
 
 DOCLINES = __doc__.split("\n")

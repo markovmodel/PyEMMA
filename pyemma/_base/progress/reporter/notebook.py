@@ -80,7 +80,7 @@ class my_tqdm_notebook(tqdm_notebook):
 
             # Update description
             if desc:
-                nonlocal description
+                #nonlocal description
                 description.value = desc
 
         return print_status
