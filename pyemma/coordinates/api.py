@@ -231,7 +231,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunksize=None, **kw):
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
     from pyemma.util.reflection import get_default_args
-    cs = _check_old_chunksize_arg(chunksize, get_default_args(pipeline)['chunksize'], **kw)
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(load)['chunksize'], **kw)
     if isinstance(trajfiles, _string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
@@ -369,11 +369,12 @@ def source(inp, features=None, top=None, chunksize=None, **kw):
     """
     from pyemma.coordinates.data._base.iterable import Iterable
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
+
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(source)['chunksize'], **kw)
+
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    from pyemma.util.reflection import get_default_args
-    cs = _check_old_chunksize_arg(chunksize, get_default_args(pipeline)['chunksize'], **kw)
-
     if isinstance(inp, str) or (
             isinstance(inp, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
@@ -624,7 +625,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, image_molecules=False, verbose=True, **kwargs):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, image_molecules=False, verbose=True):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -1009,7 +1010,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunksi
     res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip, stride=stride)
     if data is not None:
         from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_kmeans)['chunksize'], **kwargs)
+        cs = _check_old_chunksize_arg(chunksize, get_default_args(pca)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
     return res
 
@@ -1213,7 +1214,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
     from pyemma.util.reflection import get_default_args
-    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_kmeans)['chunksize'], **kwargs)
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(tica)['chunksize'], **kwargs)
 
     if isinstance(weights, _string_types):
         if weights == "koopman":
