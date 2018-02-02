@@ -1382,12 +1382,11 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
     .. [2] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
         computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
-        """
-
+    """
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
-    if isinstance(weights, str):
+    if isinstance(weights, _string_types):
         if weights== "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
