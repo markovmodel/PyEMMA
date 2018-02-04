@@ -80,7 +80,7 @@ def _check_old_chunksize_arg(chunksize, chunk_size_default, **kw):
     else:
         import warnings
         if is_default:  # case 2.
-            warnings.warn('Passed deprecated argument "chunksize", please use "chunksize"',
+            warnings.warn('Passed deprecated argument "chunk_size", please use "chunksize"',
                           category=_PyEMMA_DeprecationWarning)
             chosen_chunk_size = kw.pop('chunk_size')  # remove this argument to avoid further passing to other funcs.
         else:  # case 3.
