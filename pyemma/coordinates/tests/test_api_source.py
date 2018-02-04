@@ -116,9 +116,9 @@ class TestApiSourceFileReader(unittest.TestCase):
 
     def test_source_set_chunksize(self):
         x = np.zeros(10)
-        r = api.source(x, chunk_size=1)
+        r = api.source(x, chunksize=1)
         assert r.chunksize == 1
-        r2 = api.source(r, chunk_size=2)
+        r2 = api.source(r, chunksize=2)
         assert r2 is r
         assert r2.chunksize == 2
 
