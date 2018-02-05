@@ -273,7 +273,7 @@ class TestVAMPModel(unittest.TestCase):
             vamp_train = pyemma_api_vamp(data=trajs_train, lag=self.lag, dim=1.0)
             score_vamp = vamp_train.score(test_data=trajs_test, score_method=m)
 
-            self.assertAlmostEqual(score_msm, score_vamp, places=3, msg=m)
+            self.assertAlmostEqual(score_msm, score_vamp, places=2 if m == 'VAMPE' else 3, msg=m)
 
 if __name__ == "__main__":
     unittest.main()
