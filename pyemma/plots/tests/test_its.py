@@ -22,6 +22,7 @@ Created on 10.03.2016
 @author: gph82
 '''
 
+from __future__ import absolute_import
 import unittest
 import numpy as np
 

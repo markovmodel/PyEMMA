@@ -24,6 +24,7 @@ the retrival via save_traj
 @author: gph82, clonker
 """
 
+from __future__ import absolute_import
 
 import unittest
 import os

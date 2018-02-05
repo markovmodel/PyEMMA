@@ -22,6 +22,7 @@ Created on 17.02.2014
 
 @author: marscher
 '''
+from __future__ import absolute_import, print_function
 
 import os
 import errno

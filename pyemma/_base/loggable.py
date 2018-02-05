@@ -21,6 +21,7 @@ Created on 30.08.2015
 
 @author: marscher
 '''
+from __future__ import absolute_import
 import logging
 import weakref
 from itertools import count

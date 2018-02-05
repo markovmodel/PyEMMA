@@ -21,7 +21,6 @@ r"""
 PyEMMA - Emma's Markov Model Algorithms
 =======================================
 """
-from __future__ import absolute_import
 
 # set version from versioneer.
 from ._version import get_versions

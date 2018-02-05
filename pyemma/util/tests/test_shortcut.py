@@ -18,6 +18,7 @@
 
 
 
+from __future__ import absolute_import
 from pyemma.util.annotators import shortcut, aliased, alias
 import unittest
 
