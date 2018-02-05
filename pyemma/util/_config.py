@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import, print_function
 
+import six
 from six.moves.configparser import ConfigParser
 import os
 import shutil
@@ -31,6 +32,10 @@ import pkg_resources
 # indicate error during reading
 class ReadConfigException(Exception):
     pass
+
+if six.PY2:
+    class NotADirectoryError(Exception):
+        pass
 
 __all__ = ('Config', )
 
