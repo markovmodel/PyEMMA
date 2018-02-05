@@ -104,7 +104,7 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
             model_params = vamp._model.get_model_params()
             model_params2 = vamp2._model.get_model_params()
 
-            atol = 1e-15
+            atol = 1e-14
 
             for n in model_params.keys():
                 if model_params[n] is not None and model_params2[n] is not None:
@@ -209,13 +209,13 @@ class TestVAMPModel(unittest.TestCase):
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
 
-        for i in range(len(pred)):
+        for i, (est_, pred_) in enumerate(zip(est, pred)):
             msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
             msm_esti = self.p0.T.dot(msm.P).dot(obs)
             msm_pred = self.p0.T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs)
-            np.testing.assert_allclose(pred[i],  msm_pred, atol=self.atol)
-            np.testing.assert_allclose(est[i], msm_esti, atol=self.atol)
-            np.testing.assert_allclose(est[i], pred[i], atol=0.006)
+            np.testing.assert_allclose(pred_,  msm_pred, atol=self.atol)
+            np.testing.assert_allclose(est_, msm_esti, atol=self.atol)
+            np.testing.assert_allclose(est_, pred_, atol=0.006)
 
     def test_CK_covariances_of_singular_functions(self):
         #from pyemma import config
@@ -233,13 +233,13 @@ class TestVAMPModel(unittest.TestCase):
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
 
-        for i in range(len(pred)):
+        for i, (est_, pred_) in enumerate(zip(est, pred)):
             msm = estimate_markov_model(dtrajs=self.dtrajs, lag=self.lag*(i+1), reversible=False)
             msm_esti = (self.p0 * sta).T.dot(msm.P).dot(obs).T
             msm_pred = (self.p0 * sta).T.dot(np.linalg.matrix_power(self.msm.P, (i+1))).dot(obs).T
-            np.testing.assert_allclose(np.diag(pred[i]),  np.diag(msm_pred), atol=self.atol)
-            np.testing.assert_allclose(np.diag(est[i]), np.diag(msm_esti), atol=self.atol)
-            np.testing.assert_allclose(np.diag(est[i]), np.diag(pred[i]), atol=0.006)
+            np.testing.assert_allclose(np.diag(pred_),  np.diag(msm_pred), atol=self.atol)
+            np.testing.assert_allclose(np.diag(est_), np.diag(msm_esti), atol=self.atol)
+            np.testing.assert_allclose(np.diag(est_), np.diag(pred_), atol=0.006)
 
     def test_self_score_with_MSM(self):
         T = self.msm.P
