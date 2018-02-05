@@ -173,8 +173,8 @@ def ensure_dtraj_list(dtrajs):
         if is_list_of_int(dtrajs):
             return [np.array(dtrajs, dtype=int)]
         else:
-            for i in range(len(dtrajs)):
-                dtrajs[i] = ensure_dtraj(dtrajs[i])
+            for i, dtraj in enumerate(dtrajs):
+                dtrajs[i] = ensure_dtraj(dtraj)
             return dtrajs
     else:
         return [ensure_dtraj(dtrajs)]
@@ -478,8 +478,8 @@ def ensure_traj_list(trajs):
             return [np.array(trajs)[:,None]]
         else:
             res = []
-            for i in range(len(trajs)):
-                res.append(ensure_traj(trajs[i]))
+            for traj in trajs:
+                res.append(ensure_traj(traj))
             return res
     else:
         # looks like this is one trajectory

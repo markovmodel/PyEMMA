@@ -299,7 +299,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    if progress_reporter is not None and show_progress:
+    show_progress = progress_reporter is not None and show_progress
+    if show_progress:
         progress_reporter._progress_register(len(estimators), stage=0,
                                              description="estimating %s" % str(estimator.__class__.__name__))
 
@@ -317,7 +318,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         from pathos.multiprocessing import Pool as Parallel
         pool = Parallel(processes=n_jobs)
         args = list(task_iter)
-        if progress_reporter is not None:
+        if show_progress:
             from pyemma._base.model import SampledModel
             for a in args:
                 if isinstance(a[0], SampledModel):
@@ -351,7 +352,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
                                        'you not have a POSIX system', estimator)
         res = []
-        if progress_reporter is not None:
+        if show_progress:
             from pyemma._base.model import SampledModel
             if isinstance(estimator, SampledModel):
                 for e in estimators:
@@ -360,10 +361,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                    evaluate, evaluate_args, failfast, return_exceptions))
-            if progress_reporter is not None and show_progress:
+            if show_progress:
                 progress_reporter._progress_update(1, stage=0)
 
-    if progress_reporter is not None and show_progress:
+    if show_progress:
         progress_reporter._progress_force_finish(0)
 
     # done

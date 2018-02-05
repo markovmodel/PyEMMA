@@ -28,7 +28,6 @@ __all__ = ['alias',
            'deprecated',
            'shortcut',
            'fix_docs',
-           'estimation_required',
            ]
 
 

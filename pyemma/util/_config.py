@@ -172,10 +172,10 @@ class Config(object):
         if not os.path.exists(pyemma_cfg_dir):
             try:
                 mkdir_p(pyemma_cfg_dir)
-            except EnvironmentError:
-                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
             except NotADirectoryError:  # on Python 3
                 raise ConfigDirectoryException("pyemma cfg dir (%s) is not a directory" % pyemma_cfg_dir)
+            except EnvironmentError:
+                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
 
         if not os.path.isdir(pyemma_cfg_dir):
             raise ConfigDirectoryException("%s is no valid directory" % pyemma_cfg_dir)
