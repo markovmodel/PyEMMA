@@ -104,21 +104,23 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
             model_params = vamp._model.get_model_params()
             model_params2 = vamp2._model.get_model_params()
 
-            atol = 1e-14
+            import sys
+            atol = 1e-14 if sys.platform == 'win32' else 1e-15
+            rtol = 1e-6 if sys.platform == 'win32' else 1e-7
 
             for n in model_params.keys():
                 if model_params[n] is not None and model_params2[n] is not None:
-                    np.testing.assert_allclose(model_params[n], model_params2[n], atol=atol)
+                    np.testing.assert_allclose(model_params[n], model_params2[n], rtol=rtol, atol=atol)
 
             vamp2.singular_values # trigger diagonalization
 
             vamp2.right = True
             for t, ref in zip(trajs, phi_trajs):
-                np.testing.assert_allclose(vamp2.transform(t[tau:]), ref, atol=atol)
+                np.testing.assert_allclose(vamp2.transform(t[tau:]), ref, rtol=rtol, atol=atol)
 
             vamp2.right = False
             for t, ref in zip(trajs, psi_trajs):
-                np.testing.assert_allclose(vamp2.transform(t[0:-tau]), ref, atol=atol)
+                np.testing.assert_allclose(vamp2.transform(t[0:-tau]), ref, rtol=rtol, atol=atol)
 
 
 def generate(T, N_steps, s0=0):
