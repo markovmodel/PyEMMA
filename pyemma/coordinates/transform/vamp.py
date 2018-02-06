@@ -672,7 +672,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         where :math:`r_{i}=\langle\psi_{i},f\rangle_{\rho_{0}}` and
         :math:`\boldsymbol{\Sigma}=\mathrm{diag(\boldsymbol{\sigma})}` .
         """
-        return self._model.expectation(statistics, observables, lag_multiple=lag_multiple,
+        return self._model.expectation(observables, statistics, lag_multiple=lag_multiple,
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
@@ -874,7 +874,7 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
             else:
                 return np.zeros((self.observables.shape[1], self.statistics.shape[1])) + np.nan
         else:
-            return model.expectation(self.statistics, self.observables, lag_multiple=mlag,
+            return model.expectation(statistics=self.statistics, observables=self.observables, lag_multiple=mlag,
                                      statistics_mean_free=self.statistics_mean_free,
                                      observables_mean_free=self.observables_mean_free)
 
