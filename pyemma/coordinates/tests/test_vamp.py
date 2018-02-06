@@ -104,9 +104,6 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
             model_params = vamp._model.get_model_params()
             model_params2 = vamp2._model.get_model_params()
 
-            #import sys
-            #atol = 1e-14 if sys.platform == 'win32' else 1e-15
-            #rtol = 1e-6 if sys.platform == 'win32' else 1e-7
             atol = 1e-15
             rtol = 1e-6
 
@@ -122,11 +119,11 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
 
             vamp2.right = True
             for t, ref in zip(trajs, phi_trajs):
-                np.testing.assert_allclose(vamp2.transform(t[tau:]), ref, rtol=rtol, atol=atol)
+                assert_allclose_ignore_phase(vamp2.transform(t[tau:]), ref, rtol=rtol, atol=atol)
 
             vamp2.right = False
             for t, ref in zip(trajs, psi_trajs):
-                np.testing.assert_allclose(vamp2.transform(t[0:-tau]), ref, rtol=rtol, atol=atol)
+                assert_allclose_ignore_phase(vamp2.transform(t[0:-tau]), ref, rtol=rtol, atol=atol)
 
 
 def generate(T, N_steps, s0=0):
@@ -139,12 +136,13 @@ def generate(T, N_steps, s0=0):
     return dtraj
 
 
-def assert_allclose_ignore_phase(A, B, atol):
+def assert_allclose_ignore_phase(A, B, atol, rtol=1e-5):
     A = np.atleast_2d(A)
     B = np.atleast_2d(B)
     assert A.shape == B.shape
     for i in range(B.shape[1]):
-        assert np.allclose(A[:, i], B[:, i], atol=atol) or np.allclose(A[:, i], -B[:, i], atol=atol)
+        assert (np.allclose(A[:, i], B[:, i], atol=atol, rtol=rtol)
+                or np.allclose(A[:, i], -B[:, i], atol=atol, rtol=rtol))
 
 
 class TestVAMPModel(unittest.TestCase):
