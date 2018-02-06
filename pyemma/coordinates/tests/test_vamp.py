@@ -224,9 +224,7 @@ class TestVAMPModel(unittest.TestCase):
             np.testing.assert_allclose(est_, pred_, atol=0.006)
 
     def test_CK_covariances_of_singular_functions(self):
-        #from pyemma import config
-        #config.show_progress_bars = False
-        cktest = self.vamp.cktest(n_observables=2, mlags=4) # auto
+        cktest = self.vamp.cktest(n_observables=2, mlags=4)  # auto
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
         error = np.max(np.abs(np.array(pred) - np.array(est))) / max(np.max(pred), np.max(est))
