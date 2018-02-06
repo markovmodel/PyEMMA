@@ -123,41 +123,37 @@ class VAMPModel(Model, SerializableMixIn):
                                    'transformer has not yet been estimated. Result is only an approximation.'))
                 return self.dim
 
-    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False,
-                    observables_mean_free=False):
+    def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False, statistics_mean_free=False):
         r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
-
-        TODO: this requires some discussion
 
         TODO: add equations
 
         Parameters
         ----------
+        observables : np.ndarray((input_dimension, n_observables))
+            Coefficients that express one or multiple observables in
+            the basis of the input features.
+
         statistics : np.ndarray((input_dimension, n_statistics)), optional
             Coefficients that express one or multiple statistics in
             the basis of the input features.
             This parameter can be None. In that case, this method
             returns the future expectation value of the observable(s).
 
-        observables : np.ndarray((input_dimension, n_observables))
-            Coefficients that express one or multiple observables in
-            the basis of the input features.
-
         lag_multiple : int
             If > 1, extrapolate to a multiple of the estimator's lag
             time by assuming Markovianity of the approximated Koopman
             operator.
 
-        statistics_mean_free : bool, default=False
-            If true, coefficients in statistics refer to the input
-            features with feature means removed.
-            If false, coefficients in statistics refer to the
-            unmodified input features.
-
         observables_mean_free : bool, default=False
             If true, coefficients in observables refer to the input
             features with feature means removed.
             If false, coefficients in observables refer to the
+            unmodified input features.
+        statistics_mean_free : bool, default=False
+            If true, coefficients in statistics refer to the input
+            features with feature means removed.
+            If false, coefficients in statistics refer to the
             unmodified input features.
         """
         # TODO: implement the case lag_multiple=0
@@ -266,9 +262,7 @@ class VAMPModel(Model, SerializableMixIn):
         -------
 
         """
-        # TODO: test me!
         # TODO: implement for TICA too
-        # TODO: check compatibility of models, e.g. equal lag time, equal features?
         if test_model is None:
             test_model = self
         Uk = self.U[:, 0:self.dimension()]
@@ -344,7 +338,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             Use only every stride-th time step. By default, every time step is used.
         skip : int, default=0
             skip the first initial n frames per trajectory.
-
+        ncov_max : int, default=infinity
+            limit the memory usage of the algorithm from [3]_ to an amount that corresponds
+            to ncov_max additional copies of each correlation matrix
 
         References
         ----------
@@ -352,6 +348,8 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             arXiv:1707.04659v1
         .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
             J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+        .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+           computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
         """
         StreamingEstimationTransformer.__init__(self)
 
@@ -457,9 +455,6 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
         return Y.astype(self.output_type())
 
-    def output_type(self):
-        return StreamingEstimationTransformer.output_type(self)
-
     @property
     def singular_values(self):
         r"""Singular values of VAMP (usually denoted :math:`\sigma`)
@@ -516,14 +511,30 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         if self._covar is not None:
             self._covar.show_progress = value
 
-    def expectation(self, statistics, observables, lag_multiple=1, statistics_mean_free=False,
-                    observables_mean_free=False):
+    def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False,
+                    statistics_mean_free=False):
         return self._model.expectation(statistics, observables, lag_multiple=lag_multiple,
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
     def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True,
                iterable=None):
+        """
+
+        Parameters
+        ----------
+        n_observables
+        observables
+        statistics
+        mlags
+        n_jobs
+        show_progress
+        iterable
+
+        Returns
+        -------
+
+        """
         if n_observables is not None:
             if n_observables > self.dimension():
                 warnings.warn('Selected singular functions as observables but dimension '
@@ -571,6 +582,49 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_version = 0
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
+    """
+    
+    Parameters
+    ----------
+    model : Model
+        Model to be tested
+
+    estimator : Estimator
+        Parametrized Estimator that has produced the model
+
+    statistics : np.ndarray((input_dimension, n_statistics)), optional
+        Coefficients that express one or multiple statistics in
+        the basis of the input features.
+        This parameter can be None. In that case, this method
+        returns the future expectation value of the observable(s).
+
+    observables : np.ndarray((input_dimension, n_observables))
+        Coefficients that express one or multiple observables in
+        the basis of the input features.
+
+    mlags : int or int-array, default=10
+        multiples of lag times for testing the Model, e.g. range(10).
+        A single int will trigger a range, i.e. mlags=10 maps to
+        mlags=range(10). The setting None will choose mlags automatically
+        according to the longest available trajectory
+        Note that you need to be able to do a model prediction for each
+        of these lag time multiples, e.g. the value 0 only make sense
+        if _predict_observables(0) will work.
+
+    conf : float, default = 0.95
+        confidence interval for errors
+
+    err_est : bool, default=False
+        if the Estimator is capable of error calculation, will compute
+        errors for each tau estimate. This option can be computationally
+        expensive.
+
+    n_jobs : int, default=1
+        how many jobs to use during calculation
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
+    """
     def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
                  mlags=10, n_jobs=1, show_progress=True):
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,

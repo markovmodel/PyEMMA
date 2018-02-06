@@ -1262,6 +1262,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
 
     Parameters
     ----------
+    data :
     lag : int
         lag time
     dim : float or int
