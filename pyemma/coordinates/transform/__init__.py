@@ -29,6 +29,8 @@ transform - Transformation Utilities (:mod:`pyemma.coordinates.transform`)
     PCA - principal components
     TICA - time independent components
     VAMP - Variational approach for Markov processes
+    VAMPModel - Kinetic model form the Variational approach for Markov processes
+    VAMPChapmanKolmogorovValidator - Chapman Kolmogorov test for the Variational approach for Markov processes
 """
 
 from .pca import *

@@ -57,14 +57,14 @@ class VAMPModel(Model, SerializableMixIn):
 
     @property
     def U(self):
-        "Tranformation matrix that represents the linear map from feature space to the space of left singular functions."
+        "Tranformation matrix that represents the linear map from mean-free feature space to the space of left singular functions."
         if not self._svd_performed:
             self._diagonalize()
         return self._U
 
     @property
     def V(self):
-        "Tranformation matrix that represents the linear map from feature space to the space of right singular functions."
+        "Tranformation matrix that represents the linear map from mean-free feature space to the space of right singular functions."
         if not self._svd_performed:
             self._diagonalize()
         return self._V
@@ -292,12 +292,14 @@ class VAMPModel(Model, SerializableMixIn):
         Parameters
         ----------
         test_model : VAMPModel, optional, default=None
+
             If `test_model` is not None, this method computes the cross-validation score
             between self and `test_model`. It is assumed that self was estimated from
             the "training" data and `test_model` was estimated from the "test" data. The
             score is computed for one realization of self and `test_model`. Estimation
-            of the average cross-validation core and partitioning of data into test and
+            of the average cross-validation score and partitioning of data into test and
             training part is not performed by this method.
+
             If `test_model` is None, this method computes the VAMP score for the model
             contained in self.
 
@@ -314,8 +316,9 @@ class VAMPModel(Model, SerializableMixIn):
 
         Returns
         -------
-        If `test_model` is not None, returns the cross-validation VAMP score between
-        self and `test_model`. Otherwise return the selected VAMP-score of self.
+        score : float
+            If `test_model` is not None, returns the cross-validation VAMP score between
+            self and `test_model`. Otherwise return the selected VAMP-score of self.
 
         References
         ----------
@@ -628,8 +631,8 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         Returns
         -------
         vectors: 2-D ndarray
-        Coefficients that express the right singular functions in the
-        basis of mean-free input features.
+            Coefficients that express the right singular functions in the
+            basis of mean-free input features.
 
         References
         ----------
@@ -649,8 +652,8 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         Returns
         -------
         vectors: 2-D ndarray
-        Coefficients that express the left singular functions in the
-        basis of mean-free input features.
+            Coefficients that express the left singular functions in the
+            basis of mean-free input features.
 
         References
         ----------
@@ -836,7 +839,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
         Returns
         -------
-        vckv : :class:`VAMPChapmanKolmogorovValidator <pyemma.coordinates.transform.vamp.VAMPChapmanKolmogorovValidator>`
+        vckv : :class:`VAMPChapmanKolmogorovValidator <pyemma.coordinates.transform.VAMPChapmanKolmogorovValidator>`
             Contains the estimated and the predicted covarince matrices.
             The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>` with the option `y01=False`.
         """
@@ -878,14 +881,17 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         Parameters
         ----------
         test_data : any data format that `pyemma.coordinates.vamp()` accepts as input
+
             If `test_data` is not None, this method computes the cross-validation score
             between self and a VAMP model estimated from `test_data`. It is assumed that
             self was estimated from the "training" data and `test_data` is the test data.
             The score is computed for one realization of self and `test_data`. Estimation
-            of the average cross-validation core and partitioning of data into test and
+            of the average cross-validation score and partitioning of data into test and
             training part is not performed by this method.
+
             If `test_data` is None, this method computes the VAMP score for the model
             contained in self.
+
             The model that is estimated from `test_data` will inherit all hyperparameters
             from self.
 
@@ -902,9 +908,10 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
         Returns
         -------
-        If `test_data` is not None, returns the cross-validation VAMP score between
-        self and the model estimated from `test_data`. Otherwise return the selected
-        VAMP-score of self.
+        score : float
+            If `test_data` is not None, returns the cross-validation VAMP score between
+            self and the model estimated from `test_data`. Otherwise return the selected
+            VAMP-score of self.
 
         References
         ----------
@@ -927,64 +934,64 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_version = 0
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
-    """
-    Note
-    ----
-    It is recommended that you create this object by calling the 
-    `cktest` method of a VAMP object created with
-    :func:`vamp <pyemma.coordinates.vamp>`.
-    
-    Parameters
-    ----------
-    model : Model
-        Model with the smallest lag time. Is used to make predictions
-        for larger lag times.
-
-    estimator : Estimator
-        Parametrized Estimator that has produced the model.
-        Is used as a prototype for estimating models at higher lag times.
-
-    observables : np.ndarray((input_dimension, n_observables))
-        Coefficients that express one or multiple observables in
-        the basis of the input features.
-
-    statistics : np.ndarray((input_dimension, n_statistics))
-        Coefficients that express one or multiple statistics in
-        the basis of the input features.
-
-    observables_mean_free : bool, default=False
-        If true, coefficients in `observables` refer to the input
-        features with feature means removed.
-        If false, coefficients in `observables` refer to the
-        unmodified input features.
-
-    statistics_mean_free : bool, default=False
-        If true, coefficients in `statistics` refer to the input
-        features with feature means removed.
-        If false, coefficients in `statistics` refer to the
-        unmodified input features.
-
-    mlags : int or int-array, default=10
-        multiples of lag times for testing the Model, e.g. range(10).
-        A single int will trigger a range, i.e. mlags=10 maps to
-        mlags=range(10). 
-        Note that you need to be able to do a model prediction for each
-        of these lag time multiples, e.g. the value 0 only make sense
-        if model.expectation(lag_multiple=0) will work.
-
-        n_jobs : int, default=1
-        how many jobs to use during calculation
-
-    show_progress : bool, default=True
-        Show progressbars for calculation?
-        
-    Notes
-    -----
-    The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>`
-    with the option `y01=False`.
-    """
     def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
                  mlags=10, n_jobs=1, show_progress=True):
+        r"""
+         Note
+         ----
+         It is recommended that you create this object by calling the
+         `cktest` method of a VAMP object created with
+         :func:`vamp <pyemma.coordinates.vamp>`.
+
+         Parameters
+         ----------
+         model : Model
+             Model with the smallest lag time. Is used to make predictions
+             for larger lag times.
+
+         estimator : Estimator
+             Parametrized Estimator that has produced the model.
+             Is used as a prototype for estimating models at higher lag times.
+
+         observables : np.ndarray((input_dimension, n_observables))
+             Coefficients that express one or multiple observables in
+             the basis of the input features.
+
+         statistics : np.ndarray((input_dimension, n_statistics))
+             Coefficients that express one or multiple statistics in
+             the basis of the input features.
+
+         observables_mean_free : bool, default=False
+             If true, coefficients in `observables` refer to the input
+             features with feature means removed.
+             If false, coefficients in `observables` refer to the
+             unmodified input features.
+
+         statistics_mean_free : bool, default=False
+             If true, coefficients in `statistics` refer to the input
+             features with feature means removed.
+             If false, coefficients in `statistics` refer to the
+             unmodified input features.
+
+         mlags : int or int-array, default=10
+             multiples of lag times for testing the Model, e.g. range(10).
+             A single int will trigger a range, i.e. mlags=10 maps to
+             mlags=range(10).
+             Note that you need to be able to do a model prediction for each
+             of these lag time multiples, e.g. the value 0 only make sense
+             if model.expectation(lag_multiple=0) will work.
+
+         n_jobs : int, default=1
+             how many jobs to use during calculation
+
+         show_progress : bool, default=True
+             Show progressbars for calculation?
+
+         Notes
+         -----
+         The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>`
+         with the option `y01=False`.
+         """
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
                                       n_jobs=n_jobs, show_progress=show_progress)
         self.statistics = statistics
