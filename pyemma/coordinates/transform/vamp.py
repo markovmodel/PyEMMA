@@ -57,18 +57,21 @@ class VAMPModel(Model, SerializableMixIn):
 
     @property
     def U(self):
+        "Tranformation matrix that represents the linear map from feature space to the space of left singular functions."
         if not self._svd_performed:
             self._diagonalize()
         return self._U
 
     @property
     def V(self):
+        "Tranformation matrix that represents the linear map from feature space to the space of right singular functions."
         if not self._svd_performed:
             self._diagonalize()
         return self._V
 
     @property
     def singular_values(self):
+        "The singular values of the half-weighted Koopman matrix"
         if not self._svd_performed:
             self._diagonalize()
         return self._singular_values
@@ -126,8 +129,6 @@ class VAMPModel(Model, SerializableMixIn):
     def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False, statistics_mean_free=False):
         r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
 
-        TODO: add equations
-
         Parameters
         ----------
         observables : np.ndarray((input_dimension, n_observables))
@@ -146,15 +147,56 @@ class VAMPModel(Model, SerializableMixIn):
             operator.
 
         observables_mean_free : bool, default=False
-            If true, coefficients in observables refer to the input
+            If true, coefficients in `observables` refer to the input
             features with feature means removed.
-            If false, coefficients in observables refer to the
+            If false, coefficients in `observables` refer to the
             unmodified input features.
+
         statistics_mean_free : bool, default=False
-            If true, coefficients in statistics refer to the input
+            If true, coefficients in `statistics` refer to the input
             features with feature means removed.
-            If false, coefficients in statistics refer to the
+            If false, coefficients in `statistics` refer to the
             unmodified input features.
+
+        Notes
+        -----
+        A "future expectation" of a observable g is the average of g computed
+        over a time window that has the same total length as the input data
+        from which the Koopman operator was estimated but is shifted
+        by lag_multiple*tau time steps into the future (where tau is the lag
+        time).
+
+        It is computed with the equation:
+
+        .. math::
+
+            \mathbb{E}[g]_{\rho_{n}}=\mathbf{q}^{T}\mathbf{P}^{n-1}\mathbf{e}_{1}
+
+        where
+
+        .. math::
+
+            P_{ij}=\sigma_{i}\langle\psi_{i},\phi_{j}\rangle_{\rho_{1}}
+
+        and
+
+        .. math::
+
+            q_{i}=\langle g,\phi_{i}\rangle_{\rho_{1}}
+
+        and :math:`\mathbf{e}_{1}` is the first canonical unit vector.
+
+
+        A model prediction of time-lagged covariances between the
+        observable f and the statistic g at a lag-time of lag_multiple*tau
+        is computed with the equation:
+
+        .. math::
+
+            \mathrm{cov}[g,\,f;n\tau]=\mathbf{q}^{T}\mathbf{P}^{n-1}\boldsymbol{\Sigma}\mathbf{r}
+
+        where :math:`r_{i}=\langle\psi_{i},f\rangle_{\rho_{0}}` and
+        :math:`\boldsymbol{\Sigma}=\mathrm{diag(\boldsymbol{\sigma})}` .
         """
         # TODO: implement the case lag_multiple=0
 
@@ -199,12 +241,17 @@ class VAMPModel(Model, SerializableMixIn):
             return Q.dot(P)[:, 0]
 
     def _diagonalize(self, scaling=None):
-        """ performs SVD on covariance matrices and save left, right singular vectors and values in the model.
+        """Performs SVD on covariance matrices and save left, right singular vectors and values in the model.
 
         Parameters
         ----------
-        scaling: str or None
-
+        scaling : None or string, default=None
+            Scaling to be applied to the VAMP modes upon transformation
+            * None: no scaling will be applied, variance of the singular
+              functions is 1
+            * 'kinetic map' or 'km': singular functions are scaled by
+              singular value. Note that only the left singular functions
+              induce a kinetic map.
         """
 
         L0 = spd_inv_sqrt(self.C00)
@@ -231,8 +278,7 @@ class VAMPModel(Model, SerializableMixIn):
         if scaling is None:
             pass
         elif scaling in ['km', 'kinetic map']:
-            U *= s[np.newaxis, 0:m]  ## TODO: check left/right, ask Hao
-            V *= s[np.newaxis, 0:m]  ## TODO: check left/right, ask Hao
+            U *= s[np.newaxis, 0:m]
         else:
             raise ValueError('unexpected value (%s) of "scaling"' % scaling)
 
@@ -241,26 +287,42 @@ class VAMPModel(Model, SerializableMixIn):
         self._svd_performed = True
 
     def score(self, test_model=None, score_method='VAMP2'):
-        """
+        """Compute the VAMP score for this model or the cross-validation score between self and a second model.
 
         Parameters
         ----------
-        test_model
-        score_method : str, optional, default='VAMP2'
-            Overwrite scoring method to be used if desired. If `None`, the estimators scoring
-            method will be used.
-            Available scores are based on the variational approach for Markov processes [1]_ [2]_ :
+        test_model : VAMPModel, optional, default=None
+            If `test_model` is not None, this method computes the cross-validation score
+            between self and `test_model`. It is assumed that self was estimated from
+            the "training" data and `test_model` was estimated from the "test" data. The
+            score is computed for one realization of self and `test_model`. Estimation
+            of the average cross-validation core and partitioning of data into test and
+            training part is not performed by this method.
+            If `test_model` is None, this method computes the VAMP score for the model
+            contained in self.
 
-            *  'VAMP1'  Sum of singular values of the symmetrized transition matrix [2]_ .
-                        If the MSM is reversible, this is equal to the sum of transition
-                        matrix eigenvalues, also called Rayleigh quotient [1]_ [3]_ .
-            *  'VAMP2'  Sum of squared singular values of the symmetrized transition matrix [2]_ .
-                        If the MSM is reversible, this is equal to the kinetic variance [4]_ .
-            *  'VAMPE'  ...
+        score_method : str, optional, default='VAMP2'
+            Available scores are based on the variational approach for Markov processes [1]_:
+
+            *  'VAMP1'  Sum of singular values of the half-weighted Koopman matrix [1]_ .
+                        If the model is reversible, this is equal to the sum of
+                        Koopman matrix eigenvalues, also called Rayleigh quotient [1]_.
+            *  'VAMP2'  Sum of squared singular values of the half-weighted Koopman matrix [1]_ .
+                        If the model is reversible, this is equal to the kinetic variance [2]_ .
+            *  'VAMPE'  Approximation error of the estimated Koopman operator with respect to
+                        the true Koopman operator up to an additive constant [1]_ .
 
         Returns
         -------
+        If `test_model` is not None, returns the cross-validation VAMP score between
+        self and `test_model`. Otherwise return the selected VAMP-score of self.
 
+        References
+        ----------
+        .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+            arXiv:1707.04659v1
+        .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+            J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
         """
         # TODO: implement for TICA too
         if test_model is None:
@@ -316,9 +378,11 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
               that needs to be explained is greater than the percentage
               specified by dim.
         scaling : None or string
-            Scaling to be applied to the VAMP modes upon transformation
-            * None: no scaling will be applied, variance along the mode is 1
-            * 'kinetic map' or 'km': modes are scaled by singular value
+            Scaling to be applied to the VAMP order parameters upon transformation
+            * None: no scaling will be applied, variance of the order parameters is 1
+            * 'kinetic map' or 'km': order parameters are scaled by singular value
+              Only the left singular functions induce a kinetic map.
+              Therefore scaling='km' is only effective if `right` is False.
         right : boolean
             Whether to compute the right singular functions.
             If right==True, get_output() will return the right singular
@@ -341,6 +405,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         ncov_max : int, default=infinity
             limit the memory usage of the algorithm from [3]_ to an amount that corresponds
             to ncov_max additional copies of each correlation matrix
+
+        Notes
+        -----
 
         References
         ----------
@@ -443,6 +510,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         -------
         Y : ndarray(n,)
             the projected data
+            If `self.right` is True, projection will be on the right singular
+            functions. Otherwise, projection will be on the left singular
+            functions.
         """
         # TODO: in principle get_output should not return data for *all* frames!
         # TODO: implement our own iterators? This would also include random access to be complete...
@@ -457,7 +527,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_values(self):
-        r"""Singular values of VAMP (usually denoted :math:`\sigma`)
+        r"""Singular values of the half-weighted Koopman matrix (usually denoted :math:`\sigma`)
 
         Returns
         -------
@@ -467,31 +537,49 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_vectors_right(self):
-        r"""Right singular vectors V of the VAMP problem, columnwise
+        r"""Tranformation matrix that represents the linear map from feature space to the space of right singular functions.
+
+        Notes
+        -----
+        Right "singular vectors" V of the VAMP problem (equation 13 in [1]_), columnwise
 
         Returns
         -------
-        eigenvectors: 2-D ndarray
+        vectors: 2-D ndarray
         Coefficients that express the right singular functions in the
         basis of mean-free input features.
+
+        References
+        ----------
+        .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+            arXiv:1707.04659v1
         """
         return self._model.V
 
     @property
     def singular_vectors_left(self):
-        r"""Left singular vectors U of the VAMP problem, columnwise
+        r"""Tranformation matrix that represents the linear map from feature space to the space of left singular functions.
+        
+        Notes
+        -----
+        Left "singular vectors" U of the VAMP problem (equation 13 in [1]_), columnwise
 
         Returns
         -------
-        eigenvectors: 2-D ndarray
+        vectors: 2-D ndarray
         Coefficients that express the left singular functions in the
         basis of mean-free input features.
+
+        References
+        ----------
+        .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+            arXiv:1707.04659v1
         """
         return self._model.U
 
     @property
     def cumvar(self):
-        r"""Cumulative sum of the squared and normalized VAMP singular values
+        r"""Cumulative sum of the squared and normalized singular values
 
         Returns
         -------
@@ -513,23 +601,117 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False,
                     statistics_mean_free=False):
+        r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
+
+        Parameters
+        ----------
+        observables : np.ndarray((input_dimension, n_observables))
+            Coefficients that express one or multiple observables in
+            the basis of the input features.
+
+        statistics : np.ndarray((input_dimension, n_statistics)), optional
+            Coefficients that express one or multiple statistics in
+            the basis of the input features.
+            This parameter can be None. In that case, this method
+            returns the future expectation value of the observable(s).
+
+        lag_multiple : int
+            If > 1, extrapolate to a multiple of the estimator's lag
+            time by assuming Markovianity of the approximated Koopman
+            operator.
+
+        observables_mean_free : bool, default=False
+            If true, coefficients in `observables` refer to the input
+            features with feature means removed.
+            If false, coefficients in `observables` refer to the
+            unmodified input features.
+
+        statistics_mean_free : bool, default=False
+            If true, coefficients in `statistics` refer to the input
+            features with feature means removed.
+            If false, coefficients in `statistics` refer to the
+            unmodified input features.
+
+        Notes
+        -----
+        A "future expectation" of a observable g is the average of g computed
+        over a time window that has the same total length as the input data
+        from which the Koopman operator was estimated but is shifted
+        by lag_multiple*tau time steps into the future (where tau is the lag
+        time).
+
+        It is computed with the equation:
+
+        .. math::
+
+            \mathbb{E}[g]_{\rho_{n}}=\mathbf{q}^{T}\mathbf{P}^{n-1}\mathbf{e}_{1}
+
+        where
+
+        .. math::
+
+            P_{ij}=\sigma_{i}\langle\psi_{i},\phi_{j}\rangle_{\rho_{1}}
+
+        and
+
+        .. math::
+
+            q_{i}=\langle g,\phi_{i}\rangle_{\rho_{1}}
+
+        and :math:`\mathbf{e}_{1}` is the first canonical unit vector.
+
+
+        A model prediction of time-lagged covariances between the
+        observable f and the statistic g at a lag-time of lag_multiple*tau
+        is computed with the equation:
+
+        .. math::
+
+            \mathrm{cov}[g,\,f;n\tau]=\mathbf{q}^{T}\mathbf{P}^{n-1}\boldsymbol{\Sigma}\mathbf{r}
+
+        where :math:`r_{i}=\langle\psi_{i},f\rangle_{\rho_{0}}` and
+        :math:`\boldsymbol{\Sigma}=\mathrm{diag(\boldsymbol{\sigma})}` .
+        """
         return self._model.expectation(statistics, observables, lag_multiple=lag_multiple,
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
     def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True,
                iterable=None):
-        """
+        """Do the Chapman-Kolmogorov test by computing predictions for higher lag times and by performing estimations at higher lag times.
 
         Parameters
         ----------
-        n_observables
-        observables
-        statistics
-        mlags
-        n_jobs
-        show_progress
-        iterable
+        n_observables : int, optional, default=None
+            Limit the number of default observables (and of default statistics)
+            to this number.
+            Only used if `observables` are None or `statistics` are None.
+
+        observables : np.ndarray((input_dimension, n_observables)) or 'psi'
+            Coefficients that express one or multiple observables in
+            the basis of the input features.
+            This parameter can be 'psi'. In that case, this the dominant
+            right singular functions of the Koopman operator estimated
+            at the smallest lag time are used as observables.
+
+        statistics : np.ndarray((input_dimension, n_statistics)) or 'phi'
+            Coefficients that express one or multiple statistics in
+            the basis of the input features.
+            This parameter can be 'phi'. In that case, this the dominant
+            left singular functions of the Koopman operator estimated
+            at the smallest lag time are used as statistics.
+
+        mlags : int, default=10
+
+        n_jobs : int, default=1
+
+        show_progress : bool, default=True
+
+        iterable : any data format that `pyemma.coordinates.vamp()` accepts as input, optional
+            It `iterable` is None, the same data source with which VAMP
+            was initialized will be used for all estimation.
+            Otherwise, all estimates (not predictions) from data will be computed
+            from the data contained in `iterable`.
 
         Returns
         -------
@@ -568,6 +750,46 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         return ck
 
     def score(self, test_data=None, score_method='VAMP2'):
+        """Compute the VAMP score for this model or the cross-validation score between self and a second model estimated form different data.
+
+        Parameters
+        ----------
+        test_data : any data format that `pyemma.coordinates.vamp()` accepts as input
+            If `test_data` is not None, this method computes the cross-validation score
+            between self and a VAMP model estimated from `test_data`. It is assumed that
+            self was estimated from the "training" data and `test_data` is the test data.
+            The score is computed for one realization of self and `test_data`. Estimation
+            of the average cross-validation core and partitioning of data into test and
+            training part is not performed by this method.
+            If `test_data` is None, this method computes the VAMP score for the model
+            contained in self.
+            The model that is estimated from `test_data` will inherit all hyperparameters
+            from self.
+
+        score_method : str, optional, default='VAMP2'
+            Available scores are based on the variational approach for Markov processes [1]_:
+
+            *  'VAMP1'  Sum of singular values of the half-weighted Koopman matrix [1]_ .
+                        If the model is reversible, this is equal to the sum of
+                        Koopman matrix eigenvalues, also called Rayleigh quotient [1]_.
+            *  'VAMP2'  Sum of squared singular values of the half-weighted Koopman matrix [1]_ .
+                        If the model is reversible, this is equal to the kinetic variance [2]_ .
+            *  'VAMPE'  Approximation error of the estimated Koopman operator with respect to
+                        the true Koopman operator up to an additive constant [1]_ .
+
+        Returns
+        -------
+        If `test_data` is not None, returns the cross-validation VAMP score between
+        self and the model estimated from `test_data`. Otherwise return the selected
+        VAMP-score of self.
+
+        References
+        ----------
+        .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+            arXiv:1707.04659v1
+        .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+            J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+        """
         from pyemma._ext.sklearn.base import clone as clone_estimator
         est = clone_estimator(self)
 
@@ -583,7 +805,6 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
     """
-    
     Parameters
     ----------
     model : Model
@@ -592,15 +813,27 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     estimator : Estimator
         Parametrized Estimator that has produced the model
 
+    observables : np.ndarray((input_dimension, n_observables))
+        Coefficients that express one or multiple observables in
+        the basis of the input features.
+
     statistics : np.ndarray((input_dimension, n_statistics)), optional
         Coefficients that express one or multiple statistics in
         the basis of the input features.
         This parameter can be None. In that case, this method
         returns the future expectation value of the observable(s).
 
-    observables : np.ndarray((input_dimension, n_observables))
-        Coefficients that express one or multiple observables in
-        the basis of the input features.
+    observables_mean_free : bool, default=False
+        If true, coefficients in `observables` refer to the input
+        features with feature means removed.
+        If false, coefficients in `observables` refer to the
+        unmodified input features.
+
+    statistics_mean_free : bool, default=False
+        If true, coefficients in `statistics` refer to the input
+        features with feature means removed.
+        If false, coefficients in `statistics` refer to the
+        unmodified input features.
 
     mlags : int or int-array, default=10
         multiples of lag times for testing the Model, e.g. range(10).
@@ -610,9 +843,6 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
         Note that you need to be able to do a model prediction for each
         of these lag time multiples, e.g. the value 0 only make sense
         if _predict_observables(0) will work.
-
-    conf : float, default = 0.95
-        confidence interval for errors
 
     err_est : bool, default=False
         if the Estimator is capable of error calculation, will compute
