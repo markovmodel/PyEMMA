@@ -51,6 +51,7 @@ User API
 
    pca
    tica
+   vamp
 
 **Clustering Algorithms**
 
@@ -84,6 +85,7 @@ Find here a documentation how to extract features from them.
 
    transform.PCA
    transform.TICA
+   transform.VAMP
 
 **Covariance estimation**
 

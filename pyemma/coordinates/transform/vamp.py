@@ -34,7 +34,7 @@ from pyemma.util.linalg import mdot
 
 import warnings
 
-__all__ = ['VAMP']
+__all__ = ['VAMP', 'VAMPModel', 'VAMPChapmanKolmogorovValidator']
 
 
 class VAMPModel(Model, SerializableMixIn):
@@ -362,62 +362,144 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                  stride=1, skip=0, ncov_max=float('inf')):
         r""" Variational approach for Markov processes (VAMP) [1]_.
 
-        Parameters
-        ----------
-        lag : int
-            lag time
-        dim : float or int
-            Number of dimensions to keep:
-            * if dim is not set all available ranks are kept:
-                n_components == min(n_samples, n_features)
-            * if dim is an integer >= 1, this number specifies the number
-              of dimensions to keep. By default this will use the kinetic
-              variance.
-            * if dim is a float with ``0 < dim < 1``, select the number
-              of dimensions such that the amount of kinetic variance
-              that needs to be explained is greater than the percentage
-              specified by dim.
-        scaling : None or string
-            Scaling to be applied to the VAMP order parameters upon transformation
-            * None: no scaling will be applied, variance of the order parameters is 1
-            * 'kinetic map' or 'km': order parameters are scaled by singular value
-              Only the left singular functions induce a kinetic map.
-              Therefore scaling='km' is only effective if `right` is False.
-        right : boolean
-            Whether to compute the right singular functions.
-            If right==True, get_output() will return the right singular
-            functions. Otherwise, get_output() will return the left singular
-            functions.
-            Beware that only frames[tau:, :] of each trajectory returned
-            by get_output() contain valid values of the right singular
-            functions. Conversely, only frames[0:-tau, :] of each
-            trajectory returned by get_output() contain valid values of
-            the left singular functions. The remaining frames might
-            possibly be interpreted as some extrapolation.
-        epsilon : float
-            singular value cutoff. Singular values of C0 with norms <= epsilon
-            will be cut off. The remaining number of singular values define
-            the size of the output.
-        stride: int, optional, default = 1
-            Use only every stride-th time step. By default, every time step is used.
-        skip : int, default=0
-            skip the first initial n frames per trajectory.
-        ncov_max : int, default=infinity
-            limit the memory usage of the algorithm from [3]_ to an amount that corresponds
-            to ncov_max additional copies of each correlation matrix
+          Parameters
+          ----------
+          lag : int
+              lag time
+          dim : float or int
+              Number of dimensions to keep:
 
-        Notes
-        -----
+              * if dim is not set all available ranks are kept:
+                  `n_components == min(n_samples, n_features)`
+              * if dim is an integer >= 1, this number specifies the number
+                of dimensions to keep. By default this will use the kinetic
+                variance.
+              * if dim is a float with ``0 < dim < 1``, select the number
+                of dimensions such that the amount of kinetic variance
+                that needs to be explained is greater than the percentage
+                specified by dim.
+          scaling : None or string
+              Scaling to be applied to the VAMP order parameters upon transformation
 
-        References
-        ----------
-        .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
-            arXiv:1707.04659v1
-        .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
-            J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
-        .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
-           computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
-        """
+              * None: no scaling will be applied, variance of the order parameters is 1
+              * 'kinetic map' or 'km': order parameters are scaled by singular value
+                Only the left singular functions induce a kinetic map.
+                Therefore scaling='km' is only effective if `right` is False.
+          right : boolean
+              Whether to compute the right singular functions.
+              If `right==True`, `get_output()` will return the right singular
+              functions. Otherwise, `get_output()` will return the left singular
+              functions.
+              Beware that only `frames[tau:, :]` of each trajectory returned
+              by `get_output()` contain valid values of the right singular
+              functions. Conversely, only `frames[0:-tau, :]` of each
+              trajectory returned by `get_output()` contain valid values of
+              the left singular functions. The remaining frames might
+              possibly be interpreted as some extrapolation.
+          epsilon : float
+              singular value cutoff. Singular values of :math:`C0` with
+              norms <= epsilon will be cut off. The remaining number of
+              singular values define the size of the output.
+          stride: int, optional, default = 1
+              Use only every stride-th time step. By default, every time step is used.
+          skip : int, default=0
+              skip the first initial n frames per trajectory.
+          ncov_max : int, default=infinity
+              limit the memory usage of the algorithm from [3]_ to an amount that corresponds
+              to ncov_max additional copies of each correlation matrix
+
+          Notes
+          -----
+          VAMP is a method for dimensionality reduction of Markov processes.
+
+          The Koopman operator :math:`\mathcal{K}` is an integral operator
+          that describes conditional future expectation values. Let
+          :math:`p(\mathbf{x},\,\mathbf{y})` be the conditional probability
+          density of visiting an infinitesimal phase space volume around
+          point :math:`\mathbf{y}` at time :math:`t+\tau` given that the phase
+          space point :math:`\mathbf{x}` was visited at the earlier time
+          :math:`t`. Then the action of the Koopman operator on a function
+          :math:`f` can be written as follows:
+
+          .. math::
+
+              \mathcal{K}f=\int p(\mathbf{x},\,\mathbf{y})f(\mathbf{y})\,\mathrm{dy}=\mathbb{E}\left[f(\mathbf{x}_{t+\tau}\mid\mathbf{x}_{t}=\mathbf{x})\right]
+
+          The Koopman operator is defined without any reference to an
+          equilibrium distribution. Therefore it is well-defined in
+          situations where the dynamics is irreversible or/and non-stationary
+          such that no equilibrium distribution exists.
+
+          If we approximate :math:`f` by a linear superposition of ansatz
+          functions :math:`\boldsymbol{\chi}` of the conformational
+          degrees of freedom (features), the operator :math:`\mathcal{K}`
+          can be approximated by a (finite-dimensional) matrix :math:`\mathbf{K}`.
+
+          The approximation is computed as follows: From the time-dependent
+          input features :math:`\boldsymbol{\chi}(t)`, we compute the mean
+          :math:`\boldsymbol{\mu}_{0}` (:math:`\boldsymbol{\mu}_{1}`) from
+          all data excluding the last (first) :math:`\tau` steps of every
+          trajectory as follows:
+
+          .. math::
+
+              \boldsymbol{\mu}_{0}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\boldsymbol{\chi}(t)
+              \boldsymbol{\mu}_{1}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\boldsymbol{\chi}(t)
+
+          Next, we compute the instantaneous covariance matrices
+          :math:`\mathbf{C}_{00}` and :math:`\mathbf{C}_{11}` and the
+          time-lagged covariance matrix :math:`\mathbf{C}_{01}` as follows:
+
+          .. math::
+
+              \mathbf{C}_{00}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+              \mathbf{C}_{11}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+              \mathbf{C}_{01}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t+\tau)-\boldsymbol{\mu}_{1}\right]
+
+          The Koopman matrix is then computed as follows:
+
+          .. math::
+
+              \mathbf{K}=\mathbf{C}_{00}^{-1}\mathbf{C}_{01}
+
+          It can be shown [1]_ that the leading singular functions of the
+          half-weighted Koopman matrix
+
+          .. math::
+
+              \bar{\mathbf{K}}:=\mathbf{C}_{00}^{-\frac{1}{2}}\mathbf{C}_{01}\mathbf{C}_{11}^{-\frac{1}{2}}
+
+          encode the best reduced dynamical model for the time series.
+
+          The singular functions can be computed by first performing the
+          singular value decomposition
+
+          .. math::
+
+              \bar{\mathbf{K}}=\mathbf{U}^{\prime}\mathbf{S}\mathbf{V}^{\prime}
+
+          and then mapping the input conformation to the left singular
+          functions :math:`\boldsymbol{\psi}` and right singular
+          functions :math:`\boldsymbol{\phi}` as follows:
+
+          .. math::
+
+              \boldsymbol{\phi}(t):=\mathbf{U}^{\prime\top}\mathbf{C}_{00}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+              \boldsymbol{\psi}(t):=\mathbf{V}^{\prime\top}\mathbf{C}_{11}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+
+          References
+          ----------
+          .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+              arXiv:1707.04659v1
+          .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+              J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+          .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+             computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
+          """
         StreamingEstimationTransformer.__init__(self)
 
         # empty dummy model instance
@@ -676,9 +758,40 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
-    def cktest(self, n_observables=None, observables='psi', statistics='phi', mlags=10, n_jobs=1, show_progress=True,
+    def cktest(self, n_observables=None, observables='phi', statistics='psi', mlags=10, n_jobs=1, show_progress=True,
                iterable=None):
-        """Do the Chapman-Kolmogorov test by computing predictions for higher lag times and by performing estimations at higher lag times.
+        r"""Do the Chapman-Kolmogorov test by computing predictions for higher lag times and by performing estimations at higher lag times.
+
+        Notes
+        -----
+
+        This method computes two sets of time-lagged covariance matrices
+
+        * estimates at higher lag times :
+
+          .. math::
+
+              \left\langle \mathbf{K}(n\tau)g_{i},f_{j}\right\rangle_{\rho_{0}}
+
+          where :math:`\rho_{0}` is the empirical distribution implicitly defined
+          by all data points from time steps 0 to T-tau in all trajectories,
+          :math:`\mathbf{K}(n\tau)` is a rank-reduced Koopman matrix estimated
+          at the lag-time n*tau and g and f are some functions of the data.
+          Rank-reduction of the Koopman matrix is controlled by the `dim`
+          parameter of :func:`vamp <pyemma.coordinates.vamp>`.
+
+        * predictions at higher lag times :
+
+          .. math::
+
+              \left\langle \mathbf{K}^{n}(\tau)g_{i},f_{j}\right\rangle_{\rho_{0}}
+
+          where :math:`\mathbf{K}^{n}` is the n'th power of the rank-reduced
+          Koopman matrix contained in self.
+
+
+        The Champan-Kolmogorov test is to compare the predictions to the
+        estimates.
 
         Parameters
         ----------
@@ -687,25 +800,33 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             to this number.
             Only used if `observables` are None or `statistics` are None.
 
-        observables : np.ndarray((input_dimension, n_observables)) or 'psi'
-            Coefficients that express one or multiple observables in
-            the basis of the input features.
-            This parameter can be 'psi'. In that case, this the dominant
+        observables : np.ndarray((input_dimension, n_observables)) or 'phi'
+            Coefficients that express one or multiple observables :math:`g`
+            in the basis of the input features.
+            This parameter can be 'phi'. In that case, the dominant
             right singular functions of the Koopman operator estimated
-            at the smallest lag time are used as observables.
+            at the smallest lag time are used as default observables.
 
-        statistics : np.ndarray((input_dimension, n_statistics)) or 'phi'
-            Coefficients that express one or multiple statistics in
-            the basis of the input features.
-            This parameter can be 'phi'. In that case, this the dominant
+        statistics : np.ndarray((input_dimension, n_statistics)) or 'psi'
+            Coefficients that express one or multiple statistics :math:`f`
+            in the basis of the input features.
+            This parameter can be 'psi'. In that case, the dominant
             left singular functions of the Koopman operator estimated
-            at the smallest lag time are used as statistics.
+            at the smallest lag time are used as default statistics.
 
-        mlags : int, default=10
+        mlags : int or int-array, default=10
+            multiples of lag times for testing the Model, e.g. range(10).
+            A single int will trigger a range, i.e. mlags=10 maps to
+            mlags=range(10).
+            Note that you need to be able to do a model prediction for each
+            of these lag time multiples, e.g. the value 0 only make sense
+            if model.expectation(lag_multiple=0) will work.
 
         n_jobs : int, default=1
+            how many jobs to use during calculation
 
         show_progress : bool, default=True
+            Show progressbars for calculation?
 
         iterable : any data format that `pyemma.coordinates.vamp()` accepts as input, optional
             It `iterable` is None, the same data source with which VAMP
@@ -715,7 +836,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
         Returns
         -------
-
+        vckv : :class:`VAMPChapmanKolmogorovValidator <pyemma.coordinates.transform.vamp.VAMPChapmanKolmogorovValidator>`
+            Contains the estimated and the predicted covarince matrices.
+            The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>` with the option `y01=False`.
         """
         if n_observables is not None:
             if n_observables > self.dimension():
@@ -725,14 +848,14 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         else:
             n_observables = self.dimension()
 
-        if isinstance(observables, str) and observables == 'psi':
+        if isinstance(observables, str) and observables == 'phi':
             observables = self.singular_vectors_right[:, 0:n_observables]
             observables_mean_free = True
         else:
             ensure_ndarray(observables, ndim=2)
             observables_mean_free = False
 
-        if isinstance(statistics, str) and statistics == 'phi':
+        if isinstance(statistics, str) and statistics == 'psi':
             statistics = self.singular_vectors_left[:, 0:n_observables]
             statistics_mean_free = True
         else:
@@ -805,23 +928,29 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
     """
+    Note
+    ----
+    It is recommended that you create this object by calling the 
+    `cktest` method of a VAMP object created with
+    :func:`vamp <pyemma.coordinates.vamp>`.
+    
     Parameters
     ----------
     model : Model
-        Model to be tested
+        Model with the smallest lag time. Is used to make predictions
+        for larger lag times.
 
     estimator : Estimator
-        Parametrized Estimator that has produced the model
+        Parametrized Estimator that has produced the model.
+        Is used as a prototype for estimating models at higher lag times.
 
     observables : np.ndarray((input_dimension, n_observables))
         Coefficients that express one or multiple observables in
         the basis of the input features.
 
-    statistics : np.ndarray((input_dimension, n_statistics)), optional
+    statistics : np.ndarray((input_dimension, n_statistics))
         Coefficients that express one or multiple statistics in
         the basis of the input features.
-        This parameter can be None. In that case, this method
-        returns the future expectation value of the observable(s).
 
     observables_mean_free : bool, default=False
         If true, coefficients in `observables` refer to the input
@@ -838,22 +967,21 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     mlags : int or int-array, default=10
         multiples of lag times for testing the Model, e.g. range(10).
         A single int will trigger a range, i.e. mlags=10 maps to
-        mlags=range(10). The setting None will choose mlags automatically
-        according to the longest available trajectory
+        mlags=range(10). 
         Note that you need to be able to do a model prediction for each
         of these lag time multiples, e.g. the value 0 only make sense
-        if _predict_observables(0) will work.
+        if model.expectation(lag_multiple=0) will work.
 
-    err_est : bool, default=False
-        if the Estimator is capable of error calculation, will compute
-        errors for each tau estimate. This option can be computationally
-        expensive.
-
-    n_jobs : int, default=1
+        n_jobs : int, default=1
         how many jobs to use during calculation
 
     show_progress : bool, default=True
         Show progressbars for calculation?
+        
+    Notes
+    -----
+    The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>`
+    with the option `y01=False`.
     """
     def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
                  mlags=10, n_jobs=1, show_progress=True):
