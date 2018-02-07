@@ -184,21 +184,26 @@ class TestCoordinatesIterator(unittest.TestCase):
         dim = 10
         data = [np.random.random((np.random.randint(50, 150), dim)) for _ in range(4)]
         tica = tica(data, lag=1)
-        transformed_output = tica.get_output()
         import tempfile
         out = tempfile.mktemp()
         group = '/test'
-        try:
-            tica.write_to_hdf5(out, group=group)
+        def perform(chunksize, stride):
+            try:
+                transformed_output = tica.get_output(chunk=chunksize, stride=stride)
+                tica.write_to_hdf5(out, group=group, chunksize=chunksize, stride=stride)
 
-            import h5py
-            with h5py.File(out) as f:
-                assert len(f[group]) == len(data)
-                for (itraj, actual), desired in zip(f[group].items(), transformed_output):
-                    np.testing.assert_equal(actual, desired)
+                import h5py
+                with h5py.File(out) as f:
+                    assert len(f[group]) == len(data)
+                    for (itraj, actual), desired in zip(f[group].items(), transformed_output):
+                        np.testing.assert_equal(actual, desired, err_msg='failed for cs=%s, stride=%s'
+                                                                         %(chunksize, stride))
+            finally:
+                os.remove(out)
 
-        finally:
-            os.remove(out)
+        for cs in [0, 1, 3, 10, 42, 50]:
+            for s in [1, 2, 3, 10]:
+                perform(cs, s)
 
     def test_invalid_data_in_input_nan(self):
         self.d[0][-1] = np.nan
