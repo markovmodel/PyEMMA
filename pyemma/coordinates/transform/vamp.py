@@ -106,11 +106,11 @@ class VAMPModel(Model, SerializableMixIn):
     def dimension(self):
         """ output dimension """
         if self.dim is None or (isinstance(self.dim, float) and self.dim == 1.0):
-            if hasattr(self, '_singular_values') and self._singular_values is not None:
-                return np.count_nonzero(self._singular_values > self.epsilon)
+            if hasattr(self, '_rank0'):
+                return min(self._rank0, self._rankt)
             else:
-                raise RuntimeError('Requested dimension, but the dimension depends on the singular values and the '
-                                   'transformer has not yet been estimated. Call estimate() before.')
+                raise RuntimeError('Requested dimension, but the dimension depends on the singular values of C00 and C11'
+                                   ' and the transformer has not yet been estimated. Call estimate() before.')
         if isinstance(self.dim, float):
             if hasattr(self, 'cumvar') and self.cumvar is not None:
                 return np.count_nonzero(self.cumvar >= self.dim)
@@ -118,12 +118,12 @@ class VAMPModel(Model, SerializableMixIn):
                 raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                    'transformer has not yet been estimated. Call estimate() before.')
         else:
-            if hasattr(self, '_singular_values') and self._singular_values is not None:
-                return min(np.min(np.count_nonzero(self._singular_values > self.epsilon)), self.dim)
+            if hasattr(self, '_rank0'):
+                return np.min([self._rank0, self._rankt, self.dim])
             else:
                 warnings.warn(
-                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values and the '
-                                   'transformer has not yet been estimated. Result is only an approximation.'))
+                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values of C00 and C11'
+                                   ' and the transformer has not yet been estimated. Result is only an approximation.'))
                 return self.dim
 
     def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False, statistics_mean_free=False):
@@ -254,8 +254,8 @@ class VAMPModel(Model, SerializableMixIn):
               induce a kinetic map.
         """
 
-        L0 = spd_inv_sqrt(self.C00)
-        Lt = spd_inv_sqrt(self.Ctt)
+        L0, self._rank0 = spd_inv_sqrt(self.C00, epsilon=self.epsilon, return_rank=True)
+        Lt, self._rankt = spd_inv_sqrt(self.Ctt, epsilon=self.epsilon, return_rank=True)
         A = L0.T.dot(self.C0t).dot(Lt)
 
         Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
