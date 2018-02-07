@@ -104,8 +104,8 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
             model_params = vamp._model.get_model_params()
             model_params2 = vamp2._model.get_model_params()
 
-            atol = 1e-15
-            rtol = 1e-6
+            atol = 1e-14
+            rtol = 1e-5
 
             for n in model_params.keys():
                 if model_params[n] is not None and model_params2[n] is not None:
