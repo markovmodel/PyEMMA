@@ -51,6 +51,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'vamp',
            'covariance_lagged',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
@@ -375,9 +376,9 @@ def source(inp, features=None, top=None, chunksize=None, **kw):
 
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, str) or (
+    if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
         reader = create_file_reader(inp, top, features, chunksize=cs, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
@@ -716,7 +717,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, 
         # Do we have what we need?
         if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
-        if not isinstance(top, (str, Topology, Trajectory)):
+        if not isinstance(top, (_string_types, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
                             "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
                             "Got type %s instead" % type(top))
@@ -1255,10 +1256,160 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     return res
 
 
-def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('inf'),
+         stride=1, skip=0, chunksize=None):
+    r""" Variational approach for Markov processes (VAMP) [1]_.
+
+      Parameters
+      ----------
+      lag : int
+          lag time
+      dim : float or int
+          Number of dimensions to keep:
+
+          * if dim is not set all available ranks are kept:
+              `n_components == min(n_samples, n_features)`
+          * if dim is an integer >= 1, this number specifies the number
+            of dimensions to keep. By default this will use the kinetic
+            variance.
+          * if dim is a float with ``0 < dim < 1``, select the number
+            of dimensions such that the amount of kinetic variance
+            that needs to be explained is greater than the percentage
+            specified by dim.
+      scaling : None or string
+          Scaling to be applied to the VAMP order parameters upon transformation
+
+          * None: no scaling will be applied, variance of the order parameters is 1
+          * 'kinetic map' or 'km': order parameters are scaled by singular value
+            Only the left singular functions induce a kinetic map.
+            Therefore scaling='km' is only effective if `right` is False.
+      right : boolean
+          Whether to compute the right singular functions.
+          If `right==True`, `get_output()` will return the right singular
+          functions. Otherwise, `get_output()` will return the left singular
+          functions.
+          Beware that only `frames[tau:, :]` of each trajectory returned
+          by `get_output()` contain valid values of the right singular
+          functions. Conversely, only `frames[0:-tau, :]` of each
+          trajectory returned by `get_output()` contain valid values of
+          the left singular functions. The remaining frames might
+          possibly be interpreted as some extrapolation.
+      epsilon : float
+          singular value cutoff. Singular values of :math:`C0` with
+          norms <= epsilon will be cut off. The remaining number of
+          singular values define the size of the output.
+      stride: int, optional, default = 1
+          Use only every stride-th time step. By default, every time step is used.
+      skip : int, default=0
+          skip the first initial n frames per trajectory.
+      ncov_max : int, default=infinity
+          limit the memory usage of the algorithm from [3]_ to an amount that corresponds
+          to ncov_max additional copies of each correlation matrix
+
+      Notes
+      -----
+      VAMP is a method for dimensionality reduction of Markov processes.
+
+      The Koopman operator :math:`\mathcal{K}` is an integral operator
+      that describes conditional future expectation values. Let
+      :math:`p(\mathbf{x},\,\mathbf{y})` be the conditional probability
+      density of visiting an infinitesimal phase space volume around
+      point :math:`\mathbf{y}` at time :math:`t+\tau` given that the phase
+      space point :math:`\mathbf{x}` was visited at the earlier time
+      :math:`t`. Then the action of the Koopman operator on a function
+      :math:`f` can be written as follows:
+
+      .. math::
+
+          \mathcal{K}f=\int p(\mathbf{x},\,\mathbf{y})f(\mathbf{y})\,\mathrm{dy}=\mathbb{E}\left[f(\mathbf{x}_{t+\tau}\mid\mathbf{x}_{t}=\mathbf{x})\right]
+
+      The Koopman operator is defined without any reference to an
+      equilibrium distribution. Therefore it is well-defined in
+      situations where the dynamics is irreversible or/and non-stationary
+      such that no equilibrium distribution exists.
+
+      If we approximate :math:`f` by a linear superposition of ansatz
+      functions :math:`\boldsymbol{\chi}` of the conformational
+      degrees of freedom (features), the operator :math:`\mathcal{K}`
+      can be approximated by a (finite-dimensional) matrix :math:`\mathbf{K}`.
+
+      The approximation is computed as follows: From the time-dependent
+      input features :math:`\boldsymbol{\chi}(t)`, we compute the mean
+      :math:`\boldsymbol{\mu}_{0}` (:math:`\boldsymbol{\mu}_{1}`) from
+      all data excluding the last (first) :math:`\tau` steps of every
+      trajectory as follows:
+
+      .. math::
+
+          \boldsymbol{\mu}_{0}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\boldsymbol{\chi}(t)
+
+          \boldsymbol{\mu}_{1}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\boldsymbol{\chi}(t)
+
+      Next, we compute the instantaneous covariance matrices
+      :math:`\mathbf{C}_{00}` and :math:`\mathbf{C}_{11}` and the
+      time-lagged covariance matrix :math:`\mathbf{C}_{01}` as follows:
+
+      .. math::
+
+          \mathbf{C}_{00}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+          \mathbf{C}_{11}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+          \mathbf{C}_{01}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t+\tau)-\boldsymbol{\mu}_{1}\right]
+
+      The Koopman matrix is then computed as follows:
+
+      .. math::
+
+          \mathbf{K}=\mathbf{C}_{00}^{-1}\mathbf{C}_{01}
+
+      It can be shown [1]_ that the leading singular functions of the
+      half-weighted Koopman matrix
+
+      .. math::
+
+          \bar{\mathbf{K}}:=\mathbf{C}_{00}^{-\frac{1}{2}}\mathbf{C}_{01}\mathbf{C}_{11}^{-\frac{1}{2}}
+
+      encode the best reduced dynamical model for the time series.
+
+      The singular functions can be computed by first performing the
+      singular value decomposition
+
+      .. math::
+
+          \bar{\mathbf{K}}=\mathbf{U}^{\prime}\mathbf{S}\mathbf{V}^{\prime}
+
+      and then mapping the input conformation to the left singular
+      functions :math:`\boldsymbol{\psi}` and right singular
+      functions :math:`\boldsymbol{\phi}` as follows:
+
+      .. math::
+
+          \boldsymbol{\psi}(t):=\mathbf{U}^{\prime\top}\mathbf{C}_{00}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+          \boldsymbol{\phi}(t):=\mathbf{V}^{\prime\top}\mathbf{C}_{11}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+
+      References
+      ----------
+      .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+          arXiv:1707.04659v1
+      .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+          J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+      .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+         computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
     """
-    Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
+    from pyemma.coordinates.transform.vamp import VAMP
+    res = VAMP(lag, dim=dim, scaling=scaling, right=right, skip=skip, ncov_max=ncov_max)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    return res
+
+
+def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None,
+                      ncov_max=float('inf')):
+    r"""Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
     number of time steps and N the number of dimensions, this function can compute lagged covariances like
 
     .. math::
@@ -1306,6 +1457,9 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
         disable chunking at all.
+    ncov_max : int, default=infinity
+        limit the memory usage of the algorithm from [2]_ to an amount that corresponds
+        to ncov_max additional copies of each correlation matrix
 
     Returns
     -------
@@ -1314,17 +1468,17 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 
     .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
-
+    .. [2] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+        computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
     """
-
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
-    if isinstance(weights, str):
+    if isinstance(weights, _string_types):
         if weights== "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
-            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
             koop.estimate(data, chunksize=chunksize)
             weights = koop.weights
         elif weights == "empirical":
@@ -1342,7 +1496,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip)
+                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
     return lc

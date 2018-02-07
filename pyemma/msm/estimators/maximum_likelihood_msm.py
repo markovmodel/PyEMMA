@@ -228,7 +228,7 @@ class _MSMEstimator(_Estimator, _MSM):
         score_method : str
             Overwrite scoring method if desired. If `None`, the estimators scoring
             method will be used. See __init__ for documentation.
-        score_k : str
+        score_k : int or None
             Overwrite scoring rank if desired. If `None`, the estimators scoring
             rank will be used. See __init__ for documentation.
         score_method : str, optional, default='VAMP2'

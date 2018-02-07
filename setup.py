@@ -59,6 +59,7 @@ Natural Language :: English
 Operating System :: MacOS :: MacOS X
 Operating System :: POSIX
 Operating System :: Microsoft :: Windows
+Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
 Topic :: Scientific/Engineering :: Bio-Informatics
 Topic :: Scientific/Engineering :: Chemistry
@@ -66,7 +67,12 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-
+from setup_util import lazy_cythonize
+try:
+    from setuptools import setup, Extension, find_packages
+except ImportError as ie:
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
 
 ###############################################################################
 # Extensions

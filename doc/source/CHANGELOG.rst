@@ -5,7 +5,7 @@ Changelog
 ----------------
 
 As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
-your Python installation to at least version 3.5.
+your Python installation to at least version 3.5 to catch future updates.
 
 **New features**:
 
@@ -13,11 +13,12 @@ your Python installation to at least version 3.5.
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
   a given threshold. #1106
-- coodinates: selection based features allow alignment to a reference structure. #1184
+- coordinates: selection based features allow alignment to a reference structure. #1184
 - coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
 - coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
   extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
 - datasets: added Prinz potential (quadwell). #1226
+- coordinates: added VAMP estimator. #1237
 
 
 - References:

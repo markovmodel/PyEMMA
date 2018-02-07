@@ -77,14 +77,19 @@ class LaggedCovariance(StreamingEstimator):
          Use only every stride-th time step. By default, every time step is used.
      skip : int, optional, default=0
          skip the first initial n frames per trajectory.
-     chunksize : deprecated, default=NoTImplemented
-         The chunk size can be se during estimation.
+     chunksize : deprecated, default=NotImplemented
+         The chunk size should now be set during estimation.
 
      """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
                  chunksize=NotImplemented, ncov_max=float('inf')):
         super(LaggedCovariance, self).__init__()
+        if chunksize is not NotImplemented:
+            import warnings
+            from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+            warnings.warn('passed deprecated argument chunksize to LaggedCovariance. Will be ignored!',
+                          category=PyEMMA_DeprecationWarning)
 
         if (c0t or ctt) and lag == 0:
             raise ValueError("lag must be positive if c0t=True or ctt=True")

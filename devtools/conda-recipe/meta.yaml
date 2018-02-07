@@ -24,7 +24,7 @@ requirements:
     - numpy 1.9.*  # [not (win and (py35 or py36))]
     - numpy 1.9.*  # [win and py35]
     - numpy 1.11.*  # [win and py36]
-    - python >=3
+    - python
     - scipy
     - setuptools
     - gcc # [ not win ]
@@ -42,10 +42,11 @@ requirements:
     - numpy >=1.11,<1.14 # [win and py36]
     - pathos
     - psutil >3.1
-    - python >=3
+    - python
     - pyyaml
     - scipy
     - setuptools
+    - six >=1.10
     - thermotools >=0.2.6
     - tqdm
 

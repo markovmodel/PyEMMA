@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-
+from six.moves import range
 
 import math
 import numpy as np
@@ -81,7 +81,10 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
         self.test_estimator = estimator
 
         # set mlags
-        maxlength = np.max([len(dtraj) for dtraj in estimator.discrete_trajectories_full])
+        try:
+            maxlength = np.max([len(dtraj) for dtraj in estimator.discrete_trajectories_full])
+        except AttributeError:
+            maxlength = np.max(estimator.trajectory_lengths())
         maxmlag = int(math.floor(maxlength / estimator.lag))
         if mlags is None:
             mlags = maxmlag
