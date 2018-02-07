@@ -179,6 +179,27 @@ class TestCoordinatesIterator(unittest.TestCase):
             for a, e in zip(actual, expected):
                 np.testing.assert_allclose(a, e)
 
+    def test_write_h5(self):
+        from pyemma.coordinates import tica
+        dim = 10
+        data = [np.random.random((np.random.randint(50, 150), dim)) for _ in range(4)]
+        tica = tica(data, lag=1)
+        transformed_output = tica.get_output()
+        import tempfile
+        out = tempfile.mktemp()
+        group = '/test'
+        try:
+            tica.write_to_hdf5(out, group=group)
+
+            import h5py
+            with h5py.File(out) as f:
+                assert len(f[group]) == len(data)
+                for (itraj, actual), desired in zip(f[group].items(), transformed_output):
+                    np.testing.assert_equal(actual, desired)
+
+        finally:
+            os.remove(out)
+
     def test_invalid_data_in_input_nan(self):
         self.d[0][-1] = np.nan
         r = DataInMemory(self.d)
