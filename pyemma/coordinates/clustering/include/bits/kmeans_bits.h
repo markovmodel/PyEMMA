@@ -87,10 +87,11 @@ KMeans<dtype>::cluster(const np_array &np_chunk, const np_array &np_centers, int
         }
 #else
         {
+            std::mutex mutex;
+
             std::vector<scoped_thread> threads;
             threads.reserve(static_cast<std::size_t>(n_threads));
 
-            std::mutex mutex;
             std::size_t grainSize = n_frames / n_threads;
 
             auto worker = [&](std::size_t tid, std::size_t begin, std::size_t end, std::mutex& m) {
