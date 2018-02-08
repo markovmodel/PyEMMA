@@ -220,7 +220,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                     first_chunk = False
             self.initial_centers_ = self.clustercenters[:]
 
-            self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
+            self.logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
         else:
             if len(self.clustercenters) != self.n_clusters:
@@ -240,11 +240,11 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                                                             callback)
             if code == 0:
                 self._converged = True
-                self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
+                self.logger.info("Cluster centers converged after %i steps.", iterations + 1)
             else:
-                self._logger.info("Algorithm did not reach convergence criterion"
+                self.logger.info("Algorithm did not reach convergence criterion"
                                   " of %g in %i iterations. Consider increasing max_iter.",
-                                  self.tolerance, self.max_iter)
+                                 self.tolerance, self.max_iter)
         self._finish_estimate()
 
         return self
@@ -272,7 +272,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         total_length = sum(traj_lengths)
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
-            self._logger.info("The number of cluster centers was not specified, "
+            self.logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
         from pyemma.coordinates.data import DataInMemory
         if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
@@ -431,7 +431,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
                 if rel_change <= self.tolerance:
                     self._converged = True
-                    self._logger.info("Cluster centers converged after %i steps.", i_pass + 1)
+                    self.logger.info("Cluster centers converged after %i steps.", i_pass + 1)
                     self._progress_force_finish(stage=1)
                 else:
                     self._progress_update(1, stage=1)
@@ -441,6 +441,6 @@ class MiniBatchKmeansClustering(KmeansClustering):
         self._finish_estimate()
 
         if not self._converged:
-            self._logger.info("Algorithm did not reach convergence criterion"
+            self.logger.info("Algorithm did not reach convergence criterion"
                               " of %g in %i iterations. Consider increasing max_iter.", self.tolerance, self.max_iter)
         return self

@@ -974,31 +974,31 @@ class TestPairwiseInputParser(unittest.TestCase):
                               [0, 2],
                               [0, 3]])
 
-        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat.logger))
 
     def test_one_unique(self):
         # As a list
         group1 = [0, 1, 2]
         dist_list = np.asarray(list(combinations(group1, 2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat.logger))
 
         # As an array
         group1 = np.array([0, 1, 2])
         dist_list = np.asarray(list(combinations(group1, 2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat.logger))
 
     def test_two_uniques(self):
         # As a list
         group1 = [0, 1, 2]
         group2 = [3, 4, 5]
         dist_list = np.asarray(list(product(group1, group2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
         # As an array
         group1 = np.array([0, 1, 2])
         group2 = np.array([3, 4, 5])
         dist_list = np.asarray(list(product(group1, group2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
     def test_two_redundants(self):
         group1 = np.array([0, 1, 2, 0])
@@ -1006,7 +1006,7 @@ class TestPairwiseInputParser(unittest.TestCase):
         dist_list = np.asarray(list(product(np.unique(group1),
                                             np.unique(group2)
                                             )))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
     def test_two_redundants_overlap(self):
         group1 = np.array([0, 1, 2, 0])
@@ -1014,7 +1014,7 @@ class TestPairwiseInputParser(unittest.TestCase):
         dist_list = np.asarray(list(product(np.unique(group1),
                                             np.unique(group2[:-2])
                                             )))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
 
 class TestUtils(unittest.TestCase):

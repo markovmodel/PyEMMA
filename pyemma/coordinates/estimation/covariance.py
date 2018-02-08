@@ -147,7 +147,7 @@ class LaggedCovariance(StreamingEstimator):
                 self.logger.info("adapting storage size")
                 self.nsave = nsave
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
-            self._logger.debug("using %s moments for %i chunks", nsave, n_chunks)
+            self.logger.debug("using %s moments for %i chunks", nsave, n_chunks)
             self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)

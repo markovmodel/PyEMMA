@@ -199,7 +199,7 @@ class PCA(StreamingEstimationTransformer, SerializableMixIn):
         nsave = int(max(math.log(n_chunks, 2), 2))
         # in case we do a one shot estimation, we want to re-initialize running_covar
         if not hasattr(self, '_covar') or not partial_fit:
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self.logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
             self._covar = running_covar(xx=True, xy=False, yy=False,
                                         remove_mean=True, symmetrize=False,
                                         nsave=nsave)
