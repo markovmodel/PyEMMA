@@ -206,15 +206,30 @@ class TestCoordinatesIterator(unittest.TestCase):
                 perform(cs, s)
 
         # test overwrite
-        tica.write_to_hdf5(out, group=group)
-        with self.assertRaises(RuntimeError):
+        try:
             tica.write_to_hdf5(out, group=group)
+            with self.assertRaises(ValueError):
+                tica.write_to_hdf5(out, group=group)
 
-        os.remove(out)
-        tica.write_to_hdf5(out)
-        with self.assertRaises(RuntimeError) as ctx:
+            os.remove(out)
             tica.write_to_hdf5(out)
-        assert 'Refusing to overwrite data' in ctx.exception.args[0]
+            with self.assertRaises(ValueError) as ctx:
+                tica.write_to_hdf5(out)
+            assert 'Refusing to overwrite data' in ctx.exception.args[0]
+
+            os.remove(out)
+            tica.write_to_hdf5(out, group=group)
+            tica.write_to_hdf5(out, group=group, overwrite=True)
+
+            os.remove(out)
+            import h5py
+            with h5py.File(out) as f:
+                f.create_group('empty').create_dataset('0000', shape=(1,1))
+            with self.assertRaises(ValueError):
+                tica.write_to_hdf5(out, group='empty')
+            tica.write_to_hdf5(out, group='empty', overwrite=True)
+        finally:
+            os.remove(out)
 
     def test_invalid_data_in_input_nan(self):
         self.d[0][-1] = np.nan
