@@ -524,7 +524,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                " of input data (%i)" % (self.dim, indim))
 
         if self._logger_is_active(self._loglevel_DEBUG):
-            self._logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
+            self.logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
         self._covar.estimate(iterable, **kw)
@@ -576,9 +576,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
-        self._logger.debug("diagonalize covariance matrices")
+        self.logger.debug("diagonalize covariance matrices")
         self.model._diagonalize(self.scaling)
-        self._logger.debug("finished diagonalization.")
+        self.logger.debug("finished diagonalization.")
         self._estimated = True
 
     def dimension(self):
@@ -645,7 +645,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
     @property
     def singular_vectors_left(self):
         r"""Tranformation matrix that represents the linear map from feature space to the space of left singular functions.
-        
+
         Notes
         -----
         Left "singular vectors" U of the VAMP problem (equation 13 in [1]_), columnwise

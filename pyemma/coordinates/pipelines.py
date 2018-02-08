@@ -20,6 +20,7 @@ from __future__ import absolute_import
 
 from logging import getLogger
 
+from pyemma._base.loggable import Loggable
 from pyemma.coordinates.data._base.datasource import DataSource
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.transformer import StreamingTransformer
@@ -32,10 +33,10 @@ __all__ = ['Discretizer',
 __author__ = 'noe, marscher'
 
 
-class Pipeline(object):
+class Pipeline(Loggable):
     r"""Data processing pipeline."""
 
-    def __init__(self, chain, chunksize=100, param_stride=1):
+    def __init__(self, chain, chunksize=None, param_stride=1):
         r"""Data processing pipeline.
 
         Parameters
@@ -58,9 +59,6 @@ class Pipeline(object):
             self.add_element(e)
 
         self._estimated = False
-
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
-        self._logger = getLogger(name)
 
     @property
     def chunksize(self):
@@ -178,7 +176,7 @@ class Discretizer(Pipeline):
         how many frames shall be processed at once.
     """
 
-    def __init__(self, reader, transform=None, cluster=None, chunksize=100, param_stride=1):
+    def __init__(self, reader, transform=None, cluster=None, chunksize=None, param_stride=1):
         # init with an empty chain and add given transformers afterwards
         Pipeline.__init__(
             self, [], chunksize=chunksize, param_stride=param_stride)
@@ -203,7 +201,7 @@ class Discretizer(Pipeline):
 
         if hasattr(reader, 'featurizer'):  # reader is a FeatureReader
             if reader.featurizer.dimension == 0:
-                self._logger.warning("no features selected!")
+                self.logger.warning("no features selected!")
 
         self.add_element(reader)
 
@@ -218,7 +216,7 @@ class Discretizer(Pipeline):
     def dtrajs(self):
         """ get discrete trajectories """
         if not self._estimated:
-            self._logger.info("not yet parametrized, running now.")
+            self.logger.info("not yet parametrized, running now.")
             self.parametrize()
         return self._chain[-1].dtrajs
 
