@@ -24,3 +24,12 @@ def add_np(doctest_namespace):
         np.set_printoptions(legacy='1.13')
     except TypeError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def filter_warnings():
+    import warnings
+    old_filters = warnings.filters[:]
+    warnings.filterwarnings('ignore', message='You have not selected any features. Returning plain coordinates.')
+    yield
+    warnings.filters = old_filters
