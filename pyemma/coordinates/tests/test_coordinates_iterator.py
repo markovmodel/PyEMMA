@@ -205,6 +205,17 @@ class TestCoordinatesIterator(unittest.TestCase):
             for s in [1, 2, 3, 10]:
                 perform(cs, s)
 
+        # test overwrite
+        tica.write_to_hdf5(out, group=group)
+        with self.assertRaises(RuntimeError):
+            tica.write_to_hdf5(out, group=group)
+
+        os.remove(out)
+        tica.write_to_hdf5(out)
+        with self.assertRaises(RuntimeError) as ctx:
+            tica.write_to_hdf5(out)
+        assert 'Refusing to overwrite data' in ctx.exception.args[0]
+
     def test_invalid_data_in_input_nan(self):
         self.d[0][-1] = np.nan
         r = DataInMemory(self.d)
