@@ -167,7 +167,7 @@ class TestDataInMemory(unittest.TestCase):
     def test_chunksize(self):
         data = np.random.randn(200, 2)
         cs = 100
-        source = pyemma.coordinates.source(data, chunk_size=cs)
+        source = pyemma.coordinates.source(data, chunksize=cs)
         source.chunksize = 100
         for i, ch in source.iterator():
             assert ch.shape[0] <= cs, ch.shape

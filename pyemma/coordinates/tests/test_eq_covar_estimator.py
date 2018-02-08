@@ -21,7 +21,7 @@ class TestEqCovar(unittest.TestCase):
         f = np.load(pkg_resources.resource_filename(__name__, "data/test_data_koopman.npz"))
         trajs = [f[key] for key in f.keys()]
         cls.data = [cls.chi[traj, :] for traj in trajs]
-        cls.source_obj = source(cls.data, chunk_size=200)
+        cls.source_obj = source(cls.data, chunksize=200)
 
         # Lag time:
         cls.tau = 10
