@@ -49,19 +49,23 @@ def _check_serialize(vamp):
         return vamp
     import tempfile
     import pyemma
-    with tempfile.NamedTemporaryFile(delete=False) as ntf:
-        vamp.save(ntf.name)
-        restored = pyemma.load(ntf.name)
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as ntf:
+            vamp.save(ntf.name)
+            restored = pyemma.load(ntf.name)
 
-    np.testing.assert_allclose(restored.model.C00, vamp.model.C00)
-    np.testing.assert_allclose(restored.model.C0t, vamp.model.C0t)
-    np.testing.assert_allclose(restored.model.Ctt, vamp.model.Ctt)
-    np.testing.assert_equal(restored.cumvar, vamp.cumvar)
-    np.testing.assert_equal(restored.singular_values, vamp.singular_values)
-    np.testing.assert_equal(restored.singular_vectors_left, vamp.singular_vectors_left)
-    np.testing.assert_equal(restored.singular_vectors_right, vamp.singular_vectors_right)
-    np.testing.assert_equal(restored.dimension(), vamp.dimension())
-    return restored
+        np.testing.assert_allclose(restored.model.C00, vamp.model.C00)
+        np.testing.assert_allclose(restored.model.C0t, vamp.model.C0t)
+        np.testing.assert_allclose(restored.model.Ctt, vamp.model.Ctt)
+        np.testing.assert_allclose(restored.cumvar, vamp.cumvar)
+        assert_allclose_ignore_phase(restored.singular_values, vamp.singular_values)
+        assert_allclose_ignore_phase(restored.singular_vectors_left, vamp.singular_vectors_left)
+        assert_allclose_ignore_phase(restored.singular_vectors_right, vamp.singular_vectors_right)
+        np.testing.assert_equal(restored.dimension(), vamp.dimension())
+        return restored
+    finally:
+        import os
+        os.remove(ntf.name)
 
 
 class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
@@ -160,7 +164,7 @@ def generate(T, N_steps, s0=0):
     return dtraj
 
 
-def assert_allclose_ignore_phase(A, B, atol, rtol=1e-5):
+def assert_allclose_ignore_phase(A, B, atol=1e-14, rtol=1e-5):
     A = np.atleast_2d(A)
     B = np.atleast_2d(B)
     assert A.shape == B.shape
