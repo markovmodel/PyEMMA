@@ -123,7 +123,7 @@ class TestApiSourceFileReader(unittest.TestCase):
         assert r2.chunksize == 2
 
         # reset to default chunk size.
-        r3 = api.source(r, chunk_size=None)
+        r3 = api.source(r, chunksize=None)
         assert r3.chunksize is not None
 
 

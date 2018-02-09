@@ -19,7 +19,7 @@ your Python installation to at least version 3.5 to catch future updates.
   extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
 - datasets: added Prinz potential (quadwell). #1226
 - coordinates: added VAMP estimator. #1237
-
+- coordinates: added method 'write_to_hdf5' for easy exporting streams to HDF5. #1242
 
 - References:
 

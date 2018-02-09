@@ -27,12 +27,12 @@ requirements:
     - python
     - scipy
     - setuptools
-    - gcc # [ not win ]
+    - toolchain
+
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
     - h5py
-    - libgcc # [linux or osx]
     - matplotlib
     - mdtraj
     - mock # TODO: remove when py3k only.
@@ -59,6 +59,7 @@ test:
   requires:
     - pytest
     - pytest-cov
+    - coverage
    # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
     - pytest-faulthandler # [not win]
     - pytest-xdist

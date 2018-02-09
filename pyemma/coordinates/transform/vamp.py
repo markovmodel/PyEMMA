@@ -39,21 +39,29 @@ __all__ = ['VAMP', 'VAMPModel', 'VAMPChapmanKolmogorovValidator']
 
 class VAMPModel(Model, SerializableMixIn):
     __serialize_version = 0
-    __serialize_fields = ('_U', '_V', '_svd_performed')
+    __serialize_fields = ('_U', '_singular_values', '_V', '_rank0', '_rankt', '_svd_performed')
 
-    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, U, V, singular_values, cumvar, dim, epsilon):
+    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, dim, epsilon, scaling=None):
         self.mean_0 = mean_0
         self.mean_t = mean_t
         self.C00 = C00
         self.Ctt = Ctt
         self.C0t = C0t
         self._svd_performed = False
-        self._U = U
-        self._V = V
-        self._singular_values = singular_values
-        self.cumvar = cumvar
         self.dim = dim
         self.epsilon = epsilon
+        self.scaling = scaling
+
+    @property
+    def scaling(self):
+        """Scaling of projection. Can be None or 'kinetic map', 'km' """
+        return self._scaling
+
+    @scaling.setter
+    def scaling(self, value):
+        if value not in (None, 'km', 'kinetic map'):
+            raise ValueError('unexpected value (%s) of "scaling". Must be one of ("km", "kinetic map", None).' % value)
+        self._scaling = value
 
     @property
     def U(self):
@@ -103,28 +111,38 @@ class VAMPModel(Model, SerializableMixIn):
         self._svd_performed = False
         self._Ctt = val
 
+    @staticmethod
+    def _cumvar(singular_values):
+        cumvar = np.cumsum(singular_values ** 2)
+        cumvar /= cumvar[-1]
+        return cumvar
+
+    @property
+    def cumvar(self):
+        """ cumulative kinetic variance """
+        return VAMPModel._cumvar(self.singular_values)
+
+    @staticmethod
+    def _dimension(rank0, rankt, dim, singular_values):
+        """ output dimension """
+        if dim is None or (isinstance(dim, float) and dim == 1.0):
+            return min(rank0, rankt)
+        if isinstance(dim, float):
+            return np.count_nonzero(VAMPModel._cumvar(singular_values) >= dim)
+        else:
+            return np.min([rank0, rankt, dim])
+
     def dimension(self):
         """ output dimension """
-        if self.dim is None or (isinstance(self.dim, float) and self.dim == 1.0):
-            if hasattr(self, '_rank0'):
-                return min(self._rank0, self._rankt)
-            else:
-                raise RuntimeError('Requested dimension, but the dimension depends on the singular values of C00 and C11'
-                                   ' and the transformer has not yet been estimated. Call estimate() before.')
-        if isinstance(self.dim, float):
-            if hasattr(self, 'cumvar') and self.cumvar is not None:
-                return np.count_nonzero(self.cumvar >= self.dim)
-            else:
-                raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                                   'transformer has not yet been estimated. Call estimate() before.')
-        else:
-            if hasattr(self, '_rank0'):
-                return np.min([self._rank0, self._rankt, self.dim])
-            else:
-                warnings.warn(
-                    RuntimeWarning('Requested dimension, but the dimension depends on the singular values of C00 and C11'
-                                   ' and the transformer has not yet been estimated. Result is only an approximation.'))
+        if self.C00 is None:  # no data yet
+            if isinstance(self.dim, int):  # return user choice
+                warnings.warn('Returning user-input for dimension, since this model has not yet been estimated.')
                 return self.dim
+            raise RuntimeError('Please call set_model_params prior using this method.')
+
+        if not self._svd_performed:
+            self._diagonalize()
+        return self._dimension(self._rank0, self._rankt, self.dim, self.singular_values)
 
     def expectation(self, observables, statistics, lag_multiple=1, observables_mean_free=False, statistics_mean_free=False):
         r"""Compute future expectation of observable or covariance using the approximated Koopman operator.
@@ -240,7 +258,7 @@ class VAMPModel(Model, SerializableMixIn):
             # compute future expectation
             return Q.dot(P)[:, 0]
 
-    def _diagonalize(self, scaling=None):
+    def _diagonalize(self):
         """Performs SVD on covariance matrices and save left, right singular vectors and values in the model.
 
         Parameters
@@ -261,26 +279,18 @@ class VAMPModel(Model, SerializableMixIn):
         Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
         self._singular_values = s
 
-        # compute cumulative variance
-        cumvar = np.cumsum(s ** 2)
-        cumvar /= cumvar[-1]
-        self.cumvar = cumvar
-
         self._L0 = L0
         self._Lt = Lt
 
-        m = self.dimension()
+        # don't pass any values calling this method again!!!
+        m = VAMPModel._dimension(self._rank0, self._rankt, self.dim, self._singular_values)
 
         U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
         V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
 
         # scale vectors
-        if scaling is None:
-            pass
-        elif scaling in ['km', 'kinetic map']:
+        if self.scaling is not None:
             U *= s[np.newaxis, 0:m]
-        else:
-            raise ValueError('unexpected value (%s) of "scaling"' % scaling)
 
         self._U = U
         self._V = V
@@ -357,6 +367,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
     r"""Variational approach for Markov processes (VAMP)"""
 
     __serialize_version = 0
+    __serialize_fields = []
 
     def describe(self):
         return "[VAMP, lag = %i; max. output dim. = %s]" % (self._lag, str(self.dim))
@@ -511,7 +522,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
                         epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
         self._covar = None
-        self._model.update_model_params(dim=dim, epsilon=epsilon)
+        self._model.update_model_params(dim=dim, epsilon=epsilon, scaling=scaling)
 
     def _estimate(self, iterable, **kw):
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
@@ -524,7 +535,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                " of input data (%i)" % (self.dim, indim))
 
         if self._logger_is_active(self._loglevel_DEBUG):
-            self._logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
+            self.logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
         self._covar.estimate(iterable, **kw)
@@ -533,7 +544,10 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                         C00=self._covar.C00_,
                                         C0t=self._covar.C0t_,
                                         Ctt=self._covar.Ctt_)
-        self._diagonalize()
+        self.model._diagonalize()
+        # if the previous estimation was a partial_fit, we might have a running covar object, which we can safely omit now.
+        if '_covar' in self.__serialize_fields:
+            self.__serialize_fields.remove('_covar')
 
         return self._model
 
@@ -569,17 +583,10 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                         C0t=self._covar.C0t_,
                                         Ctt=self._covar.Ctt_)
 
-        # self._used_data = self._covar._used_data
         self._estimated = False
-
+        if '_covar' not in self.__serialize_fields:
+            self.__serialize_fields.append('_covar')
         return self
-
-    def _diagonalize(self):
-        # diagonalize with low rank approximation
-        self._logger.debug("diagonalize covariance matrices")
-        self.model._diagonalize(self.scaling)
-        self._logger.debug("finished diagonalization.")
-        self._estimated = True
 
     def dimension(self):
         return self._model.dimension()
@@ -645,7 +652,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
     @property
     def singular_vectors_left(self):
         r"""Tranformation matrix that represents the linear map from feature space to the space of left singular functions.
-        
+
         Notes
         -----
         Left "singular vectors" U of the VAMP problem (equation 13 in [1]_), columnwise
@@ -866,7 +873,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             ensure_ndarray_or_None(statistics, ndim=2)
             statistics_mean_free = False
 
-        ck = VAMPChapmanKolmogorovValidator(self, self, observables, statistics, observables_mean_free,
+        ck = VAMPChapmanKolmogorovValidator(self.model, self, observables, statistics, observables_mean_free,
                                             statistics_mean_free, mlags=mlags, n_jobs=n_jobs,
                                             show_progress=show_progress)
 

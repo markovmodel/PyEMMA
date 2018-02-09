@@ -194,7 +194,8 @@ class SerializableMixIn(object):
         return map
 
     def save(self, file_name, model_name='default', overwrite=False, save_streaming_chain=False):
-        r"""
+        r""" saves the current state of this object to given file and name.
+
         Parameters
         -----------
         file_name: str

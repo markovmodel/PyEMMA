@@ -61,10 +61,6 @@ class Loggable(object):
             self.__create_logger()
             return self._logger_instance
 
-    @property
-    def _logger(self):
-        return self.logger
-
     def _logger_is_active(self, level):
         """ @param level: int log level (debug=10, info=20, warn=30, error=40, critical=50)"""
         return self.logger.level >= level

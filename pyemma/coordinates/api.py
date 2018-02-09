@@ -80,13 +80,16 @@ def _check_old_chunksize_arg(chunksize, chunk_size_default, **kw):
         chosen_chunk_size = chunksize
     else:
         import warnings
+        from pyemma.util.annotators import get_culprit
+        filename, lineno = get_culprit(3)
         if is_default:  # case 2.
-            warnings.warn('Passed deprecated argument "chunk_size", please use "chunksize"',
-                          category=_PyEMMA_DeprecationWarning)
+            warnings.warn_explicit('Passed deprecated argument "chunk_size", please use "chunksize"',
+                                   category=_PyEMMA_DeprecationWarning, filename=filename, lineno=lineno)
             chosen_chunk_size = kw.pop('chunk_size')  # remove this argument to avoid further passing to other funcs.
         else:  # case 3.
-            warnings.warn('Passed two values for chunk size: "chunk_size" and "chunksize", while the first one'
-                          ' is deprecated. Please use "chunksize" in the future.', category=_PyEMMA_DeprecationWarning)
+            warnings.warn_explicit('Passed two values for chunk size: "chunk_size" and "chunksize", while the first one'
+                                   ' is deprecated. Please use "chunksize" in the future.',
+                                   category=_PyEMMA_DeprecationWarning, filename=filename, lineno=lineno)
             chosen_chunk_size = chunksize
     assert chosen_chunk_size is not NotImplemented
     return chosen_chunk_size
