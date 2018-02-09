@@ -307,5 +307,13 @@ class TestVAMPModel(unittest.TestCase):
 
             self.assertAlmostEqual(score_msm, score_vamp, places=2 if m == 'VAMPE' else 3, msg=m)
 
+    def test_kinetic_map(self):
+        lag = 10
+        self.vamp = pyemma_api_vamp(self.trajs, lag=lag, scaling='km', right=False)
+        transformed = [t[:-lag] for t in self.vamp.get_output()]
+        std = np.std(np.concatenate(transformed), axis=0)
+        np.testing.assert_allclose(std, self.vamp.singular_values[:self.vamp.dimension()], atol=1e-5, rtol=1e-4)
+
+
 if __name__ == "__main__":
     unittest.main()

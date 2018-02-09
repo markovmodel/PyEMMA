@@ -41,7 +41,7 @@ class VAMPModel(Model, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_U', '_singular_values', '_V', '_rank0', '_rankt', '_svd_performed')
 
-    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, dim, epsilon):
+    def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, dim, epsilon, scaling=None):
         self.mean_0 = mean_0
         self.mean_t = mean_t
         self.C00 = C00
@@ -50,6 +50,18 @@ class VAMPModel(Model, SerializableMixIn):
         self._svd_performed = False
         self.dim = dim
         self.epsilon = epsilon
+        self.scaling = scaling
+
+    @property
+    def scaling(self):
+        """Scaling of projection. Can be None or 'kinetic map', 'km' """
+        return self._scaling
+
+    @scaling.setter
+    def scaling(self, value):
+        if value not in (None, 'km', 'kinetic map'):
+            raise ValueError('unexpected value (%s) of "scaling". Must be one of ("km", "kinetic map", None).' % value)
+        self._scaling = value
 
     @property
     def U(self):
@@ -246,7 +258,7 @@ class VAMPModel(Model, SerializableMixIn):
             # compute future expectation
             return Q.dot(P)[:, 0]
 
-    def _diagonalize(self, scaling=None):
+    def _diagonalize(self):
         """Performs SVD on covariance matrices and save left, right singular vectors and values in the model.
 
         Parameters
@@ -277,12 +289,8 @@ class VAMPModel(Model, SerializableMixIn):
         V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
 
         # scale vectors
-        if scaling is None:
-            pass
-        elif scaling in ['km', 'kinetic map']:
+        if self.scaling is not None:
             U *= s[np.newaxis, 0:m]
-        else:
-            raise ValueError('unexpected value (%s) of "scaling"' % scaling)
 
         self._U = U
         self._V = V
@@ -514,7 +522,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
                         epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
         self._covar = None
-        self._model.update_model_params(dim=dim, epsilon=epsilon)
+        self._model.update_model_params(dim=dim, epsilon=epsilon, scaling=scaling)
 
     def _estimate(self, iterable, **kw):
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
