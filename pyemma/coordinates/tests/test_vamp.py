@@ -43,6 +43,27 @@ def random_matrix(n, rank=None, eps=0.01):
     return u.dot(np.diag(s)).dot(v)
 
 
+def _check_serialize(vamp):
+    import six
+    if six.PY2:
+        return vamp
+    import tempfile
+    import pyemma
+    with tempfile.NamedTemporaryFile(delete=False) as ntf:
+        vamp.save(ntf.name)
+        restored = pyemma.load(ntf.name)
+
+    np.testing.assert_allclose(restored.model.C00, vamp.model.C00)
+    np.testing.assert_allclose(restored.model.C0t, vamp.model.C0t)
+    np.testing.assert_allclose(restored.model.Ctt, vamp.model.Ctt)
+    np.testing.assert_equal(restored.cumvar, vamp.cumvar)
+    np.testing.assert_equal(restored.singular_values, vamp.singular_values)
+    np.testing.assert_equal(restored.singular_vectors_left, vamp.singular_vectors_left)
+    np.testing.assert_equal(restored.singular_vectors_right, vamp.singular_vectors_right)
+    np.testing.assert_equal(restored.dimension(), vamp.dimension())
+    return restored
+
+
 class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
     def test_full_rank(self):
         self.do_test(20, 20, test_partial_fit=True)
@@ -70,36 +91,39 @@ class TestVAMPEstimatorSelfConsistency(unittest.TestCase):
         tau = 50
         vamp = pyemma_api_vamp(trajs, lag=tau, scaling=None)
         vamp.right = True
+        _check_serialize(vamp)
 
         assert vamp.dimension() <= rank
 
         atol = np.finfo(vamp.output_type()).eps*10.0
+        rtol = np.finfo(vamp.output_type()).resolution
         phi_trajs = [ sf[tau:, :] for sf in vamp.get_output() ]
         phi = np.concatenate(phi_trajs)
         mean_right = phi.sum(axis=0) / phi.shape[0]
         cov_right = phi.T.dot(phi) / phi.shape[0]
-        np.testing.assert_allclose(mean_right, 0.0, atol=atol)
-        np.testing.assert_allclose(cov_right, np.eye(vamp.dimension()), atol=atol)
+        np.testing.assert_allclose(mean_right, 0.0, rtol=rtol, atol=atol)
+        np.testing.assert_allclose(cov_right, np.eye(vamp.dimension()), rtol=rtol, atol=atol)
 
         vamp.right = False
         psi_trajs = [ sf[0:-tau, :] for sf in vamp.get_output() ]
         psi = np.concatenate(psi_trajs)
         mean_left = psi.sum(axis=0) / psi.shape[0]
         cov_left = psi.T.dot(psi) / psi.shape[0]
-        np.testing.assert_allclose(mean_left, 0.0, atol=atol)
-        np.testing.assert_allclose(cov_left, np.eye(vamp.dimension()), atol=atol)
+        np.testing.assert_allclose(mean_left, 0.0, rtol=rtol, atol=atol)
+        np.testing.assert_allclose(cov_left, np.eye(vamp.dimension()), rtol=rtol, atol=atol)
 
         # compute correlation between left and right
         assert phi.shape[0]==psi.shape[0]
         C01_psi_phi = psi.T.dot(phi) / phi.shape[0]
         n = max(C01_psi_phi.shape)
         C01_psi_phi = C01_psi_phi[0:n,:][:, 0:n]
-        np.testing.assert_allclose(C01_psi_phi, np.diag(vamp.singular_values[0:vamp.dimension()]), atol=atol)
+        np.testing.assert_allclose(C01_psi_phi, np.diag(vamp.singular_values[0:vamp.dimension()]), rtol=rtol, atol=atol)
 
         if test_partial_fit:
             vamp2 = pyemma_api_vamp(lag=tau, scaling=None)
             for t in trajs:
                 vamp2.partial_fit(t)
+                vamp2 = _check_serialize(vamp2)
 
             model_params = vamp._model.get_model_params()
             model_params2 = vamp2._model.get_model_params()

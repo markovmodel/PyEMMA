@@ -21,6 +21,7 @@ import numpy as np
 import numbers
 from math import log
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
@@ -33,7 +34,10 @@ __all__ = ['LaggedCovariance']
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator):
+class LaggedCovariance(StreamingEstimator, SerializableMixIn):
+    __serialize_version = 0
+    __serialize_fields = []
+
     r"""Compute lagged covariances between time series.
 
      Parameters
@@ -105,7 +109,6 @@ class LaggedCovariance(StreamingEstimator):
                         weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
 
         self._rc = None
-        self._used_data = 0
 
     @property
     def weights(self):
@@ -223,7 +226,11 @@ class LaggedCovariance(StreamingEstimator):
                 pg.update(1, stage=0)
 
         if partial_fit:
-            self._used_data += len(it)
+            if '_rc' not in self.__serialize_fields:
+                self.__serialize_fields.append('_rc')
+        else:
+            if '_rc' in self.__serialize_fields:
+                self.__serialize_fields.remove('_rc')
 
     def partial_fit(self, X):
         """ incrementally update the estimates

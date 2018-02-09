@@ -249,7 +249,6 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
                                         cov=self._covar.C00_,
                                         cov_tau=self._covar.C0t_)
 
-        self._used_data = self._covar._used_data
         self._estimated = False
 
         return self
@@ -272,7 +271,6 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
         self._model.update_model_params(mean=covar.mean,
                                         cov=covar.C00_,
                                         cov_tau=covar.C0t_)
-        self._used_data = covar._used_data
         self._diagonalize()
 
         return self._model
