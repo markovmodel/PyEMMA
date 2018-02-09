@@ -865,7 +865,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             ensure_ndarray_or_None(statistics, ndim=2)
             statistics_mean_free = False
 
-        ck = VAMPChapmanKolmogorovValidator(self, self, observables, statistics, observables_mean_free,
+        ck = VAMPChapmanKolmogorovValidator(self.model, self, observables, statistics, observables_mean_free,
                                             statistics_mean_free, mlags=mlags, n_jobs=n_jobs,
                                             show_progress=show_progress)
 
