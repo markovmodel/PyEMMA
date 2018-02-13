@@ -41,6 +41,10 @@ class VAMPModel(Model, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_U', '_singular_values', '_V', '_rank0', '_rankt', '_svd_performed')
 
+    def __init__(self, mean_0=None, mean_t=None, C00=None, Ctt=None, C0t=None, dim=None, epsilon=1e-6, scaling=None):
+        self.set_model_params(mean_0=mean_0, mean_t=mean_t, C00=C00, Ctt=Ctt, C0t=C0t,
+                              dim=dim, epsilon=epsilon, scaling=scaling)
+
     def set_model_params(self, mean_0, mean_t, C00, Ctt, C0t, dim, epsilon, scaling=None):
         self.mean_0 = mean_0
         self.mean_t = mean_t
