@@ -103,6 +103,15 @@ class TestCoordinatesIterator(unittest.TestCase):
             it.chunksize = cs[i]
             assert it.chunksize == cs[i]
 
+    def test_chunksize_max_memory(self):
+        from pyemma.util.contexts import settings
+        data = np.random.random((10000, 10))
+        max_size = 1024
+        with settings(default_chunksize=str(max_size)):
+            r = DataInMemory(data)
+            for itraj, x in r.iterator():
+                self.assertLessEqual(x.nbytes, max_size)
+
     def test_last_chunk(self):
         r = DataInMemory(self.d)
         it = r.iterator(chunk=0)
