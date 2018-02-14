@@ -9,6 +9,7 @@ Quick fix release to repair chunking in the coordinates package.
 **Fixes**:
 
 - coordinates: fixed handling of default chunksize. #1247
+- base: updated pybind to 2.2.2. #
 
 
 2.5 (02-09-2018)
