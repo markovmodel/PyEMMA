@@ -8,8 +8,9 @@ Quick fix release to repair chunking in the coordinates package.
 
 **Fixes**:
 
+- msm: fix bug in ImpliedTimescales, which happened when an estimation failed for a given lag time. #1248
 - coordinates: fixed handling of default chunksize. #1247
-- base: updated pybind to 2.2.2. #
+- base: updated pybind to 2.2.2. #1249
 
 
 2.5 (02-09-2018)
