@@ -219,7 +219,7 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
                 return pformat(errors)
             if good.size == 0:
                 raise RuntimeError('Estimation has failed at ALL lagtimes. Details:\n{}'.format(_format_failed_models()))
-            if bad:
+            if bad.size > 0:
                 self.logger.warning('Estimation has failed at lagtimes: {lags}. Details:\n{details}'
                                     .format(lags=self._lags[bad], details=_format_failed_models()))
                 models = list(np.array(models)[good])
