@@ -35,6 +35,12 @@ class my_tqdm_notebook(tqdm_notebook):
         from IPython.core.display import display
         display(container)
 
+        # HTML encoding
+        try:  # Py3
+            from html import escape
+        except ImportError:  # Py2
+            from cgi import escape
+
         def print_status(s='', close=False, bar_style=None, desc=None):
             # Note: contrary to native tqdm, s='' does NOT clear bar
             # goal is to keep all infos if error happens so user knows
@@ -60,7 +66,6 @@ class my_tqdm_notebook(tqdm_notebook):
             # Print stats
             if s:  # never clear the bar (signal: s='')
                 s = s.replace('||', '')  # remove inesthetical pipes
-                from html import escape
                 s = escape(s)  # html escape special characters (like '?')
                 ptext.value = s
 
