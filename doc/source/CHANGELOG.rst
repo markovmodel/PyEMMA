@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.5.1 (02-14-2018)
+------------------
+
+Quick fix release to repair chunking in the coordinates package.
+
+**Fixes**:
+
+- coordinates: fixed handling of default chunksize. #1247
+
+
 2.5 (02-09-2018)
 ----------------
 
