@@ -634,7 +634,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_vectors_right(self):
-        r"""Tranformation matrix that represents the linear map from feature space to the space of right singular functions.
+        r"""Transformation matrix that represents the linear map from feature space to the space of right singular functions.
 
         Notes
         -----
@@ -655,7 +655,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_vectors_left(self):
-        r"""Tranformation matrix that represents the linear map from feature space to the space of left singular functions.
+        r"""Transformation matrix that represents the linear map from feature space to the space of left singular functions.
 
         Notes
         -----
