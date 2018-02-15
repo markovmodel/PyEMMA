@@ -314,6 +314,10 @@ class TestVAMPModel(unittest.TestCase):
         std = np.std(np.concatenate(transformed), axis=0)
         np.testing.assert_allclose(std, self.vamp.singular_values[:self.vamp.dimension()], atol=1e-4, rtol=1e-4)
 
+    def test_default_cs(self):
+        v = pyemma_api_vamp(chunksize=None)
+        assert v.default_chunksize == v._FALLBACK_CHUNKSIZE
+
 
 if __name__ == "__main__":
     unittest.main()

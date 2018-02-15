@@ -174,7 +174,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
     def describe(self):
         try:
             dim = self.dimension()
-        except AttributeError:
+        except RuntimeError:
             dim = self.dim
         return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
@@ -265,9 +265,11 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
 
         if self._logger_is_active(self._loglevel_DEBUG):
             self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                               " with dimension (%i, %i)", self._lag, indim, indim)
-
-        covar.estimate(iterable, **kw)
+                              " with dimension (%i, %i)", self._lag, indim, indim)
+        #chunksize = kw.pop('chunksize', self.chunksize)
+        #self.logger.debug('tica cs=%s', chunksize)
+        assert 'chunksize' not in kw
+        covar.estimate(iterable, chunksize=self.chunksize, **kw) #chunksize=chunksize, **kw)
         self._model.update_model_params(mean=covar.mean,
                                         cov=covar.C00_,
                                         cov_tau=covar.C0t_)

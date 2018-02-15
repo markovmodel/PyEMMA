@@ -230,5 +230,18 @@ class TestPCAExtensive(unittest.TestCase):
         y2 = t.get_output()
         np.testing.assert_allclose(y2[0], y)
 
+    def test_api_cs(self):
+        p = pca(chunksize=1, dim=10)
+        assert p.chunksize == 1
+
+        # in case, we do not have a fixed dimension, pca can not calculate a proper chunksize.
+        p = pca(chunksize=None)
+        assert p.chunksize == p._FALLBACK_CHUNKSIZE
+
+        p = pca(chunksize=None, dim=10)
+        assert p.chunksize != 0
+        assert p.chunksize != p._FALLBACK_CHUNKSIZE
+
+
 if __name__ == "__main__":
     unittest.main()

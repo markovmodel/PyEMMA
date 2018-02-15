@@ -1012,10 +1012,12 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunksi
         warnings.warn("provided mean ignored", DeprecationWarning)
 
     res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(pca)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(pca)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
@@ -1256,6 +1258,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
                weights=weights, reversible=reversible, ncov_max=ncov_max)
     if data is not None:
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
@@ -1406,6 +1410,8 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     res = VAMP(lag, dim=dim, scaling=scaling, right=right, skip=skip, ncov_max=ncov_max)
     if data is not None:
         res.estimate(data, stride=stride, chunksize=chunksize)
+    else:
+        res.chunksize = chunksize
     return res
 
 
@@ -1502,6 +1508,8 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
                           weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
+    else:
+        lc.chunksize = chunksize
     return lc
 
 
@@ -1552,10 +1560,12 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
                                     batch_size=batch_size, n_jobs=n_jobs, skip=skip, clustercenters=clustercenters)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_mini_batch_kmeans)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_mini_batch_kmeans)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = chunksize
     return res
 
 
@@ -1687,10 +1697,12 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
                            init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip,
                            keep_data=keep_data, clustercenters=clustercenters, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_kmeans)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_kmeans)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
@@ -1764,10 +1776,12 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
     res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_uniform_time)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_uniform_time)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
@@ -1863,10 +1877,12 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
     res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric,
                                   n_jobs=n_jobs, stride=stride, skip=skip)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_regspace)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_regspace)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
@@ -1952,11 +1968,13 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
     res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(assign_to_centers)['chunksize'], **kwargs)
     if data is not None:
-        from pyemma.util.reflection import get_default_args
-        cs = _check_old_chunksize_arg(chunksize, get_default_args(assign_to_centers)['chunksize'], **kwargs)
         res.estimate(data, chunksize=cs)
         if return_dtrajs:
             return res.dtrajs
+    else:
+        res.chunksize = cs
 
     return res

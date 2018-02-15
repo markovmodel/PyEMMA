@@ -188,7 +188,11 @@ class TestTICA_Basic(unittest.TestCase):
         np.testing.assert_allclose(y2[0], y)
 
     def test_commute_map(self):
-        tica(list(range(100)), commute_map=True, kinetic_map=False)
+        tica(np.arange(100), commute_map=True, kinetic_map=False)
+
+    def test_default_cs(self):
+        t = tica(chunksize=None)
+        assert t.default_chunksize == t.chunksize == t._FALLBACK_CHUNKSIZE
 
 
 class TestTICAExtensive(unittest.TestCase):
