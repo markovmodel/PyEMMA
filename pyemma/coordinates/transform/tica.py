@@ -234,7 +234,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
         The projection matrix is first being calculated upon its first access.
         """
         from pyemma.coordinates import source
-        iterable = source(X)
+        iterable = source(X, chunksize=self.chunksize)
 
         indim = iterable.dimension()
         if not self.dim <= indim:
@@ -266,10 +266,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
         if self._logger_is_active(self._loglevel_DEBUG):
             self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                               " with dimension (%i, %i)", self._lag, indim, indim)
-        #chunksize = kw.pop('chunksize', self.chunksize)
-        #self.logger.debug('tica cs=%s', chunksize)
-        assert 'chunksize' not in kw
-        covar.estimate(iterable, chunksize=self.chunksize, **kw) #chunksize=chunksize, **kw)
+        covar.estimate(iterable, chunksize=self.chunksize, **kw)
         self._model.update_model_params(mean=covar.mean,
                                         cov=covar.C00_,
                                         cov_tau=covar.C0t_)
