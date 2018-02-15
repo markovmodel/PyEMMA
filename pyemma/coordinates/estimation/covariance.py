@@ -174,7 +174,7 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
         self.logger.debug("will use %s total frames for %s",
                           iterable.trajectory_lengths(self.stride, skip=self.skip), self.name)
 
-        chunksize = 0 if partial_fit else iterable.chunksize
+        chunksize = 0 if partial_fit else self.chunksize
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip,
                                chunk=chunksize)
         # iterator over input weights
