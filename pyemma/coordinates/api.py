@@ -1271,14 +1271,13 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
       ----------
       lag : int
           lag time
-      dim : float or int
+      dim : float or int, default=None
           Number of dimensions to keep:
 
-          * if dim is not set all available ranks are kept:
+          * if dim is not set (None) all available ranks are kept:
               `n_components == min(n_samples, n_features)`
           * if dim is an integer >= 1, this number specifies the number
-            of dimensions to keep. By default this will use the kinetic
-            variance.
+            of dimensions to keep.
           * if dim is a float with ``0 < dim < 1``, select the number
             of dimensions such that the amount of kinetic variance
             that needs to be explained is greater than the percentage
