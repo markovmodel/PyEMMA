@@ -384,14 +384,13 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
           ----------
           lag : int
               lag time
-          dim : float or int
+          dim : float or int, default=None
               Number of dimensions to keep:
 
-              * if dim is not set all available ranks are kept:
+              * if dim is not set (None) all available ranks are kept:
                   `n_components == min(n_samples, n_features)`
               * if dim is an integer >= 1, this number specifies the number
-                of dimensions to keep. By default this will use the kinetic
-                variance.
+                of dimensions to keep.
               * if dim is a float with ``0 < dim < 1``, select the number
                 of dimensions such that the amount of kinetic variance
                 that needs to be explained is greater than the percentage
@@ -634,7 +633,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_vectors_right(self):
-        r"""Tranformation matrix that represents the linear map from feature space to the space of right singular functions.
+        r"""Transformation matrix that represents the linear map from feature space to the space of right singular functions.
 
         Notes
         -----
@@ -655,7 +654,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
     @property
     def singular_vectors_left(self):
-        r"""Tranformation matrix that represents the linear map from feature space to the space of left singular functions.
+        r"""Transformation matrix that represents the linear map from feature space to the space of left singular functions.
 
         Notes
         -----

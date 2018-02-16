@@ -62,6 +62,19 @@ class TestCoordinatesIterator(unittest.TestCase):
                                                 "returned for stride=%s, lag=%s" % (stride, lag))
                 assert chunks == it.n_chunks
 
+        dd = [np.random.random((100, 3)), np.random.random((120, 3)), np.random.random((120, 3))]
+        rr = DataInMemory(dd)
+
+        # test for lagged iterator
+        for stride in range(1, 5):
+            for lag in [x for x in range(0, 18)] + [50, 100]:
+                it = rr.iterator(lag=lag, chunk=30, stride=stride, return_trajindex=False)
+                chunks = sum(1 for _ in it)
+                np.testing.assert_equal(it.n_chunks, chunks,
+                                        err_msg="Expected number of chunks did not agree with what the iterator "
+                                                "returned for stride=%s, lag=%s" % (stride, lag))
+                assert chunks == it.n_chunks
+
     def _count_chunks(self, it):
         with it:
             it.reset()

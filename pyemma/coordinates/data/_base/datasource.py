@@ -222,7 +222,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             n = self.ntraj
         return n
 
-    def trajectory_length(self, itraj, stride=1, skip=None):
+    def trajectory_length(self, itraj, stride=1, skip=0):
         r"""Returns the length of trajectory of the requested index.
 
         Parameters
@@ -246,7 +246,10 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
         else:
-            return (self._lengths[itraj] - (0 if skip is None else skip) - 1) // int(stride) + 1
+            skip = 0 if skip is None else skip
+            res = (self._lengths[itraj] - skip - 1) // int(stride) + 1
+            assert res >= 0
+            return res
 
     def n_chunks(self, chunksize, stride=1, skip=0):
         """ how many chunks an iterator of this sourcde will output, starting (eg. after calling reset())
@@ -658,6 +661,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.__init_stride(stride)
         self._pos = 0
         self._last_chunk_in_traj = False
+        if not isinstance(stride, np.ndarray) and skip > 0:
+            # skip over the trajectories that are smaller than skip
+            while self.state.itraj < self._data_source.ntraj \
+                    and self._data_source.trajectory_length(self.state.itraj, self.stride, 0) <= skip:
+                self.state.itraj += 1
         super(DataSourceIterator, self).__init__()
 
     def __init_stride(self, stride):
