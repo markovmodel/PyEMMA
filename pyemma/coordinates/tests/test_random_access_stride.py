@@ -474,10 +474,12 @@ class TestRandomAccessStride(TestCase):
             with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
                 r = coor.source(traj, top=get_top())
                 it = r.iterator(stride=1000, chunk=100000)
+                next(it)
                 assert it._mditer.is_ra_iter
 
                 out_ra = r.get_output(stride=1000, chunk=10000)
             it = r.iterator(stride=1)
+            next(it)
             assert not it._mditer.is_ra_iter
             out = r.get_output(stride=1000)
             np.testing.assert_equal(out_ra, out)
@@ -485,9 +487,11 @@ class TestRandomAccessStride(TestCase):
             # check max stride exceeding
             from pyemma.coordinates.util.patches import iterload
             it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA+1)
+            next(it)
             assert it._mditer.is_ra_iter
 
             it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA)
+            next(it)
             assert not it._mditer.is_ra_iter
 
 if __name__ == '__main__':

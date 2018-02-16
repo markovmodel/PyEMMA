@@ -75,7 +75,7 @@ class iterload(object):
     MEMORY_CUTOFF = int(128 * 1024**2) # 128 MB
     MAX_STRIDE_SWITCH_TO_RA = 20
 
-    def __init__(self, filename, chunk=1000, **kwargs):
+    def __init__(self, filename, trajlen, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
 
         This may be more memory efficient than loading an entire trajectory at
@@ -120,13 +120,13 @@ class iterload(object):
         <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
 
         """
+        self._trajlen = trajlen
         self._filename = filename
         self._stride = kwargs.pop('stride', 1)
         self._atom_indices = cast_indices(kwargs.pop('atom_indices', None))
         self._top = kwargs.pop('top', None)
         self._skip = kwargs.pop('skip', 0)
         self._kwargs = kwargs
-        self._chunksize = chunk
         self._extension = _get_extension(self._filename)
         self._closed = False
         self._seeked = False
@@ -139,6 +139,9 @@ class iterload(object):
             raise Exception("Not supported as trajectory format {ext}".format(ext=self._extension))
 
         self._mode = None
+        self._offsets = kwargs.pop('offsets', None)
+
+        self.chunksize = chunk
 
         if self._atom_indices is not None:
             n_atoms = len(self._atom_indices)
@@ -165,9 +168,17 @@ class iterload(object):
             )(self._filename)
 
             # offset array handling
-            offsets = kwargs.pop('offsets', None)
+            offsets = self._offsets
             if hasattr(self._f, 'offsets') and offsets is not None:
                 self._f.offsets = offsets
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, value):
+        self._chunksize = min(value, self._trajlen)
 
     @property
     def skip(self):
