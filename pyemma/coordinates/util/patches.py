@@ -75,6 +75,8 @@ class iterload(object):
     MEMORY_CUTOFF = int(128 * 1024**2) # 128 MB
     MAX_STRIDE_SWITCH_TO_RA = 20
 
+    _DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION = True
+
     def __init__(self, filename, trajlen, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
 
@@ -148,9 +150,10 @@ class iterload(object):
         else:
             n_atoms = self._topology.n_atoms
 
-        if (self.is_ra_iter or
+        # temporarily(?) disable RA mode, test_lagged_iterator_optimized fails otherwise
+        if self.is_ra_iter or (not self._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION and (self.is_ra_iter or
                     self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
-                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
+                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF))):
             self._mode = 'random_access'
             self._f = (lambda x:
                        md_open(x, n_atoms=self._topology.n_atoms)
