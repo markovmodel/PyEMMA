@@ -304,6 +304,43 @@ class TestCoordinatesIterator(unittest.TestCase):
                     np.testing.assert_array_almost_equal(X, xyzs[itraj][:trajectory_length-lagtime])
                     np.testing.assert_array_almost_equal(Y, xyzs[itraj][lagtime:])
 
+    def test_lagged_iterator_optimized(self):
+        import pyemma.coordinates as coor
+        from pyemma.coordinates.tests.util import create_traj, get_top
+        from pyemma.coordinates.util.patches import iterload
+
+        trajectory_length = 4720
+        lagtime = 20
+        n_trajs = 15
+        stride = iterload.MAX_STRIDE_SWITCH_TO_RA + 1
+
+        top = get_top()
+        trajs_data = [create_traj(top=top, length=trajectory_length) for _ in range(n_trajs)]
+        trajs = [t[0] for t in trajs_data]
+        xyzs = [t[1].reshape(-1, 9)[::stride] for t in trajs_data]
+        xyzs_lagged = [t[1].reshape(-1, 9)[lagtime::stride] for t in trajs_data]
+
+        reader = coor.source(trajs, stride=stride, top=top, chunksize=5000)
+
+        memory_cutoff = iterload.MEMORY_CUTOFF
+        try:
+            iterload.MEMORY_CUTOFF = 8
+            it = reader.iterator(stride=stride, lag=lagtime, chunk=5000, return_trajindex=True)
+            with it:
+                curr_itraj = 0
+                t = 0
+                for itraj, X, Y in it:
+                    if itraj != curr_itraj:
+                        curr_itraj = itraj
+                        t = 0
+                    np.testing.assert_equal(X.shape, Y.shape)
+                    l = len(X)
+                    np.testing.assert_array_almost_equal(X, xyzs[itraj][t:t+l])
+                    np.testing.assert_array_almost_equal(Y, xyzs_lagged[itraj][t:t+l])
+                    t += l
+        finally:
+            iterload.MEMORY_CUTOFF = memory_cutoff
+
 
 if __name__ == '__main__':
     unittest.main()

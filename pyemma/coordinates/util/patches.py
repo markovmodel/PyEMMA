@@ -148,7 +148,7 @@ class iterload(object):
         else:
             n_atoms = self._topology.n_atoms
 
-        # temporarily(?) disable RA mode
+        # temporarily(?) disable RA mode, test_lagged_iterator_optimized fails otherwise
         if self.is_ra_iter and (self.is_ra_iter or
                     self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
                 (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
