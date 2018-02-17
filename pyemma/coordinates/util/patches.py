@@ -148,7 +148,8 @@ class iterload(object):
         else:
             n_atoms = self._topology.n_atoms
 
-        if (self.is_ra_iter or
+        # temporarily(?) disable RA mode
+        if self.is_ra_iter and (self.is_ra_iter or
                     self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
                 (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
             self._mode = 'random_access'

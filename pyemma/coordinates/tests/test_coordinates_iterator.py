@@ -1,12 +1,13 @@
+import tempfile
 import unittest
+import shutil
+import os
+from glob import glob
 import numpy as np
 
 from pyemma.coordinates.data import DataInMemory
 from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
-import os
-from glob import glob
-
 
 
 class TestCoordinatesIterator(unittest.TestCase):
@@ -14,6 +15,12 @@ class TestCoordinatesIterator(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.d = [np.random.random((100, 3)) for _ in range(3)]
+
+    def setUp(self):
+        self.tempdir = tempfile.mktemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir, ignore_errors=True)
 
     def test_current_trajindex(self):
         r = DataInMemory(self.d)
@@ -272,6 +279,31 @@ class TestCoordinatesIterator(unittest.TestCase):
             with self.assertRaises(InvalidDataInStreamException) as cm:
                 for itraj, X in it:
                     pass
+
+    def test_lagged_iterator(self):
+        import pyemma.coordinates as coor
+        from pyemma.coordinates.tests.util import create_traj, get_top
+
+        trajectory_length = 4720
+        lagtime = 1000
+        n_trajs = 15
+
+        top = get_top()
+        trajs_data = [create_traj(top=top, length=trajectory_length) for _ in range(n_trajs)]
+        trajs = [t[0] for t in trajs_data]
+        xyzs = [t[1].reshape(-1, 9) for t in trajs_data]
+
+        reader = coor.source(trajs, top=top, chunksize=5000)
+
+        for chunk in [None, 0, trajectory_length, trajectory_length+1, trajectory_length+1000]:
+            it = reader.iterator(lag=lagtime, chunk=chunk, return_trajindex=True)
+            with it:
+                for itraj, X, Y in it:
+                    np.testing.assert_equal(X.shape, Y.shape)
+                    np.testing.assert_equal(X.shape[0], trajectory_length - lagtime)
+                    np.testing.assert_array_almost_equal(X, xyzs[itraj][:trajectory_length-lagtime])
+                    np.testing.assert_array_almost_equal(Y, xyzs[itraj][lagtime:])
+
 
 if __name__ == '__main__':
     unittest.main()
