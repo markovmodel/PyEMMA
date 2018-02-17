@@ -96,7 +96,7 @@ function install_pyemma {
     packages="pyemma numpy"
     if [ ! minimal ]; then
         # add optional packages.
-        packages="$packages notebook ipython"
+        packages="$packages notebook ipython ipywidgets"
     fi
     # we add numpy here to get the openblas variant (instead of MKL).
     echo "creating pyemma environment..."
