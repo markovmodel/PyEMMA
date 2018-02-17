@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.5.1 (02-14-2018)
+2.5.1 (02-17-2018)
 ------------------
 
 Quick fix release to repair chunking in the coordinates package.
@@ -9,7 +9,7 @@ Quick fix release to repair chunking in the coordinates package.
 **Fixes**:
 
 - msm: fix bug in ImpliedTimescales, which happened when an estimation failed for a given lag time. #1248
-- coordinates: fixed handling of default chunksize. #1247, #1251
+- coordinates: fixed handling of default chunksize. #1247, #1251, #1252
 - base: updated pybind to 2.2.2. #1249
 
 
