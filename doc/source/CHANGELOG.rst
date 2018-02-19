@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.5.2 (??-??-????)
+------------------
+
+**Fixes**:
+
+- msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
+
+
 2.5.1 (02-17-2018)
 ------------------
 
