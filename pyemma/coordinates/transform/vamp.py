@@ -278,6 +278,7 @@ class VAMPModel(Model, SerializableMixIn):
 
         L0, self._rank0 = spd_inv_sqrt(self.C00, epsilon=self.epsilon, return_rank=True)
         Lt, self._rankt = spd_inv_sqrt(self.Ctt, epsilon=self.epsilon, return_rank=True)
+        # TODO: rethink this. Why is A still living in the full-rank space?
         A = L0.T.dot(self.C0t).dot(Lt)
 
         Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
@@ -519,18 +520,84 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
              computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
           """
         StreamingEstimationTransformer.__init__(self)
-
-        # empty dummy model instance
-        self._model = VAMPModel()
         self.set_params(lag=lag, dim=dim, scaling=scaling, right=right,
                         epsilon=epsilon, stride=stride, skip=skip, ncov_max=ncov_max)
-        self._covar = None
-        self._model.update_model_params(dim=dim, epsilon=epsilon, scaling=scaling)
+
+    @property
+    def dim(self):
+        """ Number of dimensions to keep
+
+        * if dim is not set (None) all available ranks are kept:
+          `n_components == min(n_samples, n_features)`
+        * if dim is an integer >= 1, this number specifies the number
+        of dimensions to keep.
+        * if dim is a float with ``0 < dim < 1``, select the number
+        of dimensions such that the amount of kinetic variance
+        that needs to be explained is greater than the percentage
+        specified by dim.
+        """
+        return self.model.dim
+
+    @dim.setter
+    def dim(self, value):
+        self.model.dim = value
+
+    @property
+    def epsilon(self):
+        """singular value cutoff.
+
+        Singular values of :math:`C0` with norms <= epsilon will be cut off. The remaining number of
+        singular values define the size of the output.
+        """
+        return self.model.epsilon
+
+    @epsilon.setter
+    def epsilon(self, value):
+        self.model.epsilon = value
+
+    @property
+    def scaling(self):
+        """Scaling to be applied to the VAMP order parameters upon transformation
+
+        * None: no scaling will be applied, variance of the order parameters is 1
+        * 'kinetic map' or 'km': order parameters are scaled by singular value
+        Only the left singular functions induce a kinetic map.
+        Therefore scaling='km' is only effective if `right` is False.
+        """
+        return self.model.scaling
+
+    @scaling.setter
+    def scaling(self, value):
+        self.model.scaling = value
+
+    def _init_covar(self, partial=False):
+        # in case of partial, we need to store the state of running covar in this estimator.
+        args = dict(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
+                    lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
+                    ncov_max=self.ncov_max)
+        if partial:
+            if not hasattr(self, '_covar') or self._covar is None:
+                self._covar = LaggedCovariance(**args)
+                # remember running covar for serialization
+                assert '_covar' not in self.__serialize_fields
+                self.__serialize_fields.append('_covar')
+            return self._covar
+        elif not partial:
+            # if the previous estimation was a partial_fit, we might have a running covar object,
+            # which we can safely omit now.
+            if '_covar' in self.__serialize_fields:
+                self.__serialize_fields.remove('_covar')
+            return LaggedCovariance(**args)
+
+    @property
+    def model(self):
+        # this should ensure we always have a model, in case this estimator is used in sklearn-like fashion.
+        if not hasattr(self, '_model'):
+            self._model = VAMPModel()
+        return self._model
 
     def _estimate(self, iterable, **kw):
-        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
-                                       lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
-                                       ncov_max=self.ncov_max)
+        covar = self._init_covar()
         indim = iterable.dimension()
 
         if isinstance(self.dim, int) and not self.dim <= indim:
@@ -539,20 +606,16 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
         if self._logger_is_active(self._loglevel_DEBUG):
             self.logger.debug("Running VAMP with tau=%i; Estimating two covariance matrices"
-                               " with dimension (%i, %i)" % (self._lag, indim, indim))
+                              " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        self._covar.estimate(iterable, **kw)
-        self._model.update_model_params(mean_0=self._covar.mean,
-                                        mean_t=self._covar.mean_tau,
-                                        C00=self._covar.C00_,
-                                        C0t=self._covar.C0t_,
-                                        Ctt=self._covar.Ctt_)
+        covar.estimate(iterable, **kw)
+        self.model.update_model_params(mean_0=covar.mean,
+                                       mean_t=covar.mean_tau,
+                                       C00=covar.C00_,
+                                       C0t=covar.C0t_,
+                                       Ctt=covar.Ctt_)
         self.model._diagonalize()
-        # if the previous estimation was a partial_fit, we might have a running covar object, which we can safely omit now.
-        if '_covar' in self.__serialize_fields:
-            self.__serialize_fields.remove('_covar')
-
-        return self._model
+        return self.model
 
     def partial_fit(self, X):
         """ incrementally update the covariances and mean.
@@ -575,24 +638,20 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                 raise RuntimeError("requested more output dimensions (%i) than dimension"
                                    " of input data (%i)" % (self.dim, indim))
 
-        if self._covar is None:
-            self._covar = LaggedCovariance(c00=True, c0t=True, ctt=True, remove_data_mean=True, reversible=False,
-                                           lag=self.lag, bessel=False, stride=self.stride, skip=self.skip, weights=None,
-                                           ncov_max=self.ncov_max)
+        self._covar = self._init_covar(partial=True)
         self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean_0=self._covar.mean,  # TODO: inefficient, fixme
+        self.model.update_model_params(mean_0=self._covar.mean,  # TODO: inefficient, fixme
                                         mean_t=self._covar.mean_tau,
                                         C00=self._covar.C00_,
                                         C0t=self._covar.C0t_,
                                         Ctt=self._covar.Ctt_)
 
         self._estimated = False
-        if '_covar' not in self.__serialize_fields:
-            self.__serialize_fields.append('_covar')
-        return self
+        return self.model
 
     def dimension(self):
-        return self._model.dimension()
+        """real output dimension after low-rank approximation."""
+        return self.model.dimension()
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant singular functions.
@@ -629,7 +688,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         -------
         singular values: 1-D np.array
         """
-        return self._model.singular_values
+        return self.model.singular_values
 
     @property
     def singular_vectors_right(self):
@@ -650,7 +709,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
             arXiv:1707.04659v1
         """
-        return self._model.V
+        return self.model.V
 
     @property
     def singular_vectors_left(self):
@@ -671,7 +730,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
             arXiv:1707.04659v1
         """
-        return self._model.U
+        return self.model.U
 
     @property
     def cumvar(self):
@@ -681,7 +740,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         -------
         cumvar: 1D np.array
         """
-        return self._model.cumvar
+        return self.model.cumvar
 
     @property
     def show_progress(self):
@@ -768,7 +827,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         where :math:`r_{i}=\langle\psi_{i},f\rangle_{\rho_{0}}` and
         :math:`\boldsymbol{\Sigma}=\mathrm{diag(\boldsymbol{\sigma})}` .
         """
-        return self._model.expectation(observables, statistics, lag_multiple=lag_multiple,
+        return self.model.expectation(observables, statistics, lag_multiple=lag_multiple,
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
@@ -933,7 +992,8 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
         """
         from pyemma._ext.sklearn.base import clone as clone_estimator
         est = clone_estimator(self)
-
+        # clone does not invoke our constructor, so we have explicitly create a new model instance.
+        est._model = VAMPModel()
         if test_data is None:
             return self.model.score(None, score_method=score_method)
         else:
