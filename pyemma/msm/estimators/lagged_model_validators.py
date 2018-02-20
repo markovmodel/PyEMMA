@@ -22,7 +22,7 @@ from six.moves import range
 import math
 import numpy as np
 
-from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.serialization import SerializableMixIn, Modifications
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
 from pyemma._base.progress import ProgressReporterMixin
@@ -68,24 +68,27 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
         Show progressbars for calculation?
 
     """
-    __serialize_version = 0
-    __serialize_fields = ('test_model', 'test_estimator', '_lags',
-                         '_pred', '_pred_L', '_pred_R',
-                         '_est', '_est_L', '_est_R')
+    __serialize_version = 1
+    __serialize_fields = ('_lags',
+                          '_pred', '_pred_L', '_pred_R',
+                          '_est', '_est_L', '_est_R')
+    __serialize_modifications_map = {0: Modifications().mv('model', 'test_model') \
+                                                       .mv('estimator', 'test_estimator').list(),
+                                     }
 
-    def __init__(self, model, estimator, mlags=None, conf=0.95, err_est=False,
+    def __init__(self, test_model, test_estimator, mlags=None, conf=0.95, err_est=False,
                  n_jobs=1, show_progress=True):
 
         # set model and estimator
-        self.test_model = model
-        self.test_estimator = estimator
+        self.test_model = test_model
+        self.test_estimator = test_estimator
 
         # set mlags
         try:
-            maxlength = np.max([len(dtraj) for dtraj in estimator.discrete_trajectories_full])
+            maxlength = np.max([len(dtraj) for dtraj in test_estimator.discrete_trajectories_full])
         except AttributeError:
-            maxlength = np.max(estimator.trajectory_lengths())
-        maxmlag = int(math.floor(maxlength / estimator.lag))
+            maxlength = np.max(test_estimator.trajectory_lengths())
+        maxmlag = int(math.floor(maxlength / test_estimator.lag))
         if mlags is None:
             mlags = maxmlag
         if types.is_int(mlags):
@@ -310,9 +313,9 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
     __serialize_version = 0
 
-    def __init__(self, model, estimator, nits=1, mlags=None, conf=0.95,
+    def __init__(self, test_model, estimator, nits=1, mlags=None, conf=0.95,
                  exclude_stat=True, err_est=False, show_progress=True):
-        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+        LaggedModelValidator.__init__(self, test_model, estimator, mlags=mlags,
                                       conf=conf, show_progress=show_progress)
         self.nits = nits
         self.exclude_stat = exclude_stat
@@ -350,7 +353,7 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_version = 0
     __serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
-    def __init__(self, model, estimator, memberships, mlags=None, conf=0.95,
+    def __init__(self, test_model, test_estimator, memberships, mlags=None, conf=0.95,
                  err_est=False, n_jobs=1, show_progress=True):
         """
 
@@ -363,22 +366,44 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
             to 1).
 
         """
-        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+        self.memberships = memberships
+        LaggedModelValidator.__init__(self, test_model, test_estimator, mlags=mlags,
                                       conf=conf, n_jobs=n_jobs,
                                       show_progress=show_progress)
-        # check and store parameters
-        self.memberships = types.ensure_ndarray(memberships, ndim=2, kind='numeric')
-        self.nstates, self.nsets = memberships.shape
-        assert np.allclose(memberships.sum(axis=1), np.ones(self.nstates))  # stochastic matrix?
-        # active set
-        self.active_set = types.ensure_ndarray(np.array(estimator.active_set), kind='i')  # create a copy
+        self.err_est = err_est  # TODO: this is currently unused
+
+    @property
+    def memberships(self):
+        return self._memberships
+
+    @memberships.setter
+    def memberships(self, value):
+        self._memberships = types.ensure_ndarray(value, ndim=2, kind='numeric')
+        self.nstates, self.nsets = self._memberships.shape
+        assert np.allclose(self._memberships.sum(axis=1), np.ones(self.nstates))  # stochastic matrix?
+
+    @property
+    def test_estimator(self):
+        return self._test_estimator
+
+    @test_estimator.setter
+    def test_estimator(self, test_estimator):
+        self._test_estimator = test_estimator
+        self.active_set = types.ensure_ndarray(np.array(test_estimator.active_set), kind='i')  # create a copy
         # map from the full set (here defined by the largest state index in active set) to active
         self._full2active = np.zeros(np.max(self.active_set)+1, dtype=int)
         self._full2active[self.active_set] = np.arange(self.nstates)
+
+    @property
+    def test_model(self):
+        return self._test_model
+
+    @test_model.setter
+    def test_model(self, test_model):
+        self._test_model = test_model
         # define starting distribution
-        self.P0 = memberships * model.stationary_distribution[:, None]
+        self.P0 = self.memberships * test_model.stationary_distribution[:, None]
         self.P0 /= self.P0.sum(axis=0)  # column-normalize
-        self.err_est = err_est  # TODO: this is currently unused
 
     def _compute_observables(self, model, estimator, mlag=1):
         # for lag time 0 we return an identity matrix
