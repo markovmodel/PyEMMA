@@ -410,6 +410,8 @@ class Estimator(_BaseEstimator, Loggable):
         if params:
             self.set_params(**params)
         self._model = self._estimate(X)
+        # ensure _estimate returned something
+        assert self._model is not None
         self._estimated = True
         return self
 
@@ -437,6 +439,8 @@ class Estimator(_BaseEstimator, Loggable):
     def model(self):
         """The model estimated by this Estimator"""
         try:
+            if self._model is None:
+                raise AttributeError
             return self._model
         except AttributeError:
             raise AttributeError(
@@ -444,7 +448,7 @@ class Estimator(_BaseEstimator, Loggable):
 
     def _check_estimated(self):
         if not self._estimated:
-            raise Exception("Estimator is not parametrized.")
+            raise Exception('Estimator is not estimated. Call estimate/fit or partial_fit first.')
 
     # override get_params here, to handle PyEMMA_DeprecationWarnings as well
     def get_params(self, deep=True):
