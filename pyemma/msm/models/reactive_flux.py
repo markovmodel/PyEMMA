@@ -201,7 +201,7 @@ class ReactiveFlux(Model, SerializableMixIn):
 
     @property
     def mfpt(self):
-        r"""Returns the rate (inverse mfpt) of A-->B transitions
+        r"""Returns the mean-first-passage-time (inverse rate) of A-->B transitions
         """
         return self._timeunit_model.dt / self._kAB
 
