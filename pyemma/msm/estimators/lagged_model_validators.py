@@ -338,7 +338,7 @@ class EigenvalueDecayValidator(LaggedModelValidator):
         if mlag == 0 or model is None:
             return np.ones(self.nits+1), np.ones(self.nits+1)
         # otherwise compute or predict them from them model
-        samples = self.model.sample_f('eigenvalues', self.nits+1)
+        samples = self.test_model.sample_f('eigenvalues', self.nits+1)
         if mlag != 1:
             for i in range(len(samples)):
                 samples[i] = np.power(samples[i], mlag)
