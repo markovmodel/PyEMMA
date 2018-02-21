@@ -77,7 +77,9 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
                  n_jobs=1, show_progress=True):
 
         # set model and estimator
-        self.test_model = model
+        # copy the test model, since the estimation of cktest modifies the model.
+        from copy import deepcopy
+        self.test_model = deepcopy(model)
         self.test_estimator = estimator
 
         # set mlags
