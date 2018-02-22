@@ -72,9 +72,6 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
     __serialize_fields = ('_lags',
                           '_pred', '_pred_L', '_pred_R',
                           '_est', '_est_L', '_est_R')
-    __serialize_modifications_map = {0: Modifications().mv('model', 'test_model') \
-                                                       .mv('estimator', 'test_estimator').list(),
-                                     }
 
     def __init__(self, test_model, test_estimator, mlags=None, conf=0.95, err_est=False,
                  n_jobs=1, show_progress=True):
@@ -309,6 +306,19 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
 
         """
         raise NotImplementedError('_compute_observables is not implemented. Must override it in subclass!')
+
+    def __setstate__(self, state):
+        try:
+            input_version = state['class_tree_versions']['pyemma.msm.estimators.lagged_model_validators.LaggedModelValidator']
+            if input_version == 0:
+                # this version passed the test_model in the ctor as model (reserved by Estimator),
+                # which lead to a lot of trouble.
+                self._model = self
+                state.pop('model')
+        except KeyError:
+            self.logger.debug('dont know the class version.')
+
+        super(LaggedModelValidator, self).__setstate__(state)
 
 
 class EigenvalueDecayValidator(LaggedModelValidator):
