@@ -22,3 +22,24 @@ def create_traj(top=None, format='.xtc', dir=None, length=1000, start=0):
     t.save(trajfile)
 
     return trajfile, xyz, length
+
+
+def parameterize_test(params):
+    import inspect
+
+    def _parameterize(func):
+        stack = inspect.stack()
+        # one up the stack
+        frame = stack[1]
+        # the local variables
+        locals = frame[0].f_locals
+        # the function's name
+        name = func.__name__
+        # add parameterized tests
+        for ix, p in enumerate(params):
+            local_name = ("{}_" + "_".join(str(param) for param in p)).format(name)
+            locals[local_name] = lambda fles: func(fles, *p)
+        # this function must not be tested
+        func.__test__ = False
+
+    return _parameterize
