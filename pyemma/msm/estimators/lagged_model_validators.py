@@ -313,6 +313,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
             if input_version == 0:
                 # this version passed the test_model in the ctor as model (reserved by Estimator),
                 # which lead to a lot of trouble.
+                self.logger.debug('applied workaround for version 0')
                 self._model = self
                 state.pop('model')
         except KeyError:
@@ -362,7 +363,7 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
 
 class ChapmanKolmogorovValidator(LaggedModelValidator):
-    __serialize_version = 0
+    __serialize_version = 1
     __serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
     def __init__(self, test_model, test_estimator, memberships, mlags=None, conf=0.95,
