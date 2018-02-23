@@ -1117,15 +1117,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         if isinstance(P, tuple):
             P, statdist_active = P
 
-        # continue sparse or dense?
-        if not self.sparse:
-            # converting count matrices to arrays. As a result the
-            # transition matrix and all subsequent properties will be
-            # computed using dense arrays and dense matrix algebra.
-            self._C_full = self._C_full.toarray()
-            self._C_active = self._C_active.toarray()
-            P = P.toarray()
-
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
