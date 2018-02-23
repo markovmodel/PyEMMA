@@ -231,6 +231,7 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
         else:
             if '_rc' in self.__serialize_fields:
                 self.__serialize_fields.remove('_rc')
+        return self
 
     def partial_fit(self, X):
         """ incrementally update the estimates

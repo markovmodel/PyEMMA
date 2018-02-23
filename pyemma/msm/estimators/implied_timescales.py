@@ -202,6 +202,7 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
         self._estimators = estimators
 
         self._postprocess_results(models)
+        return self
 
     def _postprocess_results(self, models):
         ### PROCESS RESULTS

@@ -145,7 +145,7 @@ class SerializableMixIn(object):
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
     """
-    __serialize_version = None
+    __serialize_version = 0
     """ version of class definition """
 
     __serialize_fields = ()
@@ -167,10 +167,11 @@ class SerializableMixIn(object):
         attr = '_%s__serialize_version' % name
         version = getattr(cls, attr, None)
         if require:
-            if version is None:
-                raise ClassVersionException('{} does not have the private field __serialize_version'.format(cls))
-            if not isinstance(version, int):
-                raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
+            if issubclass(cls, SerializableMixIn):
+                if version is None:
+                    raise ClassVersionException('{} does not have the private field __serialize_version'.format(cls))
+                if not isinstance(version, int):
+                    raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
         # check for int
         return version
 
@@ -343,7 +344,6 @@ class SerializableMixIn(object):
         """ set only fields from state, which are present in klass.__serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
-        #assert issubclass(klass, SerializableMixIn)
         # handle field renames, deletion, transformations etc.
         SerializableMixIn.__interpolate(state, klass)
 
@@ -353,7 +353,7 @@ class SerializableMixIn(object):
                 try:
                     setattr(self, field, state.get(field))
                 except AttributeError:
-                    logger.exception('field: %s' % field)
+                    logger.debug('field: %s', field, exc_info=True)
             else:
                 if _debug:
                     logger.debug("skipped %s, because it is not contained in state", field)
@@ -365,7 +365,6 @@ class SerializableMixIn(object):
         try:
             if _debug:
                 logger.debug('get state of %s' % self)
-            #self._version_check()
             state = {'class_tree_versions': {}}
             # currently it is used to handle class renames etc.
             versions = state['class_tree_versions']
@@ -373,8 +372,7 @@ class SerializableMixIn(object):
                 name = _importable_name(c)
                 try:
                     v = SerializableMixIn._get_version(c)
-                # tODO: class version exception should not b e catched?
-                except (AttributeError, ClassVersionException):
+                except AttributeError:
                     v = -1
                 versions[name] = v
 
@@ -412,7 +410,7 @@ class SerializableMixIn(object):
             # we need to set the model prior extra fields from _serializable_fields, because the model often contains
             # the details needed in the parent estimator.
             if 'model' in state:
-                self._model = state.pop('model')
+                self._model = state['model']
 
             for klass in self._get_classes_to_inspect():
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
