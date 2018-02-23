@@ -1065,8 +1065,8 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
          """
         LaggedModelValidator.__init__(self, test_model, test_estimator, mlags=mlags,
                                       n_jobs=n_jobs, show_progress=show_progress)
-        self.statistics = statistics
         self.observables = observables
+        self.statistics = statistics
         self.observables_mean_free = observables_mean_free
         self.statistics_mean_free = statistics_mean_free
 
@@ -1077,8 +1077,8 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     @statistics.setter
     def statistics(self, value):
         self._statistics = value
-        if self.statistics is not None:
-            self.nsets = min(self.observables.shape[1], self.statistics.shape[1])
+        if self._statistics is not None:
+            self.nsets = min(self.observables.shape[1], self._statistics.shape[1])
 
     def _compute_observables(self, model, estimator, mlag=1):
         # for lag time 0 we return a matrix of nan, until the correct solution is implemented
