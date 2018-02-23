@@ -1002,10 +1002,10 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
 
 class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
-    __serialize_version = 0
+    __serialize_version = 1
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
-    def __init__(self, model, estimator, observables, statistics, observables_mean_free, statistics_mean_free,
+    def __init__(self, test_model, test_estimator, observables, statistics, observables_mean_free, statistics_mean_free,
                  mlags=10, n_jobs=1, show_progress=True):
         r"""
          Note
@@ -1016,11 +1016,11 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
 
          Parameters
          ----------
-         model : Model
+         test_model : Model
              Model with the smallest lag time. Is used to make predictions
              for larger lag times.
 
-         estimator : Estimator
+         test_estimator : Estimator
              Parametrized Estimator that has produced the model.
              Is used as a prototype for estimating models at higher lag times.
 
@@ -1063,12 +1063,20 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
          The object can be plotted with :func:`plot_cktest <pyemma.plots.plot_cktest>`
          with the option `y01=False`.
          """
-        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+        LaggedModelValidator.__init__(self, test_model, test_estimator, mlags=mlags,
                                       n_jobs=n_jobs, show_progress=show_progress)
         self.statistics = statistics
         self.observables = observables
         self.observables_mean_free = observables_mean_free
         self.statistics_mean_free = statistics_mean_free
+
+    @property
+    def statistics(self):
+        return self._statistics
+
+    @statistics.setter
+    def statistics(self, value):
+        self._statistics = value
         if self.statistics is not None:
             self.nsets = min(self.observables.shape[1], self.statistics.shape[1])
 

@@ -38,10 +38,10 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
 
     Parameters
     ----------
-    model : Model
+    test_model : Model
         Model to be tested
 
-    estimator : Estimator
+    test_estimator : Estimator
         Parametrized Estimator that has produced the model
 
     mlags : int or int-array, default=10

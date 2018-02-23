@@ -344,7 +344,6 @@ class SerializableMixIn(object):
         """ set only fields from state, which are present in klass.__serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
-        #assert issubclass(klass, SerializableMixIn)
         # handle field renames, deletion, transformations etc.
         SerializableMixIn.__interpolate(state, klass)
 
@@ -366,7 +365,6 @@ class SerializableMixIn(object):
         try:
             if _debug:
                 logger.debug('get state of %s' % self)
-            #self._version_check()
             state = {'class_tree_versions': {}}
             # currently it is used to handle class renames etc.
             versions = state['class_tree_versions']
@@ -374,8 +372,7 @@ class SerializableMixIn(object):
                 name = _importable_name(c)
                 try:
                     v = SerializableMixIn._get_version(c)
-                # tODO: class version exception should not b e catched?
-                except (AttributeError):
+                except AttributeError:
                     v = -1
                 versions[name] = v
 
