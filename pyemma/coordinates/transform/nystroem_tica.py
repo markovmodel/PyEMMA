@@ -420,7 +420,7 @@ class oASIS_Nystroem:
 
     >>> # generate random time series
     >>> import numpy as np
-    >>> X = np.random.randn((10000,100))
+    >>> X = np.random.randn(10000, 100)
     >>> # compute full correlation matrix
     >>> C0 = np.dot(X.T, X)
 

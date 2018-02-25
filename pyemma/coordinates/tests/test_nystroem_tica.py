@@ -33,15 +33,19 @@ class TestNystroemTICA_Simple(unittest.TestCase):
 
     def test_single(self):
         t = nystroem_tica(data=self.data, lag=1, max_columns=11)
-        np.testing.assert_allclose(t._oasis.error, 0)
+        np.testing.assert_allclose(t._oasis.error, 0, rtol=1e-05, atol=1e-08)
         np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
         np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
         np.testing.assert_allclose(t.timescales, self.tica_obj.timescales)
 
     def test_single_issues_warning(self):
-        with self.assertLogs(level='WARNING'):
+        import sys
+        if sys.version_info >= (3, 4):
+            with self.assertLogs(level='WARNING'):
+                t = nystroem_tica(data=self.data, lag=1, max_columns=11, initial_columns=np.array([0]))
+        else:
             t = nystroem_tica(data=self.data, lag=1, max_columns=11, initial_columns=np.array([0]))
-        np.testing.assert_allclose(t._oasis.error, 0)
+        np.testing.assert_allclose(t._oasis.error, 0, rtol=1e-05, atol=1e-08)
         np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
         np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
         np.testing.assert_allclose(t.timescales, self.tica_obj.timescales)
