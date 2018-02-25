@@ -420,19 +420,23 @@ class oASIS_Nystroem:
 
     >>> # generate random time series
     >>> import numpy as np
-    >>> X = np.random.randn(10000, 100)
+    >>> from numpy.random import RandomState
+    >>> prng = RandomState(0)
+    >>> X = np.ones((10000, 10))
+    >>> X[:, :5] = prng.randn(10000, 5)
     >>> # compute full correlation matrix
     >>> C0 = np.dot(X.T, X)
 
-    We will compute the full correlation matrix as a reference, and start oASIS with 3 out of 100 columns:
+    We compute the full correlation matrix as a reference and start oASIS with 3 out of 10 columns:
 
     >>> # approximate correlation matrix
     >>> d = np.diag(C0)
-    >>> cols = [0,49,99]
-    >>> C0_k = C0[:,cols]
+    >>> cols = np.array([0, 4, 9])
+    >>> C0_k = C0[:, cols]
     >>> oasis = oASIS_Nystroem(np.diag(C0), C0_k, cols)
     >>> # show error of the current approximation
-    >>> print np.max(oasis.error)
+    >>> print('{:.2e}'.format(np.max(np.abs(oasis.error))))
+    1.00e+04
 
     Now we conduct the approximation. We ask oASIS which columns should be computed next, compute them with whichever
     algorithm applies, and update the oASIS approximation. This can be repeated until the error is small enough or
@@ -441,13 +445,15 @@ class oASIS_Nystroem:
     >>> # ask oASIS which column we should compute next
     >>> newcol = oasis.select_columns()
     >>> # recompute the new column yourself
-    >>> c = np.dot(X.T, X[:,newcol][:,None])
+    >>> c = np.dot(X.T, X[:, newcol])
     >>> # update oASIS
-    >>> oasis.add_column(c, newcol)
+    >>> oasis.add_columns(c, newcol)
+    array([1, 2, 3])
     >>> # take note of the new column index
-    >>> cols.append(newcol)
+    >>> cols = np.append(cols, newcol)
     >>> # show error of the current approximation
-    >>> print np.max(oasis.error)
+    >>> np.max(np.abs(oasis.error)) < 1e-10
+    True
 
     References
     ----------
