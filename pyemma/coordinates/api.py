@@ -51,7 +51,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
-           'nystroem_tica',
+           'tica_nystroem',
            'vamp',
            'covariance_lagged',
            'cluster_regspace',  # cluster
@@ -1415,7 +1415,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     return res
 
 
-def nystroem_tica(data, lag, max_columns,
+def tica_nystroem(data, lag, max_columns,
                   dim=-1, var_cutoff=0.95, epsilon=1e-6,
                   stride=1, skip=0, reversible=True, ncov_max=float('inf'),
                   initial_columns=None, nsel=1, neig=None):
@@ -1462,7 +1462,7 @@ def nystroem_tica(data, lag, max_columns,
 
     Returns
     -------
-    nystroem_tica : a :class:`NystroemTICA <pyemma.coordinates.transform.NystroemTICA>`
+    tica_nystroem : a :class:`NystroemTICA <pyemma.coordinates.transform.NystroemTICA>`
                     transformation object
         Object for sparse sampling time-lagged independent component (TICA) analysis.
         It contains TICA eigenvalues and eigenvectors, and the projection of
