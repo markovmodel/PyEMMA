@@ -228,7 +228,7 @@ class NystroemTICA(StreamingEstimationTransformer):
     def _estimate(self, iterable, **kw):
         from pyemma.coordinates.data import DataInMemory
         if not isinstance(iterable, DataInMemory):
-            self._logger.warning('Every iteration of the selection process involves streaming of all data and featurization. '+
+            self.logger.warning('Every iteration of the selection process involves streaming of all data and featurization. '+
                                  'Depending on your setup, this might be inefficient.')
 
         indim = iterable.dimension()
@@ -245,9 +245,9 @@ class NystroemTICA(StreamingEstimationTransformer):
 
         self._covar.column_selection = self.initial_columns
         self._covar.estimate(iterable, **kw)
-        self._model.update_model_params(cov_tau=self._covar.cov_tau)
+        self._model.update_model_params(cov_tau=self._covar.C0t_)
 
-        self._oasis = oASIS_Nystroem(self._diag.cov, self._covar.cov, self.initial_columns)
+        self._oasis = oASIS_Nystroem(self._diag.C00_, self._covar.C00_, self.initial_columns)
         self._oasis.set_selection_strategy(strategy=self.selection_strategy, nsel=self.nsel, neig=self.neig)
 
         while len(self._oasis.column_indices) < self.max_columns:
@@ -255,18 +255,18 @@ class NystroemTICA(StreamingEstimationTransformer):
             if cols is None:
                 break
             if len(cols) == 0 or np.all(np.in1d(cols, self._oasis.column_indices)):
-                self._logger.warning("Iteration ended prematurely: No more columns to select.")
+                self.logger.warning("Iteration ended prematurely: No more columns to select.")
                 break
             self._covar.column_selection = cols
             self._covar.estimate(iterable, **kw)
-            ix = self._oasis.add_columns(self._covar.cov, cols)
+            ix = self._oasis.add_columns(self._covar.C00_, cols)
             ix = np.in1d(cols, ix)
             if np.any(ix):
-                added_columns = self._covar.cov_tau[:, ix]
+                added_columns = self._covar.C0t_[:, ix]
                 self._model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, added_columns), axis=1))
 
         self._model.update_model_params(mean=self._covar.mean,
-                                        diag=self._diag.cov,
+                                        diag=self._diag.C00_,
                                         cov=self._oasis.Ck,
                                         column_indices=self._oasis.column_indices)
         self._diagonalize()
@@ -293,13 +293,13 @@ class NystroemTICA(StreamingEstimationTransformer):
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
-        self._logger.debug("Diagonalize Cov and Cov_tau.")
+        self.logger.debug("Diagonalize Cov and Cov_tau.")
         Wktau = self._model.cov_tau[self._model.column_indices, :].copy()
         try:
             eigenvalues, eigenvectors = eig_corr(self._oasis.Wk, Wktau, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
             raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
-        self._logger.debug("Finished diagonalization.")
+        self.logger.debug("Finished diagonalization.")
 
         # compute cumulative variance
         cumvar = np.cumsum(np.abs(eigenvalues) ** 2)

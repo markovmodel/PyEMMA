@@ -334,4 +334,4 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
         except AttributeError:
             pass
         self._estimated = False
-        self._logger.debug('Modified column selection: estimate() needed for this change to take effect')
+        self.logger.debug('Modified column selection: estimate() needed for this change to take effect')

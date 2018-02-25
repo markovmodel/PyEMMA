@@ -657,6 +657,7 @@ def moments_XX(X, remove_mean=False, modify_data=False, weights=None, sparse_mod
     # diag_only is only implemented for dense mode
     if diag_only and sparse_mode is not 'dense':
         if sparse_mode is 'sparse':
+            import warnings
             warnings.warn('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
         sparse_mode = 'dense'
     # sparsify
@@ -776,6 +777,7 @@ def moments_XXXY(X, Y, remove_mean=False, symmetrize=False, weights=None,
     # diag_only is only implemented for dense mode
     if diag_only and sparse_mode is not 'dense':
         if sparse_mode is 'sparse':
+            import warnings
             warnings.warn('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
         sparse_mode = 'dense'
     if diag_only and X.shape[1] != Y.shape[1]:
@@ -898,13 +900,15 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
     # diag_only is only implemented for dense mode
     if diag_only and sparse_mode is not 'dense':
         if sparse_mode is 'sparse':
+            import warnings
             warnings.warn('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
         sparse_mode = 'dense'
     # sparsify
     X0, mask_X, xconst = _sparsify(X, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
     Y0, mask_Y, yconst = _sparsify(Y, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
+    is_sparse = mask_X is not None and mask_Y is not None
     # copy / convert
-    copy = sparse_mode or (remove_mean and not modify_data)
+    copy = is_sparse or (remove_mean and not modify_data)
     X0, xconst = _copy_convert(X0, const=xconst, copy=copy)
     Y0, yconst = _copy_convert(Y0, const=yconst, copy=copy)
     # sum / center
@@ -915,28 +919,41 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
         _center(Y0, w, sy, mask=mask_Y, const=yconst, inplace=True)  # fast in-place centering
 
     if column_selection is not None:
-        Xk = X[:, column_selection]
-        mask_Xk = mask_X[column_selection]
-        X0k = Xk[:, mask_Xk]
-        xksum = sx0_centered[column_selection]
-        xkconst = Xk[0, ~mask_Xk]
-        X0k, xkconst = _copy_convert(X0k, const=xkconst, remove_mean=remove_mean,
-                                     copy=True)
+        if is_sparse:
+            Xk = X[:, column_selection]
+            mask_Xk = mask_X[column_selection] if mask_X is not None else mask_X
+            X0k = Xk[:, mask_Xk]
+            xksum = sx_centered[column_selection]
+            xkconst = Xk[0, ~mask_Xk]
+            X0k, xkconst = _copy_convert(X0k, const=xkconst, remove_mean=remove_mean,
+                                         copy=True)
 
-        Yk = Y[:, column_selection]
-        mask_Yk = mask_Y[column_selection]
-        Y0k = Yk[:, mask_Yk]
-        yksum = sy_centered[column_selection]
-        ykconst = Yk[0, ~mask_Yk]
-        Y0k, ykconst = _copy_convert(Y0k, const=ykconst, remove_mean=remove_mean,
-                                     copy=True)
+            Yk = Y[:, column_selection]
+            mask_Yk = mask_Y[column_selection] if mask_Y is not None else mask_Y
+            Y0k = Yk[:, mask_Yk]
+            yksum = sy_centered[column_selection]
+            ykconst = Yk[0, ~mask_Yk]
+            Y0k, ykconst = _copy_convert(Y0k, const=ykconst, remove_mean=remove_mean,
+                                         copy=True)
 
-        Cxx = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_Xk,
-                  xsum=sx_centered, xconst=xconst, ysum=xksum, yconst=xkconst)
-        Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Yk,
-                  xsum=sx_centered, xconst=xconst, ysum=yksum, yconst=ykconst)
-        Cyy = _M2(Y0, Y0k, mask_X=mask_Y, mask_Y=mask_Yk,
-                  xsum=sy_centered, xconst=yconst, ysum=yksum, yconst=ykconst)
+            Cxx = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_Xk,
+                      xsum=sx_centered, xconst=xconst, ysum=xksum, yconst=xkconst)
+            Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Yk,
+                      xsum=sx_centered, xconst=xconst, ysum=yksum, yconst=ykconst)
+            Cyy = _M2(Y0, Y0k, mask_X=mask_Y, mask_Y=mask_Yk,
+                      xsum=sy_centered, xconst=yconst, ysum=yksum, yconst=ykconst)
+        else:
+            X0k = X0[:, column_selection].copy()
+            Y0k = Y0[:, column_selection].copy()
+            Cxx = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_X,
+                      xsum=sx_centered, xconst=xconst,
+                      ysum=sx_centered[column_selection], yconst=xconst)
+            Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Y,
+                      xsum=sx_centered, xconst=xconst,
+                      ysum=sy_centered[column_selection], yconst=yconst)
+            Cyy = _M2(Y0, Y0k, mask_X=mask_Y, mask_Y=mask_Y,
+                      xsum=sy_centered, xconst=yconst,
+                      ysum=sy_centered[column_selection], yconst=yconst)
     else:
         Cxx = _M2(X0, X0, mask_X=mask_X, mask_Y=mask_X,
                   xsum=sx_centered, xconst=xconst, ysum=sx_centered, yconst=xconst,

@@ -1515,7 +1515,8 @@ def nystroem_tica(data, lag, max_columns,
                        stride=stride, skip=skip, reversible=reversible,
                        ncov_max=ncov_max,
                        initial_columns=initial_columns, nsel=nsel, neig=neig)
-    return _param_stage(data, res, stride=stride)
+    res.estimate(data, stride=stride)
+    return res
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,

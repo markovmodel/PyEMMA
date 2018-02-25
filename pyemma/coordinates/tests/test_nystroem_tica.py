@@ -33,24 +33,25 @@ class TestNystroemTICA_Simple(unittest.TestCase):
 
     def test_single(self):
         t = nystroem_tica(data=self.data, lag=1, max_columns=11)
-        assert np.allclose(t._oasis.error, 0)
-        assert np.allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
-        assert np.allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
-        assert np.allclose(t.timescales, self.tica_obj.timescales)
+        np.testing.assert_allclose(t._oasis.error, 0)
+        np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
+        np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
+        np.testing.assert_allclose(t.timescales, self.tica_obj.timescales)
 
     def test_single_issues_warning(self):
-        t = nystroem_tica(data=self.data, lag=1, max_columns=11, initial_columns=np.array([0]))
-        assert np.allclose(t._oasis.error, 0)
-        assert np.allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
-        assert np.allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
-        assert np.allclose(t.timescales, self.tica_obj.timescales)
+        with self.assertLogs(level='WARNING'):
+            t = nystroem_tica(data=self.data, lag=1, max_columns=11, initial_columns=np.array([0]))
+        np.testing.assert_allclose(t._oasis.error, 0)
+        np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
+        np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
+        np.testing.assert_allclose(t.timescales, self.tica_obj.timescales)
 
     def test_multiple(self):
         t = nystroem_tica(data=self.data, lag=1, max_columns=10, nsel=3, initial_columns=np.array([0]))
-        assert np.allclose(t._oasis.error, 0)
-        assert np.allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
-        assert np.allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
-        assert np.allclose(t.timescales, self.tica_obj.timescales)
+        np.testing.assert_allclose(t._oasis.error, 0, rtol=1e-05, atol=1e-08)
+        np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
+        np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
+        np.testing.assert_allclose(t.timescales, self.tica_obj.timescales)
 
 
 class TestNystroemTICA_DoubleWell(unittest.TestCase):
@@ -72,8 +73,8 @@ class TestNystroemTICA_DoubleWell(unittest.TestCase):
 
     def test(self):
         t = nystroem_tica(data=self.Z, lag=self.lag, max_columns=10, initial_columns=np.array([91]))
-        assert np.allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
-        assert np.allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
+        np.testing.assert_allclose(t.cov, self.tica_obj.cov[:, t.column_indices])
+        np.testing.assert_allclose(t.cov_tau, self.tica_obj.cov_tau[:, t.column_indices])
         assert np.all(np.abs(self.tica_obj.eigenvalues[:4] - t.eigenvalues[:4]) < 1e-3)
 
 
