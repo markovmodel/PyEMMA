@@ -12,7 +12,15 @@ import pyemma.coordinates as coor
 import pyemma.coordinates.tests.util as util
 
 
-class TestReaders(unittest.TestCase):
+def pytest_generate_tests(metafunc):
+    # called once per each test function
+    funcarglist = metafunc.cls.params[metafunc.function.__name__]
+    argnames = funcarglist[0]
+    metafunc.parametrize(tuple(argnames.keys()), [[funcargs[name] for name in argnames]
+                                    for funcargs in funcarglist])
+
+
+class TestReaders(object):
     """
     trajectory lengths:
         - 5000
@@ -63,10 +71,15 @@ class TestReaders(unittest.TestCase):
     }
     tempdir = None
     n_atoms = 6
-    n_dims = 6*3
+    n_dims = 6 * 3
+
+    # pytest config
+    params = {
+        'test_base_reader': [dict(format=f, chunksize=cs) for f, cs in itertools.product(file_formats, chunk_sizes)],
+    }
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.tempdir = tempfile.mkdtemp("test-api-src")
         cls.traj_data = [np.random.random((5000, cls.n_dims)),
                          np.random.random((6000, cls.n_dims)),
@@ -78,12 +91,9 @@ class TestReaders(unittest.TestCase):
             cls.test_trajs[format] = [cls.file_creators[format](cls.tempdir, X) for X in cls.traj_data]
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         shutil.rmtree(cls.tempdir, ignore_errors=True)
 
-    @util.parameterize_test(itertools.product(
-        file_formats, chunk_sizes
-    ))
     def test_base_reader(self, format, chunksize):
         reader = coor.source(self.test_trajs[format], chunksize=chunksize)
 
