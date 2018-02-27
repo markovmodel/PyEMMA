@@ -17,8 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-
-
 import numpy as _np
 
 __author__ = 'thempel'
@@ -30,14 +28,15 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
     Parameters
     ----------
     xyzall : (Concatenated list of) input features; np.array containing time series data to be plotted.
-    feature_labels : Labels of histogrammed features. Either list of strings or pyemma Featurizer object.
+    feature_labels : Labels of histogrammed features, optional, default = None.
+                  Either list of strings or pyemma Featurizer object.
     ax : matplotlib Axes object, optional, default = None
         the axes to plot to. When set to None the default Axes object will be used.
     ylog : If True, plot logarithm of histogram values.
     n_bins : Number of bins the histogram uses.
     outfile : If not None, saves plot to this file.
-    **kwargs: Will be parsed to pyplot.plo when plotting the MLE datapoints (not the bootstrapped means).
-            See the doc of pyplot for more options. Most useful lineproperties like `marker='o'` and/or :markersize=5
+    **kwargs: Will be parsed to pyplot.fill_between when plotting the histograms.
+            See the doc of pyplot for more options.
 
     Returns
     -------
@@ -62,10 +61,10 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
             raise UserWarning('feature_labels must have the same dimension as the input data xyzall.')
 
     # make nice plots if user does not decide on color and transparency
-    if not 'color' in kwargs.keys():
+    if 'color' not in kwargs.keys():
         kwargs['color'] = 'b'
-    if not 'alpha' in kwargs.keys():
-        kwargs['alpha'] =  .25
+    if 'alpha' not in kwargs.keys():
+        kwargs['alpha'] = .25
 
     import matplotlib.pyplot as _plt
     # check input
@@ -86,16 +85,14 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
     # formatting
     if feature_labels is not None:
         ax.set_yticks(_np.array(range(len(feature_labels))) + .3)
-        ax.set_yticklabels(feature_labels);
+        ax.set_yticklabels(feature_labels)
     else:
         ax.set_yticks([])
         ax.set_yticklabels([])
         ax.set_ylabel('Feature histograms')
-    ax.set_xlabel('Feature values');
+    ax.set_xlabel('Feature values')
 
-    # show or save
-    # if outfile is None:
-    #    _plt.show()
+    # save
     if outfile is not None:
         _plt.savefig(outfile)
     return ax
