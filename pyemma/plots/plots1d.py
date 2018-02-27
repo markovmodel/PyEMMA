@@ -35,7 +35,7 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
         the axes to plot to. When set to None the default Axes object will be used.
     ylog : If True, plot logarithm of histogram values.
     n_bins : Number of bins the histogram uses.
-    outfile : If not None, saves plot to this file. 
+    outfile : If not None, saves plot to this file.
     **kwargs: Will be parsed to pyplot.plo when plotting the MLE datapoints (not the bootstrapped means).
             See the doc of pyplot for more options. Most useful lineproperties like `marker='o'` and/or :markersize=5
 
@@ -61,10 +61,17 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
         if not xyzall.shape[1] == len(feature_labels):
             raise UserWarning('feature_labels must have the same dimension as the input data xyzall.')
 
+    # make nice plots if user does not decide on color and transparency
+    if not 'color' in kwargs.keys():
+        kwargs['color'] = 'b'
+    if not 'alpha' in kwargs.keys():
+        kwargs['alpha'] =  .25
+
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
         ax = _plt.gca()
+
     hist_offset = -.2
     for h, coordinate in enumerate(xyzall.T):
         hist, edges = _np.histogram(coordinate, bins=n_bins)
@@ -72,7 +79,7 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
             y = hist / hist.max()
         else:
             y = _np.log(hist) / _np.log(hist).max()
-        ax.fill_between(edges[:-1], y + h + hist_offset, color='b', y2=h + hist_offset, alpha=.25, **kwargs)
+        ax.fill_between(edges[:-1], y + h + hist_offset, y2=h + hist_offset, **kwargs)
         ax.axhline(y=h + hist_offset, xmin=0, xmax=1, color='k', linewidth=.2)
     ax.set_ylim(hist_offset, h + hist_offset + 1)
 
