@@ -28,7 +28,6 @@ from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args
 import warnings
-import copy
 
 __all__ = ['NystroemTICA']
 
@@ -250,11 +249,9 @@ class NystroemTICA(StreamingEstimationTransformer):
         self._oasis = oASIS_Nystroem(self._diag.C00_, self._covar.C00_, self.initial_columns)
         self._oasis.set_selection_strategy(strategy=self.selection_strategy, nsel=self.nsel, neig=self.neig)
 
-        while len(self._oasis.column_indices) < self.max_columns:
+        while self._oasis.k < np.min((self.max_columns, self._oasis.n)):
             cols = self._oasis.select_columns()
-            if cols is None:
-                break
-            if len(cols) == 0 or np.all(np.in1d(cols, self._oasis.column_indices)):
+            if cols is None or len(cols) == 0 or np.all(np.in1d(cols, self._oasis.column_indices)):
                 self.logger.warning("Iteration ended prematurely: No more columns to select.")
                 break
             self._covar.column_selection = cols
@@ -294,7 +291,7 @@ class NystroemTICA(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self.logger.debug("Diagonalize Cov and Cov_tau.")
-        Wktau = self._model.cov_tau[self._model.column_indices, :].copy()
+        Wktau = self._model.cov_tau[self._model.column_indices, :]
         try:
             eigenvalues, eigenvectors = eig_corr(self._oasis.Wk, Wktau, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
@@ -399,7 +396,7 @@ class NystroemTICA(StreamingEstimationTransformer):
             return np.complex64
 
 
-class oASIS_Nystroem:
+class oASIS_Nystroem(object):
     r""" Implements a sparse sampling method for very large symmetric matrices.
 
     The aim of this method is to provide a low-rank approximation of a very large symmetric matrix
@@ -433,7 +430,7 @@ class oASIS_Nystroem:
     >>> d = np.diag(C0)
     >>> cols = np.array([0, 4, 9])
     >>> C0_k = C0[:, cols]
-    >>> oasis = oASIS_Nystroem(np.diag(C0), C0_k, cols)
+    >>> oasis = oASIS_Nystroem(d, C0_k, cols)
     >>> # show error of the current approximation
     >>> print('{:.2e}'.format(np.max(np.abs(oasis.error))))
     1.00e+04
@@ -538,9 +535,8 @@ class oASIS_Nystroem:
 
     def _compute_error(self):
         """ Evaluate the absolute error of the Nystroem approximation for each column """
-        # evaluate error of Nystroem approx for each new column
         # err_i = sum_j R_{k,ij} A_{k,ji} - d_i
-        self._err = np.sum(np.multiply(self._R_k,self._C_k.T),axis=0) - self._d
+        self._err = np.sum(np.multiply(self._R_k, self._C_k.T), axis=0) - self._d
 
     @property
     def error(self):
@@ -611,9 +607,6 @@ class oASIS_Nystroem:
             True if the new column was added to the approximation. False if not.
 
         """
-        # copy column
-        col = copy.deepcopy(col)
-
         # convenience access
         k = self._k
         d = self._d
@@ -699,15 +692,13 @@ class oASIS_Nystroem:
         for when calling this method.
 
         """
-        C_approx = np.dot(self._C_k, self._R_k)
-        return C_approx
+        return np.dot(self._C_k, self._R_k)
 
     def approximate_column(self, i):
         """ Computes the Nystroem approximation of column :math:`i` of matrix $A \in \mathbb{R}^{n \times n}$.
 
         """
-        col_approx = np.dot(self._C_k, self._R_k[:, i])
-        return col_approx
+        return np.dot(self._C_k, self._R_k[:, i])
 
     def approximate_cholesky(self, epsilon=1e-6):
         r""" Compute low-rank approximation to the Cholesky decomposition of target matrix.
@@ -717,20 +708,20 @@ class oASIS_Nystroem:
         Parameters
         ----------
         epsilon : float, optional, default 1e-6
-            If truncate=True, this determines the cutoff for eigenvalue norms. If negative eigenvalues occur,
-            with larger norms than epsilon, the largest negative eigenvalue norm will be used instead of epsilon, i.e.
-            a band including all negative eigenvalues will be cut off.
+            Cutoff for eigenvalue norms. If negative eigenvalues occur, with norms larger than epsilon, the largest
+            negative eigenvalue norm will be used instead of epsilon, i.e. a band including all negative eigenvalues
+            will be cut off.
 
         Returns
         -------
         L : ndarray((n,m), dtype=float)
             Cholesky matrix such that `A \approx L L^{\top}`. Number of columns :math:`m` is most at the number of columns
-            used in the Nystroem approximation, but may be smaller if truncate=True.
+            used in the Nystroem approximation, but may be smaller depending on epsilon.
 
         """
         # compute the Eigenvalues of C0 using Schur factorization
         Wk = self._C_k[self._columns, :]
-        L0 = spd_inv_split(Wk)
+        L0 = spd_inv_split(Wk, epsilon=epsilon)
         L = np.dot(self._C_k, L0)
 
         return L
@@ -743,19 +734,19 @@ class oASIS_Nystroem:
         Parameters
         ----------
         epsilon : float, optional, default 1e-6
-            If truncate=True, this determines the cutoff for eigenvalue norms. If negative eigenvalues occur,
-            with larger norms than epsilon, the largest negative eigenvalue norm will be used instead of epsilon, i.e.
-            a band including all negative eigenvalues will be cut off.
+            Cutoff for eigenvalue norms. If negative eigenvalues occur, with norms larger than epsilon, the largest
+            negative eigenvalue norm will be used instead of epsilon, i.e. a band including all negative eigenvalues
+            will be cut off.
 
         Returns
         -------
         s : ndarray((m,), dtype=float)
             approximated eigenvalues. Number of eigenvalues returned is at most the number of columns used in the
-            Nystroem approximation, but may be smaller if truncate=True.
+            Nystroem approximation, but may be smaller depending on epsilon.
 
         W : ndarray((n,m), dtype=float)
             approximated eigenvectors in columns. Number of eigenvectors returned is at most the number of columns
-            used in the Nystroem approximation, but may be smaller if truncate=True.
+            used in the Nystroem approximation, but may be smaller depending on epsilon.
 
         """
         L = self.approximate_cholesky(epsilon=epsilon)
@@ -777,7 +768,7 @@ class oASIS_Nystroem:
         return s, V
 
 
-class SelectionStrategy:
+class SelectionStrategy(object):
     def __init__(self, oasis_obj, strategy='spectral-oasis', nsel=1, neig=None):
         """ Abstract selection strategy class
 
@@ -811,15 +802,13 @@ class SelectionStrategy:
         return self._nsel
 
     def _check_nsel(self):
-        if self._nsel > self._oasis_obj._n - self._oasis_obj._k:
-            # less columns left than requested
+        if self._oasis_obj._n == self._oasis_obj._k:  # nothing left to select?
+            warnings.warn('Requested more columns but there are none left. Returning None.')
+            return None
+        if self._nsel > self._oasis_obj._n - self._oasis_obj._k:  # less columns left than requested
             ncols = self._oasis_obj._n - self._oasis_obj._k
             warnings.warn('Requested more columns than are left to select. Returning only '+str(ncols)+' columns.')
             return ncols
-        # nothing left to select?
-        if self._oasis_obj._n == self._oasis_obj._k:
-            warnings.warn('Requested more columns but there are none left. Returning None.')
-            return None
         return self._nsel
 
     def select(self):
@@ -832,22 +821,20 @@ class SelectionStrategy:
 
         """
         err = self._oasis_obj.error
-        # check nsel
+        if np.allclose(err, 0):
+            return None
         nsel = self._check_nsel()
         if nsel is None:
             return None
-        # go
         return self._select(nsel, err)
 
     def _select(self, nsel, err):
-        """ Override me to do selection """
-        pass
+        raise NotImplementedError('Classes derived from SelectionStrategy must override the _select() method.')
 
 
 class SelectionStrategyRandom(SelectionStrategy):
     """ Selects nsel random columns not yet included in the approximation """
     def _select(self, nsel, err):
-        # do select
         sel = []
         while len(sel) < nsel:
             i = np.random.choice(self._oasis_obj._n)
@@ -869,8 +856,11 @@ class SelectionStrategySpectralOasis(SelectionStrategy):
         if nsel == 1:
             return np.array([np.argmax(np.abs(err))])
         # compute approximate eigenvectors
-        _, evec = self._oasis_obj.approximate_eig()
-        evec = self._fix_constant_evec(evec)
+        if np.allclose(self._oasis_obj.Wk, 0):
+            evec = np.ones((self._oasis_obj.k, self._oasis_obj.k))
+        else:
+            _, evec = self._oasis_obj.approximate_eig()
+            evec = self._fix_constant_evec(evec)
         if self._neig is None:
             neig = evec.shape[1]
         else:
@@ -893,8 +883,8 @@ class SelectionStrategySpectralOasis(SelectionStrategy):
 
     def _fix_constant_evec(self, evecs):
         # test if first vector is trying to approximate constant vector
-        evec0 = evecs[:, 0] / np.max(evecs[:, 0])  # make sure the vector has positive elements.
-        if np.min(evec0) > -1e-10:  # this looks like a constant eigenvector
+        evec0 = evecs[:, 0]
+        if np.isclose(np.min(evec0), np.max(evec0)):
             evecs[:, 0] = 1  # make it really constant
         else:  # we don't have it, so add it
             evecs = np.hstack([np.ones((evecs.shape[0], 1)), evecs])

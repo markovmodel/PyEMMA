@@ -1415,21 +1415,21 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     return res
 
 
-def tica_nystroem(data, lag, max_columns,
+def tica_nystroem(max_columns, data=None, lag=10,
                   dim=-1, var_cutoff=0.95, epsilon=1e-6,
-                  stride=1, skip=0, reversible=True, ncov_max=float('inf'),
+                  stride=1, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None,
                   initial_columns=None, nsel=1, neig=None):
     r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
 
     Parameters
     ----------
+    max_columns : int
+        Maximum number of columns (features) to use in the approximation.
     data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
         source function array with the data. With it, the TICA
         transformation is immediately computed and can be used to transform data.
-    lag : int
+    lag : int, optional, default 10
         lag time
-    max_columns : int
-        Maximum number of columns (features) to use in the approximation.
     dim : int, optional, default -1
         Maximum number of significant independent components to use to reduce dimension of input data. -1 means
         all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
@@ -1515,7 +1515,10 @@ def tica_nystroem(data, lag, max_columns,
                        stride=stride, skip=skip, reversible=reversible,
                        ncov_max=ncov_max,
                        initial_columns=initial_columns, nsel=nsel, neig=neig)
-    res.estimate(data, stride=stride)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    else:
+        res.chunksize = chunksize
     return res
 
 
