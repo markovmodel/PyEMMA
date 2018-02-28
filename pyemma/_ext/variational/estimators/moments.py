@@ -509,8 +509,8 @@ def _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y, weights=None, column_selection=No
     else:
         mask_Xk = mask_X[column_selection]
         mask_Yk = mask_Y[column_selection]
-        Xvark = Xvar[:, _filter_variable_indices(mask_X, column_selection)].copy()
-        Yvark = Yvar[:, _filter_variable_indices(mask_Y, column_selection)].copy()
+        Xvark = Xvar[:, _filter_variable_indices(mask_X, column_selection)]
+        Yvark = Yvar[:, _filter_variable_indices(mask_Y, column_selection)]
 
     Cxxyy = np.zeros((len(mask_X), len(mask_Yk)))
     Cxxyy[np.ix_(mask_X, mask_Xk)] = _M2_dense(Xvar, Xvark, weights=weights)
@@ -551,8 +551,8 @@ def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0
             Xvark = Xvar
             Yvark = Yvar
         else:
-            Xvark = Xvar[:, column_selection].copy()
-            Yvark = Yvar[:, column_selection].copy()
+            Xvark = Xvar[:, column_selection]
+            Yvark = Yvar[:, column_selection]
         Cxxyy = _M2_dense(Xvar, Xvark, weights=weights, diag_only=diag_only) \
                 + _M2_dense(Yvar, Yvark, weights=weights, diag_only=diag_only)
         Cxy = _M2_dense(Xvar, Yvark, weights=weights, diag_only=diag_only)
@@ -581,12 +581,12 @@ def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0
                 ykvarsum = yvarsum
                 ykconst = yconst
             else:
-                Xvark = Xvar[:, _filter_variable_indices(mask_X, column_selection)].copy()
+                Xvark = Xvar[:, _filter_variable_indices(mask_X, column_selection)]
                 mask_Xk = mask_X[column_selection]
                 xksum = xsum[column_selection]
                 xkvarsum = xksum[mask_Xk]
                 xkconst = xconst[_filter_variable_indices(~mask_X, column_selection)]
-                Yvark = Yvar[:, _filter_variable_indices(mask_Y, column_selection)].copy()
+                Yvark = Yvar[:, _filter_variable_indices(mask_Y, column_selection)]
                 mask_Yk = mask_Y[column_selection]
                 yksum = ysum[column_selection]
                 ykvarsum = yksum[mask_Yk]
@@ -688,7 +688,7 @@ def moments_XX(X, remove_mean=False, modify_data=False, weights=None, sparse_mod
             C = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_Xk, xsum=sx0_centered, xconst=xconst, ysum=xksum, yconst=xkconst,
                     weights=weights)
         else:
-            X0k = X0[:, column_selection].copy()
+            X0k = X0[:, column_selection]
             C = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_X, xsum=sx0_centered, xconst=xconst,
                     ysum=sx0_centered[column_selection], yconst=xconst, weights=weights)
     else:
@@ -825,8 +825,8 @@ def moments_XXXY(X, Y, remove_mean=False, symmetrize=False, weights=None,
                 Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Yk, xsum=sx_centered, xconst=xconst, ysum=yksum, yconst=ykconst,
                         weights=weights)
             else:
-                X0k = X0[:, column_selection].copy()
-                Y0k = Y0[:, column_selection].copy()
+                X0k = X0[:, column_selection]
+                Y0k = Y0[:, column_selection]
                 Cxx = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_X, xsum=sx_centered, xconst=xconst,
                         ysum=sx_centered[column_selection], yconst=xconst, weights=weights)
                 Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Y, xsum=sx_centered, xconst=xconst,
@@ -940,17 +940,22 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
                       xsum=sx_centered, xconst=xconst, ysum=xksum, yconst=xkconst)
             Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Yk,
                       xsum=sx_centered, xconst=xconst, ysum=yksum, yconst=ykconst)
+            Cyx = _M2(Y0, X0k, mask_X=mask_Y, mask_Y=mask_Xk,
+                      xsum=sy_centered, xconst=yconst, ysum=xksum, yconst=xkconst)
             Cyy = _M2(Y0, Y0k, mask_X=mask_Y, mask_Y=mask_Yk,
                       xsum=sy_centered, xconst=yconst, ysum=yksum, yconst=ykconst)
         else:
-            X0k = X0[:, column_selection].copy()
-            Y0k = Y0[:, column_selection].copy()
+            X0k = X0[:, column_selection]
+            Y0k = Y0[:, column_selection]
             Cxx = _M2(X0, X0k, mask_X=mask_X, mask_Y=mask_X,
                       xsum=sx_centered, xconst=xconst,
                       ysum=sx_centered[column_selection], yconst=xconst)
             Cxy = _M2(X0, Y0k, mask_X=mask_X, mask_Y=mask_Y,
                       xsum=sx_centered, xconst=xconst,
                       ysum=sy_centered[column_selection], yconst=yconst)
+            Cyx = _M2(Y0, X0k, mask_X=mask_Y, mask_Y=mask_X,
+                      xsum=sy_centered, xconst=yconst,
+                      ysum=sx_centered[column_selection], yconst=xconst)
             Cyy = _M2(Y0, Y0k, mask_X=mask_Y, mask_Y=mask_Y,
                       xsum=sy_centered, xconst=yconst,
                       ysum=sy_centered[column_selection], yconst=yconst)
@@ -961,11 +966,12 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
         Cxy = _M2(X0, Y0, mask_X=mask_X, mask_Y=mask_Y,
                   xsum=sx_centered, xconst=xconst, ysum=sy_centered, yconst=yconst,
                   diag_only=diag_only)
+        Cyx = Cxy.T
         Cyy = _M2(Y0, Y0, mask_X=mask_Y, mask_Y=mask_Y,
                   xsum=sy_centered, xconst=yconst, ysum=sy_centered, yconst=yconst,
                   diag_only=diag_only)
 
-    return w, [sx, sy], [[Cxx, Cxy], [Cxy.T, Cyy]]
+    return w, [sx, sy], [[Cxx, Cxy], [Cyx, Cyy]]
 
 
 def covar(X, remove_mean=False, modify_data=False, weights=None, sparse_mode='auto', sparse_tol=0.0):
