@@ -53,11 +53,11 @@ def plot_feature_histograms(xyzall,
     """
 
     if not isinstance(xyzall, _np.ndarray):
-        raise UserWarning('Input data hast to be a numpy array. Did you concatenate your data?')
+        raise ValueError('Input data hast to be a numpy array. Did you concatenate your data?')
 
     if xyzall.shape[1] > 50 and not ignore_dim_warning:
-        raise NotImplementedError('This function is only useful for less than 50 dimensions. Turn-off this warning '
-                                  'on your own risk with ignore_dim_warning=True.')
+        raise RuntimeError('This function is only useful for less than 50 dimensions. Turn-off this warning '
+                           'on your own risk with ignore_dim_warning=True.')
 
     if feature_labels is not None:
         if not isinstance(feature_labels, list):
@@ -65,9 +65,9 @@ def plot_feature_histograms(xyzall,
             if isinstance(feature_labels, _MDFeaturizer):
                 feature_labels = feature_labels.describe()
             else:
-                raise UserWarning('feature_labels must be a list of feature labels or a pyemma featurizer object!')
+                raise ValueError('feature_labels must be a list of feature labels or a pyemma featurizer object!')
         if not xyzall.shape[1] == len(feature_labels):
-            raise UserWarning('feature_labels must have the same dimension as the input data xyzall.')
+            raise ValueError('feature_labels must have the same dimension as the input data xyzall.')
 
     # make nice plots if user does not decide on color and transparency
     if 'color' not in kwargs.keys():

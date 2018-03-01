@@ -36,3 +36,7 @@ class TestPlots2d(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             plot_feature_histograms(self.data)
             assert len(w) == 0
+
+    def test_invalid_input(self):
+        with self.assertRaises(ValueError):
+            plot_feature_histograms(self.data, feature_labels=np.random.rand(5))
