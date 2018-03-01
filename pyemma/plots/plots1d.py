@@ -22,7 +22,14 @@ import numpy as _np
 __author__ = 'thempel'
 
 
-def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, outfile=None, n_bins=50, **kwargs):
+def plot_feature_histograms(xyzall,
+                            feature_labels=None,
+                            ax=None,
+                            ylog=False,
+                            outfile=None,
+                            n_bins=50,
+                            ignore_dim_warning=False,
+                            **kwargs):
     r"""Feature histogram plot
 
     Parameters
@@ -35,6 +42,7 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
     ylog : If True, plot logarithm of histogram values.
     n_bins : Number of bins the histogram uses.
     outfile : If not None, saves plot to this file.
+    ignore_dim_warning : Enable plotting for more than 50 dimensions (on your own risk).
     **kwargs: Will be parsed to pyplot.fill_between when plotting the histograms.
             See the doc of pyplot for more options.
 
@@ -47,8 +55,9 @@ def plot_feature_histograms(xyzall, feature_labels=None, ax=None, ylog=False, ou
     if not isinstance(xyzall, _np.ndarray):
         raise UserWarning('Input data hast to be a numpy array. Did you concatenate your data?')
 
-    if xyzall.shape[1] > 50:
-        raise NotImplementedError('This function only works for a finite number of dimensions.')
+    if xyzall.shape[1] > 50 and not ignore_dim_warning:
+        raise NotImplementedError('This function is only useful for less than 50 dimensions. Turn-off this warning '
+                                  'on your own risk with ignore_dim_warning=True.')
 
     if feature_labels is not None:
         if not isinstance(feature_labels, list):
