@@ -227,7 +227,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         cls.double_well_data = pyemma.datasets.load_2well_discrete()
 
     def test_its_msm(self):
-        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000])
+        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000], n_jobs=2)
         ref = np.array([[ 174.22244263,    3.98335928,    1.61419816,    1.1214093 ,    0.87692952],
                         [ 285.56862305,    6.66532284,    3.05283223,    2.6525504 ,    1.9138432 ],
                         [ 325.35442195,   24.17388446,   20.52185604,   20.10058217,    17.35451648],
@@ -237,7 +237,7 @@ class TestITS_AllEstimators(unittest.TestCase):
 
     def test_its_bmsm(self):
         estimator = msm.its([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [10, 50, 200],
-                            errors='bayes', nsamples=1000)
+                            errors='bayes', nsamples=1000, n_jobs=2)
         ref = np.array([[ 284.87479737,    6.68390402,    3.0375248,     2.65314172,    1.93066562],
                         [ 320.08583492,   11.14612743,   10.3450663,     9.42799075,    8.2109752 ],
                         [ 351.41541961,   42.87427869,   41.17841657,   37.35485197,   23.24254608]])
@@ -251,7 +251,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         np.testing.assert_array_less(estimator.timescales[0], R[0])
 
     def test_its_hmsm(self):
-        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])
+        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100], n_jobs=2)
         ref = np.array([[ 222.0187561 ],
                         [ 339.47351559],
                         [ 382.39905462]])
@@ -260,7 +260,7 @@ class TestITS_AllEstimators(unittest.TestCase):
 
     def test_its_bhmm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10],
-                                        errors='bayes', nsamples=100)
+                                        errors='bayes', nsamples=100, n_jobs=2)
         ref = np.array([[ 222.0187561 ],
                         [ 342.49015547]])
         # rough agreement with MLE
