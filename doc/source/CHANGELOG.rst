@@ -4,6 +4,11 @@ Changelog
 2.5.2 (??-??-????)
 ------------------
 
+**New features**:
+
+- plots:
+   - plot_feature_histograms: added multi-dimensional stacked histogram plot function. #1264
+
 **Fixes**:
 
 - msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
