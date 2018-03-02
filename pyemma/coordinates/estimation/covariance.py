@@ -83,11 +83,15 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
          skip the first initial n frames per trajectory.
      chunksize : deprecated, default=NotImplemented
          The chunk size should now be set during estimation.
+     column_selection: ndarray(k, dtype=int) or None
+         Indices of those columns that are to be computed. If None, all columns are computed.
+     diag_only: bool
+         If True, the computation is restricted to the diagonal entries (autocorrelations) only.
 
      """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
-                 chunksize=NotImplemented, ncov_max=float('inf')):
+                 chunksize=NotImplemented, ncov_max=float('inf'), column_selection=None, diag_only=False):
         super(LaggedCovariance, self).__init__()
         if chunksize is not NotImplemented:
             import warnings
@@ -102,11 +106,18 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
             raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
             remove_constant_mean = ensure_float_vector(remove_constant_mean)
+        if column_selection is not None and diag_only:
+            raise ValueError('Computing only parts of the diagonal is not supported.')
+        if diag_only and sparse_mode is not 'dense':
+            if sparse_mode is 'sparse':
+                self.logger.warn('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
+            sparse_mode = 'dense'
         self.set_params(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                         bessel=bessel,
-                        weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
+                        weights=weights, stride=stride, skip=skip, ncov_max=ncov_max,
+                        column_selection=column_selection, diag_only=diag_only)
 
         self._rc = None
 
@@ -153,7 +164,9 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
             self.logger.debug("using %s moments for %i chunks", nsave, n_chunks)
             self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
-                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
+                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data,
+                                     column_selection=self.column_selection, diag_only=self.diag_only,
+                                     nsave=nsave)
 
     def _estimate(self, iterable, partial_fit=False):
         indim = iterable.dimension()
@@ -307,3 +320,18 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
         if self.ctt:
             if self._rc.storage_YY.nsave <= ns:
                 self._rc.storage_YY.nsave = ns
+
+    @property
+    def column_selection(self):
+        return self._column_selection
+
+    @column_selection.setter
+    def column_selection(self, s):
+        self._column_selection = s
+        try:
+            if self._rc is not None:
+                self._rc.column_selection = s
+        except AttributeError:
+            pass
+        self._estimated = False
+        self.logger.debug('Modified column selection: estimate() needed for this change to take effect')

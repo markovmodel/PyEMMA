@@ -51,6 +51,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'tica_nystroem',
            'vamp',
            'covariance_lagged',
            'cluster_regspace',  # cluster
@@ -1414,9 +1415,116 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
     return res
 
 
+def tica_nystroem(max_columns, data=None, lag=10,
+                  dim=-1, var_cutoff=0.95, epsilon=1e-6,
+                  stride=1, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None,
+                  initial_columns=None, nsel=1, neig=None):
+    r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
+
+    Parameters
+    ----------
+    max_columns : int
+        Maximum number of columns (features) to use in the approximation.
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+        source function array with the data. With it, the TICA
+        transformation is immediately computed and can be used to transform data.
+    lag : int, optional, default 10
+        lag time
+    dim : int, optional, default -1
+        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
+        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+    var_cutoff : float in the range [0,1], optional, default 0.95
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim.
+    epsilon : float, optional, default 1e-6
+        Eigenvalue norm cutoff. Eigenvalues of :math:`C_0` with norms <= epsilon will be
+        cut off. The remaining number of eigenvalues define the size
+        of the output.
+    stride: int, optional, default 1
+        Use only every stride-th time step. By default, every time step is used.
+    skip : int, optional, default 0
+        Skip the first initial n frames per trajectory.
+    reversible: bool, optional, default True
+        Symmetrize correlation matrices :math:`C_0`, :math:`C_{\tau}`.
+    initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
+        Columns used for an initial approximation. If a list or an 1-d ndarray
+        of integers is given, use these column indices. If an integer is given,
+        use that number of randomly selected indices. If None is given, use
+        one randomly selected column.
+    nsel : int, optional, default 1
+        Number of columns to select and add per iteration and pass through the data.
+        Larger values provide for better pass-efficiency.
+    neig : int or None, optional, default None
+        Number of eigenvalues to be optimized by the selection process.
+        If None, use the whole available eigenspace.
+
+    Returns
+    -------
+    tica_nystroem : a :class:`NystroemTICA <pyemma.coordinates.transform.NystroemTICA>`
+                    transformation object
+        Object for sparse sampling time-lagged independent component (TICA) analysis.
+        It contains TICA eigenvalues and eigenvectors, and the projection of
+        input data to the dominant TICs.
+
+    Notes
+    -----
+    Perform a sparse approximation of time-lagged independent component analysis (TICA)
+    :class:`TICA <pyemma.coordinates.transform.TICA>`. The starting point is the
+    generalized eigenvalue problem
+
+    .. math:: C_{\tau} r_i = C_0 \lambda_i(\tau) r_i.
+
+    Instead of computing the full matrices involved in this problem, we conduct
+    a Nyström approximation [5]_ of the matrix :math:`C_0` by means of the
+    accelerated sequential incoherence selection (oASIS) algorithm [6]_ and,
+    in particular, its extension called spectral oASIS [1]_.
+
+    Iteratively, we select a small number of columns such that the resulting
+    Nyström approximation is sufficiently accurate. This selection represents
+    in turn a subset of important features, for which we obtain a generalized
+    eigenvalue problem similar to the one above, but much smaller in size.
+    Its generalized eigenvalues and eigenvectors provide an approximation
+    to those of the full TICA solution [1]_.
+
+    References
+    ----------
+    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+       Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
+    .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+    .. [3] Schwantes C, V S Pande. 2013.
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+    .. [4] L. Molgedey and H. G. Schuster. 1994.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
+    .. [5] P. Drineas and M. W. Mahoney.
+       On the Nystrom method for approximating a Gram matrix for improved kernel-based learning.
+       Journal of Machine Learning Research, 6:2153-2175 (2005).
+    .. [6] Raajen Patel, Thomas A. Goldstein, Eva L. Dyer, Azalia Mirhoseini, Richard G. Baraniuk.
+       oASIS: Adaptive Column Sampling for Kernel Matrix Approximation.
+       arXiv: 1505.05208 [stat.ML].
+
+    """
+    from pyemma.coordinates.transform.nystroem_tica import NystroemTICA
+    res = NystroemTICA(lag, max_columns,
+                       dim=dim, var_cutoff=var_cutoff, epsilon=epsilon,
+                       stride=stride, skip=skip, reversible=reversible,
+                       ncov_max=ncov_max,
+                       initial_columns=initial_columns, nsel=nsel, neig=neig)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    else:
+        res.chunksize = chunksize
+    return res
+
+
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
                       reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None,
-                      ncov_max=float('inf')):
+                      ncov_max=float('inf'), column_selection=None, diag_only=False):
     r"""Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
     number of time steps and N the number of dimensions, this function can compute lagged covariances like
 
@@ -1468,6 +1576,10 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     ncov_max : int, default=infinity
         limit the memory usage of the algorithm from [2]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
+    column_selection: ndarray(k, dtype=int) or None
+        Indices of those columns that are to be computed. If None, all columns are computed.
+    diag_only: bool
+        If True, the computation is restricted to the diagonal entries (autocorrelations) only.
 
     Returns
     -------
@@ -1504,7 +1616,8 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
+                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max,
+                          column_selection=column_selection, diag_only=diag_only)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
     else:

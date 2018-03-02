@@ -42,6 +42,8 @@ class TestCovarEstimator(unittest.TestCase):
         cls.mean_const = mean_const
         # Chunksize:
         cls.chunksize = 500
+        # column subsets
+        cls.cols_2 = np.array([0])
 
         # moments of X and Y
         cls.w = np.shape(cls.X)[0]
@@ -158,12 +160,18 @@ class TestCovarEstimator(unittest.TestCase):
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=False, bessel=False, chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_lag0[:, self.cols_2])
 
     def test_XX_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, c0t=False, remove_data_mean=True, bessel=False, chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx0_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0_lag0[:, self.cols_2])
 
     def test_XX_weightobj_withmean(self):
         # many passes
@@ -171,6 +179,9 @@ class TestCovarEstimator(unittest.TestCase):
                                chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_wobj_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx_wobj_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_wobj_lag0[:, self.cols_2])
 
     def test_XX_weightobj_meanfree(self):
         # many passes
@@ -178,6 +189,9 @@ class TestCovarEstimator(unittest.TestCase):
                                chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_wobj_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx0_wobj_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0_wobj_lag0[:, self.cols_2])
 
     def test_XXXY_withmean(self):
         # many passes
@@ -187,6 +201,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean_tau, self.my)
         np.testing.assert_allclose(cc.C00_, self.Mxx)
         np.testing.assert_allclose(cc.C0t_, self.Mxy)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy[:, self.cols_2])
 
     def test_XXXY_meanfree(self):
         # many passes
@@ -196,6 +214,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean_tau, self.my)
         np.testing.assert_allclose(cc.C00_, self.Mxx0)
         np.testing.assert_allclose(cc.C0t_, self.Mxy0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy0[:, self.cols_2])
 
     def test_XXXY_weightobj_withmean(self):
         # many passes
@@ -205,17 +227,23 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean_tau, self.my_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_wobj[:, self.cols_2])
 
     def test_XXXY_weightobj_meanfree(self):
         # many passes
         cc = covariance_lagged(data=self.data, remove_data_mean=True, c0t=True, lag=self.lag, weights=self.wobj,
                                bessel=False, chunksize=self.chunksize)
-        #out = cc.weights.get_output()
-
         np.testing.assert_allclose(cc.mean, self.mx_wobj)
         np.testing.assert_allclose(cc.mean_tau, self.my_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx0_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy0_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy0_wobj[:, self.cols_2])
 
     def test_XXXY_sym_withmean(self):
         # many passes
@@ -224,6 +252,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_sym)
         np.testing.assert_allclose(cc.C00_, self.Mxx_sym)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_sym)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_sym[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_sym[:, self.cols_2])
 
     def test_XXXY_sym_meanfree(self):
         # many passes
@@ -232,6 +264,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_sym)
         np.testing.assert_allclose(cc.C00_, self.Mxx0_sym)
         np.testing.assert_allclose(cc.C0t_, self.Mxy0_sym)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0_sym[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy0_sym[:, self.cols_2])
 
     def test_XXXY_weightobj_sym_withmean(self):
         # many passes
@@ -240,6 +276,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_sym_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx_sym_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_sym_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_sym_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_sym_wobj[:, self.cols_2])
 
     def test_XXXY_weightobj_sym_meanfree(self):
         # many passes
@@ -248,18 +288,28 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_sym_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx0_sym_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy0_sym_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx0_sym_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy0_sym_wobj[:, self.cols_2])
 
     def test_XX_meanconst(self):
         cc = covariance_lagged(data=self.data, c0t=False, remove_constant_mean=self.mean_const, bessel=False,
                                chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_c_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c_lag0[:, self.cols_2])
 
     def test_XX_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, c0t=False, remove_constant_mean=self.mean_const, weights=self.wobj, bessel=False,
                                chunksize=self.chunksize)
         np.testing.assert_allclose(cc.mean, self.mx_c_wobj_lag0)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c_wobj_lag0)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c_wobj_lag0[:, self.cols_2])
 
     def test_XY_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, lag=self.lag, bessel=False,
@@ -268,6 +318,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean_tau, self.my_c)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_c)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_c[:, self.cols_2])
 
     def test_XY_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, weights=self.wobj, lag=self.lag,
@@ -276,6 +330,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean_tau, self.my_c_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_c_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_c_wobj[:, self.cols_2])
 
     def test_XY_sym_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, reversible=True, lag=self.lag,
@@ -283,6 +341,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_c_sym)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c_sym)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_c_sym)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c_sym[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_c_sym[:, self.cols_2])
 
     def test_XY_sym_weighted_meanconst(self):
         cc = covariance_lagged(data=self.data, remove_constant_mean=self.mean_const, c0t=True, reversible=True, weights=self.wobj,
@@ -290,6 +352,10 @@ class TestCovarEstimator(unittest.TestCase):
         np.testing.assert_allclose(cc.mean, self.m_c_sym_wobj)
         np.testing.assert_allclose(cc.C00_, self.Mxx_c_sym_wobj)
         np.testing.assert_allclose(cc.C0t_, self.Mxy_c_sym_wobj)
+        cc.column_selection = self.cols_2
+        cc.estimate(self.data)
+        np.testing.assert_allclose(cc.C00_, self.Mxx_c_sym_wobj[:, self.cols_2])
+        np.testing.assert_allclose(cc.C0t_, self.Mxy_c_sym_wobj[:, self.cols_2])
 
 
 class TestCovarianceEstimatorGivenWeights(TestCovarEstimator):
