@@ -43,7 +43,7 @@ def plot_feature_histograms(xyzall,
     n_bins : Number of bins the histogram uses.
     outfile : If not None, saves plot to this file.
     ignore_dim_warning : Enable plotting for more than 50 dimensions (on your own risk).
-    **kwargs: Will be parsed to pyplot.fill_between when plotting the histograms.
+    **kwargs: Will be passed to pyplot.fill_between when plotting the histograms.
             See the doc of pyplot for more options.
 
     Returns
