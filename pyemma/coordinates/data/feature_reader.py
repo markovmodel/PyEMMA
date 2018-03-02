@@ -162,6 +162,26 @@ class FeatureReader(DataSource, SerializableMixIn):
             # general case
             return self.featurizer.dimension()
 
+    @staticmethod
+    def supports_format(file_name):
+        """
+        Static method that checks whether the extension of the input file name indicates a file type that can
+        potentially be read with a FeatureReader.
+
+        :param file_name: the file name or path
+        :return: True if the extension indicates a file type that could be read, otherwise False
+        """
+        import os
+        from mdtraj.formats.registry import FormatRegistry
+
+        if isinstance(file_name, str):
+            # ensure there is something to split
+            file_name = "/dummy" + file_name
+            suffix = os.path.splitext(file_name)[1]
+            return suffix in FormatRegistry.loaders.keys()
+
+        return False
+
     def _assert_toptraj_consistency(self):
         r""" Check if the topology and the filenames of the reader have the same n_atoms"""
         top = self.featurizer.topology
@@ -354,6 +374,8 @@ class FeatureReaderIterator(DataSourceIterator):
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
+        if self._itraj >= self._data_source.ntraj:
+            raise StopIteration()
         if not hasattr(self, '_mditer') or self._mditer is None:
             self._select_file(self._itraj)
         try:
