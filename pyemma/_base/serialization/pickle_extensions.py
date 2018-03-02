@@ -47,14 +47,17 @@ class HDF5PersistentPickler(Pickler):
         if key in self.group:
             assert id_ in self._seen_ids
             return id_
-        self.group.create_dataset(name=key, data=array,
-                                  chunks=True, compression='gzip', compression_opts=4, shuffle=True)
         self._seen_ids.add(id_)
+        self.group.create_dataset(name=key, data=array,
+                                  chunks=array.shape, compression='lzf', shuffle=True, fletcher32=True)
         return id_
 
     def persistent_id(self, obj):
         if (isinstance(obj, np.ndarray) and obj.dtype != np.object_
                 and id(obj) not in self._seen_ids):
+            # do not store empty arrays in hdf (more overhead)
+            if not len(obj):
+                return None
             array_id = self._store(obj)
             return 'np_array', array_id
 
