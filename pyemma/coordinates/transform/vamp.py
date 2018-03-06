@@ -26,7 +26,7 @@ from pyemma._base.model import Model
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
-from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
+from pyemma._ext.variational.solvers.direct import spd_inv_sqrt, spd_eig
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.msm.estimators.lagged_model_validators import LaggedModelValidator
@@ -275,21 +275,22 @@ class VAMPModel(Model, SerializableMixIn):
               singular value. Note that only the left singular functions
               induce a kinetic map.
         """
-        L0, self._rank0 = spd_inv_sqrt(self.C00, epsilon=self.epsilon, return_rank=True)
-        Lt, self._rankt = spd_inv_sqrt(self.Ctt, epsilon=self.epsilon, return_rank=True)
-        A = L0.T.dot(self.C0t).dot(Lt)
-        from scipy.linalg import svd
-        Uprime, s, Vprimeh = svd(A, compute_uv=True, lapack_driver='gesvd')
-        self._singular_values = s
+        lambda0, QT0 = spd_eig(self.C00, epsilon=self.epsilon)
+        self._rank0 = lambda0.shape[0]
+        lambda1, QT1 = spd_eig(self.Ctt, epsilon=self.epsilon)
+        self._rankt = lambda1.shape[0]
 
-        self._L0 = L0
-        self._Lt = Lt
+        W = np.diag(lambda0**-0.5).dot(QT0.T).dot(self.C0t).dot(QT1).dot(np.diag(lambda1**-0.5))
+        from scipy.linalg import svd
+        A, s, BT = svd(W, compute_uv=True, lapack_driver='gesvd')
+
+        self._singular_values = s
 
         # don't pass any values calling this method again!!!
         m = VAMPModel._dimension(self._rank0, self._rankt, self.dim, self._singular_values)
 
-        U = L0.dot(Uprime[:, :m])  # U in the paper singular_vectors_left
-        V = Lt.dot(Vprimeh[:m, :].T)  # V in the paper singular_vectors_right
+        U = QT0.dot(np.diag(lambda0 ** -0.5).dot(A[:, :m]))
+        V = QT1.dot(np.diag(lambda1 ** -0.5).dot(BT[:m, :].T))
 
         # scale vectors
         if self.scaling is not None:
