@@ -293,6 +293,11 @@ class TestTICAExtensive(unittest.TestCase):
         with self.assertRaises(ValueError):  # trying to set both dim and subspace_variance is forbidden
             api.tica(data=self.X, lag=self.lag, dim=1, var_cutoff=0.9)
 
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=0)
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=1.1)
+
     def test_eigenvalues(self):
         eval = self.tica_obj.eigenvalues
         eval_ref, _ = eig_corr(self.cov_ref, self.cov_tau_ref)

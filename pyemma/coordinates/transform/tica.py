@@ -23,42 +23,20 @@ Created on 19.01.2015
 from __future__ import absolute_import
 
 import numpy as np
-from decorator import decorator
 from pyemma._base.serialization.serialization import SerializableMixIn
 
-from pyemma._base.model import Model
 from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma._ext.variational.util import ZeroRankError
-from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
-from pyemma.util.annotators import deprecated, fix_docs
-from pyemma.util.reflection import get_default_args
+from pyemma.coordinates.transform._tica_base import TICABase, TICAModelBase
+from pyemma.util.annotators import fix_docs
 import warnings
 
 __all__ = ['TICA']
 
 
-class TICAModel(Model, SerializableMixIn):
-    __serialize_version = 0
-
-    def set_model_params(self, mean=None, cov_tau=None, cov=None,
-                         cumvar=None, eigenvalues=None, eigenvectors=None):
-        self.update_model_params(cov=cov, cov_tau=cov_tau,
-                                 mean=mean, cumvar=cumvar,
-                                 eigenvalues=eigenvalues,
-                                 eigenvectors=eigenvectors)
-
-@decorator
-def _lazy_estimation(func, *args, **kw):
-    assert isinstance(args[0], TICA)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
-    return func(*args, **kw)
-
-
 @fix_docs
-class TICA(StreamingEstimationTransformer, SerializableMixIn):
+class TICA(TICABase, SerializableMixIn):
     r""" Time-lagged independent component analysis (TICA)"""
     __serialize_version = 0
 
@@ -140,9 +118,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
            for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
         """
-        default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
-        if dim != -1 and var_cutoff != default_var_cutoff:
-            raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
+        super(TICA, self).__init__()
         if kinetic_map and commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if (kinetic_map or commute_map) and not reversible:
@@ -150,67 +126,28 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
             commute_map = False
             warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
                           "False.")
-        super(TICA, self).__init__()
 
-        if dim > -1:
-            var_cutoff = 1.0
-
-        # empty dummy model instance
-        self._model = TICAModel()
         # this instance will be set by partial fit.
         self._covar = None
+
+        self.dim = dim
+        self.var_cutoff = var_cutoff
+
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
                         epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
     @property
-    def lag(self):
-        """ lag time of correlation matrix :math:`C_{\tau}` """
-        return self._lag
-
-    @lag.setter
-    def lag(self, new_tau):
-        self._lag = new_tau
+    def model(self):
+        if not hasattr(self, '_model') or self._model is None:
+            self._model = TICAModelBase()
+        return self._model
 
     def describe(self):
         try:
             dim = self.dimension()
         except RuntimeError:
             dim = self.dim
-        return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
-
-    def dimension(self):
-        """ output dimension """
-        if self.dim > -1:
-            return self.dim
-        d = None
-        if self.dim != -1 and not self._estimated:  # fixed parametrization
-            d = self.dim
-        elif self._estimated:  # parametrization finished. Dimension is known
-            dim = len(self.eigenvalues)
-            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff) + 1)
-            d = dim
-        elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
-            d = self.data_producer.dimension()
-        else:  # We know nothing. Give up
-            raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                               'transformer has not yet been estimated. Call estimate() before.')
-        return d
-
-    @property
-    def mean(self):
-        """ mean of input features """
-        return self._model.mean
-
-    @property
-    @deprecated('please use the "mean" property')
-    def mu(self):
-        """DEPRECATED: please use the "mean" property"""
-        return self.mean
-
-    @mean.setter
-    def mean(self, value):
-        self._model.mean = value
+        return "[Nystroem-TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
     def estimate(self, X, **kwargs):
         r"""
@@ -245,7 +182,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
                                            lag=self.lag, bessel=False, stride=self.stride, skip=self.skip,
                                            weights=self.weights, ncov_max=self.ncov_max)
         self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
+        self.model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
                                         cov=self._covar.C00_,
                                         cov_tau=self._covar.C0t_)
 
@@ -267,30 +204,12 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
             self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                               " with dimension (%i, %i)", self._lag, indim, indim)
         covar.estimate(iterable, chunksize=self.chunksize, **kw)
-        self._model.update_model_params(mean=covar.mean,
+        self.model.update_model_params(mean=covar.mean,
                                         cov=covar.C00_,
                                         cov_tau=covar.C0t_)
         self._diagonalize()
 
-        return self._model
-
-    def _transform_array(self, X):
-        r"""Projects the data onto the dominant independent components.
-
-        Parameters
-        ----------
-        X : ndarray(n, m)
-            the input data
-
-        Returns
-        -------
-        Y : ndarray(n,)
-            the projected data
-        """
-        X_meanfree = X - self.mean
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
-
-        return Y.astype(self.output_type())
+        return self.model
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
@@ -315,114 +234,8 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
         cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
         cumvar /= cumvar[-1]
 
-        self._model.update_model_params(cumvar=cumvar,
-                                        eigenvalues=eigenvalues,
-                                        eigenvectors=eigenvectors)
+        self.model.update_model_params(cumvar=cumvar,
+                                       eigenvalues=eigenvalues,
+                                       eigenvectors=eigenvectors)
 
         self._estimated = True
-
-    @property
-    @_lazy_estimation
-    def timescales(self):
-        r"""Implied timescales of the TICA transformation
-
-        For each :math:`i`-th eigenvalue, this returns
-
-        .. math::
-
-            t_i = -\frac{\tau}{\log(|\lambda_i|)}
-
-        where :math:`\tau` is the :py:obj:`lag` of the TICA object and :math:`\lambda_i` is the `i`-th
-        :py:obj:`eigenvalue <eigenvalues>` of the TICA object.
-
-        Returns
-        -------
-        timescales: 1D np.array
-            numpy array with the implied timescales. In principle, one should expect as many timescales as
-            input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
-            were not full rank or :py:obj:`var_cutoff` was parsed
-        """
-        return -self.lag / np.log(np.abs(self.eigenvalues))
-
-    @property
-    @_lazy_estimation
-    def feature_TIC_correlation(self):
-        r"""Instantaneous correlation matrix between mean-free input features and TICs
-
-        Denoting the input features as :math:`X_i` and the TICs as :math:`\theta_j`, the instantaneous, linear correlation
-        between them can be written as
-
-        .. math::
-
-            \mathbf{Corr}(X_i - \mu_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i - \mu_i}}\sum_l \sigma_{(X_i - \mu_i)(X_l - \mu_l} \mathbf{U}_{li}
-
-        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the TICA
-        generalized eigenvalue problem .
-
-        Returns
-        -------
-        feature_TIC_correlation : ndarray(n,m)
-            correlation matrix between input features and TICs. There is a row for each feature and a column
-            for each TIC.
-        """
-        feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
-
-    @property
-    def cov(self):
-        """ covariance matrix of input data. """
-        return self._model.cov
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
-    @property
-    def cov_tau(self):
-        """ covariance matrix of time-lagged input data. """
-        return self._model.cov_tau
-
-    @cov_tau.setter
-    def cov_tau(self, value):
-        self._model.cov_tau = value
-
-    @property
-    @_lazy_estimation
-    def eigenvalues(self):
-        r"""Eigenvalues of the TICA problem (usually denoted :math:`\lambda`
-
-        Returns
-        -------
-        eigenvalues: 1D np.array
-        """
-        return self._model.eigenvalues
-
-    @property
-    @_lazy_estimation
-    def eigenvectors(self):
-        r"""Eigenvectors of the TICA problem, columnwise
-
-        Returns
-        -------
-        eigenvectors: (N,M) ndarray
-        """
-        return self._model.eigenvectors
-
-    @property
-    @_lazy_estimation
-    def cumvar(self):
-        r"""Cumulative sum of the the TICA eigenvalues
-
-        Returns
-        -------
-        cumvar: 1D np.array
-        """
-        return self._model.cumvar
-
-    def output_type(self):
-        # TODO: handle the case of conjugate pairs
-        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
-                np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
-            return super(TICA, self).output_type()
-        else:
-            return np.complex64
