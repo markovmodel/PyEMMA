@@ -275,13 +275,11 @@ class VAMPModel(Model, SerializableMixIn):
               singular value. Note that only the left singular functions
               induce a kinetic map.
         """
-
         L0, self._rank0 = spd_inv_sqrt(self.C00, epsilon=self.epsilon, return_rank=True)
         Lt, self._rankt = spd_inv_sqrt(self.Ctt, epsilon=self.epsilon, return_rank=True)
-        # TODO: rethink this. Why is A still living in the full-rank space?
         A = L0.T.dot(self.C0t).dot(Lt)
-
-        Uprime, s, Vprimeh = np.linalg.svd(A, compute_uv=True)
+        from scipy.linalg import svd
+        Uprime, s, Vprimeh = svd(A, compute_uv=True, lapack_driver='gesvd')
         self._singular_values = s
 
         self._L0 = L0
