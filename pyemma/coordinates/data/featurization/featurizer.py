@@ -21,6 +21,7 @@ import warnings
 
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_string
 import mdtraj
 
@@ -84,7 +85,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
     def __add_feature(self, f):
         # perform sanity checks
         if f.dimension == 0:
-            self._logger.error("given an empty feature (eg. due to an empty/"
+            self.logger.error("given an empty feature (eg. due to an empty/"
                                "ineffective selection). Skipping it."
                                " Feature desc: %s" % f.describe())
             return
@@ -92,8 +93,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         if f not in self.active_features:
             self.active_features.append(f)
         else:
-            self._logger.warning("tried to re-add the same feature %s"
-                                 % f.__class__.__name__)
+            self.logger.warning("tried to re-add the same feature %s"
+                                % f.__class__.__name__)
 
     def describe(self):
         """
@@ -334,7 +335,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         from .distances import DistanceFeature
 
         atom_pairs = _parse_pairwise_input(
-            indices, indices2, self._logger, fname='add_distances()')
+            indices, indices2, self.logger, fname='add_distances()')
 
         atom_pairs = self._check_indices(atom_pairs)
         f = DistanceFeature(self.topology, atom_pairs, periodic=periodic)
@@ -402,7 +403,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         """
         from .distances import InverseDistanceFeature
         atom_pairs = _parse_pairwise_input(
-            indices, indices2, self._logger, fname='add_inverse_distances()')
+            indices, indices2, self.logger, fname='add_inverse_distances()')
 
         atom_pairs = self._check_indices(atom_pairs)
         f = InverseDistanceFeature(self.topology, atom_pairs, periodic=periodic)
@@ -445,7 +446,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         """
         from .distances import ContactFeature
         atom_pairs = _parse_pairwise_input(
-            indices, indices2, self._logger, fname='add_contacts()')
+            indices, indices2, self.logger, fname='add_contacts()')
 
         atom_pairs = self._check_indices(atom_pairs)
         f = ContactFeature(self.topology, atom_pairs, threshold, periodic, count_contacts)
@@ -500,7 +501,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         from .distances import ResidueMinDistanceFeature
         if scheme != 'ca' and is_string(residue_pairs):
             if residue_pairs == 'all':
-                self._logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
+                self.logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
                                      "very time consuming. Consider reducing the residue pairs")
 
         f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold, periodic)
@@ -617,7 +618,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         from .distances import GroupMinDistanceFeature
         # Some thorough input checking and reformatting
         group_definitions, group_pairs, distance_list, group_identifiers = \
-            _parse_groupwise_input(group_definitions, group_pairs, self._logger, 'add_group_mindist')
+            _parse_groupwise_input(group_definitions, group_pairs, self.logger, 'add_group_mindist')
         distance_list = self._check_indices(distance_list)
 
         f = GroupMinDistanceFeature(self.topology, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic)
@@ -704,6 +705,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
             self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic)
         self.__add_feature(f)
 
+    @deprecated('Please use "add_sidechain_torsions(which=[\'chi1\'])"')
     def add_chi1_torsions(self, selstr="", deg=False, cossin=False, periodic=True):
         """
         Adds all chi1 angles or the ones specified in :obj:`selstr` to the feature list.
@@ -726,9 +728,36 @@ class MDFeaturizer(SerializableMixIn, Loggable):
             information, we will treat dihedrals that cross periodic images
             using the minimum image convention.
         """
-        from .angles import Chi1TorsionFeature
-        f = Chi1TorsionFeature(
-            self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic)
+        from .angles import SideChainTorsions
+        f = SideChainTorsions(
+            self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic, which=['chi1'])
+        self.__add_feature(f)
+
+    def add_sidechain_torsions(self, selstr=None, deg=False, cossin=False, periodic=True, which='all'):
+        """
+        Adds all side chain torsion angles or the ones specified in :obj:`selstr` to the feature list.
+
+        Parameters
+        ----------
+        selstr: str, optional, default=None
+            selection string specifying the atom selection used to specify a specific set of backbone angles
+            If "" (default), all chi1 angles found in the topology will be computed
+        deg: bool, optional, default=False
+            If False (default), angles will be computed in radians.
+            If True, angles will be computed in degrees.
+        cossin: bool, optional, default=False
+            If True, each angle will be returned as a pair of (sin(x), cos(x)).
+            This is useful, if you calculate the mean (e.g TICA/PCA, clustering)
+            in that space.
+        periodic: bool, optional, default=True
+            If `periodic` is True and the trajectory contains unitcell
+            information, we will treat dihedrals that cross periodic images
+            using the minimum image convention.
+        which: str or list of str, default='all'
+            one or combination of ('all', 'chi1', 'chi2', 'chi3', 'chi4', 'chi5')
+        """
+        from .angles import SideChainTorsions
+        f = SideChainTorsions(self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic, which=which)
         self.__add_feature(f)
 
     def add_custom_feature(self, feature):

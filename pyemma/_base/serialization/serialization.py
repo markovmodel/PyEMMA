@@ -65,7 +65,7 @@ class Modifications(object):
         return self._ops
 
     @staticmethod
-    def apply(modifications: [()], state: dict):
+    def apply(modifications, state):
         """ applies modifications to given state
         Parameters
         ----------
@@ -145,7 +145,7 @@ class SerializableMixIn(object):
     >>> assert inst_restored.x == inst.x # doctest: +SKIP
     # skipped because MyClass is not importable.
     """
-    __serialize_version = None
+    __serialize_version = 0
     """ version of class definition """
 
     __serialize_fields = ()
@@ -167,10 +167,11 @@ class SerializableMixIn(object):
         attr = '_%s__serialize_version' % name
         version = getattr(cls, attr, None)
         if require:
-            if version is None:
-                raise ClassVersionException('{} does not have the private field __serialize_version'.format(cls))
-            if not isinstance(version, int):
-                raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
+            if issubclass(cls, SerializableMixIn):
+                if version is None:
+                    raise ClassVersionException('{} does not have the private field __serialize_version'.format(cls))
+                if not isinstance(version, int):
+                    raise ClassVersionException('{} does not have an integer __serialize_version'.format(cls))
         # check for int
         return version
 
@@ -193,15 +194,16 @@ class SerializableMixIn(object):
         map = getattr(cls, attr, {})
         return map
 
-    def save(self, file_name, model_name='latest', overwrite=False, save_streaming_chain=False):
-        r"""
+    def save(self, file_name, model_name='default', overwrite=False, save_streaming_chain=False):
+        r""" saves the current state of this object to given file and name.
+
         Parameters
         -----------
         file_name: str
             path to desired output file
-        model_name: str, default=latest
+        model_name: str, default='default'
             creates a group named 'model_name' in the given file, which will contain all of the data.
-            If the name already exists, and overwrite is False (default) will raise.
+            If the name already exists, and overwrite is False (default) will raise a RuntimeError.
         overwrite: bool, default=False
             Should overwrite existing model names?
         save_streaming_chain : boolean, default=False
@@ -213,18 +215,21 @@ class SerializableMixIn(object):
         >>> from pyemma.util.contexts import named_temporary_file
         >>> m = pyemma.msm.MSM(P=np.array([[0.1, 0.9], [0.9, 0.1]]))
 
-        >>> with named_temporary_file() as file: # doctest: +ELLIPSIS,+NORMALIZE_WHITESPACE
-        ...    m.save(file, 'simple')
-        ...    inst_restored = pyemma.load(file, 'simple')
-        >>> np.testing.assert_equal(m.P, inst_restored.P)
+        >>> with named_temporary_file() as file: # doctest: +SKIP
+        ...    m.save(file, 'simple') # doctest: +SKIP
+        ...    inst_restored = pyemma.load(file, 'simple') # doctest: +SKIP
+        >>> np.testing.assert_equal(m.P, inst_restored.P) # doctest: +SKIP
         """
-        from pyemma._base.serialization.h5file import H5Wrapper
+        import six
+        if six.PY2:
+            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
+        from pyemma._base.serialization.h5file import H5File
         try:
-            with H5Wrapper(file_name=file_name) as f:
+            with H5File(file_name=file_name) as f:
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
-            msg = ('During saving the object ("{error}") '
-                   'the following error occurred'.format(error=e))
+            msg = ('During saving the object {obj}") '
+                   'the following error occurred: {error}'.format(obj=self, error=e))
             if isinstance(self, Loggable):
                 self.logger.exception(msg)
             else:
@@ -232,23 +237,26 @@ class SerializableMixIn(object):
             raise
 
     @classmethod
-    def load(cls, file_name, model_name='latest'):
+    def load(cls, file_name, model_name='default'):
         """ loads a previously saved object of this class from a file.
 
         Parameters
         ----------
         file_name : str or file like object (has to provide read method).
             The file like object tried to be read for a serialized object.
-        model_name: str, default='latest'
-            if multiple versions are contained in the file, older versions can be accessed by
-            their name. Use func:list_models to get a representation of all stored models.
+        model_name: str, default='default'
+            if multiple models are contained in the file, these can be accessed by
+            their name. Use func:`pyemma.list_models` to get a representation of all stored models.
 
         Returns
         -------
         obj : the de-serialized object
         """
-        from .h5file import H5Wrapper
-        with H5Wrapper(file_name, model_name=model_name, mode='r') as f:
+        import six
+        if six.PY2:
+            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
+        from .h5file import H5File
+        with H5File(file_name, model_name=model_name, mode='r') as f:
             return f.model
 
     @property
@@ -336,7 +344,6 @@ class SerializableMixIn(object):
         """ set only fields from state, which are present in klass.__serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
-        #assert issubclass(klass, SerializableMixIn)
         # handle field renames, deletion, transformations etc.
         SerializableMixIn.__interpolate(state, klass)
 
@@ -344,9 +351,9 @@ class SerializableMixIn(object):
             if field in state:
                 # ensure we can set attributes. Log culprits.
                 try:
-                    setattr(self, field, state.pop(field))
+                    setattr(self, field, state.get(field))
                 except AttributeError:
-                    logger.exception('field: %s' % field)
+                    logger.debug('field: %s', field, exc_info=True)
             else:
                 if _debug:
                     logger.debug("skipped %s, because it is not contained in state", field)
@@ -358,7 +365,6 @@ class SerializableMixIn(object):
         try:
             if _debug:
                 logger.debug('get state of %s' % self)
-            #self._version_check()
             state = {'class_tree_versions': {}}
             # currently it is used to handle class renames etc.
             versions = state['class_tree_versions']
@@ -366,8 +372,7 @@ class SerializableMixIn(object):
                 name = _importable_name(c)
                 try:
                     v = SerializableMixIn._get_version(c)
-                # tODO: class version exception should not b e catched?
-                except (AttributeError, ClassVersionException):
+                except AttributeError:
                     v = -1
                 versions[name] = v
 
@@ -405,7 +410,7 @@ class SerializableMixIn(object):
             # we need to set the model prior extra fields from _serializable_fields, because the model often contains
             # the details needed in the parent estimator.
             if 'model' in state:
-                self._model = state.pop('model')
+                self._model = state['model']
 
             for klass in self._get_classes_to_inspect():
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
@@ -422,12 +427,6 @@ class SerializableMixIn(object):
             from pyemma._base.model import Model
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
-
-            assert len(state) == 0, 'unhandled attributes in state'
-        except AssertionError:
-            if _debug:
-                import pprint
-                logger.debug('left-overs after setstate: %s', pprint.pformat(state))
         except OldVersionUnsupported as e:
             logger.error(str(e))
             raise

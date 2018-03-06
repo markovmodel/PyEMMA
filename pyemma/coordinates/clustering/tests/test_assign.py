@@ -21,7 +21,7 @@ import os
 import unittest
 from contextlib import contextmanager
 
-from unittest.mock import patch
+from mock import patch
 from pyemma.util.files import TemporaryDirectory
 from logging import getLogger
 
@@ -234,8 +234,8 @@ class TestClusterAssign(unittest.TestCase):
         # re-do assignment with multiple threads and compare results
         chunksize = 1000
 
-        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunk_size=chunksize)
-        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunk_size=chunksize)
+        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunksize=chunksize)
+        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunksize=chunksize)
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 
@@ -252,8 +252,8 @@ class TestClusterAssign(unittest.TestCase):
                              ).reshape((N_centers, -1))
         chunksize = 1000
 
-        assignment_mp = coor.assign_to_centers(reader, centers, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
-        assignment_sp = coor.assign_to_centers(reader, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+        assignment_mp = coor.assign_to_centers(reader, centers, n_jobs=2, chunksize=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(reader, centers, n_jobs=1, chunksize=chunksize, metric='minRMSD')
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 

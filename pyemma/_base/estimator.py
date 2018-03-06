@@ -126,7 +126,7 @@ def _call_member(obj, name, failfast=True, *args, **kwargs):
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
-                                failfast):
+                                failfast, return_exceptions):
     """ Method that runs estimation for several parameter settings.
 
     Defined as a worker for parallelization
@@ -146,6 +146,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
             estimator.logger.warning("Ignored error during estimation: %s" % e)
         if failfast:
             raise  # re-raise
+        elif return_exceptions:
+            model = e
         else:
             pass  # just return model=None
 
@@ -191,7 +193,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
-                        return_estimators=False, n_jobs=1, progress_reporter=None, show_progress=True):
+                        return_estimators=False, n_jobs=1, progress_reporter=None, show_progress=True,
+                        return_exceptions=False):
     """ Runs multiple estimations using a list of parameter settings
 
     Parameters
@@ -230,8 +233,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         if the given estimator supports show_progress interface, we set the flag
         prior doing estimations.
 
-    Return
-    ------
+    return_exceptions: bool, default=False
+        if failfast is False while this setting is True, returns the exception thrown at the actual grid element,
+        instead of None.
+
+    Returns
+    -------
     models : list of model objects or evaluated function values
         A list of estimated models in the same order as param_sets. If evaluate
         is given, each element will contain the results from these method
@@ -292,7 +299,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    if progress_reporter is not None:
+    show_progress = progress_reporter is not None and show_progress
+    if show_progress:
         progress_reporter._progress_register(len(estimators), stage=0,
                                              description="estimating %s" % str(estimator.__class__.__name__))
 
@@ -304,14 +312,13 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                       param_set, X,
                       evaluate,
                       evaluate_args,
-                      failfast)
+                      failfast, return_exceptions)
                      for estimator, param_set in zip(estimators, param_sets))
 
         from pathos.multiprocessing import Pool as Parallel
         pool = Parallel(processes=n_jobs)
         args = list(task_iter)
-        if progress_reporter is not None:
-            progress_reporter._progress_register(len(estimators), stage=0, description="estimating %s" % str(estimator.__class__.__name__))
+        if show_progress:
             from pyemma._base.model import SampledModel
             for a in args:
                 if isinstance(a[0], SampledModel):
@@ -322,14 +329,22 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         else:
             callback = None
 
-        def error_callback(*args, **kw):
-            if failfast:
-                raise Exception('something failed')
+        import six
+        if six.PY3:
+            def error_callback(*args, **kw):
+                if failfast:
+                    raise Exception('something failed')
 
-        with pool:
-            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
-                                          error_callback=error_callback) for a in args]
-            res = [x.get() for x in res_async]
+            with pool:
+                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
+                                              error_callback=error_callback) for a in args]
+                res = [x.get() for x in res_async]
+        else:
+            try:
+                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback) for a in args]
+                res = [x.get() for x in res_async]
+            finally:
+                pool.close()
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
@@ -337,7 +352,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
                                        'you not have a POSIX system', estimator)
         res = []
-        if progress_reporter is not None:
+        if show_progress:
             from pyemma._base.model import SampledModel
             if isinstance(estimator, SampledModel):
                 for e in estimators:
@@ -345,11 +360,11 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
         for estimator, param_set in zip(estimators, param_sets):
             res.append(_estimate_param_scan_worker(estimator, param_set, X,
-                                                   evaluate, evaluate_args, failfast))
-            if progress_reporter is not None and show_progress:
+                                                   evaluate, evaluate_args, failfast, return_exceptions))
+            if show_progress:
                 progress_reporter._progress_update(1, stage=0)
 
-    if progress_reporter is not None and show_progress:
+    if show_progress:
         progress_reporter._progress_force_finish(0)
 
     # done
@@ -362,7 +377,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 # we do not want to derive from Serializable here, because this would make all children serializable.
 # However we guide serializable children, what to store/restore.
 class Estimator(_BaseEstimator, Loggable):
-    """ Base class for pyEMMA estimators
+    """ Base class for PyEMMA estimators
 
     """
     # flag indicating if estimator's estimate method has been called
@@ -395,6 +410,8 @@ class Estimator(_BaseEstimator, Loggable):
         if params:
             self.set_params(**params)
         self._model = self._estimate(X)
+        # ensure _estimate returned something
+        assert self._model is not None
         self._estimated = True
         return self
 
@@ -422,6 +439,8 @@ class Estimator(_BaseEstimator, Loggable):
     def model(self):
         """The model estimated by this Estimator"""
         try:
+            if self._model is None:
+                raise AttributeError
             return self._model
         except AttributeError:
             raise AttributeError(
@@ -429,10 +448,52 @@ class Estimator(_BaseEstimator, Loggable):
 
     def _check_estimated(self):
         if not self._estimated:
-            raise Exception("Estimator is not parametrized.")
+            raise Exception('Estimator is not estimated. Call estimate/fit or partial_fit first.')
+
+    # override get_params here, to handle PyEMMA_DeprecationWarnings as well
+    def get_params(self, deep=True):
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep: boolean, optional
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params : mapping of string to any
+            Parameter names mapped to their values.
+        """
+        out = dict()
+        import warnings
+        from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+
+        for key in self._get_param_names():
+            # We need deprecation warnings to always be on in order to
+            # catch deprecated param values.
+            # This is set in utils/__init__.py but it gets overwritten
+            # when running under python3 somehow.
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.simplefilter("always", PyEMMA_DeprecationWarning)
+            try:
+                with warnings.catch_warnings(record=True) as w:
+                    value = getattr(self, key, None)
+                if len(w) and w[0].category in (DeprecationWarning, PyEMMA_DeprecationWarning):
+                    # if the parameter is deprecated, don't show it
+                    continue
+            finally:
+                warnings.filters.pop(0)
+                warnings.filters.pop(0)
+
+            # XXX: should we rather test if instance of estimator?
+            if deep and hasattr(value, 'get_params'):
+                deep_items = list(value.get_params().items())
+                out.update((key + '__' + k, val) for k, val in deep_items)
+            out[key] = value
+        return out
 
     # serialization handling
-    _serialize_version = 0
     __serialize_fields = ('_estimated', 'model')
 
     def __my_getstate__(self):
@@ -451,4 +512,4 @@ class Estimator(_BaseEstimator, Loggable):
                 valid_parameters.extend(c._get_param_names())
             for param in valid_parameters:
                 if param in state:
-                    setattr(self, param, state.pop(param))
+                    setattr(self, param, state.get(param))

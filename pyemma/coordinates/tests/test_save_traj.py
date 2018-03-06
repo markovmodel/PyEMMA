@@ -212,7 +212,7 @@ class TestSaveTraj(unittest.TestCase):
     def test_with_fragmented_reader_chunksize_0(self):
         # intentionally group bpti dataset to a fake fragmented traj
         frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2], self.trajfiles[2]]
-        reader = coor.source(frag_traj, top=self.pdbfile, chunk_size=0)
+        reader = coor.source(frag_traj, top=self.pdbfile, chunksize=0)
         assert reader.chunksize == 0
         traj = save_traj(reader, self.sets, None)
         traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)

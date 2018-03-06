@@ -19,6 +19,7 @@ import tempfile
 import unittest
 
 import numpy as np
+import six
 
 import pyemma
 from pyemma import datasets
@@ -26,6 +27,7 @@ from pyemma import load
 from pyemma.msm import bayesian_markov_model
 
 
+@unittest.skipIf(six.PY2, 'only py3')
 class TestMSMSerialization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

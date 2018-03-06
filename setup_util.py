@@ -25,9 +25,14 @@ import sys
 import shutil
 from distutils.ccompiler import new_compiler
 import setuptools
-
-
 import contextlib
+
+
+@contextlib.contextmanager
+def TemporaryDirectory():
+    n = tempfile.mkdtemp()
+    yield n
+    shutil.rmtree(n)
 
 
 @contextlib.contextmanager
@@ -63,7 +68,7 @@ def stdchannel_redirected(stdchannel, dest_filename, fake=False):
 def has_function(cc, funcname, headers):
     if not isinstance(headers, (tuple, list)):
         headers = [headers]
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         try:
             fname = os.path.join(tmpdir, 'funcname.c')
             f = open(fname, 'w')
@@ -102,13 +107,14 @@ def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
     the specified compiler.
     """
-    import tempfile
-    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f, \
+    with TemporaryDirectory() as tmpdir, \
             stdchannel_redirected(sys.stderr, os.devnull), \
             stdchannel_redirected(sys.stdout, os.devnull):
-        f.write('int main (int argc, char **argv) { return 0; }')
+        f = tempfile.mktemp(suffix='.cpp', dir=tmpdir)
+        with open(f, 'w') as fh:
+            fh.write('int main (int argc, char **argv) { return 0; }')
         try:
-            compiler.compile([f.name], extra_postargs=[flagname])
+            compiler.compile([f], extra_postargs=[flagname], output_dir=tmpdir)
         except setuptools.distutils.errors.CompileError:
             return False
     return True

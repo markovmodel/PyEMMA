@@ -21,6 +21,7 @@ import unittest
 from contextlib import contextmanager
 
 import numpy as np
+import six
 
 import pyemma
 from pyemma._base.serialization.serialization import ClassVersionException
@@ -79,7 +80,7 @@ def patch_old_location(faked_old_class, new_class):
 
         yield
 
-
+@unittest.skipIf(six.PY2, 'only py3')
 class TestSerialisation(unittest.TestCase):
 
     def setUp(self):
@@ -193,14 +194,13 @@ class TestSerialisation(unittest.TestCase):
         """ overwrite the pickling procedure with something an evil method. Ensure it raises."""
         import subprocess
         from pickle import UnpicklingError
-        called = False
+        import types
+        called = {'result': False}
         def evil(self):
-            nonlocal called
-            called = True
+            called['result'] = True
             return subprocess.Popen, ('/bin/sh', )
 
         inst = np_container(np.empty(0))
-        import types
         old = SerializableMixIn.__getstate__
         old2 = inst.__class__.__reduce__
         try:
@@ -220,6 +220,25 @@ class TestSerialisation(unittest.TestCase):
         inst.save(self.fn)
         restore = pyemma.load(self.fn)
         assert restore.has_private_attr()
+
+    def test_rename(self):
+        inst = np_container(None)
+        inst.save(self.fn, model_name='a')
+        from pyemma._base.serialization.h5file import H5File
+        with H5File(self.fn) as f:
+            f.rename('a', 'b')
+            models = f.models_descriptive.keys()
+        self.assertIn('b', models)
+        self.assertNotIn('a', models)
+
+    def test_delete(self):
+        inst = np_container(None)
+        inst.save(self.fn, model_name='a')
+        from pyemma._base.serialization.h5file import H5File
+        with H5File(self.fn) as f:
+            f.delete('a')
+            self.assertNotIn('a', f.models_descriptive.keys())
+
 
 if __name__ == '__main__':
     unittest.main()

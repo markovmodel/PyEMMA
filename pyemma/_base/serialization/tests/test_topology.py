@@ -20,10 +20,11 @@ import tempfile
 import unittest
 import pkg_resources
 import mdtraj
+import six
 
-from pyemma._base.serialization.h5file import H5Wrapper
+from pyemma._base.serialization.h5file import H5File
 
-
+@unittest.skipIf(six.PY2, 'only py3')
 class TestTopology(unittest.TestCase):
     maxDiff = None
 
@@ -35,7 +36,7 @@ class TestTopology(unittest.TestCase):
 
     def _load_cmp(self, pdb):
         top = mdtraj.load(pdb).top
-        with H5Wrapper(self.f) as fh:
+        with H5File(self.f) as fh:
             fh.add_object('top', top)
             restored = fh.model
 

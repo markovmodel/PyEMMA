@@ -1,23 +1,52 @@
 Changelog
 =========
 
-2.5 (??-??-????)
-----------------
-
-As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
-your Python installation to at least version 3.5.
+2.5.2 (??-??-????)
+------------------
 
 **New features**:
 
+- plots:
+   - plot_feature_histograms: added multi-dimensional stacked histogram plot function. #1264
+
+**Fixes**:
+
+- msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
+
+
+2.5.1 (02-17-2018)
+------------------
+
+Quick fix release to repair chunking in the coordinates package.
+
+**Fixes**:
+
+- msm: fix bug in ImpliedTimescales, which happened when an estimation failed for a given lag time. #1248
+- coordinates: fixed handling of default chunksize. #1247, #1251, #1252
+- base: updated pybind to 2.2.2. #1249
+
+
+2.5 (02-09-2018)
+----------------
+
+As of this version the usage of Python 2.7 is officially deprecated. Please upgrade
+your Python installation to at least version 3.5 to catch future updates.
+
+**New features**:
+
+- base: most Estimators and Models in msm, thermo and coordinates packages can be saved to disk now.
+  Multiple models/estimators can be stored in the same file, which uses HDF5 as backend. #849, 867, #1155, #1200, #1205
 - msm: Added Augmented Markov Models. A way to include averaged experimental
   data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
   a given threshold. #1106
-- coodinates: selection based features allow alignment to a reference structure. #1184
+- coordinates: selection based features allow alignment to a reference structure. #1184
 - coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
 - coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
   extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
-
+- datasets: added Prinz potential (quadwell). #1226
+- coordinates: added VAMP estimator. #1237
+- coordinates: added method 'write_to_hdf5' for easy exporting streams to HDF5. #1242
 
 - References:
 

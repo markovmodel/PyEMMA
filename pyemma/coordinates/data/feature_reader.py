@@ -112,7 +112,7 @@ class FeatureReader(DataSource, SerializableMixIn):
 
         # featurizer
         if topologyfile and featurizer:
-            self._logger.warning("Both a topology file and a featurizer were given as arguments. "
+            self.logger.warning("Both a topology file and a featurizer were given as arguments. "
                                  "Only featurizer gets respected in this case.")
         if not featurizer:
             self.featurizer = MDFeaturizer(topologyfile)
@@ -311,8 +311,9 @@ class FeatureReaderIterator(DataSourceIterator):
                 return_trajindex=return_trajindex,
                 cols=cols
         )
+        # set chunksize prior selecting the first file, to ensure we have a sane value for mditer...
+        self.chunksize = chunk
         self._selected_itraj = -1
-        self._select_file(0)
 
     @property
     def chunksize(self):
@@ -322,7 +323,7 @@ class FeatureReaderIterator(DataSourceIterator):
     def chunksize(self, value):
         self.state.chunk = value
         if hasattr(self, '_mditer'):
-            self._mditer._chunksize = int(value)
+            self._mditer.chunksize = value
 
     @property
     def skip(self):
@@ -353,6 +354,8 @@ class FeatureReaderIterator(DataSourceIterator):
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
+        if not hasattr(self, '_mditer') or self._mditer is None:
+            self._select_file(self._itraj)
         try:
             chunk = next(self._mditer)
         except StopIteration as si:
@@ -408,6 +411,10 @@ class FeatureReaderIterator(DataSourceIterator):
         self._closed = False
 
     def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):
-        return patches.iterload(filename, chunk=self.chunksize, top=self._data_source.featurizer.topology,
+        if self.is_uniform_stride(self.stride):
+            flen = self._data_source.trajectory_length(itraj=self._itraj, stride=self.stride, skip=self.skip)
+        else:
+            flen = self.ra_trajectory_length(self._itraj)
+        return patches.iterload(filename, flen, chunk=self.chunksize, top=self._data_source.featurizer.topology,
                                 skip=skip, stride=stride, atom_indices=atom_indices)
 

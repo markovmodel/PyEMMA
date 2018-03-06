@@ -179,7 +179,7 @@ class ProgressReporterMixin(object):
             return
 
         pg = self._prog_rep_progressbars[stage]
-        pg.update(numerator_increment)
+        pg.update(int(numerator_increment))
 
     def _progress_force_finish(self, stage=0, description=None):
         """ forcefully finish the progress for given stage """
@@ -193,7 +193,9 @@ class ProgressReporterMixin(object):
 
         pg = self._prog_rep_progressbars[stage]
         pg.desc = description
-        pg.update(pg.total - pg.n)
+        increment = int(pg.total - pg.n)
+        if increment > 0:
+            pg.update(increment)
         pg.refresh(nolock=True)
         pg.close()
         self._prog_rep_progressbars.pop(stage, None)

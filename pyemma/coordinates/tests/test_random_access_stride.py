@@ -277,16 +277,16 @@ class TestRandomAccessStride(TestCase):
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
 
     def test_data_in_memory_random_access(self):
-        # access with a chunk_size that is larger than the largest index list of stride
-        data_in_memory = coor.source(self.data, chunk_size=10)
+        # access with a chunksize that is larger than the largest index list of stride
+        data_in_memory = coor.source(self.data, chunksize=10)
         out1 = data_in_memory.get_output(stride=self.stride)
 
-        # access with a chunk_size that is smaller than the largest index list of stride
-        data_in_memory = coor.source(self.data, chunk_size=1)
+        # access with a chunksize that is smaller than the largest index list of stride
+        data_in_memory = coor.source(self.data, chunksize=1)
         out2 = data_in_memory.get_output(stride=self.stride)
 
         # access in full trajectory mode
-        data_in_memory = coor.source(self.data, chunk_size=0)
+        data_in_memory = coor.source(self.data, chunksize=0)
         out3 = data_in_memory.get_output(stride=self.stride)
 
         for idx in np.unique(self.stride[:, 0]):
@@ -295,7 +295,7 @@ class TestRandomAccessStride(TestCase):
             np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
     def test_data_in_memory_without_first_two_trajs(self):
-        data_in_memory = coor.source(self.data, chunk_size=10)
+        data_in_memory = coor.source(self.data, chunksize=10)
         out = data_in_memory.get_output(stride=self.stride2)
         np.testing.assert_array_almost_equal(out[2], [self.data[2][0]])
 
@@ -306,11 +306,11 @@ class TestRandomAccessStride(TestCase):
                 np.savetxt(tmp, self.data[idx])
 
             # large enough chunksize
-            csv_fr = coor.source(tmpfiles, chunk_size=10)
+            csv_fr = coor.source(tmpfiles, chunksize=10)
             out1 = csv_fr.get_output(stride=self.stride)
 
             # small chunk size
-            np_fr = coor.source(tmpfiles, chunk_size=1)
+            np_fr = coor.source(tmpfiles, chunksize=1)
             out2 = np_fr.get_output(stride=self.stride)
 
             for idx in np.unique(self.stride[:, 0]):
@@ -330,15 +330,15 @@ class TestRandomAccessStride(TestCase):
             for idx, tmp in enumerate(tmpfiles):
                 np.save(tmp, self.data[idx])
             # large enough chunk size
-            np_fr = coor.source(tmpfiles, chunk_size=10)
+            np_fr = coor.source(tmpfiles, chunksize=10)
             out1 = np_fr.get_output(stride=self.stride)
 
             # small chunk size
-            np_fr = coor.source(tmpfiles, chunk_size=1)
+            np_fr = coor.source(tmpfiles, chunksize=1)
             out2 = np_fr.get_output(stride=self.stride)
 
             # full traj mode
-            np_fr = coor.source(tmpfiles, chunk_size=0)
+            np_fr = coor.source(tmpfiles, chunksize=0)
             out3 = np_fr.get_output(stride=self.stride)
 
             for idx in np.unique(self.stride[:, 0]):
@@ -461,6 +461,8 @@ class TestRandomAccessStride(TestCase):
 
     def test_RA_high_stride(self):
         """ ensure we use a random access pattern for high strides chunksize combinations to avoid memory issues."""
+        from pyemma.coordinates.util.patches import iterload
+
         n=int(1e5)
         n_bytes = 3*3*8*n # ~8Mb
         savable_formats_mdtra_18 = (
@@ -469,26 +471,29 @@ class TestRandomAccessStride(TestCase):
         for ext in savable_formats_mdtra_18:
             traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
 
-            from unittest.mock import patch
+            from mock import patch
             # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
             with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
                 r = coor.source(traj, top=get_top())
                 it = r.iterator(stride=1000, chunk=100000)
-                assert it._mditer.is_ra_iter
+                next(it)
+                assert iterload._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION or it._mditer.is_ra_iter
 
                 out_ra = r.get_output(stride=1000, chunk=10000)
             it = r.iterator(stride=1)
-            assert not it._mditer.is_ra_iter
+            next(it)
+            assert iterload._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION or not it._mditer.is_ra_iter
             out = r.get_output(stride=1000)
             np.testing.assert_equal(out_ra, out)
 
             # check max stride exceeding
-            from pyemma.coordinates.util.patches import iterload
             it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA+1)
-            assert it._mditer.is_ra_iter
+            next(it)
+            assert iterload._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION or it._mditer.is_ra_iter
 
             it = r.iterator(stride=iterload.MAX_STRIDE_SWITCH_TO_RA)
-            assert not it._mditer.is_ra_iter
+            next(it)
+            assert iterload._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION or not it._mditer.is_ra_iter
 
 if __name__ == '__main__':
     unittest.main()

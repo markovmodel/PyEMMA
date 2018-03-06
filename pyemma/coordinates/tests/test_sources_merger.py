@@ -21,15 +21,15 @@ class TestSourcesMerger(unittest.TestCase):
     def setUp(self):
         self.readers = []
         data_dir = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data')
+        # three md trajs
         trajs = glob(data_dir + "/bpti_0*.xtc")
         top = os.path.join(data_dir, 'bpti_ca.pdb')
         self.readers.append(source(trajs, top=top))
+        self.readers[0].featurizer.add_all()
         ndim = self.readers[0].ndim
+        # three random arrays
         lengths = self.readers[0].trajectory_lengths()
         arrays = [np.random.random( (length, ndim) ) for length in lengths]
-
-        self.desired_combined_output = None
-
         self.readers.append(source(arrays))
 
     def _get_output_compare(self, joiner, stride=1, chunk=0, skip=0):
@@ -51,7 +51,7 @@ class TestSourcesMerger(unittest.TestCase):
         j = SourcesMerger(self.readers)
         self._get_output_compare(j, stride=1, chunk=0, skip=0)
         self._get_output_compare(j, stride=2, chunk=5, skip=0)
-        self._get_output_compare(j, stride=2, chunk=13, skip=3)
+        self._get_output_compare(j, stride=2, chunk=9, skip=3)
         self._get_output_compare(j, stride=3, chunk=2, skip=7)
 
     def test_ra_stride(self):

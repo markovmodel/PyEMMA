@@ -23,8 +23,10 @@ import mdtraj as md
 import numpy as np
 import os
 
+from six import string_types
 
-def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw):
+
+def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
     r"""
     Creates a (possibly featured) file reader by a number of input files and either a topology file or a featurizer.
     Parameters
@@ -35,7 +37,7 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
         A topology file. If given, the featurizer argument can be None.
     :param featurizer:
         A featurizer. If given, the topology file can be None.
-    :param chunk_size:
+    :param chunksize:
         The chunk size with which the corresponding reader gets initialized.
     :return: Returns the reader.
     """
@@ -47,18 +49,18 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
     # fragmented trajectories
     if (isinstance(input_files, (list, tuple)) and len(input_files) > 0 and
             any(isinstance(item, (list, tuple)) for item in input_files)):
-        return FragmentedTrajectoryReader(input_files, topology, chunk_size, featurizer)
+        return FragmentedTrajectoryReader(input_files, topology, chunksize, featurizer)
 
     # normal trajectories
-    if (isinstance(input_files, str)
+    if (isinstance(input_files, string_types)
             or (isinstance(input_files, (list, tuple))
-                and (any(isinstance(item, str) for item in input_files)
+                and (any(isinstance(item, string_types) for item in input_files)
                      or len(input_files) is 0))):
         reader = None
         # check: if single string create a one-element list
-        if isinstance(input_files, str):
+        if isinstance(input_files, string_types):
             input_list = [input_files]
-        elif len(input_files) > 0 and all(isinstance(item, str) for item in input_files):
+        elif len(input_files) > 0 and all(isinstance(item, string_types) for item in input_files):
             input_list = input_files
         else:
             if len(input_files) is 0:
@@ -94,12 +96,12 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
                         from mdtraj.formats import HDF5TrajectoryFile
                         HDF5TrajectoryFile(input_list[0])
                         reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
-                                               chunksize=chunk_size)
+                                               chunksize=chunksize)
                     except:
                         from pyemma.coordinates.data.h5_reader import H5Reader
-                        reader = H5Reader(filenames=input_files, chunk_size=chunk_size, **kw)
+                        reader = H5Reader(filenames=input_files, chunk_size=chunksize, **kw)
                 # CASE 1.1: file types are MD files
-                elif suffix in list(FormatRegistry.loaders.keys()):
+                elif suffix in FormatRegistry.loaders.keys():
                     # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
                     # create a MD reader with file names and topology
                     if not featurizer and not topology:
@@ -107,13 +109,13 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
                                          "featurizer or a topology file.")
 
                     reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
-                                           chunksize=chunk_size)
+                                           chunksize=chunksize)
                 else:
                     if suffix in ['.npy', '.npz']:
-                        reader = NumPyFileReader(input_list, chunksize=chunk_size)
+                        reader = NumPyFileReader(input_list, chunksize=chunksize)
                     # otherwise we assume that given files are ascii tabulated data
                     else:
-                        reader = PyCSVReader(input_list, chunksize=chunk_size, **kw)
+                        reader = PyCSVReader(input_list, chunksize=chunksize, **kw)
         else:
             raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
     else:
@@ -175,7 +177,7 @@ def preallocate_empty_trajectory(top, n_frames=1):
 
 
 def enforce_top(top):
-    if isinstance(top, str):
+    if isinstance(top, string_types):
         top = md.load(top).top
     elif isinstance(top, md.Trajectory):
         top = top.top

@@ -24,27 +24,29 @@ requirements:
     - numpy 1.9.*  # [not (win and (py35 or py36))]
     - numpy 1.9.*  # [win and py35]
     - numpy 1.11.*  # [win and py36]
-    - python >=3
+    - python
     - scipy
     - setuptools
-    - gcc # [ not win ]
+    - toolchain
+
   run:
     - bhmm >=0.6,<0.7
     - decorator >=4.0.0
     - h5py
-    - libgcc # [linux or osx]
     - matplotlib
     - mdtraj
+    - mock # TODO: remove when py3k only.
     - msmtools >=1.2
-    - numpy >=1.9  # [not (win and (py35 or py36))]
-    - numpy >=1.9  # [win and py35]
-    - numpy >=1.11  # [win and py36]
+    - numpy >=1.9,<1.14  # [not (win and (py35 or py36))]
+    - numpy >=1.9,<1.14  # [win and py35]
+    - numpy >=1.11,<1.14 # [win and py36]
     - pathos
     - psutil >3.1
-    - python >=3
+    - python
     - pyyaml
     - scipy
     - setuptools
+    - six >=1.10
     - thermotools >=0.2.6
     - tqdm
 
@@ -57,6 +59,7 @@ test:
   requires:
     - pytest
     - pytest-cov
+    - coverage
    # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
     - pytest-faulthandler # [not win]
     - pytest-xdist

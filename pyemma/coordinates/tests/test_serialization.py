@@ -23,12 +23,13 @@ import unittest
 
 import numpy as np
 import pkg_resources
+import six
 
 import pyemma
 import pyemma.coordinates as coor
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 
-
+@unittest.skipIf(six.PY2, 'only py3')
 class TestSerializationCoordinates(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -235,7 +236,7 @@ class TestSerializationCoordinates(unittest.TestCase):
             # one consisting of the first and the last
             frag_trajs = [trajfiles, [trajfiles[0]], [trajfiles[0], trajfiles[2]]]
             chunksize = 232
-            source = coor.source(frag_trajs, top=top_file, chunk_size=chunksize)
+            source = coor.source(frag_trajs, top=top_file, chunksize=chunksize)
             params = {'chunksize': chunksize, 'ndim': source.ndim, '_trajectories': trajfiles}
             restored = self.compare(source, params)
 

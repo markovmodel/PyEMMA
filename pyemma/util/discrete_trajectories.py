@@ -61,6 +61,7 @@ def read_discrete_trajectory(filename):
         dtraj=np.fromstring(lines, dtype=int, sep="\n")
         return dtraj
 
+
 @shortcut('write_dtraj')
 def write_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to ascii file.
@@ -109,6 +110,7 @@ def load_discrete_trajectory(filename):
     """
     dtraj=np.load(filename)
     return dtraj
+
 
 @shortcut('save_dtraj')
 def save_discrete_trajectory(filename, dtraj):
@@ -168,11 +170,12 @@ def count_states(dtrajs, ignore_negative=False):
         nmax = max(nmax, bc.shape[0])
         bcs.append(bc)
     # construct total bincount
-    res = np.zeros((nmax),dtype=int)
+    res = np.zeros(nmax, dtype=int)
     # add up individual bincounts
-    for i in range(len(bcs)):
-        res[:bcs[i].shape[0]] += bcs[i]
+    for i, bc in enumerate(bcs):
+        res[:bc.shape[0]] += bc
     return res
+
 
 def visited_set(dtrajs):
     r"""returns the set of states that have at least one count
@@ -189,6 +192,7 @@ def visited_set(dtrajs):
     """
     hist = count_states(dtrajs)
     return np.argwhere(hist > 0)[:,0]
+
 
 @shortcut('nstates')
 def number_of_states(dtrajs, only_used = False):
@@ -219,7 +223,7 @@ def number_of_states(dtrajs, only_used = False):
 ################################################################################
 
 
-def index_states(dtrajs, subset = None):
+def index_states(dtrajs, subset=None):
     """Generates a trajectory/time indexes for the given list of states
 
     Parameters
@@ -243,7 +247,7 @@ def index_states(dtrajs, subset = None):
     # select subset unless given
     n = number_of_states(dtrajs)
     if subset is None:
-        subset = range(n)
+        subset = np.arange(n)
     else:
         if np.max(subset) >= n:
             raise ValueError('Selected subset is not a subset of the states in dtrajs.')
@@ -257,19 +261,19 @@ def index_states(dtrajs, subset = None):
     full2states = np.zeros((n), dtype=int)
     full2states[subset] = range(len(subset))
     # initialize results
-    res    = np.ndarray((len(subset)), dtype=object)
+    res    = np.ndarray(len(subset), dtype=object)
     counts = np.zeros((len(subset)), dtype=int)
     for i,s in enumerate(subset):
         res[i] = np.zeros((hist[s],2), dtype=int)
     # walk through trajectories and remember requested state indexes
     for i,dtraj in enumerate(dtrajs):
         for t,s in enumerate(dtraj):
-            if s >= 0:  # only index nonnegative state indexes
-                if is_requested[s]:
-                    k = full2states[s]
-                    res[k][counts[k],0] = i
-                    res[k][counts[k],1] = t
-                    counts[k] += 1
+            # only index nonnegative state indexes
+            if s >= 0 and is_requested[s]:
+                k = full2states[s]
+                res[k][counts[k],0] = i
+                res[k][counts[k],1] = t
+                counts[k] += 1
     return res
 
 ################################################################################
@@ -308,6 +312,7 @@ def sample_indexes_by_sequence(indexes, sequence):
 
     return res
 
+
 def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
     """Samples trajectory/time indexes according to the given sequence of states
 
@@ -338,17 +343,15 @@ def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
     n = len(indexes)
     # define set of states to work on
     if subset is None:
-        subset = range(n)
+        subset = np.arange(n)
 
     # list of states
-    res = np.ndarray((len(subset)), dtype=object)
-    for i in range(len(subset)):
-        # sample the following state
-        s = subset[i]
+    res = np.ndarray(len(subset), dtype=object)
+    for i, s in enumerate(subset):
         # how many indexes are available?
         m_available = indexes[s].shape[0]
         # do we have no indexes for this state? Then insert empty array.
-        if (m_available == 0):
+        if m_available == 0:
             res[i] = np.zeros((0,2), dtype=int)
         elif replace:
             I = np.random.choice(m_available, nsample, replace=True)
@@ -358,6 +361,7 @@ def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
             res[i] = indexes[s][I,:]
 
     return res
+
 
 def sample_indexes_by_distribution(indexes, distributions, nsample):
     """Samples trajectory/time indexes according to the given probability distributions
@@ -390,10 +394,10 @@ def sample_indexes_by_distribution(indexes, distributions, nsample):
             raise ValueError('Size error: Distributions must all be of length n (number of states).')
 
     # list of states
-    res = np.ndarray((len(distributions)), dtype=object)
-    for i in range(len(distributions)):
+    res = np.ndarray(len(distributions), dtype=object)
+    for i, dist in enumerate(distributions):
         # sample states by distribution
-        sequence = np.random.choice(n, size=nsample, p=distributions[i])
+        sequence = np.random.choice(n, size=nsample, p=dist)
         res[i] = sample_indexes_by_sequence(indexes, sequence)
     #
     return res

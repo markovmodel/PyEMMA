@@ -27,6 +27,8 @@ import scipy.sparse as scisp
 import numbers
 import collections
 
+from six import string_types
+
 # ======================================================================================================================
 # BASIC TYPE CHECKS
 # ======================================================================================================================
@@ -137,7 +139,7 @@ def is_float_array(l):
     return False
 
 def is_string(s):
-    return isinstance(s, str)
+    return isinstance(s, string_types)
 
 def is_iterable(I):
     return isinstance(I, collections.Iterable)
@@ -147,7 +149,7 @@ def is_list(S):
     return isinstance(S, (list, tuple))
 
 def is_list_of_string(S):
-    return isinstance(S, (list, tuple)) and (all(isinstance(s, str) for s in S))
+    return isinstance(S, (list, tuple)) and (all(isinstance(s, string_types) for s in S))
 
 def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
@@ -171,8 +173,8 @@ def ensure_dtraj_list(dtrajs):
         if is_list_of_int(dtrajs):
             return [np.array(dtrajs, dtype=int)]
         else:
-            for i in range(len(dtrajs)):
-                dtrajs[i] = ensure_dtraj(dtrajs[i])
+            for i, dtraj in enumerate(dtrajs):
+                dtrajs[i] = ensure_dtraj(dtraj)
             return dtrajs
     else:
         return [ensure_dtraj(dtrajs)]
@@ -476,8 +478,8 @@ def ensure_traj_list(trajs):
             return [np.array(trajs)[:,None]]
         else:
             res = []
-            for i in range(len(trajs)):
-                res.append(ensure_traj(trajs[i]))
+            for traj in trajs:
+                res.append(ensure_traj(traj))
             return res
     else:
         # looks like this is one trajectory

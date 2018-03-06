@@ -174,7 +174,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
     def describe(self):
         try:
             dim = self.dimension()
-        except AttributeError:
+        except RuntimeError:
             dim = self.dim
         return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
@@ -234,7 +234,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
         The projection matrix is first being calculated upon its first access.
         """
         from pyemma.coordinates import source
-        iterable = source(X)
+        iterable = source(X, chunksize=self.chunksize)
 
         indim = iterable.dimension()
         if not self.dim <= indim:
@@ -249,7 +249,6 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
                                         cov=self._covar.C00_,
                                         cov_tau=self._covar.C0t_)
 
-        self._used_data = self._covar._used_data
         self._estimated = False
 
         return self
@@ -266,13 +265,11 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
 
         if self._logger_is_active(self._loglevel_DEBUG):
             self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                               " with dimension (%i, %i)", self._lag, indim, indim)
-
-        covar.estimate(iterable, **kw)
+                              " with dimension (%i, %i)", self._lag, indim, indim)
+        covar.estimate(iterable, chunksize=self.chunksize, **kw)
         self._model.update_model_params(mean=covar.mean,
                                         cov=covar.C00_,
                                         cov_tau=covar.C0t_)
-        self._used_data = covar._used_data
         self._diagonalize()
 
         return self._model
@@ -297,7 +294,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
-        self._logger.debug("diagonalize Cov and Cov_tau.")
+        self.logger.debug("diagonalize Cov and Cov_tau.")
         try:
             eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
@@ -312,7 +309,7 @@ class TICA(StreamingEstimationTransformer, SerializableMixIn):
             regularized_timescales = 0.5 * timescales * np.maximum(np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1), 0)
 
             eigenvectors *= np.sqrt(regularized_timescales / 2)
-        self._logger.debug("finished diagonalisation.")
+        self.logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
         cumvar = np.cumsum(np.abs(eigenvalues) ** 2)

@@ -22,7 +22,7 @@ Created on 11.06.2015
 
 from __future__ import absolute_import, print_function
 
-import configparser
+from six.moves import configparser
 import os
 import sys
 import unittest
@@ -174,7 +174,7 @@ class TestConfig(unittest.TestCase):
     def test_mute_progress(self):
         """ switch mute on shall turn off progress bars"""
         from pyemma._base.progress import ProgressReporterMixin
-        from unittest import mock
+        import mock
         rp = ProgressReporterMixin()
 
         self.config_inst.mute = True

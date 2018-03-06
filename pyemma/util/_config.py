@@ -17,7 +17,8 @@
 
 from __future__ import absolute_import, print_function
 
-import configparser
+import six
+from six.moves.configparser import ConfigParser
 import os
 import shutil
 import warnings
@@ -31,6 +32,10 @@ import pkg_resources
 # indicate error during reading
 class ReadConfigException(Exception):
     pass
+
+if six.PY2:
+    class NotADirectoryError(Exception):
+        pass
 
 __all__ = ('Config', )
 
@@ -172,10 +177,10 @@ class Config(object):
         if not os.path.exists(pyemma_cfg_dir):
             try:
                 mkdir_p(pyemma_cfg_dir)
-            except EnvironmentError:
-                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
             except NotADirectoryError:  # on Python 3
                 raise ConfigDirectoryException("pyemma cfg dir (%s) is not a directory" % pyemma_cfg_dir)
+            except EnvironmentError:
+                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
 
         if not os.path.isdir(pyemma_cfg_dir):
             raise ConfigDirectoryException("%s is no valid directory" % pyemma_cfg_dir)
@@ -352,7 +357,7 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
-        config = configparser.ConfigParser()
+        config = ConfigParser()
 
         try:
             self._used_filenames = config.read(filenames)

@@ -68,3 +68,4 @@ from .plots2d import contour, scatter_contour, plot_free_energy
 from .networks import plot_markov_model, plot_flux, plot_network, NetworkPlot
 from .markovtests import plot_cktest
 from .thermoplots import *
+from .plots1d import plot_feature_histograms

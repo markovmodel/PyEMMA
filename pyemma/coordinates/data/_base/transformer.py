@@ -21,20 +21,18 @@ from __future__ import absolute_import
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
+import six
 
 from pyemma._ext.sklearn.base import TransformerMixin
 from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
-from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma.coordinates.util.change_notification import (inform_children_upon_change,
-                                                         NotifyOnChangesMixIn)
 
 __all__ = ['Transformer', 'StreamingTransformer']
 __author__ = 'noe, marscher'
 
 
-class Transformer(TransformerMixin, metaclass=ABCMeta):
+class Transformer(six.with_metaclass(ABCMeta, TransformerMixin)):
     """ A transformer takes data and transforms it """
 
     @abstractmethod
@@ -102,7 +100,7 @@ class Transformer(TransformerMixin, metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
+class StreamingTransformer(Transformer, DataSource):
 
     r""" Basis class for pipelined Transformers.
 
@@ -118,8 +116,7 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
     def __init__(self, chunksize=None):
         super(StreamingTransformer, self).__init__(chunksize=chunksize)
         self.data_producer = None
-        self._Y_source = None
-        self._estimated = True # this class should only transform data and need no estimation.
+        self._estimated = True  # this class should only transform data and need no estimation.
 
     @abstractmethod
     def dimension(self):
@@ -133,18 +130,10 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
         return self._data_producer
 
     @data_producer.setter
-    @inform_children_upon_change
     def data_producer(self, dp):
-        if dp is not self.data_producer:
-            # first unregister from current dataproducer
-            if self.data_producer is not None and isinstance(self.data_producer, NotifyOnChangesMixIn):
-                self.data_producer._stream_unregister_child(self)
-            # then register this instance as a child of the new one.
-            if dp is not None and isinstance(dp, NotifyOnChangesMixIn):
-                dp._stream_register_child(self)
-        if dp is not None and not isinstance(dp, Iterable):
-            raise ValueError('can not set data_producer to non-iterable class of type {}'.format(type(dp)))
         self._data_producer = dp
+        if dp is not None and not isinstance(dp, DataSource):
+            raise ValueError('can not set data_producer to non-iterable class of type {}'.format(type(dp)))
         # register random access strategies
         self._set_random_access_strategies()
 
@@ -178,7 +167,7 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
         super(StreamingTransformer, self)._clear_in_memory()
         self._set_random_access_strategies()
 
-    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
+    def _create_iterator(self, skip=0, chunk=None, stride=1, return_trajindex=True, cols=None):
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
                                             return_trajindex=return_trajindex, cols=cols)
 
@@ -186,14 +175,19 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
         if not self.data_producer:
-            return self._default_chunksize
+            return self.default_chunksize
         return self.data_producer.chunksize
 
     @chunksize.setter
-    def chunksize(self, size):
+    def chunksize(self, value):
         if self.data_producer is None:
-            raise RuntimeError('cant set chunksize')
-        self.data_producer.chunksize = size
+            if not isinstance(value, (type(None), int)):
+                raise ValueError('chunksize has to be of type: None or int')
+            if isinstance(value, int) and value < 0:
+                raise ValueError("Chunksize of %s was provided, but has to be >= 0" % value)
+            self._default_chunksize = value
+        else:
+            self.data_producer.chunksize = value
 
     def number_of_trajectories(self, stride=1):
         return self.data_producer.number_of_trajectories(stride)
@@ -231,7 +225,7 @@ class StreamingEstimationTransformer(StreamingTransformer, StreamingEstimator):
 
 class StreamingTransformerIterator(DataSourceIterator):
 
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
+    def __init__(self, data_source, skip=0, chunk=None, stride=1, return_trajindex=False, cols=None):
         super(StreamingTransformerIterator, self).__init__(
             data_source, return_trajindex=return_trajindex)
         self._it = self._data_source.data_producer.iterator(

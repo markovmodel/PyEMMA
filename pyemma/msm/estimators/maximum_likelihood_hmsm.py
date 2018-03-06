@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-# 
+from six.moves import range
 from pyemma.util.annotators import alias, aliased, fix_docs
 
 import numpy as _np
@@ -287,6 +287,17 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     def lagtime(self):
         """ The lag time in steps """
         return self.lag
+
+    @property
+    def nstates(self):
+        return self._nstates
+
+    @nstates.setter
+    def nstates(self, value):
+        # we override this setter here, because we want to avoid pyemma.msm.MSM class to overwrite our input parameter.
+        # caused bug #1266
+        if int(value) > 0 and value is not None:
+            self._nstates = value
 
     @property
     def nstates_obs(self):

@@ -209,6 +209,12 @@ class TestITS_MSM(unittest.TestCase):
 
         np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
+    def test_errors(self):
+        dtraj_disconnected = [0, 0, 0, 0, -1, 1, 1, 1, 1]
+        with self.assertRaises(RuntimeError) as e:
+            timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
+        self.assertIn('negative row index', e.exception.args[0])
+
 
 class TestITS_AllEstimators(unittest.TestCase):
     """ Integration tests for various estimators
@@ -221,7 +227,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         cls.double_well_data = pyemma.datasets.load_2well_discrete()
 
     def test_its_msm(self):
-        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000])
+        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000], n_jobs=2)
         ref = np.array([[ 174.22244263,    3.98335928,    1.61419816,    1.1214093 ,    0.87692952],
                         [ 285.56862305,    6.66532284,    3.05283223,    2.6525504 ,    1.9138432 ],
                         [ 325.35442195,   24.17388446,   20.52185604,   20.10058217,    17.35451648],
@@ -231,7 +237,7 @@ class TestITS_AllEstimators(unittest.TestCase):
 
     def test_its_bmsm(self):
         estimator = msm.its([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [10, 50, 200],
-                            errors='bayes', nsamples=1000)
+                            errors='bayes', nsamples=1000, n_jobs=2)
         ref = np.array([[ 284.87479737,    6.68390402,    3.0375248,     2.65314172,    1.93066562],
                         [ 320.08583492,   11.14612743,   10.3450663,     9.42799075,    8.2109752 ],
                         [ 351.41541961,   42.87427869,   41.17841657,   37.35485197,   23.24254608]])
@@ -239,11 +245,13 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        np.testing.assert_array_less(L, estimator.timescales)
-        np.testing.assert_array_less(estimator.timescales, R)
+        # we only test the first timescale, because the second is already ambiguous (deviations after the first place),
+        # which makes this tests fail stochastically.
+        np.testing.assert_array_less(L[0], estimator.timescales[0])
+        np.testing.assert_array_less(estimator.timescales[0], R[0])
 
     def test_its_hmsm(self):
-        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])
+        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100], n_jobs=2)
         ref = np.array([[ 222.0187561 ],
                         [ 339.47351559],
                         [ 382.39905462]])
@@ -252,7 +260,7 @@ class TestITS_AllEstimators(unittest.TestCase):
 
     def test_its_bhmm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10],
-                                        errors='bayes', nsamples=100)
+                                        errors='bayes', nsamples=100, n_jobs=2)
         ref = np.array([[ 222.0187561 ],
                         [ 342.49015547]])
         # rough agreement with MLE

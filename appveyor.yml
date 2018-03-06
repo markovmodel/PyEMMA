@@ -31,9 +31,9 @@ test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - "%CMD_IN_ENV% conda build -q devtools/conda-recipe"
 
-#on_finish:
+on_finish:
   # upload test results to AppVeyor
- # - ps: $wc = New-Object 'System.Net.WebClient';
- #       $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)",
- #       C:\Users\appveyor\reports\xunit.xml))
+ - ps: |
+     $wc = New-Object 'System.Net.WebClient';
+     $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", "C:/Users/appveyor/reports/junit.xml")
 

@@ -16,17 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
+
 from pyemma.thermo.models.stationary import StationaryModel as _StationaryModel
 from pyemma._base.model import call_member as _call_member
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
-from pyemma.util.annotators import deprecated as _deprecated
 
 __author__ = 'noe'
 
 
 class MultiThermModel(_StationaryModel):
     r"""Coupled set of stationary models at multiple thermodynamic states"""
+    __serialize_version = 0
 
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
@@ -68,19 +69,6 @@ class MultiThermModel(_StationaryModel):
             return self._unbiased_state
         except AttributeError:
             return None
-
-    # LEGACY STUFF ====================================================== DELETE WHENEVER CONVENIENT
-    @property
-    @_deprecated("model_active_set is deprecated as all models now contain their own active_set.")
-    def model_active_set(self):
-        return [model.active_set for model in self.models]
-    @property
-    @_deprecated("msm_active_set is deprecated as the msm object now contains its own active_set.")
-    def msm_active_set(self):
-        try: return self.msm.active_set
-        except AttributeError: return None
-    # LEGACY STUFF ====================================================== DELETE WHENEVER CONVENIENT
-    
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):
         # don't normalize f, because in a multiensemble the relative energy levels matter

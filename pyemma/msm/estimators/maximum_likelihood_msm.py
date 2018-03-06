@@ -228,7 +228,7 @@ class _MSMEstimator(_Estimator, _MSM):
         score_method : str
             Overwrite scoring method if desired. If `None`, the estimators scoring
             method will be used. See __init__ for documentation.
-        score_k : str
+        score_k : int or None
             Overwrite scoring rank if desired. If `None`, the estimators scoring
             rank will be used. See __init__ for documentation.
         score_method : str, optional, default='VAMP2'
@@ -270,8 +270,8 @@ class _MSMEstimator(_Estimator, _MSM):
         if self.score_k is None:
             self.score_k = self.nstates
         if self.score_k > self.nstates:
-            self.logger.warning('Requested scoring rank ' + str(self.score_k) +
-                                'exceeds number of MSM states. Reduced to score_k = ' + str(self.nstates))
+            self.logger.warning('Requested scoring rank {rank} exceeds number of MSM states. '
+                                'Reduced to score_k = {nstates}'.format(rank=self.score_k, nstates=self.nstates))
             self.score_k = self.nstates  # limit to nstates
 
         # training data
@@ -1064,6 +1064,15 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+
+        # continue sparse or dense?
+        if not self.sparse:
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+
         self._nstates = self._C_active.shape[0]
 
         # computed derived quantities
@@ -1093,19 +1102,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
                                          mu=statdist_active,
                                          maxiter=self.maxiter, maxerr=self.maxerr)
-        else:
-            raise NotImplementedError(
-                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
-
-        # continue sparse or dense?
-        if not self.sparse:
-            # converting count matrices to arrays. As a result the
-            # transition matrix and all subsequent properties will be
-            # computed using dense arrays and dense matrix algebra.
-            self._C_full = self._C_full.toarray()
-            self._C_active = self._C_active.toarray()
-            P = P.toarray()
-
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
@@ -1849,7 +1845,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
             # General case fixed-point iteration
             if len(self.count_outside) > 0:
-                if i > 1 and _np.all((_np.abs(self._dmhat) / self.sigmas) < self.eps) and not self._converged:
+                if i > 1 and _np.all((_np.abs(self._dmhat) / self.sigmas) < self.eps) and not converged:
                     self.logger.info("Converged Lagrange multipliers after %i steps..." % i)
                     converged = True
             # Special case

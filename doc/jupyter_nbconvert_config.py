@@ -1,5 +1,5 @@
 # Configuration file for jupyter-nbconvert.
-
+c = get_config()
 #------------------------------------------------------------------------------
 # Configurable configuration
 #------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ c.NbConvertApp.export_format = 'rst'
 # c.Exporter.file_extension = '.txt'
 
 # List of preprocessors, by name or namespace, to enable.
-# c.Exporter.preprocessors = []
+c.Exporter.preprocessors = ['nbconvert_filter.RemoveWidgetNotice']
 
 #------------------------------------------------------------------------------
 # TemplateExporter configuration

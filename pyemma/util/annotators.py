@@ -28,7 +28,6 @@ __all__ = ['alias',
            'deprecated',
            'shortcut',
            'fix_docs',
-           'estimation_required',
            ]
 
 
@@ -163,6 +162,38 @@ def shortcut(*names):
     return wrap
 
 
+def get_culprit(omit_top_frames=1):
+    """get the filename and line number calling this.
+
+    Parameters
+    ----------
+    omit_top_frames: int, default=1
+        omit n frames from top of stack stack. Purpose is to get the real
+        culprit and not intermediate functions on the stack.
+    Returns
+    -------
+    (filename: str, fileno: int)
+    filename and line number of the culprit.
+    """
+    try:
+        caller_stack = stack()[omit_top_frames:]
+        while len(caller_stack) > 0:
+            frame = caller_stack.pop(0)
+            filename = frame[1]
+            # skip callee frames if they are other decorators or this file(func)
+            if '<decorator' in filename or __file__ in filename:
+                continue
+            else:
+                break
+        lineno = frame[2]
+        # avoid cyclic references!
+        del caller_stack, frame
+    except OSError:  # eg. os.getcwd() fails in conda-test, since cwd gets deleted.
+        filename = 'unknown'
+        lineno = -1
+    return filename, lineno
+
+
 def deprecated(*optional_message):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
@@ -175,22 +206,7 @@ def deprecated(*optional_message):
 
     """
     def _deprecated(func, *args, **kw):
-        try:
-            caller_stack = stack()[1:]
-            while len(caller_stack) > 0:
-                frame = caller_stack.pop(0)
-                filename = frame[1]
-                # skip callee frames if they are other decorators or this file(func)
-                if '<decorator' in filename or __file__ in filename:
-                    continue
-                else: break
-            lineno = frame[2]
-            # avoid cyclic references!
-            del caller_stack, frame
-        except OSError:  # eg. os.getcwd() fails in conda-test, since cwd gets deleted.
-            filename = 'unknown'
-            lineno = -1
-
+        filename, lineno = get_culprit()
         user_msg = 'Call to deprecated function "%s". Called from %s line %i. %s' \
                    % (func.__name__, filename, lineno, msg)
 
@@ -203,8 +219,6 @@ def deprecated(*optional_message):
         return func(*args, **kw)
 
     # add deprecation notice to func docstring:
-
-
     if len(optional_message) == 1 and callable(optional_message[0]):
         # this is the function itself, decorate!
         msg = ""

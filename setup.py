@@ -42,6 +42,11 @@ except ImportError as ie:
     print("PyEMMA requires setuptools. Please install it with conda or pip.")
     sys.exit(1)
 
+#if sys.version_info[0] < 3:
+#    print('PyEMMA requires Python3k')
+#    sys.exit(2)
+
+
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
@@ -54,6 +59,7 @@ Natural Language :: English
 Operating System :: MacOS :: MacOS X
 Operating System :: POSIX
 Operating System :: Microsoft :: Windows
+Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
 Topic :: Scientific/Engineering :: Bio-Informatics
 Topic :: Scientific/Engineering :: Chemistry
@@ -61,7 +67,12 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-
+from setup_util import lazy_cythonize
+try:
+    from setuptools import setup, Extension, find_packages
+except ImportError as ie:
+    print("PyEMMA requires setuptools. Please install it with conda or pip.")
+    sys.exit(1)
 
 ###############################################################################
 # Extensions
@@ -96,8 +107,8 @@ def extensions():
     assert os.path.exists(pybind_inc)
 
     exts = []
-
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
+    common_cflags = ['-O3', ]
 
     clustering_module = \
         Extension('pyemma.coordinates.clustering._ext',
@@ -111,7 +122,7 @@ def extensions():
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=common_cflags)
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c._covartools',
@@ -121,19 +132,19 @@ def extensions():
                                 pybind_inc,
                                 ],
                   language='c++',
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=common_cflags)
 
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
                   include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
-                  extra_compile_args=['-std=c99', '-O3'])
+                  extra_compile_args=['-std=c99'] + common_cflags)
 
     orderedset = \
         Extension('pyemma._ext.orderedset._orderedset',
                   sources=['pyemma/_ext/orderedset/_orderedset.pyx'],
                   include_dirs=[np_inc],
-                  extra_compile_args=['-O3'])
+                  extra_compile_args=['-std=c99'] + common_cflags)
 
     exts += [clustering_module,
              covar_module,
@@ -224,15 +235,20 @@ def get_cmdclass():
 
             # setup OpenMP support
             openmp_enabled, needs_gomp = detect_openmp()
+            if openmp_enabled:
+                warnings.warn('enabled openmp')
+                omp_compiler_args = ['-fopenmp']
+                omp_libraries = ['-lgomp'] if needs_gomp else []
+                omp_defines = [('USE_OPENMP', None)]
+            # debug
+            dbg_flag = ['-g0' if not self.debug else '-g']
 
             for ext in self.extensions:
                 if ext.language == 'c++':
-                    ext.extra_compile_args = opts
+                    ext.extra_compile_args = opts + dbg_flag
+                elif ext.language is None:  # C
+                    ext.extra_compile_args += dbg_flag
                 if openmp_enabled:
-                    warnings.warn('enabled openmp')
-                    omp_compiler_args = ['-fopenmp']
-                    omp_libraries = ['-lgomp'] if needs_gomp else []
-                    omp_defines = [('USE_OPENMP', None)]
                     ext.extra_compile_args += omp_compiler_args
                     ext.extra_link_args += omp_libraries
                     ext.define_macros += omp_defines
@@ -266,6 +282,7 @@ metadata = dict(
     install_requires=[
         'bhmm>=0.6,<0.7',
         'decorator>=4.0.0',
+        'h5py>=2.7.1',
         'matplotlib',
         'mdtraj>=1.8.0',
         'msmtools>=1.2',
@@ -274,11 +291,11 @@ metadata = dict(
         'psutil>=3.1.1',
         'pyyaml',
         'scipy>=0.11',
-        'tqdm',
         'thermotools>=0.2.6',
+        'tqdm',
     ],
     zip_safe=False,
-    entry_points = {
+    entry_points={
         'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
     }
 )
@@ -324,5 +341,5 @@ else:
     # packages are found if their folder contains an __init__.py,
     metadata['packages'] = find_packages()
 
-setup(**metadata)
-
+if __name__ == '__main__':
+    setup(**metadata)

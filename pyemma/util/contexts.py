@@ -99,7 +99,7 @@ def attribute(obj, attr, val):
 
 
 @contextmanager
-def named_temporary_file(mode='w+b', prefix=None, suffix=None, dir=None):
+def named_temporary_file(mode='w+b', prefix='', suffix='', dir=None):
     from tempfile import NamedTemporaryFile
     ntf = NamedTemporaryFile(mode=mode, suffix=suffix, prefix=prefix, dir=dir, delete=False)
     ntf.close()
