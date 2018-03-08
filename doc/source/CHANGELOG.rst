@@ -6,8 +6,8 @@ Changelog
 
 **New features**:
 
-- plots:
-   - plot_feature_histograms: added multi-dimensional stacked histogram plot function. #1264
+- coordinates: added Nystroem-TICA, which uses sparse sampling to approximate the input space. #1261, #1273
+- plots: added multi-dimensional stacked histogram plot function. #1264
 
 **Fixes**:
 
