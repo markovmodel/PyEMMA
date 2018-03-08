@@ -147,7 +147,7 @@ class TICA(TICABase, SerializableMixIn):
             dim = self.dimension()
         except RuntimeError:
             dim = self.dim
-        return "[Nystroem-TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
+        return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
     def estimate(self, X, **kwargs):
         r"""

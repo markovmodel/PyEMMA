@@ -17,7 +17,10 @@
 
 from __future__ import absolute_import
 
+from types import FunctionType
+
 import numpy as np
+from pyemma.util.types import ensure_int_vector
 
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split, eig_corr
@@ -164,20 +167,25 @@ class NystroemTICA(TICABase, SerializableMixIn):
 
     @initial_columns.setter
     def initial_columns(self, initial_columns):
-        # TODO: allowed types? None, int, callable, np.array dtype int
+        if not (initial_columns is None
+                or isinstance(initial_columns, (int, FunctionType, np.ndarray))):
+            raise ValueError('initial_columns has to be one of these types (None, int, function, ndarray),'
+                             'but was {}'.format(type(initial_columns)))
         if initial_columns is None:
             initial_columns = 1
         if isinstance(initial_columns, int):
             i = initial_columns
             initial_columns = lambda N: np.random.choice(N, i, replace=False)
+        if isinstance(initial_columns, np.ndarray):
+            initial_columns = ensure_int_vector(initial_columns)
         self._initial_columns = initial_columns
 
     def describe(self):
         try:
             dim = self.dimension()
-        except AttributeError:
+        except RuntimeError:
             dim = self.dim
-        return "[NystroemTICA, lag = %i; max. columns = %i; max. output dim. = %i]" % (self._lag, self._max_columns, dim)
+        return "[NystroemTICA, lag = %i; max. columns = %i; max. output dim. = %i]" % (self.lag, self.max_columns, dim)
 
     def estimate(self, X, **kwargs):
         r"""

@@ -280,6 +280,8 @@ class TestTICAExtensive(unittest.TestCase):
     def test_describe(self):
         desc = self.tica_obj.describe()
         assert types.is_string(desc) or types.is_list_of_string(desc)
+        # describe on empty estimator
+        tica(lag=1).describe()
 
     def test_dimension(self):
         assert types.is_int(self.tica_obj.dimension())
