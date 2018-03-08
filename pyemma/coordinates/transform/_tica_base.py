@@ -77,7 +77,7 @@ class TICABase(StreamingEstimationTransformer):
         if not (0 < v <= 1.0):
             raise ValueError('variance cutoff has to be in interval (0, 1.0]')
 
-        if v != TICABase._DEFAULT_VARIANCE_CUTOFF and self.dim != -1:
+        if v != TICABase._DEFAULT_VARIANCE_CUTOFF and self.dim != -1 and v != 1.0:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. '
                              'Use either one or the other.')
         self._var_cutoff = v
