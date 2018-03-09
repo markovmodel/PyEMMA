@@ -328,9 +328,9 @@ class TestVAMPWithEdgeCaseData(unittest.TestCase):
 
     def test_const_data(self):
         from pyemma._ext.variational.util import ZeroRankError
-        with np.testing.assert_raises(ZeroRankError):
+        with self.assertRaises(ZeroRankError):
             pyemma_api_vamp([np.ones((10, 2))], 1)
-        with np.testing.assert_raises(ZeroRankError):
+        with self.assertRaises(ZeroRankError):
             pyemma_api_vamp([np.ones(10)] ,1)
 
 
