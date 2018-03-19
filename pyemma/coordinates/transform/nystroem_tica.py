@@ -17,14 +17,16 @@
 
 from __future__ import absolute_import
 
-import numpy as np
-from decorator import decorator
+from types import FunctionType
 
-from pyemma._base.model import Model
+import numpy as np
+from pyemma.util.types import ensure_int_vector
+
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split, eig_corr
 from pyemma._ext.variational.util import ZeroRankError
-from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
+from pyemma.coordinates.transform._tica_base import TICABase, TICAModelBase
 from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args
 import warnings
@@ -34,29 +36,24 @@ __all__ = ['NystroemTICA']
 __author__ = 'litzinger'
 
 
-class NystroemTICAModel(Model):
-    def set_model_params(self, mean, cov, cov_tau, diag, column_indices):
-        self.mean = mean
-        self.cov = cov
-        self.cov_tau = cov_tau
+class NystroemTICAModel(TICAModelBase):
+    __serialize_version = 0
+
+    def set_model_params(self, mean, cov, cov_tau, diag, column_indices, cumvar=None):
+        super(NystroemTICAModel, self).set_model_params(mean=mean, cov=cov, cov_tau=cov_tau)
+        self.cumvar = cumvar
         self.diag = diag
         self.column_indices = column_indices
 
-@decorator
-def _lazy_estimation(func, *args, **kw):
-    assert isinstance(args[0], NystroemTICA)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
-    return func(*args, **kw)
-
 
 @fix_docs
-class NystroemTICA(StreamingEstimationTransformer):
+class NystroemTICA(TICABase, SerializableMixIn):
     r""" Sparse sampling implementation of time-lagged independent component analysis (TICA)"""
+    __serialize_version = 0
+    __serialize_fields = ()
 
     def __init__(self, lag, max_columns,
-                 dim=-1, var_cutoff=0.95, epsilon=1e-6,
+                 dim=-1, var_cutoff=TICABase._DEFAULT_VARIANCE_CUTOFF, epsilon=1e-6,
                  stride=1, skip=0, reversible=True, ncov_max=float('inf'),
                  initial_columns=None, nsel=1, selection_strategy='spectral-oasis', neig=None):
         r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
@@ -141,19 +138,7 @@ class NystroemTICA(StreamingEstimationTransformer):
            arXiv: 1505.05208 [stat.ML].
 
         """
-        default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
-        if dim != -1 and var_cutoff != default_var_cutoff:
-            raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either one or the other.')
         super(NystroemTICA, self).__init__()
-
-        if dim > -1:
-            var_cutoff = 1.0
-
-        if initial_columns is None:
-            initial_columns = 1
-        if isinstance(initial_columns, int):
-            i = initial_columns
-            initial_columns = lambda N: np.random.choice(N, i, replace=False)
 
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
                                        lag=lag, bessel=False, stride=stride, skip=skip, ncov_max=ncov_max)
@@ -162,57 +147,45 @@ class NystroemTICA(StreamingEstimationTransformer):
                                       diag_only=True)
         self._oasis = None
 
-        # empty dummy model instance
-        self._model = NystroemTICAModel()
+        self.dim = dim
+        self.var_cutoff = var_cutoff
+
         self.set_params(lag=lag, max_columns=max_columns,
-                        dim=dim, var_cutoff=var_cutoff,
                         epsilon=epsilon, reversible=reversible, stride=stride, skip=skip,
                         ncov_max=ncov_max,
                         initial_columns=initial_columns, nsel=nsel, selection_strategy=selection_strategy, neig=neig)
 
     @property
-    def lag(self):
-        """ lag time of correlation matrix :math:`C_{\tau}` """
-        return self._lag
+    def model(self):
+        if not hasattr(self, '_model') or self._model is None:
+            self._model = NystroemTICAModel()
+        return self._model
 
-    @lag.setter
-    def lag(self, new_tau):
-        self._lag = new_tau
+    @property
+    def initial_columns(self):
+        return self._initial_columns
+
+    @initial_columns.setter
+    def initial_columns(self, initial_columns):
+        if not (initial_columns is None
+                or isinstance(initial_columns, (int, FunctionType, np.ndarray))):
+            raise ValueError('initial_columns has to be one of these types (None, int, function, ndarray),'
+                             'but was {}'.format(type(initial_columns)))
+        if initial_columns is None:
+            initial_columns = 1
+        if isinstance(initial_columns, int):
+            i = initial_columns
+            initial_columns = lambda N: np.random.choice(N, i, replace=False)
+        if isinstance(initial_columns, np.ndarray):
+            initial_columns = ensure_int_vector(initial_columns)
+        self._initial_columns = initial_columns
 
     def describe(self):
         try:
             dim = self.dimension()
-        except AttributeError:
+        except RuntimeError:
             dim = self.dim
-        return "[NystroemTICA, lag = %i; max. columns = %i; max. output dim. = %i]" % (self._lag, self._max_columns, dim)
-
-    def dimension(self):
-        """ output dimension """
-        if self.dim > -1:
-            return self.dim
-        d = None
-        if self.dim != -1 and not self._estimated:  # fixed parametrization
-            d = self.dim
-        elif self._estimated:  # parametrization finished. Dimension is known
-            dim = len(self.eigenvalues)
-            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff) + 1)
-            d = dim
-        elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
-            d = self.data_producer.dimension()
-        else:  # We know nothing. Give up
-            raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                               'transformer has not yet been estimated. Call estimate() before.')
-        return d
-
-    @property
-    def mean(self):
-        """ mean of input features """
-        return self._model.mean
-
-    @mean.setter
-    def mean(self, value):
-        self._model.mean = value
+        return "[NystroemTICA, lag = %i; max. columns = %i; max. output dim. = %i]" % (self.lag, self.max_columns, dim)
 
     def estimate(self, X, **kwargs):
         r"""
@@ -227,8 +200,8 @@ class NystroemTICA(StreamingEstimationTransformer):
     def _estimate(self, iterable, **kw):
         from pyemma.coordinates.data import DataInMemory
         if not isinstance(iterable, DataInMemory):
-            self.logger.warning('Every iteration of the selection process involves streaming of all data and featurization. '+
-                                 'Depending on your setup, this might be inefficient.')
+            self.logger.warning('Every iteration of the selection process involves streaming of all data and featurization. '
+                                'Depending on your setup, this might be inefficient.')
 
         indim = iterable.dimension()
         if not self.dim <= indim:
@@ -244,7 +217,7 @@ class NystroemTICA(StreamingEstimationTransformer):
 
         self._covar.column_selection = self.initial_columns
         self._covar.estimate(iterable, **kw)
-        self._model.update_model_params(cov_tau=self._covar.C0t_)
+        self.model.update_model_params(cov_tau=self._covar.C0t_)
 
         self._oasis = oASIS_Nystroem(self._diag.C00_, self._covar.C00_, self.initial_columns)
         self._oasis.set_selection_strategy(strategy=self.selection_strategy, nsel=self.nsel, neig=self.neig)
@@ -260,33 +233,15 @@ class NystroemTICA(StreamingEstimationTransformer):
             ix = np.in1d(cols, ix)
             if np.any(ix):
                 added_columns = self._covar.C0t_[:, ix]
-                self._model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, added_columns), axis=1))
+                self.model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, added_columns), axis=1))
 
-        self._model.update_model_params(mean=self._covar.mean,
+        self.model.update_model_params(mean=self._covar.mean,
                                         diag=self._diag.C00_,
                                         cov=self._oasis.Ck,
                                         column_indices=self._oasis.column_indices)
         self._diagonalize()
 
-        return self._model
-
-    def _transform_array(self, X):
-        r"""Projects the data onto the dominant independent components.
-
-        Parameters
-        ----------
-        X : ndarray(n, m)
-            the input data
-
-        Returns
-        -------
-        Y : ndarray(n,)
-            the projected data
-        """
-        X_meanfree = X - self.mean
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
-
-        return Y.astype(self.output_type())
+        return self.model
 
     def _diagonalize(self):
         # diagonalize with low rank approximation
@@ -295,7 +250,8 @@ class NystroemTICA(StreamingEstimationTransformer):
         try:
             eigenvalues, eigenvectors = eig_corr(self._oasis.Wk, Wktau, self.epsilon, sign_maxelement=True)
         except ZeroRankError:
-            raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
+            raise ZeroRankError('All input features are constant in all time steps. '
+                                'No dimension would be left after dimension reduction.')
         self.logger.debug("Finished diagonalization.")
 
         # compute cumulative variance
@@ -309,91 +265,9 @@ class NystroemTICA(StreamingEstimationTransformer):
         self._estimated = True
 
     @property
-    @_lazy_estimation
-    def timescales(self):
-        r"""Implied timescales of the TICA transformation
-
-        For each :math:`i`-th eigenvalue, this returns
-
-        .. math::
-
-            t_i = -\frac{\tau}{\log(|\lambda_i|)}
-
-        where :math:`\tau` is the :py:obj:`lag` of the TICA object and :math:`\lambda_i` is the `i`-th
-        :py:obj:`eigenvalue <eigenvalues>` of the TICA object.
-
-        Returns
-        -------
-        timescales: 1D np.array
-            numpy array with the implied timescales. In principle, one should expect as many timescales as
-            input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
-            were not full rank or :py:obj:`var_cutoff` was parsed
-        """
-        return -self.lag / np.log(np.abs(self.eigenvalues))
-
-    @property
-    def cov(self):
-        """ covariance matrix of input data. """
-        return self._model.cov
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
-    @property
-    def cov_tau(self):
-        """ covariance matrix of time-lagged input data. """
-        return self._model.cov_tau
-
-    @cov_tau.setter
-    def cov_tau(self, value):
-        self._model.cov_tau = value
-
-    @property
     def column_indices(self):
         """ Indices of columns used in the approximation. """
-        return self._model.column_indices
-
-    @property
-    @_lazy_estimation
-    def eigenvalues(self):
-        r""" Eigenvalues of the TICA problem (usually denoted :math:`\lambda`)
-
-        Returns
-        -------
-        eigenvalues: 1D np.array
-        """
-        return self._model.eigenvalues
-
-    @property
-    @_lazy_estimation
-    def eigenvectors(self):
-        r""" Eigenvectors of the TICA problem, columnwise
-
-        Returns
-        -------
-        eigenvectors: (N,M) ndarray
-        """
-        return self._model.eigenvectors
-
-    @property
-    @_lazy_estimation
-    def cumvar(self):
-        r""" Cumulative sum of the the TICA eigenvalues
-
-        Returns
-        -------
-        cumvar: 1D np.array
-        """
-        return self._model.cumvar
-
-    def output_type(self):
-        # TODO: handle the case of conjugate pairs
-        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
-                np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
-            return super(NystroemTICA, self).output_type()
-        else:
-            return np.complex64
+        return self.model.column_indices
 
 
 class oASIS_Nystroem(object):

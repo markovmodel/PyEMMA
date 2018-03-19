@@ -280,6 +280,8 @@ class TestTICAExtensive(unittest.TestCase):
     def test_describe(self):
         desc = self.tica_obj.describe()
         assert types.is_string(desc) or types.is_list_of_string(desc)
+        # describe on empty estimator
+        tica(lag=1).describe()
 
     def test_dimension(self):
         assert types.is_int(self.tica_obj.dimension())
@@ -292,6 +294,11 @@ class TestTICAExtensive(unittest.TestCase):
         assert tica.dimension() == 1
         with self.assertRaises(ValueError):  # trying to set both dim and subspace_variance is forbidden
             api.tica(data=self.X, lag=self.lag, dim=1, var_cutoff=0.9)
+
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=0)
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=1.1)
 
     def test_eigenvalues(self):
         eval = self.tica_obj.eigenvalues
