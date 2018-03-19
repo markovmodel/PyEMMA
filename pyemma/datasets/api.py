@@ -135,7 +135,7 @@ def get_quadwell_data(ntraj=10, nstep=10000, x0=0., nskip=1, dt=0.01, kT=1.0, ma
         number of integrator steps
     dt: float, default=0.01
         time step size
-    kT: float, default=10.0
+    kT: float, default=1.0
         temperature factor
     mass: float, default=1.0
         mass
@@ -149,5 +149,11 @@ def get_quadwell_data(ntraj=10, nstep=10000, x0=0., nskip=1, dt=0.01, kT=1.0, ma
     """
     from .potentials import PrinzModel
     pw = PrinzModel(dt, kT, mass=mass, damping=damping)
-    trajs = [pw.sample(x0, nstep, nskip=nskip) for _ in range(ntraj)]
+    import warnings
+    import numpy as np
+    with warnings.catch_warnings(record=True) as w:
+        trajs = [pw.sample(x0, nstep, nskip=nskip) for _ in range(ntraj)]
+        if not np.all(tuple(np.isfinite(x) for x in trajs)):
+            raise RuntimeError('integrator detected invalid values in output. If you used a high temperature value (kT),'
+                               ' try decreasing the integration time step dt.')
     return trajs
