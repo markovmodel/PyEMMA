@@ -26,7 +26,7 @@ from pyemma._base.model import Model
 from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_ndarray_or_None, ensure_ndarray
-from pyemma._ext.variational.solvers.direct import spd_inv_sqrt, spd_eig
+from pyemma._ext.variational.solvers.direct import spd_inv_sqrt, spd_inv_split
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.msm.estimators.lagged_model_validators import LaggedModelValidator
@@ -275,22 +275,22 @@ class VAMPModel(Model, SerializableMixIn):
               singular value. Note that only the left singular functions
               induce a kinetic map.
         """
-        lambda0, QT0 = spd_eig(self.C00, epsilon=self.epsilon)
-        self._rank0 = lambda0.shape[0]
-        lambda1, QT1 = spd_eig(self.Ctt, epsilon=self.epsilon)
-        self._rankt = lambda1.shape[0]
+        L0 = spd_inv_split(self.C00, epsilon=self.epsilon)
+        self._rank0 = L0.shape[1] if L0.ndim == 2 else 1
+        Lt = spd_inv_split(self.Ctt, epsilon=self.epsilon)
+        self._rankt = Lt.shape[1] if Lt.ndim == 2 else 1
 
-        W = np.diag(lambda0**-0.5).dot(QT0.T).dot(self.C0t).dot(QT1).dot(np.diag(lambda1**-0.5))
+        W = np.dot(L0.T, self.C0t).dot(Lt)
         from scipy.linalg import svd
         A, s, BT = svd(W, compute_uv=True, lapack_driver='gesvd')
 
         self._singular_values = s
 
-        # don't pass any values calling this method again!!!
+        # don't pass any values in the argument list that call _diagonalize again!!!
         m = VAMPModel._dimension(self._rank0, self._rankt, self.dim, self._singular_values)
 
-        U = QT0.dot(np.diag(lambda0 ** -0.5).dot(A[:, :m]))
-        V = QT1.dot(np.diag(lambda1 ** -0.5).dot(BT[:m, :].T))
+        U = np.dot(L0, A[:, :m])
+        V = np.dot(Lt, BT[:m, :].T)
 
         # scale vectors
         if self.scaling is not None:
@@ -388,7 +388,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
               Number of dimensions to keep:
 
               * if dim is not set (None) all available ranks are kept:
-                  `n_components == min(n_samples, n_features)`
+                  `n_components == min(n_samples, n_uncorrelated_features)`
               * if dim is an integer >= 1, this number specifies the number
                 of dimensions to keep.
               * if dim is a float with ``0 < dim < 1``, select the number
@@ -399,7 +399,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
               Scaling to be applied to the VAMP order parameters upon transformation
 
               * None: no scaling will be applied, variance of the order parameters is 1
-              * 'kinetic map' or 'km': order parameters are scaled by singular value
+              * 'kinetic map' or 'km': order parameters are scaled by singular value.
                 Only the left singular functions induce a kinetic map.
                 Therefore scaling='km' is only effective if `right` is False.
           right : boolean
@@ -414,9 +414,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
               the left singular functions. The remaining frames might
               possibly be interpreted as some extrapolation.
           epsilon : float
-              singular value cutoff. Singular values of :math:`C0` with
-              norms <= epsilon will be cut off. The remaining number of
-              singular values define the size of the output.
+              eigenvalue cutoff. Eigenvalues of :math:`C_{00}` and :math:`C_{11}`
+              with norms <= epsilon will be cut off. The remaining number of
+              eigenvalues together with the value of `dim` define the size of the output.
           stride: int, optional, default = 1
               Use only every stride-th time step. By default, every time step is used.
           skip : int, default=0

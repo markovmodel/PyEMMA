@@ -319,5 +319,20 @@ class TestVAMPModel(unittest.TestCase):
         assert v.default_chunksize == v._FALLBACK_CHUNKSIZE
 
 
+class TestVAMPWithEdgeCaseData(unittest.TestCase):
+    def test_1D_data(self):
+        x = np.random.randn(10, 1)
+        vamp = pyemma_api_vamp([x], 1)  # just test that this doesn't raise
+        # Doing VAMP with 1-D data is just centering and normalizing the data.
+        assert_allclose_ignore_phase(vamp.get_output()[0], (x - np.mean(x[1:, 0])) / np.std(x[1:, 0]))
+
+    def test_const_data(self):
+        from pyemma._ext.variational.util import ZeroRankError
+        with self.assertRaises(ZeroRankError):
+            pyemma_api_vamp([np.ones((10, 2))], 1)
+        with self.assertRaises(ZeroRankError):
+            pyemma_api_vamp([np.ones(10)] ,1)
+
+
 if __name__ == "__main__":
     unittest.main()

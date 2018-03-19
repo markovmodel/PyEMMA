@@ -1276,7 +1276,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           Number of dimensions to keep:
 
           * if dim is not set (None) all available ranks are kept:
-              `n_components == min(n_samples, n_features)`
+              `n_components == min(n_samples, n_uncorrelated_features)`
           * if dim is an integer >= 1, this number specifies the number
             of dimensions to keep.
           * if dim is a float with ``0 < dim < 1``, select the number
@@ -1287,7 +1287,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           Scaling to be applied to the VAMP order parameters upon transformation
 
           * None: no scaling will be applied, variance of the order parameters is 1
-          * 'kinetic map' or 'km': order parameters are scaled by singular value
+          * 'kinetic map' or 'km': order parameters are scaled by singular value.
             Only the left singular functions induce a kinetic map.
             Therefore scaling='km' is only effective if `right` is False.
       right : boolean
@@ -1302,9 +1302,9 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           the left singular functions. The remaining frames might
           possibly be interpreted as some extrapolation.
       epsilon : float
-          singular value cutoff. Singular values of :math:`C0` with
-          norms <= epsilon will be cut off. The remaining number of
-          singular values define the size of the output.
+          eigenvalue cutoff. Eigenvalues of :math:`C_{00}` and :math:`C_{11}`
+          with norms <= epsilon will be cut off. The remaining number of
+          eigenvalues together with the value of `dim` define the size of the output.
       stride: int, optional, default = 1
           Use only every stride-th time step. By default, every time step is used.
       skip : int, default=0
