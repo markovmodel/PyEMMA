@@ -120,11 +120,13 @@ def get_multi_temperature_data(kt0=1.0, kt1=5.0, length0=10000, length1=10000, n
     return mt_data
 
 
-def get_quadwell_data(nstep=10000, x0=0., nskip=1, dt=0.01, kT=10.0, mass=1.0, damping=1.0):
+def get_quadwell_data(ntraj=10, nstep=10000, x0=0., nskip=1, dt=0.01, kT=1.0, mass=1.0, damping=1.0):
     r""" Performs a Brownian dynamics simulation in the Prinz potential (quad well).
 
     Parameters
     ----------
+    ntraj: int, default=10
+        how many realizations will be computed
     nstep: int, default=10000
         number of time steps
     x0: float, default 0
@@ -135,11 +137,17 @@ def get_quadwell_data(nstep=10000, x0=0., nskip=1, dt=0.01, kT=10.0, mass=1.0, d
         time step size
     kT: float, default=10.0
         temperature factor
-    mass: float, default=1
+    mass: float, default=1.0
         mass
-    damping: float, default=1
+    damping: float, default=1.0
         damping factor of integrator
+
+    Returns
+    -------
+    trajectories : list of ndarray
+        realizations of the the brownian diffusion in the quadwell potential.
     """
     from .potentials import PrinzModel
     pw = PrinzModel(dt, kT, mass=mass, damping=damping)
-    return pw.sample(x0, nstep, nskip=nskip)
+    trajs = [pw.sample(x0, nstep, nskip=nskip) for _ in range(ntraj)]
+    return trajs
