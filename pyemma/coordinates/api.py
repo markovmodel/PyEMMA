@@ -1477,12 +1477,12 @@ def tica_nystroem(max_columns, data=None, lag=10,
     .. math:: C_{\tau} r_i = C_0 \lambda_i(\tau) r_i.
 
     Instead of computing the full matrices involved in this problem, we conduct
-    a Nyström approximation [5]_ of the matrix :math:`C_0` by means of the
+    a Nystroemm approximation [5]_ of the matrix :math:`C_0` by means of the
     accelerated sequential incoherence selection (oASIS) algorithm [6]_ and,
     in particular, its extension called spectral oASIS [1]_.
 
     Iteratively, we select a small number of columns such that the resulting
-    Nyström approximation is sufficiently accurate. This selection represents
+    Nystroem approximation is sufficiently accurate. This selection represents
     in turn a subset of important features, for which we obtain a generalized
     eigenvalue problem similar to the one above, but much smaller in size.
     Its generalized eigenvalues and eigenvectors provide an approximation
@@ -1490,7 +1490,7 @@ def tica_nystroem(max_columns, data=None, lag=10,
 
     References
     ----------
-    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nueske, R. Patel, R. Baraniuk, F. Noe, and C. Clementi.
        Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
     .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
        Identification of slow molecular order parameters for Markov model construction
