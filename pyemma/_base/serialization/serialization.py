@@ -405,6 +405,17 @@ class SerializableMixIn(object):
 
     def __setstate__(self, state):
         # handle exceptions here, because they will be sucked up by pickle and silently fail...
+        if 'pyemma_version' not in state:
+            import warnings
+            msg = ('Trying to restore an un-versioned PyEMMA model/estimator (%s) via pickling. '
+                   'This is not officially supported. Please handle the object with great caution.'
+                   % self.__class__.__name__)
+            warnings.warn(msg, category=UserWarning)
+            if hasattr(self, 'logger'):
+                self.logger.warn(msg)
+            for k, v in state.items():
+                setattr(self, k, v)
+            return
         try:
             assert state
             # we need to set the model prior extra fields from _serializable_fields, because the model often contains
