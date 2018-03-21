@@ -408,7 +408,8 @@ class SerializableMixIn(object):
         if 'pyemma_version' not in state:
             import warnings
             msg = ('Trying to restore an un-versioned PyEMMA model/estimator (%s) via pickling. '
-                   'This is not officially supported. Please handle the object with great caution.'
+                   'This is not officially supported. Please handle the object with great caution. '
+                   'To avoid this please use model.save() and pyemma.load() in the future.'
                    % self.__class__.__name__)
             warnings.warn(msg, category=UserWarning)
             if hasattr(self, 'logger'):
