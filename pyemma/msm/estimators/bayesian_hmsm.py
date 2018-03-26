@@ -189,7 +189,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                     raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
                                       + 'incompatible lag or nstates.')
 
-            if not _np.array_equal(dtrajs, self.init_hmsm._dtrajs_full):
+            if (len(dtrajs) != len(self.init_hmsm.dtrajs_full) or
+                    not all((_np.array_equal(d1, d2) for d1, d2 in zip(dtrajs, self.init_hmsm.dtrajs_full)))):
                 raise NotImplementedError('Bayesian HMM estimation with init_hmsm is currently only implemented ' +
                                           'if applied to the same data.')
 
