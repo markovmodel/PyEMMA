@@ -39,14 +39,14 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
     r"""Estimator for a Bayesian Hidden Markov state model"""
     __serialize_version = 0
     __serialize_fields = ('accuracy',
-                         'count_matrix',
-                         'hidden_state_probabilities',
-                         'hidden_state_trajectories',
-                         'initial_count',
-                         'initial_distribution',
-                         'likelihood',
-                         'likelihoods',
-                         'sampled_trajs',
+                          'count_matrix',
+                          'hidden_state_probabilities',
+                          'hidden_state_trajectories',
+                          'initial_count',
+                          'initial_distribution',
+                          'likelihood',
+                          'likelihoods',
+                          'sampled_trajs',
                          )
 
     def __init__(self, nstates=2, lag=1, stride='effective',
@@ -152,12 +152,20 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         self.p0_prior = p0_prior
         self.transition_matrix_prior = transition_matrix_prior
         self.nsamples = nsamples
-        if init_hmsm is not None:
-            assert issubclass(init_hmsm.__class__, _MaximumLikelihoodHMSM), 'hmsm must be of type MaximumLikelihoodHMSM'
         self.init_hmsm = init_hmsm
         self.conf = conf
         self.store_hidden = store_hidden
         self.show_progress = show_progress
+
+    @property
+    def init_hmsm(self):
+        return self._init_hmsm
+
+    @init_hmsm.setter
+    def init_hmsm(self, value):
+        if value is not None and not issubclass(value.__class__, _MaximumLikelihoodHMSM):
+            raise ValueError('hmsm must be of type MaximumLikelihoodHMSM')
+        self._init_hmsm = value
 
     def _estimate(self, dtrajs):
         # ensure right format
@@ -185,9 +193,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
             # check if nstates and lag are compatible
             for attr in check_user_choices:
-                if not self.__getattribute__(attr) == self.init_hmsm.__getattribute__(attr):
+                if not getattr(self, attr) == getattr(self.init_hmsm, attr):
                     raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
-                                      + 'incompatible lag or nstates.')
+                                      'incompatible lag or nstates.')
 
             if (len(dtrajs) != len(self.init_hmsm.dtrajs_full) or
                     not all((_np.array_equal(d1, d2) for d1, d2 in zip(dtrajs, self.init_hmsm.dtrajs_full)))):
