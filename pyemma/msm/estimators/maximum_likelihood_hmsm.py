@@ -38,13 +38,13 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
     __serialize_version = 0
     __serialize_fields = ('_active_set', '_dtrajs_full', '_dtrajs_lagged', '_dtrajs_obs',
-                         '_nstates_obs', '_nstates_obs_full',
-                         'count_matrix', 'count_matrix_EM',
-                         'hidden_state_probabilities', 'hidden_state_trajectories',
-                         '_observable_set', '_observable_state_indexes',
-                         'initial_count', 'initial_distribution',
-                         'likelihood', 'likelihoods',
-                         'timestep_traj',
+                          '_nstates_obs', '_nstates_obs_full',
+                          'count_matrix', 'count_matrix_EM',
+                          'hidden_state_probabilities', 'hidden_state_trajectories',
+                          '_observable_set', '_observable_state_indexes',
+                          'initial_count', 'initial_distribution',
+                          'likelihood', 'likelihoods',
+                          'timestep_traj', 'hmm',
                          )
 
     def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
