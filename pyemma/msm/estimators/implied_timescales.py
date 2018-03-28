@@ -51,9 +51,8 @@ def _generate_lags(maxlag, multiplier):
 
     """
     # determine lag times
-    lags = []
+    lags = [1]
     # build default lag list
-    lags.append(1)
     lag = 1.0
     import decimal
     while lag <= maxlag:
@@ -64,6 +63,9 @@ def _generate_lags(maxlag, multiplier):
         if lag <= maxlag:
             ilag = int(lag)
             lags.append(ilag)
+    # always include the maximal requested lag time.
+    if maxlag not in lags:
+        lags.append(maxlag)
     return np.array(lags)
 
 
