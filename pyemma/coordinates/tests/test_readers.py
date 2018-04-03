@@ -69,7 +69,7 @@ class TestReaders(object):
     chunk_sizes = (0, 1, 5, 10, 100, 10000)
     strides = (1, 3, 10, 100)
     skips = (0, 123)
-    file_formats = ("csv", "in-memory", "numpy", "xtc")
+    file_formats = ("in-memory", "numpy", "xtc", "trr", "h5")
 
     # pytest config
     params = {
@@ -83,7 +83,9 @@ class TestReaders(object):
             'csv': util.create_trajectory_csv,
             'in-memory': lambda dirname, data: data,
             'numpy': util.create_trajectory_numpy,
-            'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args)
+            'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
+            'trr': lambda *args: util.create_trajectory_trr(cls.n_atoms, *args),
+            'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
         cls.traj_data = [np.random.random((5000, cls.n_dims)),

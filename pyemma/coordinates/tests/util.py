@@ -48,6 +48,16 @@ def create_dummy_pdb(dirname, dims):
     return dummy_pdb
 
 
+def create_trajectory_trr(dims, dirname, data):
+    from mdtraj.core.trajectory import TRRTrajectoryFile
+    fname = tempfile.mktemp(suffix='.trr', dir=dirname)
+
+    with TRRTrajectoryFile(fname, 'w') as f:
+        f.write(data.reshape(-1, dims, 3))
+
+    return fname
+
+
 def create_trajectory_xtc(dims, dirname, data):
     from mdtraj.core.trajectory import XTCTrajectoryFile
     fname = tempfile.mktemp(suffix='.xtc', dir=dirname)
@@ -55,5 +65,15 @@ def create_trajectory_xtc(dims, dirname, data):
     shaped = data.reshape(-1, dims, 3)
     with XTCTrajectoryFile(fname, 'w') as f:
         f.write(shaped)
+
+    return fname
+
+
+def create_trajectory_h5(dims, dirname, data):
+    import h5py
+    fname = tempfile.mktemp(suffix='.h5', dir=dirname)
+
+    with h5py.File(fname, mode='w') as f:
+        f.create_dataset('somedata', data=data.reshape(-1, dims, 3))
 
     return fname
