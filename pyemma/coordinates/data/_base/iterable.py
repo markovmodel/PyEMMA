@@ -51,9 +51,11 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
 
         # TODO: consider rounding this to some cache size of CPU? e.g py-cpuinfo can obtain it.
         # if one time step is already bigger than max_memory, we set the chunksize to 1.
-        max_elements = max(1, int(np.floor(max_bytes / (itemsize * dim))))
-        assert max_elements * dim * itemsize <= max_bytes or max_elements == 1
-        result = max(1, max_elements // dim)
+        bytes_per_frame = itemsize * dim
+        max_frames = max(1, int(np.floor(max_bytes / bytes_per_frame)))
+        assert max_frames * dim * itemsize <= max_bytes or max_frames == 1, \
+            "number of frames times dim times sizeof(dtype) should be smaller or equal than max_bytes"
+        result = max_frames
 
         assert result > 0
         if logger is not None:
@@ -77,7 +79,7 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
                 self._default_chunksize = Iterable._FALLBACK_CHUNKSIZE
             else:
                 self._default_chunksize = Iterable._compute_default_cs(self.dimension(),
-                                                                       self.output_type()().itemsize, self.logger)
+                                                                       self.output_type().itemsize, self.logger)
         return self._default_chunksize
 
     @property
@@ -172,7 +174,7 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
 
     def output_type(self):
         r""" By default transformers return single precision floats. """
-        return np.float32
+        return np.float32()
 
     def __iter__(self):
         return self.iterator()

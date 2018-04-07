@@ -372,7 +372,7 @@ class TestTICAExtensive(unittest.TestCase):
         self.tica_obj.number_of_trajectories() == 1
 
     def test_output_type(self):
-        assert self.tica_obj.output_type() == np.float32
+        assert self.tica_obj.output_type() == np.float32()
 
     def test_trajectory_length(self):
         assert self.tica_obj.trajectory_length(0) == self.T
