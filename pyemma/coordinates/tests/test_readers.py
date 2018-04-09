@@ -17,8 +17,7 @@ def pytest_generate_tests(metafunc):
     # called once per each test function
     funcarglist = metafunc.cls.params[metafunc.function.__name__]
     argnames = funcarglist[0]
-    metafunc.parametrize(tuple(argnames.keys()), [[funcargs[name] for name in argnames]
-                                    for funcargs in funcarglist])
+    metafunc.parametrize(tuple(argnames.keys()), [[kwargs[name] for name in argnames] for kwargs in funcarglist])
 
 
 class TestReaders(object):
@@ -66,15 +65,20 @@ class TestReaders(object):
     n_atoms = 6
     n_dims = 6 * 3
 
-    chunk_sizes = (0, 1, 5, 10, 100, 10000)
-    strides = (1, 3, 10, 100)
+    chunk_sizes = (0, 1, 5, 10000)
+    strides = (1, 3, 100)
     skips = (0, 123)
+    lags = (1, 50, 300)
     file_formats = ("in-memory", "numpy", "xtc", "trr", "h5")
 
     # pytest config
     params = {
         'test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs)
                              for f, s, skip, cs in itertools.product(file_formats, strides, skips, chunk_sizes)],
+        'test_lagged_reader': [
+            dict(file_format=f, stride=s, skip=skip, chunksize=cs, lag=lag)
+            for f, s, skip, cs, lag in itertools.product(file_formats, strides, skips, chunk_sizes, lags)
+        ]
     }
 
     @classmethod
@@ -102,6 +106,21 @@ class TestReaders(object):
     @classmethod
     def teardown_class(cls):
         shutil.rmtree(cls.tempdir, ignore_errors=True)
+
+    def test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
+        trajs = self.test_trajs[file_format]
+
+        if FeatureReader.supports_format(trajs[0]):
+            # we need the topology
+            reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
+        else:
+            # no topology required
+            reader = coor.source(trajs, chunksize=chunksize)
+
+        it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
+        with it:
+            for itraj, data, data_lagged in it:
+                pass
 
     def test_base_reader(self, file_format, stride, skip, chunksize):
         trajs = self.test_trajs[file_format]
