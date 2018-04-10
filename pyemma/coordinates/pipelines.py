@@ -49,14 +49,15 @@ class Pipeline(Loggable):
             omit every n'th data point
 
         """
-        self._chain = []
-        self.chunksize = chunksize
         self.param_stride = param_stride
-        self.chunksize = chunksize
+        self._chunksize = chunksize
 
         # add given elements in chain
+        self._chain = []
         for e in chain:
             self.add_element(e)
+
+        self.chunksize = chunksize
 
         self._estimated = False
 
@@ -141,7 +142,7 @@ class Pipeline(Loggable):
         """
         for element in self._chain:
             if not element.is_reader and not element._estimated:
-                element.estimate(element.data_producer, stride=self.param_stride)
+                element.estimate(element.data_producer, stride=self.param_stride, chunksize=self.chunksize)
 
         self._estimated = True
 

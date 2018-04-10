@@ -196,15 +196,20 @@ class SideChainTorsions(DihedralFeature):
         # get all dihedral index pairs
         from mdtraj.geometry import dihedral
         indices_dict = {k: getattr(dihedral, 'indices_%s' % k)(top) for k in which}
+        if selstr:
+            selection = top.select(selstr)
+            truncated_indices_dict = {}
+            for k, inds in indices_dict.items():
+                mask = np.in1d(inds[:, 1], selection, assume_unique=True)
+                truncated_indices_dict[k] = inds[mask]
+            indices_dict = truncated_indices_dict
+
         valid = {k: indices_dict[k] for k in indices_dict if indices_dict[k].size > 0}
         if not valid:
             raise ValueError('Could not determine any side chain dihedrals for your topology!')
         self._prefix_label_lengths = np.array([len(indices_dict[k]) if k in which else 0 for k in self.options])
         indices = np.vstack(valid.values())
-        if selstr:
-            selection = top.select(selstr)
-            mask = np.in1d(indices[:, 1], selection, assume_unique=True)
-            indices = indices[mask]
+
         super(SideChainTorsions, self).__init__(top=top, dih_indexes=indices, deg=deg, cossin=cossin, periodic=periodic)
 
     def describe(self):
