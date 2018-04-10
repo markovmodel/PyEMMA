@@ -153,7 +153,7 @@ class TestPCAExtensive(unittest.TestCase):
         assert self.pca_obj.number_of_trajectories() == 1
 
     def test_output_type(self):
-        assert self.pca_obj.output_type() == np.float32
+        assert self.pca_obj.output_type() == np.float32()
 
     def test_trajectory_length(self):
         assert self.pca_obj.trajectory_length(0) == self.T

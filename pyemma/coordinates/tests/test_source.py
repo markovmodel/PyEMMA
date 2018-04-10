@@ -159,7 +159,7 @@ class TestSourceCallAll(unittest.TestCase):
         self.inp.number_of_trajectories() == 1
 
     def test_output_type(self):
-        assert self.inp.output_type() == np.float32
+        assert self.inp.output_type() == np.float32()
 
     def test_topfile(self):
         types.is_string(self.inp.topfile)
