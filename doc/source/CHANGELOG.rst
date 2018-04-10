@@ -1,6 +1,17 @@
 Changelog
 =========
 
+2.5.3 (??-??-???)
+-----------------
+
+**New features**:
+
+-
+
+**Fixes**:
+
+- msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
+
 2.5.2 (04-10-2018)
 ------------------
 
