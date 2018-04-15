@@ -240,7 +240,7 @@ class StreamingTransformerIterator(DataSourceIterator):
         self._it.reset()
 
     def _select_file(self, itraj):
-        self._it._select_file(0)
+        self._it._select_file(itraj)
 
     def _next_chunk(self):
         X = self._it._next_chunk()

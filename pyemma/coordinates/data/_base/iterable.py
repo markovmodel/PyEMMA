@@ -224,15 +224,14 @@ class _LaggedIterator(object):
         return self.next()
 
     def next(self):
-        itraj_changed = False
-        while (self._it._itraj not in self._sufficently_long_trajectories
+        if (self._it._itraj not in self._sufficently_long_trajectories
                and self._it.number_of_trajectories() > self._it.current_trajindex):
-            self._it._itraj += 1
             self._overlap = None
-            itraj_changed = True
-        # ensure file next handle gets opened.
-        if itraj_changed:
-            self._it._select_file(self._it._itraj)
+            idx = (np.abs(np.array(self._sufficently_long_trajectories) - self._it._itraj)).argmin()
+            if idx + 1 < len(self._sufficently_long_trajectories):
+                self._it._select_file(self._sufficently_long_trajectories[idx+1])
+            else:
+                raise StopIteration("Encountered end of the fucking world")
 
         if self._overlap is None:
             with attribute(self._it, 'chunksize', self._lag):
@@ -251,15 +250,15 @@ class _LaggedIterator(object):
 
             data_lagged = data_lagged[::self._actual_stride]
 
-        if self._it._last_chunk_in_traj:
+        if self._it.last_chunk_in_traj:
             self._overlap = None
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if len(data) > len(data_lagged):
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
+            data = data[:len(data_lagged)]
+        elif len(data) < len(data_lagged):
             raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+                               % (len(data), len(data_lagged)))
 
         if self._return_trajindex:
             return itraj, data, data_lagged
@@ -303,19 +302,22 @@ class _LegacyLaggedIterator(object):
         return self.next()
 
     def next(self):
+        # TODO: use select file on sufficiently long trajs.
         itraj, data = self._it.next()
         itraj_lag, data_lagged = self._it_lagged.next()
 
-        while itraj < itraj_lag:
+        if itraj < itraj_lag:
+            print('hi there')
+            self._it._select_file(itraj_lag)
             itraj, data = self._it.next()
         assert itraj == itraj_lag
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if len(data) > len(data_lagged):
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
+            data = data[:len(data_lagged)]
+        elif len(data) < len(data_lagged):
             raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+                               % (len(data), len(data_lagged)))
         if self._return_trajindex:
             return itraj, data, data_lagged
         return data, data_lagged

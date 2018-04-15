@@ -205,7 +205,8 @@ class TestDataInMemory(unittest.TestCase):
         for idx, (traj, input_traj) in enumerate(zip(trajs, data)):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(), err_msg="failed for traj=%s"%idx)
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(),
+                                    err_msg="failed for traj=%s"%idx)
 
         # lagged data
         for idx, (traj, input_traj) in enumerate(zip(lagged_trajs, data)):

@@ -180,11 +180,6 @@ class H5Reader(DataSource, SerializableMixIn):
 
 
 class H5Iterator(DataInMemoryIterator):
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=False):
-        super(H5Iterator, self).__init__(data_source=data_source, skip=skip,
-                                         chunk=chunk, stride=stride,
-                                         return_trajindex=return_trajindex,
-                                         cols=cols)
 
     def close(self):
         if hasattr(self, '_fh'):
@@ -194,14 +189,12 @@ class H5Iterator(DataInMemoryIterator):
     def _select_file(self, itraj):
         if self._selected_itraj != itraj:
             self.close()
-            self._t = 0
-            self._itraj = itraj
-            self._selected_itraj = self._itraj
-            if itraj < self.number_of_trajectories():
-                self.data = self._data_source._load_file(itraj)
-                self._fh = self.data.file
+            self._itraj = self._selected_itraj = itraj
+            self.data = self._data_source._load_file(itraj)
+            self._fh = self.data.file
 
     def _next_chunk(self):
+        self._select_file(self._itraj)
         X = self._next_chunk_impl(self.data)
         X, _ = self._data_source._reshape(X, dry=False)
         return X

@@ -585,6 +585,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         if f is not None:
             f.close()
 
+
 class IteratorState(object):
     """
     State class holding all the relevant information of an iterator's state.
@@ -659,8 +660,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                    ntraj=self.number_of_trajectories(),
                                    cols=cols)
         self.__init_stride(stride)
-        self._pos = 0
         self._last_chunk_in_traj = False
+        # the currently selected itraj, used to distinguish self._itraj in _select_file
+        # TODO: this is duplicated with self.state.current_trajindex or so?!
+        self._selected_itraj = -1
+        #TODO: replace with self._skip_unselected_trajs?
         if not isinstance(stride, np.ndarray) and skip > 0:
             # skip over the trajectories that are smaller than skip
             while self.state.itraj < self._data_source.ntraj \
@@ -803,6 +807,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             The upcoming iterator position.
         """
         self.state.t = value
+        self._skip_unselected_or_too_short_trajs()
 
     @property
     def _itraj(self):
@@ -824,9 +829,23 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         value : int
             The upcoming trajectory index.
         """
-        if value > self.state.ntraj:  # we never want to increase this value larger than ntraj.
-            raise StopIteration("out of files bound")
-        self.state.itraj = value
+        if value != self._selected_itraj:
+            self.state.itraj = self._selected_itraj = value
+            self.state.t = 0
+            self.state.pos = 0
+            self.state.pos_adv = 0
+
+    def _skip_unselected_or_too_short_trajs(self):
+        value = self._itraj
+        if not self.uniform_stride:
+            # skip trajs not included in random access stride
+            while (value not in self.traj_keys or self._t >= self.ra_trajectory_length(value)) \
+                    and value < self.number_of_trajectories():
+                value += 1
+        else:
+            while value < self.number_of_trajectories() and self._t >= self.trajectory_length():
+                value += 1
+        self._itraj = value
 
     @skip.setter
     def skip(self, value):
@@ -972,15 +991,19 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         return X
 
     def _it_next(self):
-        # first chunk at all, skip prepending trajectories that are not considered in random access
-        if self._t == 0 and self._itraj == 0 and not self.uniform_stride:
-            while (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-                    and self._itraj < self.number_of_trajectories():
-                self._itraj += 1
-            self._select_file(self._itraj)
+        # increase itraj
+        self._skip_unselected_or_too_short_trajs()
+
+        if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
+            self.close()
+            raise StopIteration('out of files bound')
+
         # we have to obtain the current index before invoking next_chunk (which increments itraj)
         self.state.current_itraj = self._itraj
         self.state.pos = self.state.pos_adv
+
+        self._select_file(self._itraj)
+
         try:
             X = self._use_cols(self._next_chunk())
         except StopIteration:
@@ -1003,10 +1026,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
     def next(self):
         X = self._it_next()
-        while X is not None and (
-                (not self.return_traj_index and len(X) == 0) or (self.return_traj_index and len(X[1]) == 0)
-        ):
-            X = self._it_next()
+        assert len(X) > 0
+
         if config.coordinates_check_output:
             array = X if not self.return_traj_index else X[1]
             if not np.all(np.isfinite(array)):
@@ -1027,12 +1048,16 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.close()
         return False
 
-    def __repr__(self):
-        return "[{name} chunk={chunk}, stride={stride}, skip={skip}]".format(
+    def __str__(self):
+        return "[{name} chunk={chunk}, stride={stride}, skip={skip}, t={t}, " \
+               "pos={pos}, pos_adv={pos_adv}]".format(
             name=self.__class__.__name__,
             chunk=self.chunksize,
             stride=self.stride,
-            skip=self.skip
+            skip=self.skip,
+            t=self._t,
+            pos=self.pos,
+            pos_adv=self.state.pos_adv
         )
 
 

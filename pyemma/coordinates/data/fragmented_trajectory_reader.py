@@ -271,19 +271,18 @@ class FragmentIterator(DataSourceIterator):
                                                stride=stride, return_trajindex=return_trajindex,
                                                cols=cols)
         self._it = None
-        self._itraj = 0
 
     def _select_file(self, itraj):
-        self.close()
-        self._t = 0
-        self._itraj = itraj
-        if itraj < self.number_of_trajectories():
-            self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
-                                                     self.chunksize, self.stride, self.skip)
-            if not self.uniform_stride:
-                self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
-        else:
-            self._it = None
+        if itraj != self._selected_itraj:
+            self.close()
+            self._itraj = self._selected_itraj = itraj
+            if itraj < self.number_of_trajectories():
+                self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
+                                                         self.chunksize, self.stride, self.skip)
+                if not self.uniform_stride:
+                    self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
+            else:
+                self._it = None
 
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):

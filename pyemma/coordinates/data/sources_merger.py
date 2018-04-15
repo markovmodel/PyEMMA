@@ -57,7 +57,6 @@ class _JoiningIterator(DataSourceIterator):
         self._iterators = [s.iterator(skip=skip, chunk=chunk, stride=stride,
                                       return_trajindex=return_trajindex, cols=cols)
                            for s in sources]
-        self._selected_itraj = -1
         self.sources = sources
 
     def close(self):
@@ -79,7 +78,7 @@ class _JoiningIterator(DataSourceIterator):
         res = np.hstack(chunks)
         self._t += len(res)
 
-        if self._t >= self.trajectory_length() and self._itraj < self._data_source.ntraj -1:
+        if self._t >= self.trajectory_length() and self._itraj < self._data_source.ntraj - 1:
             self._itraj += 1
             self._select_file(self._itraj)
 
@@ -87,9 +86,7 @@ class _JoiningIterator(DataSourceIterator):
 
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
-            self._t = 0
-            self._itraj = itraj
-            self._selected_itraj = itraj
+            self._itraj = self._selected_itraj = itraj
             for it in self._iterators:
                 it._select_file(itraj)
                 assert it._itraj == itraj

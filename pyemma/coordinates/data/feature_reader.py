@@ -333,7 +333,6 @@ class FeatureReaderIterator(DataSourceIterator):
         )
         # set chunksize prior selecting the first file, to ensure we have a sane value for mditer...
         self.chunksize = chunk
-        self._selected_itraj = -1
 
     @property
     def chunksize(self):
@@ -362,22 +361,11 @@ class FeatureReaderIterator(DataSourceIterator):
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
-            self._t = 0
             self._itraj = itraj
-            self._selected_itraj = itraj
             self._create_mditer()
 
     def _next_chunk(self):
-        """
-        gets the next chunk. If lag > 0, we open another iterator with same chunk
-        size and advance it by one, as soon as this method is called with a lag > 0.
-
-        :return: a feature mapped vector X, or (X, Y) if lag > 0
-        """
-        if self._itraj >= self._data_source.ntraj:
-            raise StopIteration()
-        if not hasattr(self, '_mditer') or self._mditer is None:
-            self._select_file(self._itraj)
+        assert hasattr(self, '_mditer')
         try:
             chunk = next(self._mditer)
         except StopIteration as si:
@@ -391,20 +379,7 @@ class FeatureReaderIterator(DataSourceIterator):
             else:
                 raise
 
-        shape = chunk.xyz.shape
-
-        self._t += shape[0]
-
-        if self._t >= self.trajectory_length() and self._itraj < len(self._data_source.filenames) - 1:
-            self._itraj += 1
-            self._select_file(self._itraj)
-
-        if not self.uniform_stride:
-            traj_len = self.ra_trajectory_length(self._itraj)
-        else:
-            traj_len = self.trajectory_length()
-        if self._t >= traj_len and self._itraj == len(self._data_source.filenames) - 1:
-            self.close()
+        self._t += len(chunk)
 
         # 3 cases:
         # --------
@@ -419,17 +394,18 @@ class FeatureReaderIterator(DataSourceIterator):
         return res
 
     def _create_mditer(self):
-        if not self.uniform_stride:
-            while self._itraj not in self.traj_keys and self._itraj < self.number_of_trajectories():
-                self._itraj += 1
-            if self._itraj < self._data_source.ntraj:
-                self._mditer = self._create_patched_iter(
-                        self._data_source.filenames[self._itraj], stride=self.ra_indices_for_traj(self._itraj)
-                )
-        else:
-            self._mditer = self._create_patched_iter(
-                    self._data_source.filenames[self._itraj], skip=self.skip, stride=self.stride
-            )
+        #if not self.uniform_stride:
+        #    while self._itraj not in self.traj_keys and self._itraj < self.number_of_trajectories():
+        #        self._itraj += 1
+        #    if self._itraj < self._data_source.ntraj:
+        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(self._itraj)
+        self._mditer = self._create_patched_iter(
+                        self._data_source.filenames[self._itraj], stride=stride
+        )
+        #else:
+        #    self._mditer = self._create_patched_iter(
+        #            self._data_source.filenames[self._itraj], skip=self.skip, stride=self.stride
+        #    )
         self._closed = False
 
     def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):

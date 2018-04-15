@@ -65,8 +65,13 @@ class TestReaders(object):
     n_atoms = 6
     n_dims = 6 * 3
 
-    chunk_sizes = (0, 1, 5, 10000)
-    strides = (1, 3, 100)
+    chunk_sizes = (0, 1, 5, 10000, None)
+    strides = (1, 3, 100,
+               np.array([
+                   [0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7],
+                   [2, 1], [2, 1]
+               ]),
+               )
     skips = (0, 123)
     lags = (1, 50, 300)
     file_formats = ("in-memory", "numpy", "xtc", "trr", "h5")
@@ -89,6 +94,7 @@ class TestReaders(object):
             'numpy': util.create_trajectory_numpy,
             'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
             'trr': lambda *args: util.create_trajectory_trr(cls.n_atoms, *args),
+            # TODO: add dcd etc.
             'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
@@ -118,9 +124,27 @@ class TestReaders(object):
             reader = coor.source(trajs, chunksize=chunksize)
 
         it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
+        traj_data = [data[skip::stride] for data in self.traj_data]
+        traj_data_lagged = [data[skip + lag::stride] for data in self.traj_data]
+
         with it:
-            for itraj, data, data_lagged in it:
-                pass
+            current_itraj = None
+            t = 0
+            for itraj, chunk, chunk_lagged in it:
+                # reset t upon next trajectory
+                if itraj != current_itraj:
+                    current_itraj = itraj
+                    t = 0
+                assert chunk.shape[0] <= chunksize or chunksize == 0
+                if chunksize != 0 and traj_data[itraj].shape[0] - t >= chunksize:
+                    assert chunk.shape[0] == chunksize - lag
+                elif chunksize == 0:
+                    assert chunk.shape[0] == traj_data[itraj].shape[0] - lag
+
+                np.testing.assert_allclose(chunk, traj_data[itraj][t:t + chunk.shape[0]])
+                np.testing.assert_allclose(chunk_lagged, traj_data_lagged[itraj][t:t + chunk.shape[0]])
+
+                t += chunk.shape[0]
 
     def test_base_reader(self, file_format, stride, skip, chunksize):
         trajs = self.test_trajs[file_format]
