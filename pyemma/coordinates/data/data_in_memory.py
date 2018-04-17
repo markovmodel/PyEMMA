@@ -248,7 +248,7 @@ class DataInMemoryIterator(DataSourceIterator):
 
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
-            self._itraj = itraj
+            self._itraj = self._selected_itraj = itraj
 
     def _next_chunk_impl(self, data):
         # only apply _skip at the beginning of each trajectory
@@ -260,7 +260,6 @@ class DataInMemoryIterator(DataSourceIterator):
                 self._skip_unselected_or_too_short_trajs()
             else:
                 chunk = data[skip::self.stride]
-                self._itraj += 1
         # chunked mode
         else:
             if not self.uniform_stride:
@@ -274,7 +273,6 @@ class DataInMemoryIterator(DataSourceIterator):
                 t_next = t_effective + self.chunksize * self.stride
                 slice_x = slice(t_effective, t_next, self.stride)
                 chunk = data[slice_x]
-            self._t += len(chunk)
         return chunk
 
     def _next_chunk(self):

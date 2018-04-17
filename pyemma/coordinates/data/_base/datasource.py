@@ -387,8 +387,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
             with pg.context():
                 for itraj, chunk in it:
+                    self.logger.info(it)
                     L = len(chunk)
-                    assert L
                     trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
                     # update progress
                     pg.update(1)
@@ -807,6 +807,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             The upcoming iterator position.
         """
         self.state.t = value
+        # TODO: pos is redundant?
+        self.state.pos = value
         self._skip_unselected_or_too_short_trajs()
 
     @property
@@ -830,7 +832,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             The upcoming trajectory index.
         """
         if value != self._selected_itraj:
-            self.state.itraj = self._selected_itraj = value
+            self.state.itraj = value
             self.state.t = 0
             self.state.pos = 0
             self.state.pos_adv = 0
@@ -843,7 +845,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                     and value < self.number_of_trajectories():
                 value += 1
         else:
-            while value < self.number_of_trajectories() and self._t >= self.trajectory_length():
+            if value < self.number_of_trajectories() and self._t >= self.trajectory_length():
                 value += 1
         self._itraj = value
 
@@ -1006,6 +1008,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
         try:
             X = self._use_cols(self._next_chunk())
+            self._t += len(X)
         except StopIteration:
             self._last_chunk_in_traj = True
             raise
@@ -1049,13 +1052,15 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         return False
 
     def __str__(self):
-        return "[{name} chunk={chunk}, stride={stride}, skip={skip}, t={t}, " \
+        return "[{name} chunk={chunk}, stride={stride}, skip={skip}, itraj={itraj}, curr_traj_ind={cur_ind}, t={t}, " \
                "pos={pos}, pos_adv={pos_adv}]".format(
             name=self.__class__.__name__,
             chunk=self.chunksize,
             stride=self.stride,
             skip=self.skip,
             t=self._t,
+            itraj=self._itraj,
+            cur_ind=self.current_trajindex,
             pos=self.pos,
             pos_adv=self.state.pos_adv
         )

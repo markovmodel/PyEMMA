@@ -332,6 +332,7 @@ class FeatureReaderIterator(DataSourceIterator):
                 cols=cols
         )
         # set chunksize prior selecting the first file, to ensure we have a sane value for mditer...
+        self._mditer = None
         self.chunksize = chunk
 
     @property
@@ -341,7 +342,7 @@ class FeatureReaderIterator(DataSourceIterator):
     @chunksize.setter
     def chunksize(self, value):
         self.state.chunk = value
-        if hasattr(self, '_mditer'):
+        if self._mditer is not None:
             self._mditer.chunksize = value
 
     @property
@@ -351,35 +352,38 @@ class FeatureReaderIterator(DataSourceIterator):
     @skip.setter
     def skip(self, value):
         self.state.skip = value
-        if hasattr(self, '_mditer'):
+        if self._mditer is not None:
             self._mditer._skip = value
 
     def close(self):
-        if hasattr(self, '_mditer') and self._mditer is not None:
+        if self._mditer is not None:
             self._mditer.close()
+            # TODO: check
+            self._mditer = None
 
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
-            self._itraj = itraj
+            self._itraj = self._selected_itraj = itraj
             self._create_mditer()
 
     def _next_chunk(self):
-        assert hasattr(self, '_mditer')
+        assert self._mditer is not None
         try:
             chunk = next(self._mditer)
         except StopIteration as si:
+            # TODO: can this ever happen after refactoring?
             """ in case the underlying mdtraj iterator raises StopIteration (eg. seek failed),
                 we have to return an empty iterable, so that LaggedIterator will continue to process.
             """
             if si.args and "too short" in si.args[0] and self._itraj < self._data_source.ntraj - 1:
                 self._itraj += 1
                 self._select_file(self._itraj)
+                print('!'*80)
                 return ()
             else:
+                print('!_!'*80)
                 raise
-
-        self._t += len(chunk)
 
         # 3 cases:
         # --------
@@ -394,18 +398,10 @@ class FeatureReaderIterator(DataSourceIterator):
         return res
 
     def _create_mditer(self):
-        #if not self.uniform_stride:
-        #    while self._itraj not in self.traj_keys and self._itraj < self.number_of_trajectories():
-        #        self._itraj += 1
-        #    if self._itraj < self._data_source.ntraj:
         stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(self._itraj)
         self._mditer = self._create_patched_iter(
-                        self._data_source.filenames[self._itraj], stride=stride
+                        self._data_source.filenames[self._itraj], stride=stride, skip=self.skip
         )
-        #else:
-        #    self._mditer = self._create_patched_iter(
-        #            self._data_source.filenames[self._itraj], skip=self.skip, stride=self.stride
-        #    )
         self._closed = False
 
     def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):
