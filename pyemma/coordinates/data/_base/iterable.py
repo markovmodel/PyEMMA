@@ -239,11 +239,13 @@ class _LaggedIterator(object):
         if self._overlap is None:
             with attribute(self._it, 'chunksize', self._lag):
                 _, self._overlap = self._it.next()
+                assert len(self._overlap) <= self._lag
                 self._overlap = self._overlap[::self._actual_stride]
 
         with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
 
             itraj, data_lagged = self._it.next()
+            assert len(data_lagged) <= self._it.chunksize * self._actual_stride
             frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
             data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
                                                        % self._actual_stride::self._actual_stride]), axis=0)
