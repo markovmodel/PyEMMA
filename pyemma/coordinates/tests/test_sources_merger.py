@@ -4,7 +4,7 @@ import os
 from glob import glob
 import numpy as np
 
-from pyemma.coordinates import source
+from pyemma.coordinates import source, tica
 from pyemma.coordinates.data.sources_merger import SourcesMerger
 from pyemma import config
 
@@ -32,20 +32,21 @@ class TestSourcesMerger(unittest.TestCase):
         arrays = [np.random.random( (length, ndim) ) for length in lengths]
         self.readers.append(source(arrays))
 
+        self.readers.append(tica(self.readers[-1], dim=20))
+
     def _get_output_compare(self, joiner, stride=1, chunk=0, skip=0):
-        j = joiner
-        out = j.get_output(stride=stride, chunk=chunk, skip=skip)
-        assert len(out) == 3
-        assert j.ndim == self.readers[0].ndim * 2
-        np.testing.assert_equal(j.trajectory_lengths(), self.readers[0].trajectory_lengths())
+        out = joiner.get_output(stride=stride, chunk=chunk, skip=skip)
+        assert len(out) == 3  # 3 trajs
+        assert joiner.ndim == sum(r.dimension() for r in self.readers)
+        np.testing.assert_equal(joiner.trajectory_lengths(), self.readers[0].trajectory_lengths())
 
         from collections import defaultdict
         outs = defaultdict(list)
         for r in self.readers:
             for i, x in enumerate(r.get_output(stride=stride, chunk=chunk, skip=skip)):
                 outs[i].append(x)
-        combined = [np.hstack(outs[i]) for i in range(3)]
-        np.testing.assert_equal(out, combined)
+        combined = [np.hstack(outs[i]).astype(np.float32) for i in range(3)]
+        np.testing.assert_equal([o.astype(np.float32) for o in out], combined)
 
     def test_combined_output(self):
         j = SourcesMerger(self.readers)
@@ -57,7 +58,6 @@ class TestSourcesMerger(unittest.TestCase):
     def test_ra_stride(self):
         ra_indices = np.array([[0,7], [0, 23], [1, 30], [2, 9]])
         j = SourcesMerger(self.readers)
-
         self._get_output_compare(j, stride=ra_indices)
 
     def test_non_matching_lengths(self):

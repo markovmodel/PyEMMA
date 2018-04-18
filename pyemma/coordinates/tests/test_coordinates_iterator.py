@@ -14,7 +14,7 @@ class TestCoordinatesIterator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.d = [np.random.random((100, 3)) for _ in range(3)]
+        cls.d = [np.random.random((100, 3)).astype(np.float32) for _ in range(3)]
 
     def setUp(self):
         self.tempdir = tempfile.mktemp()

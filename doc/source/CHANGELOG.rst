@@ -1,7 +1,18 @@
 Changelog
 =========
 
-2.5.2 (??-??-????)
+2.5.3 (??-??-???)
+-----------------
+
+**New features**:
+
+-
+
+**Fixes**:
+
+- msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
+
+2.5.2 (04-10-2018)
 ------------------
 
 **New features**:
@@ -13,6 +24,7 @@ Changelog
 
 - msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
 - datasets: Fix default values for kT to ensure integrator produces sane values. #1272, #1275
+- coordinates: fixed fixed handling of default chunksize. #1284
 
 
 2.5.1 (02-17-2018)

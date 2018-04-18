@@ -38,8 +38,8 @@ logger = getLogger('pyemma.'+'TestDataInMemory')
 class TestDataInMemory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        d = np.random.random((100, 3))
-        d_1d = np.random.random(100)
+        d = np.random.random((100, 3)).astype(np.float32)
+        d_1d = np.random.random(100).astype(np.float32)
 
         cls.d = d
         cls.d_1d = d_1d
@@ -254,7 +254,7 @@ class TestDataInMemory(unittest.TestCase):
                                     err_msg="failed for traj=%s" % idx)
 
     def test_lagged_stridden_access(self):
-        data = np.random.random((1000, 2))
+        data = np.random.random((1000, 2)).astype(np.float32)
         reader = DataInMemory(data)
         strides = [2, 3, 5, 7, 15]
         lags = [1, 3, 7, 10, 30]
