@@ -11,6 +11,8 @@ Changelog
 **Fixes**:
 
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
+- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
+
 
 2.5.2 (04-10-2018)
 ------------------
