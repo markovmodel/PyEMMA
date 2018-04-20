@@ -295,6 +295,7 @@ class FragmentIterator(DataSourceIterator):
 
     def _next_chunk(self):
         assert self._it is not None
+	# TODO: redundant?
         if self._it is None:
             if self._itraj < self.number_of_trajectories():
                 self._select_file(0)

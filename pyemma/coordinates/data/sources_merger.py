@@ -90,4 +90,5 @@ class _JoiningIterator(DataSourceIterator):
             for it in self._iterators:
                 it._select_file(itraj)
                 assert it._itraj == itraj
+                assert it._selected_file == itraj
                 assert it._t == self._t

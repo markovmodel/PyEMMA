@@ -194,7 +194,6 @@ class H5Iterator(DataInMemoryIterator):
             self._fh = self.data.file
 
     def _next_chunk(self):
-        self._select_file(self._itraj)
         X = self._next_chunk_impl(self.data)
         X, _ = self._data_source._reshape(X, dry=False)
         return X

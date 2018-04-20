@@ -256,6 +256,7 @@ class DataInMemoryIterator(DataSourceIterator):
     def _next_chunk_impl(self, data):
         # only apply _skip at the beginning of each trajectory
         skip = self.skip if self._t == 0 else 0
+
         # complete trajectory mode
         if self.chunksize == 0:
             if not self.uniform_stride:

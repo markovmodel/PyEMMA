@@ -379,10 +379,8 @@ class FeatureReaderIterator(DataSourceIterator):
             if si.args and "too short" in si.args[0] and self._itraj < self._data_source.ntraj - 1:
                 self._itraj += 1
                 self._select_file(self._itraj)
-                print('!'*80)
                 return ()
             else:
-                print('!_!'*80)
                 raise
 
         # 3 cases:
