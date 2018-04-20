@@ -10,6 +10,7 @@ Changelog
 
 **Fixes**:
 
+- msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
 - base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
 
