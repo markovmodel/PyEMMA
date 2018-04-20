@@ -272,6 +272,7 @@ class DataInMemoryIterator(DataSourceIterator):
                     )]
                 ]
             else:
+                #TODO: this fails for stride == 3
                 t_effective = self.skip + self._t * self.stride
                 t_next = t_effective + self.chunksize * self.stride
                 slice_x = slice(t_effective, t_next, self.stride)

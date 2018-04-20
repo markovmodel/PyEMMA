@@ -294,6 +294,7 @@ class FragmentIterator(DataSourceIterator):
         self._select_file(0)
 
     def _next_chunk(self):
+        assert self._it is not None
         if self._it is None:
             if self._itraj < self.number_of_trajectories():
                 self._select_file(0)
@@ -303,14 +304,14 @@ class FragmentIterator(DataSourceIterator):
         X = next(self._it, None)
         if X is None:
             raise StopIteration()
-        self._t += len(X)
-        if self._t >= self._data_source.trajectory_length(self._itraj, stride=self.stride, skip=self.skip):
-            self._itraj += 1
-            self._select_file(self._itraj)
-        while (not self.uniform_stride) and (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-                and self._itraj < self.number_of_trajectories():
-            self._itraj += 1
-            self._select_file(self._itraj)
+        # self._t += len(X)
+        # if self._t >= self._data_source.trajectory_length(self._itraj, stride=self.stride, skip=self.skip):
+        #     self._itraj += 1
+        #     self._select_file(self._itraj)
+        # while (not self.uniform_stride) and (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
+        #         and self._itraj < self.number_of_trajectories():
+        #     self._itraj += 1
+        #     self._select_file(self._itraj)
         return X
 
     def close(self):

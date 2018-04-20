@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod
 from math import ceil
 
 import numpy as np
+from pyemma._base.loggable import Loggable
 
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
@@ -387,10 +388,11 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
             with pg.context():
                 for itraj, chunk in it:
-                    self.logger.info(it)
                     L = len(chunk)
-                    trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
-                    # update progress
+                    i = slice(it.pos, it.pos+L)
+                    assert i
+                    self.logger.info(i)
+                    trajs[itraj][i, :] = chunk[:, dimensions]
                     pg.update(1)
 
         if config.coordinates_check_output:
@@ -649,7 +651,7 @@ class IteratorState(object):
         return True
 
 
-class DataSourceIterator(six.with_metaclass(ABCMeta)):
+class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
     """
     Abstract class for any data source iterator.
     """
@@ -808,7 +810,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         """
         self.state.t = value
         # TODO: pos is redundant?
-        self.state.pos = value
+        #self.state.pos = value
         self._skip_unselected_or_too_short_trajs()
 
     @property
@@ -847,6 +849,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         else:
             if value < self.number_of_trajectories() and self._t >= self.trajectory_length():
                 value += 1
+        if value != self._itraj:
+            self.logger.info('itraj changed from %s to %s', self._itraj, value)
         self._itraj = value
 
     @skip.setter
@@ -1005,10 +1009,12 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.state.pos = self.state.pos_adv
 
         self._select_file(self._itraj)
-
+        self.state.pos = self._t
+        self.logger.info('before: %s', self)
         try:
             X = self._use_cols(self._next_chunk())
-            self._t += len(X)
+            self.state.pos += len(X)
+            self._t += len(X) # this increments itraj too
         except StopIteration:
             self._last_chunk_in_traj = True
             raise
@@ -1017,12 +1023,14 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             self._last_chunk_in_traj = True
         else:
             self.state.pos_adv += len(X)
+            #assert self._t == self.state.pos_adv, (self._t, self.state.pos_adv)
             if self.uniform_stride:
                 length = self._data_source.trajectory_length(itraj=self.state.current_itraj,
                                                              stride=self.stride, skip=self.skip)
             else:
                 length = self.ra_trajectory_length(self.state.current_itraj)
             self._last_chunk_in_traj = self.state.pos_adv >= length
+        self.logger.info('after: %s', self)
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X

@@ -76,11 +76,11 @@ class _JoiningIterator(DataSourceIterator):
             chunks.append(X)
 
         res = np.hstack(chunks)
-        self._t += len(res)
-
-        if self._t >= self.trajectory_length() and self._itraj < self._data_source.ntraj - 1:
-            self._itraj += 1
-            self._select_file(self._itraj)
+        # self._t += len(res)
+        #
+        # if self._t >= self.trajectory_length() and self._itraj < self._data_source.ntraj - 1:
+        #     self._itraj += 1
+        #     self._select_file(self._itraj)
 
         return res
 

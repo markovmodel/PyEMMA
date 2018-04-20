@@ -245,9 +245,9 @@ class StreamingTransformerIterator(DataSourceIterator):
         self._it._select_file(itraj)
 
     @DataSourceIterator.chunksize.setter
-    def chunksize(self, val):
-        self.state.chunk = val
-        self._it.chunksize = val
+    def chunksize(self, value):
+        self.state.chunk = value
+        self._it.chunksize = value
 
     def _next_chunk(self):
         assert self.state.chunk == self._it.chunksize

@@ -225,6 +225,10 @@ class _LaggedIterator(object):
     def __next__(self):
         return self.next()
 
+    @property
+    def chunksize(self):
+        return self._it.chunksize
+
     def next(self):
         if (self._it._itraj not in self._sufficently_long_trajectories
                and self._it.number_of_trajectories() > self._it.current_trajindex):
@@ -296,6 +300,10 @@ class _LegacyLaggedIterator(object):
         n2 = self._it_lagged.n_chunks
         return min(n1, n2)
 
+    @property
+    def chunksize(self):
+        return min(self._it.chunksize, self._it_lagged.chunksize)
+
     def __len__(self):
         return min(self._it.trajectory_lengths().min(), self._it_lagged.trajectory_lengths().min())
 
@@ -329,6 +337,7 @@ class _LegacyLaggedIterator(object):
     def __enter__(self):
         self._it.__enter__()
         self._it_lagged.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._it.__exit__(exc_type, exc_val, exc_tb)
