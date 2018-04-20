@@ -249,21 +249,23 @@ class _LaggedIterator(object):
             frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
             data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
                                                        % self._actual_stride::self._actual_stride]), axis=0)
+            data_len = len(data)
 
             offset = min(self._it.chunksize - self._lag, len(data_lagged))
             self._overlap = data_lagged[offset::self._actual_stride, :]
 
             data_lagged = data_lagged[::self._actual_stride]
-
+            data_lagged_len = len(data_lagged)
         if self._it._last_chunk_in_traj:
             self._overlap = None
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if data_len > data_lagged_len:
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
-            raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+            data = data[:data_lagged_len]
+        elif data_len< data_lagged_len:
+            raise RuntimeError(
+                'chunk was smaller than time-lagged chunk ({chunk} < {chunk_lagged}), that should not happen!'
+                .format(chunk=data_len, chunk_lagged=data_lagged_len))
 
         if self._return_trajindex:
             return itraj, data, data_lagged
