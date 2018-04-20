@@ -158,9 +158,11 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
         if self._estimated:
             # if dtrajs has now changed, unset the _estimated flag to re-set every derived quantity.
             assert hasattr(self, '_last_dtrajs_input_hash')
-            if self._last_dtrajs_input_hash != _hash_dtrajs(dtrajs):
+            current_hash = _hash_dtrajs(dtrajs)
+            if self._last_dtrajs_input_hash != current_hash:
                 self.logger.warning("estimating from new data, discard all previously computed models.")
                 self._estimated = False
+                self._last_dtrajs_input_hash = current_hash
         else:
             self._last_dtrajs_input_hash = _hash_dtrajs(dtrajs)
 
