@@ -292,7 +292,7 @@ metadata = dict(
         'pyyaml',
         'scipy>=0.11',
         'thermotools>=0.2.6',
-        'tqdm',
+        'tqdm>=4.23',
     ],
     zip_safe=False,
     entry_points={
