@@ -323,7 +323,7 @@ class SerializableMixIn(object):
             logger.debug("interpolated state: %s", state)
 
     @staticmethod
-    def _get_version_for_class_from_state(state, klass):
+    def  _get_version_for_class_from_state(state, klass):
         """ retrieves the version of the current klass from the state mapping from old locations to new ones. """
         # klass may have renamed, so we have to look this up in the class rename registry.
         names = [_importable_name(klass)]
@@ -424,14 +424,6 @@ class SerializableMixIn(object):
             if 'model' in state:
                 self._model = state['model']
 
-            for klass in self._get_classes_to_inspect():
-                self._set_state_from_serializeable_fields_and_state(state, klass=klass)
-            state.pop('class_tree_versions')
-            state.pop('pyemma_version')
-
-            if hasattr(self, 'data_producer') and 'data_producer' in state:
-                self.data_producer = state['data_producer']
-
             from pyemma._base.estimator import Estimator
             if isinstance(self, Estimator):
                 Estimator.__my_setstate__(self, state)
@@ -439,6 +431,13 @@ class SerializableMixIn(object):
             from pyemma._base.model import Model
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
+
+            for klass in self._get_classes_to_inspect():
+                self._set_state_from_serializeable_fields_and_state(state, klass=klass)
+
+            if hasattr(self, 'data_producer') and 'data_producer' in state:
+                self.data_producer = state['data_producer']
+
         except OldVersionUnsupported as e:
             logger.error(str(e))
             raise

@@ -62,6 +62,7 @@ def _check_serialize(vamp):
         assert_allclose_ignore_phase(restored.singular_vectors_left, vamp.singular_vectors_left)
         assert_allclose_ignore_phase(restored.singular_vectors_right, vamp.singular_vectors_right)
         np.testing.assert_equal(restored.dimension(), vamp.dimension())
+        assert restored.model._svd_performed == vamp.model._svd_performed
         return restored
     finally:
         import os
