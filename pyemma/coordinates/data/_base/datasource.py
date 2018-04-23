@@ -262,8 +262,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         skip
         """
         if chunksize != 0:
-            chunks = int(sum((ceil(l / float(chunksize))
-                          for l in self.trajectory_lengths(stride=stride, skip=skip))))
+            chunksize = float(chunksize)
+            chunks = int(sum((ceil(l / chunksize) for l in self.trajectory_lengths(stride=stride, skip=skip))))
         else:
             chunks = self.number_of_trajectories(stride)
         return chunks
@@ -396,8 +396,13 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
                     pg.update(1)
 
         if config.coordinates_check_output:
-            for t in trajs:
-                assert np.all(np.isfinite(t))
+            for i, t in enumerate(trajs):
+                finite = np.isfinite(t)
+                if not np.all(finite):
+                    inds = np.where(finite)
+                    if not len(inds):
+                        raise RuntimeError('nothing got assigned for traj {}'.format(i))
+                    raise RuntimeError('unassigned sections in traj {i} in range [{}]'.format(inds, i=i))
 
         return trajs
 
@@ -410,7 +415,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         ----------
         filename: str
             file name of output HDF5 file
-        group, str, default='/'
+        group: str, default='/'
             write all trajectories to this HDF5 group. The group name may not already exist in the file.
         data_set_prefix: str, default=None
             data set name prefix, will postfixed with the index of the trajectory.
@@ -813,9 +818,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             The upcoming iterator position.
         """
         self.state.t = value
-        # TODO: pos is redundant?
-        #self.state.pos = value
-        self._skip_unselected_or_too_short_trajs()
 
     @property
     def _itraj(self):
@@ -838,9 +840,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             The upcoming trajectory index.
         """
         if value != self._selected_itraj:
+            self.logger.error('inc itraj, reset t and pos_adv!')
             self.state.itraj = value
             self.state.t = 0
-            self.state.pos = 0
             self.state.pos_adv = 0
 
     def _skip_unselected_or_too_short_trajs(self):
@@ -850,7 +852,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             while (value not in self.traj_keys or self._t >= self.ra_trajectory_length(value)) \
                     and value < self.number_of_trajectories():
                 value += 1
+                self._t = 0
         else:
+             # TODO: are there more conditions to inc itraj?
             if value < self.number_of_trajectories() and self._t >= self.trajectory_length():
                 value += 1
         if value != self._itraj:
@@ -1013,12 +1017,13 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
         self.state.pos = self.state.pos_adv
 
         self._select_file(self._itraj)
-        self.state.pos = self._t
+        #self.state.pos = self._t
         self.logger.info('before: %s', self)
         try:
             X = self._use_cols(self._next_chunk())
-            self.state.pos += len(X)
-            self._t += len(X) # this increments itraj too
+            #self.state.pos += len(X)
+            self._t += len(X)
+            self._skip_unselected_or_too_short_trajs()
         except StopIteration:
             self._last_chunk_in_traj = True
             raise
@@ -1027,7 +1032,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             self._last_chunk_in_traj = True
         else:
             self.state.pos_adv += len(X)
-            #assert self._t == self.state.pos_adv, (self._t, self.state.pos_adv)
             if self.uniform_stride:
                 length = self._data_source.trajectory_length(itraj=self.state.current_itraj,
                                                              stride=self.stride, skip=self.skip)
@@ -1041,11 +1045,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
 
     def next(self):
         X = self._it_next()
-        assert len(X) > 0
 
         if config.coordinates_check_output:
+            assert len(X[1]) > 0 if self.return_traj_index else len(X) > 0
             array = X if not self.return_traj_index else X[1]
-            if not np.all(np.isfinite(array)):
+            if isinstance(array, np.ndarray) and not np.all(np.isfinite(array)):
                 # determine position
                 start = self.pos
                 msg = "Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}]" \
