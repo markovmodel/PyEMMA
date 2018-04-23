@@ -55,11 +55,6 @@ class PyCSVIterator(DataSourceIterator):
             self._file_handle.close()
 
     def _next_chunk(self):
-        if not self._file_handle or self._itraj >= self.number_of_trajectories():
-            self.close()
-            raise StopIteration()
-
-        traj_len = self.trajectory_length()
         lines = []
         for row in self._reader:
             if self.line in self._skip_rows:
@@ -75,34 +70,22 @@ class PyCSVIterator(DataSourceIterator):
             if self.chunksize != 0 and len(lines) % self.chunksize == 0:
                 result = self._convert_to_np_chunk(lines)
                 del lines[:]  # free some space
-                if self._t >= traj_len:
-                    self._itraj += 1
-                    self._select_file(self._itraj)
                 return result
 
-        self._itraj += 1
-        self._select_file(self._itraj)
         # last chunk
         if len(lines) > 0:
             result = self._convert_to_np_chunk(lines)
             return result
 
-        self.close()
-
     def _select_file(self, itraj):
-        self._itraj = itraj
-        while not self.uniform_stride and self._itraj not in self.traj_keys \
-                and self._itraj < self.number_of_trajectories():
-            self._itraj += 1
-        if self._itraj < self.number_of_trajectories():
+        if itraj != self._selected_itraj:
+            self._itraj = self._selected_itraj = itraj
             # close current file handle
             self._file_handle.close()
             # open next one
             self._open_file()
             # reset line counter
             self.line = 0
-            # reset time counter
-            self._t = 0
             # get new reader
             self._reader = csv.reader(self._file_handle,
                                       dialect=self._data_source._get_dialect(self._itraj))
@@ -128,7 +111,7 @@ class PyCSVIterator(DataSourceIterator):
                                                                             error=repr(ve),
                                                                             dialect=dialect_str)
                         raise ValueError(s)
-        self._t += len(list_of_strings)
+        #self._t += len(list_of_strings)
         return result
 
     def _open_file(self):
