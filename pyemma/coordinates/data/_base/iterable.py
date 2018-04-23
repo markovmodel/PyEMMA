@@ -319,7 +319,6 @@ class _LegacyLaggedIterator(object):
         itraj_lag, data_lagged = self._it_lagged.next()
 
         if itraj < itraj_lag:
-            print('hi there')
             self._it._select_file(itraj_lag)
             itraj, data = self._it.next()
         assert itraj == itraj_lag
