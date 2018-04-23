@@ -261,7 +261,6 @@ class DataInMemoryIterator(DataSourceIterator):
         if self.chunksize == 0:
             if not self.uniform_stride:
                 chunk = data[self.ra_indices_for_traj(self._itraj)]
-                self._skip_unselected_or_too_short_trajs()
             else:
                 chunk = data[skip::self.stride]
         # chunked mode
