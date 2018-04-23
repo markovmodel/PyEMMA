@@ -386,7 +386,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             from pyemma._base.progress import ProgressReporter
             pg = ProgressReporter()
             pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
-            with pg.context():
+            with pg.context(), it:
                 for itraj, chunk in it:
                     L = len(chunk)
                     i = slice(it.pos, it.pos+L)
@@ -851,7 +851,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
                 value += 1
         if value != self._itraj:
             self.logger.info('itraj changed from %s to %s', self._itraj, value)
-        self._itraj = value
+            self._itraj = value
 
     @skip.setter
     def skip(self, value):
