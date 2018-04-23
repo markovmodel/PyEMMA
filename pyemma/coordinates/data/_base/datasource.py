@@ -737,6 +737,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
     def _select_file(self, itraj):
         """ opens the next file defined by itraj.
 
+        Notes
+        -----
+        Should also set self._itraj and self._selected_itraj.
+
         Parameters
         ----------
         itraj : int
