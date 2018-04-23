@@ -276,13 +276,11 @@ class FragmentIterator(DataSourceIterator):
         if itraj != self._selected_itraj:
             self.close()
             self._itraj = self._selected_itraj = itraj
-            if itraj < self.number_of_trajectories():
-                self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
-                                                         self.chunksize, self.stride, self.skip)
-                if not self.uniform_stride:
-                    self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
-            else:
-                self._it = None
+            assert itraj < self.number_of_trajectories()
+            self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
+                                                     self.chunksize, self.stride, self.skip)
+            if not self.uniform_stride:
+                self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
 
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):
@@ -292,24 +290,9 @@ class FragmentIterator(DataSourceIterator):
 
     def _next_chunk(self):
         assert self._it is not None
-	# TODO: redundant?
-        if self._it is None:
-            if self._itraj < self.number_of_trajectories():
-                self._select_file(0)
-            else:
-                raise StopIteration()
-
         X = next(self._it, None)
         if X is None:
             raise StopIteration()
-        # self._t += len(X)
-        # if self._t >= self._data_source.trajectory_length(self._itraj, stride=self.stride, skip=self.skip):
-        #     self._itraj += 1
-        #     self._select_file(self._itraj)
-        # while (not self.uniform_stride) and (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-        #         and self._itraj < self.number_of_trajectories():
-        #     self._itraj += 1
-        #     self._select_file(self._itraj)
         return X
 
     def close(self):
