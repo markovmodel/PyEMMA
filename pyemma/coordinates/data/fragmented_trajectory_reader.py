@@ -290,9 +290,6 @@ class FragmentIterator(DataSourceIterator):
         if self._it is not None:
             self._it._chunksize = value
 
-    def reset(self):
-        self._select_file(0)
-
     def _next_chunk(self):
         assert self._it is not None
 	# TODO: redundant?
