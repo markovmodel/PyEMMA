@@ -123,6 +123,8 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
         self._its = None
         # sampled its's. 3D-array with indexing: lagtime, its, sample
         self._its_samples = None
+        # fingerprint of the last estimate input.
+        self._last_dtrajs_input_hash = None
 
     def estimate(self, X, **params):
         """
