@@ -1096,5 +1096,19 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
         )
 
 
+
+class EncapsulatedIterator(DataSourceIterator):
+    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
+        super(EncapsulatedIterator, self).__init__(data_source=data_source, skip=skip, chunk=chunk,
+                                                   stride=stride, return_trajindex=return_trajindex, cols=cols)
+        self._it = None
+
+    @DataSourceIterator.chunksize.setter
+    def chunksize(self, value):
+        self.state.chunk = value
+        if self._it is not None:
+            self._it._chunksize = value
+
+
 class InvalidDataInStreamException(Exception):
     """Data stream contained NaN or (+/-) infinity"""

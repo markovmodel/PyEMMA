@@ -332,26 +332,26 @@ class FeatureReaderIterator(DataSourceIterator):
                 cols=cols
         )
         # set chunksize prior selecting the first file, to ensure we have a sane value for mditer...
-        self._mditer = None
+        self._it = None
         self.chunksize = chunk
 
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):
         self.state.chunk = value
-        if self._mditer is not None:
-            self._mditer.chunksize = value
+        if self._it is not None:
+            self._it.chunksize = value
 
     @DataSourceIterator.skip.setter
     def skip(self, value):
         self.state.skip = value
-        if self._mditer is not None:
-            self._mditer._skip = value
+        if self._it is not None:
+            self._it._skip = value
 
     def close(self):
-        if self._mditer is not None:
-            self._mditer.close()
+        if self._it is not None:
+            self._it.close()
             # TODO: check
-            self._mditer = None
+            self._it = None
 
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
@@ -360,9 +360,9 @@ class FeatureReaderIterator(DataSourceIterator):
             self._itraj = self._selected_itraj = itraj
 
     def _next_chunk(self):
-        assert self._mditer is not None
+        assert self._it is not None
         try:
-            chunk = next(self._mditer)
+            chunk = next(self._it)
         except StopIteration as si:
             # TODO: can this ever happen after refactoring?
             """ in case the underlying mdtraj iterator raises StopIteration (eg. seek failed),
@@ -389,7 +389,7 @@ class FeatureReaderIterator(DataSourceIterator):
 
     def _create_mditer(self, itraj):
         stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
-        self._mditer = self._create_patched_iter(
+        self._it = self._create_patched_iter(
                         self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
         )
         self._closed = False

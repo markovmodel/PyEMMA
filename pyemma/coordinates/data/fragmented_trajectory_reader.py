@@ -20,7 +20,7 @@ import itertools
 import numpy as np
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource, EncapsulatedIterator
 from pyemma.coordinates.data.util.reader_utils import preallocate_empty_trajectory
 from pyemma.util.annotators import fix_docs
 
@@ -261,17 +261,10 @@ class _FragmentedTrajectoryIterator(object):
             self._reader_it.close()
 
 
-class FragmentIterator(DataSourceIterator):
+class FragmentIterator(EncapsulatedIterator):
     """
     outer iterator, which encapsulates _FragmentedTrajectoryIterator
     """
-
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
-        super(FragmentIterator, self).__init__(data_source, skip=skip, chunk=chunk,
-                                               stride=stride, return_trajindex=return_trajindex,
-                                               cols=cols)
-        self._it = None
-
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
@@ -281,12 +274,6 @@ class FragmentIterator(DataSourceIterator):
             if not self.uniform_stride:
                 self._it.ra_indices = self.ra_indices_for_traj(itraj)
             self._itraj = self._selected_itraj = itraj
-
-    @DataSourceIterator.chunksize.setter
-    def chunksize(self, value):
-        self.state.chunk = value
-        if self._it is not None:
-            self._it._chunksize = value
 
     def _next_chunk(self):
         assert self._it is not None
