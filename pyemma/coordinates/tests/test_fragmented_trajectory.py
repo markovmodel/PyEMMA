@@ -71,7 +71,7 @@ class TestFragmentedTrajectory(unittest.TestCase):
                     pass
 
                 np.testing.assert_array_almost_equal(data[::stride][0:len(Y)], X)
-                np.testing.assert_array_almost_equal(data[lag::stride], Y)
+                np.testing.assert_array_almost_equal(data[lag::stride], Y, err_msg='lag={lag}, stride={stride}'.format(stride=stride, lag=lag))
 
     def test_fragmented_xtc(self):
         from pyemma.coordinates.tests.util import create_traj

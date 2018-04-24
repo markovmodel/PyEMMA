@@ -12,15 +12,8 @@ from pyemma.util.files import TemporaryDirectory
 
 class TestCoordinatesIterator(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.d = [np.random.random((100, 3)).astype(np.float32) for _ in range(3)]
-
     def setUp(self):
-        self.tempdir = tempfile.mktemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir, ignore_errors=True)
+        self.d = [np.random.random((100, 3)).astype(np.float32) for _ in range(3)]
 
     def test_current_trajindex(self):
         r = DataInMemory(self.d)
@@ -67,7 +60,6 @@ class TestCoordinatesIterator(unittest.TestCase):
                 np.testing.assert_equal(it.n_chunks, chunks,
                                         err_msg="Expected number of chunks did not agree with what the iterator "
                                                 "returned for stride=%s, lag=%s" % (stride, lag))
-                assert chunks == it.n_chunks
 
         dd = [np.random.random((100, 3)), np.random.random((120, 3)), np.random.random((120, 3))]
         rr = DataInMemory(dd)

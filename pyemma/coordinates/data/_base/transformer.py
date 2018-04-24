@@ -242,7 +242,9 @@ class StreamingTransformerIterator(DataSourceIterator):
         self._it.reset()
 
     def _select_file(self, itraj):
-        self._it._select_file(itraj)
+        if itraj != self._selected_itraj:
+            self._itraj = self._selected_itraj = itraj
+            self._it._select_file(itraj)
 
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):

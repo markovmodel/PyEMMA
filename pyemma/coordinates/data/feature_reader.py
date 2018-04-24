@@ -335,21 +335,13 @@ class FeatureReaderIterator(DataSourceIterator):
         self._mditer = None
         self.chunksize = chunk
 
-    @property
-    def chunksize(self):
-        return self.state.chunk
-
-    @chunksize.setter
+    @DataSourceIterator.chunksize.setter
     def chunksize(self, value):
         self.state.chunk = value
         if self._mditer is not None:
             self._mditer.chunksize = value
 
-    @property
-    def skip(self):
-        return self.state.skip
-
-    @skip.setter
+    @DataSourceIterator.skip.setter
     def skip(self, value):
         self.state.skip = value
         if self._mditer is not None:
@@ -364,8 +356,8 @@ class FeatureReaderIterator(DataSourceIterator):
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
+            self._create_mditer(itraj)
             self._itraj = self._selected_itraj = itraj
-            self._create_mditer()
 
     def _next_chunk(self):
         assert self._mditer is not None
@@ -395,18 +387,18 @@ class FeatureReaderIterator(DataSourceIterator):
             res = self._data_source.featurizer.transform(chunk)
         return res
 
-    def _create_mditer(self):
-        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(self._itraj)
+    def _create_mditer(self, itraj):
+        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
         self._mditer = self._create_patched_iter(
-                        self._data_source.filenames[self._itraj], stride=stride, skip=self.skip
+                        self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
         )
         self._closed = False
 
-    def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):
+    def _create_patched_iter(self, filename, itraj, skip=0, stride=1, atom_indices=None):
         if self.is_uniform_stride(self.stride):
-            flen = self._data_source.trajectory_length(itraj=self._itraj, stride=self.stride, skip=self.skip)
+            flen = self._data_source.trajectory_length(itraj=itraj, stride=self.stride, skip=self.skip)
         else:
-            flen = self.ra_trajectory_length(self._itraj)
+            flen = self.ra_trajectory_length(itraj)
         return patches.iterload(filename, flen, chunk=self.chunksize, top=self._data_source.featurizer.topology,
                                 skip=skip, stride=stride, atom_indices=atom_indices)
 

@@ -675,7 +675,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
         if not isinstance(stride, np.ndarray) and skip > 0:
             # skip over the trajectories that are smaller than skip
             while self.state.itraj < self._data_source.ntraj \
-                    and self._data_source.trajectory_length(self.state.itraj, self.stride, 0) <= skip:
+                    and self._data_source.trajectory_length(self.state.itraj, 1, 0) <= skip:
                 self.state.itraj += 1
         super(DataSourceIterator, self).__init__()
 
@@ -724,8 +724,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
     def number_of_trajectories(self):
         return self._data_source.number_of_trajectories()
 
-    def trajectory_length(self):
-        return self._data_source.trajectory_length(self.current_trajindex, self.stride, self.skip)
+    def trajectory_length(self, itraj=None):
+        if itraj is None:
+            itraj = self.current_trajindex
+        return self._data_source.trajectory_length(itraj, self.stride, self.skip)
 
     def trajectory_lengths(self):
         return self._data_source.trajectory_lengths(self.stride, self.skip)
@@ -797,6 +799,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
         """
         return self.state.skip
 
+
+    # TODO: this is used internally as the relative position to skip and stride, encapsulate this to include abs position
+    # e.g see datainmemory t_effective.
     @property
     def _t(self):
         """
@@ -818,6 +823,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             The upcoming iterator position.
         """
         self.state.t = value
+
+    @property
+    def _t_abs(self):
+        return self.skip + self._t * self.stride
 
     @property
     def _itraj(self):
@@ -855,8 +864,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
                 self._t = 0
         else:
              # TODO: are there more conditions to inc itraj?
-            if value < self.number_of_trajectories() and self._t >= self.trajectory_length():
+             # TODO: self.trajectory_length uses self.current_trajindex, which does not yet may point to self._itraj!!
+            while value < self.number_of_trajectories() and self._t >= self.trajectory_length(value):
                 value += 1
+                self._t = 0
         if value != self._itraj:
             self.logger.info('itraj changed from %s to %s', self._itraj, value)
             self._itraj = value
@@ -1006,6 +1017,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
 
     def _it_next(self):
         # increase itraj
+        self.logger.info('entered it_next')
         self._skip_unselected_or_too_short_trajs()
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
@@ -1021,10 +1033,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
         self.logger.info('before: %s', self)
         try:
             X = self._use_cols(self._next_chunk())
-            #self.state.pos += len(X)
             self._t += len(X)
+            self.logger.info('t=%s', self._t)
             self._skip_unselected_or_too_short_trajs()
         except StopIteration:
+            self.logger.info('stop iteration')
             self._last_chunk_in_traj = True
             raise
         if self.state.current_itraj != self._itraj:
@@ -1032,6 +1045,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             self._last_chunk_in_traj = True
         else:
             self.state.pos_adv += len(X)
+            assert self.state.pos_adv == self._t
             if self.uniform_stride:
                 length = self._data_source.trajectory_length(itraj=self.state.current_itraj,
                                                              stride=self.stride, skip=self.skip)

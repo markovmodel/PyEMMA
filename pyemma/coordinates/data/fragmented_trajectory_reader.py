@@ -24,7 +24,7 @@ from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSou
 from pyemma.coordinates.data.util.reader_utils import preallocate_empty_trajectory
 from pyemma.util.annotators import fix_docs
 
-
+# NEVER AGAIN TOUCH THIS BEAST!!!!!11111elevenoneoneone
 class _FragmentedTrajectoryIterator(object):
     def __init__(self, fragmented_reader, readers, chunksize, stride, skip):
         # global time variable
@@ -275,12 +275,12 @@ class FragmentIterator(DataSourceIterator):
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
-            self._itraj = self._selected_itraj = itraj
             assert itraj < self.number_of_trajectories()
             self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
                                                      self.chunksize, self.stride, self.skip)
             if not self.uniform_stride:
-                self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
+                self._it.ra_indices = self.ra_indices_for_traj(itraj)
+            self._itraj = self._selected_itraj = itraj
 
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):
