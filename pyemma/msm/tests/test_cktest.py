@@ -39,6 +39,7 @@ from pyemma.msm import estimate_markov_model
 
 import sys
 on_win = sys.platform == 'win32'
+py3 = sys.version_info[0] == 3
 
 
 class TestCK_MSM(unittest.TestCase):
@@ -191,11 +192,12 @@ class TestCK_AllEstimators(unittest.TestCase):
         cls.double_well_data = pyemma.datasets.load_2well_discrete()
 
     def tearDown(self):
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False) as fh:
-            self.ck.save(fh.name)
-            restored = pyemma.load(fh.name)
-            assert hasattr(restored, 'has_errors')
+        if py3:
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False) as fh:
+                self.ck.save(fh.name)
+                restored = pyemma.load(fh.name)
+                assert hasattr(restored, 'has_errors')
 
     def test_ck_msm(self):
         MLMSM = msm.estimate_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40)
