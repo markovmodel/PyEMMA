@@ -23,8 +23,6 @@ import numpy as np
 import pyemma.coordinates as coor
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 
-from pyemma import config
-config.coordinates_check_output=True
 
 class TestFragmentedTrajectory(unittest.TestCase):
     @classmethod
