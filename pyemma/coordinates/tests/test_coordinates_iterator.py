@@ -1,18 +1,12 @@
-import tempfile
-import unittest
-import shutil
 import os
+import unittest
 from glob import glob
+
 import numpy as np
 
 from pyemma.coordinates.data import DataInMemory
 from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
-
-from pyemma import config
-
-config.coordinates_check_output = True
-assert config.coordinates_check_output
 
 
 class TestCoordinatesIterator(unittest.TestCase):
