@@ -275,16 +275,12 @@ class FragmentIterator(EncapsulatedIterator):
                 self._it.ra_indices = self.ra_indices_for_traj(itraj)
             self._itraj = self._selected_itraj = itraj
 
-    def _next_chunk(self):
-        assert self._it is not None
-        X = next(self._it, None)
-        if X is None:
-            raise StopIteration()
-        return X
-
-    def close(self):
-        if self._it is not None:
-            self._it.close()
+    # We have to delegate the chunksize to the underlying iterator, because it is not a DataSourceIterator itself.
+    # All other properties are passed during the creation during changing files.
+    @EncapsulatedIterator.chunksize.setter
+    def chunksize(self, value):
+        super(FragmentIterator, self.__class__).chunksize.__set__(self, value)
+        self._it._chunksize = value
 
 
 @fix_docs
@@ -372,7 +368,7 @@ class FragmentedTrajectoryReader(DataSource, SerializableMixIn):
         return res
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
-        return FragmentIterator(self, skip, chunk, stride, return_trajindex, cols=cols)
+        return FragmentIterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols)
 
     def describe(self):
         return "[FragmentedTrajectoryReader files=%s]" % self._trajectories
