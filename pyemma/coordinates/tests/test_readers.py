@@ -155,9 +155,9 @@ class TestReaders(object):
                         t = 0
                     assert chunk.shape[0] <= chunksize or chunksize == 0
                     if chunksize != 0 and traj_data[itraj].shape[0] - t >= chunksize:
-                        assert chunk.shape[0] == chunksize
+                        assert chunk.shape[0] <= chunksize
                     elif chunksize == 0:
-                        assert chunk.shape[0] == traj_data[itraj].shape[0] - lag
+                        assert chunk.shape[0] == chunk_lagged.shape[0] == traj_data_lagged[itraj].shape[0]
 
                     np.testing.assert_allclose(chunk, traj_data[itraj][t:t + chunk.shape[0]])
                     np.testing.assert_allclose(chunk_lagged, traj_data_lagged[itraj][t:t + chunk.shape[0]])
