@@ -1040,14 +1040,21 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             return self.state.current_itraj, X
         return X
 
+    def __chunk_finite(self, data):
+        if isinstance(data, np.ndarray):
+            return np.isfinite(data)
+        elif hasattr(data, 'xyz'):
+            return np.isfinite(data.xyz)
+        return True
+
     def next(self):
         X = self._it_next()
 
         if config.coordinates_check_output:
             assert len(X[1]) > 0 if self.return_traj_index else len(X) > 0
             array = X if not self.return_traj_index else X[1]
-            finite = np.isfinite(array)
-            if isinstance(array, np.ndarray) and not np.all(finite):
+            finite = self.__chunk_finite(array)
+            if not np.all(finite):
                 # determine position
                 frames = np.where(np.logical_not(finite))
                 start = self.pos
