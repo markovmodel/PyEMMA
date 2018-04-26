@@ -62,6 +62,7 @@ def _check_serialize(vamp):
         assert_allclose_ignore_phase(restored.singular_vectors_left, vamp.singular_vectors_left)
         assert_allclose_ignore_phase(restored.singular_vectors_right, vamp.singular_vectors_right)
         np.testing.assert_equal(restored.dimension(), vamp.dimension())
+        assert restored.model._svd_performed == vamp.model._svd_performed
         return restored
     finally:
         import os
@@ -317,6 +318,21 @@ class TestVAMPModel(unittest.TestCase):
     def test_default_cs(self):
         v = pyemma_api_vamp(chunksize=None)
         assert v.default_chunksize == v._FALLBACK_CHUNKSIZE
+
+
+class TestVAMPWithEdgeCaseData(unittest.TestCase):
+    def test_1D_data(self):
+        x = np.random.randn(10, 1)
+        vamp = pyemma_api_vamp([x], 1)  # just test that this doesn't raise
+        # Doing VAMP with 1-D data is just centering and normalizing the data.
+        assert_allclose_ignore_phase(vamp.get_output()[0], (x - np.mean(x[1:, 0])) / np.std(x[1:, 0]))
+
+    def test_const_data(self):
+        from pyemma._ext.variational.util import ZeroRankError
+        with self.assertRaises(ZeroRankError):
+            pyemma_api_vamp([np.ones((10, 2))], 1)
+        with self.assertRaises(ZeroRankError):
+            pyemma_api_vamp([np.ones(10)] ,1)
 
 
 if __name__ == "__main__":

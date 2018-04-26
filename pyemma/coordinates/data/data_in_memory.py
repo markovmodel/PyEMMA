@@ -106,6 +106,9 @@ class DataInMemory(DataSource, SerializableMixIn):
 
         self.data.append(array)
 
+    def output_type(self):
+        return self.data[0].dtype
+
     def _set_dimensions_and_lenghts(self):
         # number of trajectories/data sets
         self._ntraj = len(self.data)

@@ -231,6 +231,8 @@ class StreamingTransformerIterator(DataSourceIterator):
         self._it = self._data_source.data_producer.iterator(
             skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols
         )
+        # map the reference of the real used iterator to this instance to avoid overriding every attribute.
+        # TODO: investiage, if more attributes need overriding (especially setters!).
         self.state = self._it.state
 
     def close(self):
@@ -240,9 +242,15 @@ class StreamingTransformerIterator(DataSourceIterator):
         self._it.reset()
 
     def _select_file(self, itraj):
-        self._it._select_file(0)
+        self._it._select_file(itraj)
+
+    @DataSourceIterator.chunksize.setter
+    def chunksize(self, val):
+        self.state.chunk = val
+        self._it.chunksize = val
 
     def _next_chunk(self):
+        assert self.state.chunk == self._it.chunksize
         X = self._it._next_chunk()
         return self._data_source._transform_array(X)
 

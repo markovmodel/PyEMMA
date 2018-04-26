@@ -1276,7 +1276,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           Number of dimensions to keep:
 
           * if dim is not set (None) all available ranks are kept:
-              `n_components == min(n_samples, n_features)`
+              `n_components == min(n_samples, n_uncorrelated_features)`
           * if dim is an integer >= 1, this number specifies the number
             of dimensions to keep.
           * if dim is a float with ``0 < dim < 1``, select the number
@@ -1287,7 +1287,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           Scaling to be applied to the VAMP order parameters upon transformation
 
           * None: no scaling will be applied, variance of the order parameters is 1
-          * 'kinetic map' or 'km': order parameters are scaled by singular value
+          * 'kinetic map' or 'km': order parameters are scaled by singular value.
             Only the left singular functions induce a kinetic map.
             Therefore scaling='km' is only effective if `right` is False.
       right : boolean
@@ -1302,9 +1302,9 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
           the left singular functions. The remaining frames might
           possibly be interpreted as some extrapolation.
       epsilon : float
-          singular value cutoff. Singular values of :math:`C0` with
-          norms <= epsilon will be cut off. The remaining number of
-          singular values define the size of the output.
+          eigenvalue cutoff. Eigenvalues of :math:`C_{00}` and :math:`C_{11}`
+          with norms <= epsilon will be cut off. The remaining number of
+          eigenvalues together with the value of `dim` define the size of the output.
       stride: int, optional, default = 1
           Use only every stride-th time step. By default, every time step is used.
       skip : int, default=0
@@ -1477,12 +1477,12 @@ def tica_nystroem(max_columns, data=None, lag=10,
     .. math:: C_{\tau} r_i = C_0 \lambda_i(\tau) r_i.
 
     Instead of computing the full matrices involved in this problem, we conduct
-    a Nyström approximation [5]_ of the matrix :math:`C_0` by means of the
+    a Nystroemm approximation [5]_ of the matrix :math:`C_0` by means of the
     accelerated sequential incoherence selection (oASIS) algorithm [6]_ and,
     in particular, its extension called spectral oASIS [1]_.
 
     Iteratively, we select a small number of columns such that the resulting
-    Nyström approximation is sufficiently accurate. This selection represents
+    Nystroem approximation is sufficiently accurate. This selection represents
     in turn a subset of important features, for which we obtain a generalized
     eigenvalue problem similar to the one above, but much smaller in size.
     Its generalized eigenvalues and eigenvectors provide an approximation
@@ -1490,7 +1490,7 @@ def tica_nystroem(max_columns, data=None, lag=10,
 
     References
     ----------
-    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nüske, R. Patel, R. Baraniuk, F. Noé, and C. Clementi.
+    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nueske, R. Patel, R. Baraniuk, F. Noe, and C. Clementi.
        Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
     .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
        Identification of slow molecular order parameters for Markov model construction

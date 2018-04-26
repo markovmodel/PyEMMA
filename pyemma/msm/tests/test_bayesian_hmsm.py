@@ -41,7 +41,7 @@ class TestBHMM(unittest.TestCase):
 
         cls.lag = 10
         cls.bhmm = bayesian_hidden_markov_model([obs], cls.nstates, cls.lag, reversible=True, nsamples=cls.nsamples)
-        
+
     def test_reversible(self):
         self._reversible(self.bhmm)
 
@@ -110,7 +110,7 @@ class TestBHMM(unittest.TestCase):
 
     def test_eigenvalues_stats(self):
         self._eigenvalues_stats(self.bhmm)
-        
+
     def _eigenvalues_stats(self, msm, tol=1e-12):
         # mean
         mean = msm.sample_mean('eigenvalues')
@@ -202,7 +202,7 @@ class TestBHMM(unittest.TestCase):
         assert np.all(R+tol >= mean)
 
     def test_stationary_distribution_samples(self):
-        self._stationary_distribution_samples(self.bhmm) 
+        self._stationary_distribution_samples(self.bhmm)
 
     def _stationary_distribution_samples(self, msm):
         samples = msm.sample_f('stationary_distribution')
@@ -215,7 +215,7 @@ class TestBHMM(unittest.TestCase):
 
     def test_stationary_distribution_stats(self):
         self._stationary_distribution_stats(self.bhmm)
-        
+
     def _stationary_distribution_stats(self, msm, tol=1e-12):
         # mean
         mean = msm.sample_mean('stationary_distribution')
@@ -283,7 +283,7 @@ class TestBHMM(unittest.TestCase):
 
     def test_lifetimes_stats(self):
         self._lifetimes_stats(self.bhmm)
-        
+
     def _lifetimes_stats(self, msm):
         # mean
         mean = msm.sample_mean('lifetimes')
@@ -321,10 +321,10 @@ class TestBHMMSpecialCases(unittest.TestCase):
             assert strajs[0][6] == 2
 
     def test_initialized_bhmm(self):
-        import pyemma.datasets
+        import pyemma.datasets as d
         import pyemma.msm
 
-        obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        obs = d.load_2well_discrete().dtraj_T100K_dt10
 
         init_hmm = pyemma.msm.estimate_hidden_markov_model(obs, 2, 10)
         bay_hmm = pyemma.msm.estimators.BayesianHMSM(nstates=init_hmm.nstates, lag=init_hmm.lag,
@@ -332,6 +332,13 @@ class TestBHMMSpecialCases(unittest.TestCase):
         bay_hmm.estimate(obs)
 
         assert np.isclose(bay_hmm.stationary_distribution.sum(), 1)
+
+        with self.assertRaises(NotImplementedError) as ctx:
+            obs = np.copy(obs)
+            assert obs[0] != np.min(obs)
+            obs[0] = np.min(obs)
+            bay_hmm.estimate(obs)
+            self.assertIn('same data', ctx.exception.message)
 
     def test_initialized_bhmm_newstride(self):
         import pyemma.msm

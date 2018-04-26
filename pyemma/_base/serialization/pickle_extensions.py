@@ -70,6 +70,7 @@ class HDF5PersistentUnpickler(Unpickler):
                           'mdtraj',
                           'numpy',
                           'scipy',
+                          'bhmm',
                           )
 
     def __init__(self, group, file):

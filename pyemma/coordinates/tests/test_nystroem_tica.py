@@ -65,6 +65,11 @@ class TestNystroemTICA_Simple(unittest.TestCase):
                 tica_nystroem(data=np.random.rand(100, 10), lag=1, max_columns=11, nsel=3,
                               initial_columns=np.random.choice(10, 2, replace=False))
 
+    def test_describe(self):
+        # just check there is no exception
+        tica_nystroem(max_columns=2).describe()
+        tica_nystroem(max_columns=2, data=np.random.random((100, 10)))
+
 
 class TestNystroemTICA_DoubleWell(unittest.TestCase):
     @classmethod

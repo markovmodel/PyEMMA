@@ -1,17 +1,35 @@
 Changelog
 =========
 
-2.5.2 (??-??-????)
+2.5.3 (??-??-???)
+-----------------
+
+**New features**:
+
+-
+
+**Fixes**:
+
+- base: restored VAMP estimators reset the diagonalization flag, which led to recomputing expensive
+  operations. #1294
+- msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #1294
+- msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
+- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
+
+
+2.5.2 (04-10-2018)
 ------------------
 
 **New features**:
 
-- plots:
-   - plot_feature_histograms: added multi-dimensional stacked histogram plot function. #1264
+- coordinates: added Nystroem-TICA, which uses sparse sampling to approximate the input space. #1261, #1273
+- plots: added multi-dimensional stacked histogram plot function. #1264
 
 **Fixes**:
 
 - msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
+- datasets: Fix default values for kT to ensure integrator produces sane values. #1272, #1275
+- coordinates: fixed fixed handling of default chunksize. #1284
 
 
 2.5.1 (02-17-2018)

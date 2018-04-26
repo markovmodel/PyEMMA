@@ -51,9 +51,11 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
 
         # TODO: consider rounding this to some cache size of CPU? e.g py-cpuinfo can obtain it.
         # if one time step is already bigger than max_memory, we set the chunksize to 1.
-        max_elements = max(1, int(np.floor(max_bytes / (itemsize * dim))))
-        assert max_elements * dim * itemsize <= max_bytes or max_elements == 1
-        result = max(1, max_elements // dim)
+        bytes_per_frame = itemsize * dim
+        max_frames = max(1, int(np.floor(max_bytes / bytes_per_frame)))
+        assert max_frames * dim * itemsize <= max_bytes or max_frames == 1, \
+            "number of frames times dim times sizeof(dtype) should be smaller or equal than max_bytes"
+        result = max_frames
 
         assert result > 0
         if logger is not None:
@@ -77,7 +79,7 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
                 self._default_chunksize = Iterable._FALLBACK_CHUNKSIZE
             else:
                 self._default_chunksize = Iterable._compute_default_cs(self.dimension(),
-                                                                       self.output_type()().itemsize, self.logger)
+                                                                       self.output_type().itemsize, self.logger)
         return self._default_chunksize
 
     @property
@@ -172,7 +174,7 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
 
     def output_type(self):
         r""" By default transformers return single precision floats. """
-        return np.float32
+        return np.float32()
 
     def __iter__(self):
         return self.iterator()
@@ -237,29 +239,33 @@ class _LaggedIterator(object):
         if self._overlap is None:
             with attribute(self._it, 'chunksize', self._lag):
                 _, self._overlap = self._it.next()
+                assert len(self._overlap) <= self._lag
                 self._overlap = self._overlap[::self._actual_stride]
 
         with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
 
             itraj, data_lagged = self._it.next()
+            assert len(data_lagged) <= self._it.chunksize * self._actual_stride
             frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
             data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
                                                        % self._actual_stride::self._actual_stride]), axis=0)
+            data_len = len(data)
 
             offset = min(self._it.chunksize - self._lag, len(data_lagged))
             self._overlap = data_lagged[offset::self._actual_stride, :]
 
             data_lagged = data_lagged[::self._actual_stride]
-
+            data_lagged_len = len(data_lagged)
         if self._it._last_chunk_in_traj:
             self._overlap = None
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if data_len > data_lagged_len:
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
-            raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+            data = data[:data_lagged_len]
+        elif data_len< data_lagged_len:
+            raise RuntimeError(
+                'chunk was smaller than time-lagged chunk ({chunk} < {chunk_lagged}), that should not happen!'
+                .format(chunk=data_len, chunk_lagged=data_lagged_len))
 
         if self._return_trajindex:
             return itraj, data, data_lagged

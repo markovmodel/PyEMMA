@@ -20,6 +20,7 @@ from pyemma.datasets import get_multi_temperature_data
 from pyemma.thermo import estimate_umbrella_sampling
 from pyemma.thermo import estimate_multi_temperature
 from numpy.testing import assert_allclose
+import unittest
 
 
 def test_umbrella_sampling_data():
@@ -82,6 +83,14 @@ def test_multi_temperature_data():
     assert_allclose(pi, [0.3, 0.7], rtol=0.25, atol=0.1)
 
 
-def test_prinz_potential():
-    from pyemma.datasets import get_quadwell_data
-    get_quadwell_data()
+class TestPrinzPotential(unittest.TestCase):
+
+    def test_prinz_potential(self):
+        from pyemma.datasets import get_quadwell_data
+        import numpy as np
+
+        d = get_quadwell_data(ntraj=1, nstep=int(1e5))
+        assert np.all(np.isfinite(x) for x in d)
+
+        with self.assertRaises(RuntimeError):
+            get_quadwell_data(ntraj=1, dt=1, kT=100)
