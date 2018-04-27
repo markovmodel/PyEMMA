@@ -5,7 +5,7 @@ from tqdm._tqdm_notebook import tqdm_notebook
 class my_tqdm_notebook(tqdm_notebook):
 
     @staticmethod
-    def status_printer(_, total=None, desc=None):
+    def status_printer(_, total=None, desc=None, ncols=None):
         # Prepare IPython progress bar
         from ipywidgets import IntProgress, HTML, HBox, Layout, Label
 
@@ -25,6 +25,7 @@ class my_tqdm_notebook(tqdm_notebook):
 
         # Prepare status text
         ptext = HTML()
+        # Prepare layout
         inner = HBox([pbar, ptext],
                      layout=Layout(padding='0 0 0 20px'))
         # Only way to place text to the right of the bar is to use a container
@@ -32,6 +33,17 @@ class my_tqdm_notebook(tqdm_notebook):
                             width='100%')
         container = HBox(children=[description_box, inner] if description_box else [inner],
                          layout=box_layout)
+
+        if ncols is not None:  # use default style of ipywidgets
+            # ncols could be 100, "100px", "100%"
+            ncols = str(ncols)  # ipywidgets only accepts string
+            if ncols[-1].isnumeric():
+                # if last value is digit, assume the value is digit
+                ncols += 'px'
+            pbar.layout.flex = '2'
+            container.layout.width = ncols
+            container.layout.display = 'inline-flex'
+            container.layout.flex_flow = 'row wrap'
         from IPython.core.display import display
         display(container)
 
@@ -85,7 +97,6 @@ class my_tqdm_notebook(tqdm_notebook):
 
             # Update description
             if desc:
-                #nonlocal description
                 description.value = desc
 
         return print_status

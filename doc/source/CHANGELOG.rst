@@ -10,7 +10,12 @@ Changelog
 
 **Fixes**:
 
+- base: restored VAMP estimators reset the diagonalization flag, which led to recomputing expensive
+  operations. #1294
+- msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #1294
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
+- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
+
 
 2.5.2 (04-10-2018)
 ------------------

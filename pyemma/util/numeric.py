@@ -49,11 +49,3 @@ def _hash_numpy_array(x):
     hash_value = hash((x.shape, x.strides, v.digest()))
 
     return hash_value
-
-
-if __name__ == '__main__':
-    import numpy as np
-
-    x = np.random.random((1000000, 10))
-    y = x.copy()
-    _hash_numpy_array(x) == _hash_numpy_array(y)

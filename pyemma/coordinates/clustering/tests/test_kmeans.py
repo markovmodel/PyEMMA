@@ -273,7 +273,6 @@ class TestKmeansResume(unittest.TestCase):
 
         self.assertLess(diff_next, diff, 'resume_centers=%s, new_centers=%s' % (resume_centers, new_centers))
 
-    @unittest.skip('not impled')
     def test_inefficient_args_log(self):
         from pyemma.util.testing_tools import MockLoggingHandler
         m = MockLoggingHandler()
