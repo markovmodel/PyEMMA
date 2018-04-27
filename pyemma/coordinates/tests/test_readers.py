@@ -9,6 +9,7 @@ import numpy as np
 
 import pyemma.coordinates as coor
 import pyemma.coordinates.tests.util as util
+from pyemma.coordinates.data import FragmentedTrajectoryReader
 
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
@@ -81,7 +82,8 @@ class TestReaders(object):
     lags = (1, 50, 300)
     file_formats = ("in-memory",
                     #"numpy",
-                    #"xtc", "trr", "h5"
+                    "xtc",
+                    #  "trr", "h5"
                     )
 
     # pytest config
@@ -91,6 +93,10 @@ class TestReaders(object):
         'test_lagged_reader': [
             dict(file_format=f, stride=s, skip=skip, chunksize=cs, lag=lag)
             for f, s, skip, cs, lag in itertools.product(file_formats, strides, skips, chunk_sizes, lags)
+        ],
+        'test_fragment_reader': [
+            dict(file_format=f, stride=s, lag=l, chunksize=cs)
+            for f, s, l, cs in itertools.product(file_formats, strides, lags, chunk_sizes)
         ]
     }
 
@@ -100,7 +106,7 @@ class TestReaders(object):
             #'csv': util.create_trajectory_csv,
             'in-memory': lambda dirname, data: data,
             'numpy': util.create_trajectory_numpy,
-            #'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
+            'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
             #'trr': lambda *args: util.create_trajectory_trr(cls.n_atoms, *args),
             # TODO: add dcd etc.
             # TODO: add fragmented
@@ -163,6 +169,36 @@ class TestReaders(object):
                     np.testing.assert_allclose(chunk_lagged, traj_data_lagged[itraj][t:t + chunk.shape[0]])
 
                     t += chunk.shape[0]
+
+    def test_fragment_reader(self, file_format, stride, lag, chunksize):
+        trajs = self.test_trajs[file_format]
+
+        if FeatureReader.supports_format(trajs[0]):
+            # we need the topology
+            reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
+        else:
+            # no topology required
+            reader = coor.source([trajs], chunksize=chunksize)
+
+        assert isinstance(reader, FragmentedTrajectoryReader)
+
+        data = np.vstack(self.traj_data)
+        if lag > 0:
+            collected = None
+            collected_lagged = None
+            for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
+                collected = X if collected is None else np.vstack((collected, X))
+                collected_lagged = Y if collected_lagged is None else np.vstack((collected_lagged, Y))
+            np.testing.assert_array_almost_equal(data[::stride][0:len(collected_lagged)], collected,
+                                                 err_msg="lag={}, stride={}, cs={}".format(
+                                                     lag, stride, chunksize
+                                                 ))
+            np.testing.assert_array_almost_equal(data[lag::stride], collected_lagged)
+        else:
+            collected = None
+            for itraj, X in reader.iterator(stride=stride):
+                collected = X if collected is None else np.vstack((collected, X))
+            np.testing.assert_array_almost_equal(data[::stride], collected)
 
     def test_base_reader(self, file_format, stride, skip, chunksize):
         trajs = self.test_trajs[file_format]
