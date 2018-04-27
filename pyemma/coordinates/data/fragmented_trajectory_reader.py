@@ -71,9 +71,8 @@ class _FragmentedTrajectoryIterator(object):
                     self._fragment_indices = self.__get_ra_index_indices()
                     self._reader_it = self._select_next_ra_iterator()
                 else:
-                    self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False)
-            if self.ra_indices is None:
-                self._reader_it.skip = self._reader_overlap
+                    self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False,
+                                                                              skip=self._reader_overlap)
             # set original chunksize
             self._reader_it.chunksize = self._chunksize
             # chunk is contained in current reader
@@ -107,12 +106,11 @@ class _FragmentedTrajectoryIterator(object):
                         if self.ra_indices is not None:
                             self._reader_it = self._select_next_ra_iterator()
                         else:
-                            self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False)
-                            self._reader_it.skip = skip
                             self._reader_overlap = self._calculate_new_overlap(self._stride,
                                                                                self._reader_lengths[self._reader_at - 1],
                                                                                self._reader_overlap)
-                            self._reader_it.skip = self._reader_overlap
+                            self._reader_it = self._readers[self._reader_at].iterator(self._stride, skip=self._reader_overlap,
+                                                                                      return_trajindex=False)
                         if expected_length - read > 0:
                             self._reader_it.chunksize = expected_length - read
                 self._t += read
