@@ -387,10 +387,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
             with pg.context(), it:
                 for itraj, chunk in it:
-                    L = len(chunk)
-                    i = slice(it.pos, it.pos+L)
-                    assert i
-                    self.logger.info(i)
+                    i = slice(it.pos, it.pos + len(chunk))
+                    assert i.stop - i.start > 0
                     trajs[itraj][i, :] = chunk[:, dimensions]
                     pg.update(1)
 
@@ -1121,13 +1119,12 @@ class EncapsulatedIterator(DataSourceIterator):
         if hasattr(self._it, 'chunksize'):
             self._it.chunksize = value
 
-    # TODO: check if needed
-    # @DataSourceIterator.skip.setter
-    # def skip(self, value):
-    #     self.state.skip = value
-    #     assert self._it is not None
-    #     if hasattr(self._it, 'skip'):
-    #         self._it.skip = value
+    @DataSourceIterator.skip.setter
+    def skip(self, value):
+        self.state.skip = value
+        assert self._it is not None
+        if hasattr(self._it, 'skip'):
+            self._it.skip = value
 
     @property
     def transform_function(self):
