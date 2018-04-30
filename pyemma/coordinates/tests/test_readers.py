@@ -75,9 +75,11 @@ class TestReaders(object):
     n_dims = 6 * 3
 
     chunk_sizes = (0, 1, 5, 10000, None)
-    strides = (1, 3, 100,
-               #np.array([[0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7], [2, 1], [2, 1]]),
-               )
+    strides = (1, 3, 100)
+    ra_strides = (
+        np.array([[0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7], [2, 1], [2, 1]]),
+        np.array([[0, 4999], [0, 23], [0, 42], [2, 666], [1, 999]])
+    )
     skips = (0, 123)
     lags = (1, 50, 300)
     file_formats = ("in-memory",
@@ -97,6 +99,10 @@ class TestReaders(object):
         'test_fragment_reader': [
             dict(file_format=f, stride=s, lag=l, chunksize=cs)
             for f, s, l, cs in itertools.product(file_formats, strides, lags, chunk_sizes)
+        ],
+        'test_base_reader_with_random_access_stride': [
+          dict(file_format=f, stride=s, chunksize=cs)
+            for f, s, cs in itertools.product(file_formats, ra_strides, chunk_sizes)
         ]
     }
 
@@ -217,7 +223,6 @@ class TestReaders(object):
         assert it.chunksize is not None
         if chunksize is None:
             max_frames = max_chunksize_from_config(reader.output_type().itemsize)
-            # TODO: check for a minimal size as well?
             assert it.chunksize <= max_frames
             # now we set the chunksize to max_frames, to be able to compare the actual shapes of iterator output.
             chunksize = max_frames
@@ -243,6 +248,47 @@ class TestReaders(object):
 
                 t += chunk.shape[0]
 
+    def test_base_reader_with_random_access_stride(self, file_format, stride, chunksize):
+        trajs = self.test_trajs[file_format]
+
+        if FeatureReader.supports_format(trajs[0]):
+            # we need the topology
+            reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
+        else:
+            # no topology required
+            reader = coor.source(trajs, chunksize=chunksize)
+        if chunksize is not None:
+            np.testing.assert_equal(reader.chunksize, chunksize)
+
+        it = reader.iterator(stride=stride, lag=0, chunk=chunksize)
+
+        assert it.chunksize is not None
+        if chunksize is None:
+            max_frames = max_chunksize_from_config(reader.output_type().itemsize)
+            assert it.chunksize <= max_frames
+            # now we set the chunksize to max_frames, to be able to compare the actual shapes of iterator output.
+            chunksize = max_frames
+        sorted_stride = np.sort(stride, axis=1)
+        traj_data = [data[stride[stride[:, 0] == i][:, 1]] for i, data in enumerate(self.traj_data)]
+
+        with it:
+            current_itraj = None
+            t = 0
+            for itraj, chunk in it:
+                # reset t upon next trajectory
+                if itraj != current_itraj:
+                    current_itraj = itraj
+                    t = 0
+
+                assert chunk.shape[0] <= chunksize or chunksize == 0
+                if chunksize != 0 and traj_data[itraj].shape[0] - t >= chunksize:
+                    assert chunk.shape[0] == chunksize
+                elif chunksize == 0:
+                    assert chunk.shape[0] == traj_data[itraj].shape[0]
+
+                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]])
+
+                t += chunk.shape[0]
 
 if __name__ == '__main__':
     unittest.main()
