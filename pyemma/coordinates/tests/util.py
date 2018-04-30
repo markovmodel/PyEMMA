@@ -77,3 +77,29 @@ def create_trajectory_h5(dims, dirname, data):
         f.create_dataset('somedata', data=data.reshape(-1, dims, 3))
 
     return fname
+
+def create_trajectory_dcd(dims, dirname, data):
+    from mdtraj.core.trajectory import DCDTrajectoryFile
+
+    fname = tempfile.mktemp(suffix='.dcd', dir=dirname)
+    shaped = data.reshape(-1, dims, 3)
+    with DCDTrajectoryFile(fname, 'w') as f:
+        f.write(shaped)
+    return fname
+
+
+def create_transform(reader):
+    from coordinates.data._base.transformer import StreamingTransformer
+
+    class IdentityTransform(StreamingTransformer):
+        def dimension(self):
+            return reader.ndim
+        def describe(self):
+            return 'identity'
+        def _transform_array(self, X):
+            return X
+
+    t = IdentityTransform()
+    t.data_producer = reader
+
+    return t

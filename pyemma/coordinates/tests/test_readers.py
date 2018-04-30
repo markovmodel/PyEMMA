@@ -74,7 +74,7 @@ class TestReaders(object):
     n_atoms = 6
     n_dims = 6 * 3
 
-    chunk_sizes = (0, 1, 5, 10000, None)
+    chunk_sizes = (0, 1, 127, 10000, None)
     strides = (1, 3, 100)
     ra_strides = (
         np.array([[0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7], [2, 1], [2, 1]]),
@@ -83,15 +83,19 @@ class TestReaders(object):
     skips = (0, 123)
     lags = (1, 50, 300)
     file_formats = ("in-memory",
-                    #"numpy",
+                    "numpy",
                     "xtc",
-                    #  "trr", "h5"
+                    #  "trr",
+                    #"dcd",
+                    "h5",
                     )
+    # transform data or not (identity does not change the data, but pushes it through a StreamingTransformer).
+    transforms = (None, 'identity')
 
     # pytest config
     params = {
-        'test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs)
-                             for f, s, skip, cs in itertools.product(file_formats, strides, skips, chunk_sizes)],
+        'test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs, transform=t)
+                             for f, s, skip, cs,t  in itertools.product(file_formats, strides, skips, chunk_sizes, transforms)],
         'test_lagged_reader': [
             dict(file_format=f, stride=s, skip=skip, chunksize=cs, lag=lag)
             for f, s, skip, cs, lag in itertools.product(file_formats, strides, skips, chunk_sizes, lags)
@@ -115,9 +119,8 @@ class TestReaders(object):
             'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
             #'trr': lambda *args: util.create_trajectory_trr(cls.n_atoms, *args),
             # TODO: add dcd etc.
-            # TODO: add fragmented
-            # TODO: add fragmented + transformed
-            #'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
+            "dcd": lambda *args: util.create_trajectory_dcd(cls.n_atoms, *args),
+            'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
         cls.traj_data = [np.random.random((5000, cls.n_dims)),
@@ -206,7 +209,7 @@ class TestReaders(object):
                 collected = X if collected is None else np.vstack((collected, X))
             np.testing.assert_array_almost_equal(data[::stride], collected)
 
-    def test_base_reader(self, file_format, stride, skip, chunksize):
+    def test_base_reader(self, file_format, stride, skip, chunksize, transform):
         trajs = self.test_trajs[file_format]
 
         if FeatureReader.supports_format(trajs[0]):
@@ -215,6 +218,10 @@ class TestReaders(object):
         else:
             # no topology required
             reader = coor.source(trajs, chunksize=chunksize)
+
+        if transform == 'identity':
+            reader = util.create_transform(reader)
+
         if chunksize is not None:
             np.testing.assert_equal(reader.chunksize, chunksize)
 
