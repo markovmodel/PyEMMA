@@ -269,8 +269,9 @@ class iterload(object):
                     yield _join_traj_data(coords, self._topology)
                     chunksize = self._chunksize
                     curr_size = 0
-                    coords = []
+                    coords.clear()
                 while leftovers:
+                    # TODO: local chunk can get longer than chunk size, because len(leftovers) + curr_size > chunksize
                     local_chunk = leftovers[:min(chunksize, len(leftovers))]
                     local_traj_data = _read_traj_data(self._atom_indices, f, len(local_chunk), **self._kwargs)
                     coords.append(local_traj_data)
@@ -279,7 +280,8 @@ class iterload(object):
                     if curr_size == chunksize:
                         yield _join_traj_data(coords, self._topology)
                         curr_size = 0
-                        coords = []
+                        coords.clear()
+                assert not leftovers
             if coords:
                 yield _join_traj_data(coords, self._topology)
 
