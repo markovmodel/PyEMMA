@@ -78,7 +78,7 @@ class TestReaders(object):
     strides = (1, 3, 100)
     ra_strides = (
         np.array([[0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7], [2, 1], [2, 1]]),
-        np.array([[0, 4999], [0, 23], [0, 42], [2, 666], [1, 999]])
+        np.array([[0, 23], [0, 42], [0, 4999], [1, 999], [2, 666]])
     )
     skips = (0, 123)
     lags = (1, 50, 300)
@@ -268,7 +268,6 @@ class TestReaders(object):
             assert it.chunksize <= max_frames
             # now we set the chunksize to max_frames, to be able to compare the actual shapes of iterator output.
             chunksize = max_frames
-        sorted_stride = np.sort(stride, axis=1)
         traj_data = [data[stride[stride[:, 0] == i][:, 1]] for i, data in enumerate(self.traj_data)]
 
         with it:
