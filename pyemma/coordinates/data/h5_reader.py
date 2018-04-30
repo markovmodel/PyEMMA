@@ -193,6 +193,18 @@ class H5Iterator(DataInMemoryIterator):
             self.data = self._data_source._load_file(itraj)
             self._fh = self.data.file
 
+    def ra_indices_for_traj(self, traj):
+        """
+
+        Gives the indices for a trajectory file index (without changing the order within the trajectory itself).
+        :param traj: a trajectory file index
+        :return: a Nx1 - np.array of the indices corresponding to the trajectory index
+
+        h5py only accepts lists for indexing... this could affect performance badly?
+        https://stackoverflow.com/questions/42590770/keras-hdf5-typeerror-pointselection-getitem-only-works-with-bool-arrays#42596682
+        """
+        return list(self.state.ra_indices_for_traj(traj))
+
     def _next_chunk(self):
         X = self._next_chunk_impl(self.data)
         X, _ = self._data_source._reshape(X, dry=False)
