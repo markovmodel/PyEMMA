@@ -363,18 +363,17 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         with it:
             # allocate memory
             try:
-                # TODO: avoid having a copy here, if Y is already filled
-                trajs = [np.empty((l, ndim), dtype=self.output_type())
-                         for l in it.trajectory_lengths()]
+                from pyemma import config
+                if config.coordinates_check_output:
+                    trajs = [np.full((l, ndim), np.nan, dtype=self.output_type()) for l in it.trajectory_lengths()]
+                else:
+                    # TODO: avoid having a copy here, if Y is already filled
+                    trajs = [np.empty((l, ndim), dtype=self.output_type())
+                             for l in it.trajectory_lengths()]
             except MemoryError:
                 self.logger.exception("Could not allocate enough memory to map all data."
                                       " Consider using a larger stride.")
                 return
-
-            from pyemma import config
-            if config.coordinates_check_output:
-                for t in trajs:
-                    t[:] = np.nan
 
             if self._logger_is_active(self._loglevel_DEBUG):
                 self.logger.debug("get_output(): dimensions=%s" % str(dimensions))
@@ -396,10 +395,11 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             for i, t in enumerate(trajs):
                 finite = np.isfinite(t)
                 if not np.all(finite):
-                    inds = np.where(finite)
-                    if not len(inds):
+                    # determine position
+                    frames = np.where(np.logical_not(finite))
+                    if not len(frames):
                         raise RuntimeError('nothing got assigned for traj {}'.format(i))
-                    raise RuntimeError('unassigned sections in traj {i} in range [{}]'.format(inds, i=i))
+                    raise RuntimeError('unassigned sections in traj {i} in range [{}]'.format(frames, i=i))
 
         return trajs
 
