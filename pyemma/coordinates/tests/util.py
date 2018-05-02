@@ -89,7 +89,7 @@ def create_trajectory_dcd(dims, dirname, data):
 
 
 def create_transform(reader):
-    from coordinates.data._base.transformer import StreamingTransformer
+    from pyemma.coordinates.data._base.transformer import StreamingTransformer
 
     class IdentityTransform(StreamingTransformer):
         def dimension(self):
