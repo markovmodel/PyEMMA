@@ -123,9 +123,9 @@ class TestReaders(object):
             'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
-        cls.traj_data = [np.random.random((5000, cls.n_dims)),
-                         np.random.random((6000, cls.n_dims)),
-                         np.random.random((1000, cls.n_dims))]
+        cls.traj_data = [np.random.random((5000, cls.n_dims)).astype(np.float32),
+                         np.random.random((6000, cls.n_dims)).astype(np.float32),
+                         np.random.random((1000, cls.n_dims)).astype(np.float32)]
         # trajectory files for the different formats
         cls.test_trajs = {}
         for file_format in cls.file_formats:
