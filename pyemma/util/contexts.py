@@ -92,8 +92,6 @@ def attribute(obj, attr, val):
     setattr(obj, attr, val)
     try:
         yield
-    except:
-        raise
     finally:
         setattr(obj, attr, previous)
 
