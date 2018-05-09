@@ -208,6 +208,8 @@ class iterload(object):
         return self.next()
 
     def next(self):
+        import pytest
+        pytest.mark.skip
         if self._closed:
             raise StopIteration("closed file")
 
