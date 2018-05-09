@@ -78,9 +78,8 @@ class _FragmentedTrajectoryIterator(object):
             # chunk is contained in current reader
             if self.__chunk_contained_in_current_reader():
                 X = next(self._reader_it)
-                assert len(X) == self._chunksize
-                self._t += self._chunksize
-                self._reader_t += self._chunksize
+                self._t += len(X)
+                self._reader_t += len(X)
                 return X
             # chunk has to be collected from subsequent readers
             else:
