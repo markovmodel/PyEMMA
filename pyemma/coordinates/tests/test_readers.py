@@ -14,13 +14,6 @@ from pyemma.coordinates.data import FragmentedTrajectoryReader
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
 
-def pytest_generate_tests(metafunc):
-    # called once per each test function
-    funcarglist = metafunc.cls.params[metafunc.function.__name__]
-    argnames = funcarglist[0]
-    metafunc.parametrize(tuple(argnames.keys()), [[kwargs[name] for name in argnames] for kwargs in funcarglist])
-
-
 def max_chunksize_from_config(itemsize):
     from pyemma import config
     from pyemma.util.units import string_to_bytes
@@ -29,7 +22,28 @@ def max_chunksize_from_config(itemsize):
     return max_frames
 
 
-class TestReaders(object):
+def add_testcases_from_parameter_matrix(cls_name, parent_cl, attr):
+    ''' parametrize _test functions in TestReaders'''
+    from functools import partialmethod
+    new_test_methods = {}
+
+    test_templates = {k: v for k, v in attr.items() if k.startswith('_test') }
+    test_parameters = attr['params']
+    for test, params in test_templates.items():
+        test_param = test_parameters[test]
+        for param_set in test_param:
+            func = partialmethod(attr[test], **param_set)
+            # only 'primitive' types should be used as part of test name.
+            vals_str = '_'.join((str(v) if not isinstance(v, np.ndarray) else 'array' for v in param_set.values()))
+            assert '[' not in vals_str, 'this char makes pytest think it has to extract parameters out of the testname.'
+            out_name = '{}_{}'.format(test[1:], vals_str)
+            new_test_methods[out_name] = func
+
+    attr.update(new_test_methods)
+    return type(cls_name, parent_cl, attr)
+
+
+class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matrix):
     """
     trajectory lengths:
         - 5000
@@ -81,30 +95,33 @@ class TestReaders(object):
         np.array([[0, 23], [0, 42], [0, 4999], [1, 999], [2, 666]])
     )
     skips = (0, 123)
-    lags = (1, 50, 300)
-    file_formats = ("in-memory",
-                    "numpy",
-                    "xtc",
+    lags = (1, 128, 5000)
+    file_formats = (#'in-memory',
+                    #'numpy',
+                    #'xtc',
                     #  "trr",
-                    #"dcd",
-                    "h5",
+                    'dcd',
+                    #'h5',
+                    #'csv'
                     )
     # transform data or not (identity does not change the data, but pushes it through a StreamingTransformer).
     transforms = (None, 'identity')
 
+    eps = np.finfo(np.float32).eps
+
     # pytest config
     params = {
-        'test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs, transform=t)
+        '_test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs, transform=t)
                              for f, s, skip, cs,t  in itertools.product(file_formats, strides, skips, chunk_sizes, transforms)],
-        'test_lagged_reader': [
+        '_test_lagged_reader': [
             dict(file_format=f, stride=s, skip=skip, chunksize=cs, lag=lag)
             for f, s, skip, cs, lag in itertools.product(file_formats, strides, skips, chunk_sizes, lags)
         ],
-        'test_fragment_reader': [
+        '_test_fragment_reader': [
             dict(file_format=f, stride=s, lag=l, chunksize=cs)
             for f, s, l, cs in itertools.product(file_formats, strides, lags, chunk_sizes)
         ],
-        'test_base_reader_with_random_access_stride': [
+        '_test_base_reader_with_random_access_stride': [
           dict(file_format=f, stride=s, chunksize=cs)
             for f, s, cs in itertools.product(file_formats, ra_strides, chunk_sizes)
         ]
@@ -113,13 +130,11 @@ class TestReaders(object):
     @classmethod
     def setup_class(cls):
         cls.file_creators = {
-            #'csv': util.create_trajectory_csv,
+            'csv': util.create_trajectory_csv,
             'in-memory': lambda dirname, data: data,
             'numpy': util.create_trajectory_numpy,
             'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
-            #'trr': lambda *args: util.create_trajectory_trr(cls.n_atoms, *args),
-            # TODO: add dcd etc.
-            "dcd": lambda *args: util.create_trajectory_dcd(cls.n_atoms, *args),
+            'dcd': lambda *args: util.create_trajectory_dcd(cls.n_atoms, *args),
             'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
@@ -138,7 +153,7 @@ class TestReaders(object):
     def teardown_class(cls):
         shutil.rmtree(cls.tempdir, ignore_errors=True)
 
-    def test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
+    def _test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
         trajs = self.test_trajs[file_format]
 
         if FeatureReader.supports_format(trajs[0]):
@@ -148,10 +163,6 @@ class TestReaders(object):
             # no topology required
             reader = coor.source(trajs, chunksize=chunksize)
 
-        if isinstance(stride, np.ndarray):
-            from unittest import SkipTest
-            raise SkipTest()
-        else:
             it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
             traj_data = [data[skip::stride] for data in self.traj_data]
             traj_data_lagged = [data[skip + lag::stride] for data in self.traj_data]
@@ -179,7 +190,7 @@ class TestReaders(object):
 
                     t += chunk.shape[0]
 
-    def test_fragment_reader(self, file_format, stride, lag, chunksize):
+    def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
 
         if FeatureReader.supports_format(trajs[0]):
@@ -198,18 +209,18 @@ class TestReaders(object):
             for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
                 collected = X if collected is None else np.vstack((collected, X))
                 collected_lagged = Y if collected_lagged is None else np.vstack((collected_lagged, Y))
-            np.testing.assert_array_almost_equal(data[::stride][0:len(collected_lagged)], collected,
+            np.testing.assert_allclose(data[::stride][0:len(collected_lagged)], collected, atol=self.eps,
                                                  err_msg="lag={}, stride={}, cs={}".format(
                                                      lag, stride, chunksize
                                                  ))
-            np.testing.assert_array_almost_equal(data[lag::stride], collected_lagged)
+            np.testing.assert_allclose(data[lag::stride], collected_lagged, atol=self.eps)
         else:
             collected = None
             for itraj, X in reader.iterator(stride=stride):
                 collected = X if collected is None else np.vstack((collected, X))
-            np.testing.assert_array_almost_equal(data[::stride], collected)
+            np.testing.assert_allclose(data[::stride], collected, atol=self.eps)
 
-    def test_base_reader(self, file_format, stride, skip, chunksize, transform):
+    def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
         trajs = self.test_trajs[file_format]
 
         if FeatureReader.supports_format(trajs[0]):
@@ -245,17 +256,17 @@ class TestReaders(object):
                     current_itraj = itraj
                     t = 0
 
-                assert chunk.shape[0] <= chunksize or chunksize == 0
+                assert chunk.shape[0] <= chunksize or chunksize == 0, '%s' % it
                 if chunksize != 0 and traj_data[itraj].shape[0] - t >= chunksize:
                     assert chunk.shape[0] == chunksize
                 elif chunksize == 0:
                     assert chunk.shape[0] == traj_data[itraj].shape[0]
 
-                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]])
+                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]], atol=self.eps)
 
                 t += chunk.shape[0]
 
-    def test_base_reader_with_random_access_stride(self, file_format, stride, chunksize):
+    def _test_base_reader_with_random_access_stride(self, file_format, stride, chunksize):
         trajs = self.test_trajs[file_format]
 
         if FeatureReader.supports_format(trajs[0]):
@@ -292,7 +303,7 @@ class TestReaders(object):
                 elif chunksize == 0:
                     assert chunk.shape[0] == traj_data[itraj].shape[0]
 
-                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]])
+                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]], atol=self.eps)
 
                 t += chunk.shape[0]
 

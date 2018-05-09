@@ -84,7 +84,7 @@ def create_trajectory_dcd(dims, dirname, data):
     fname = tempfile.mktemp(suffix='.dcd', dir=dirname)
     shaped = data.reshape(-1, dims, 3)
     with DCDTrajectoryFile(fname, 'w') as f:
-        f.write(shaped)
+        f.write(shaped * 10)  # unit Angstroems is assumed by mdtraj.
     return fname
 
 

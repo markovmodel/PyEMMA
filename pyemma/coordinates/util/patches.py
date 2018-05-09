@@ -208,6 +208,8 @@ class iterload(object):
         return self.next()
 
     def next(self):
+        import pytest
+        pytest.mark.skip
         if self._closed:
             raise StopIteration("closed file")
 
@@ -226,7 +228,9 @@ class iterload(object):
             if self._chunksize == 0:
                 n_frames = None  # read all frames
             else:
-                n_frames = self._chunksize * self._stride
+                n_frames = self._chunksize
+                if self._extension != '.dcd':
+                    n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
                 traj = self._f.read_as_traj(self._topology, n_frames=n_frames,
@@ -290,7 +294,7 @@ class iterload(object):
 
 def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     """
-    
+
     Parameters
     ----------
     atom_indices
@@ -301,7 +305,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     Returns
     -------
     data : TrajData(xyz, unitcell_length, unitcell_angles, box)
-    
+
     Format read() return values:
      amber_netcdf_restart_f: xyz [Ang], time, cell_l, cell_a
      amber restart: xyz[Ang], time, cell_l, cell_a
@@ -319,7 +323,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
 
      trr: xyz[nm], time, step, box (n, 3, 3), lambd?
      xtc: xyz[nm], time, step, box
-     
+
      xyz: xyz
      lh5: xyz [nm]
      arc: xyz[Ang]
