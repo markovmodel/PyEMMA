@@ -204,20 +204,27 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
         data = np.vstack(self.traj_data)
         if lag > 0:
-            collected = None
-            collected_lagged = None
+            collected = []
+            collected_lagged = []
             for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
-                collected = X if collected is None else np.vstack((collected, X))
-                collected_lagged = Y if collected_lagged is None else np.vstack((collected_lagged, Y))
+                collected.append(X)
+                collected_lagged.append(Y)
+            assert collected
+            assert collected_lagged
+            assert len(collected) == len(collected_lagged)
+            collected = np.vstack(collected)
+            collected_lagged = np.vstack(collected_lagged)
             np.testing.assert_allclose(data[::stride][0:len(collected_lagged)], collected, atol=self.eps,
                                                  err_msg="lag={}, stride={}, cs={}".format(
                                                      lag, stride, chunksize
                                                  ))
             np.testing.assert_allclose(data[lag::stride], collected_lagged, atol=self.eps)
         else:
-            collected = None
+            collected = []
             for itraj, X in reader.iterator(stride=stride):
-                collected = X if collected is None else np.vstack((collected, X))
+                collected.append(X)
+            assert collected
+            collected = np.vstack(collected)
             np.testing.assert_allclose(data[::stride], collected, atol=self.eps)
 
     def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
