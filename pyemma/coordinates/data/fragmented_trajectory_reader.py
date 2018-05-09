@@ -77,9 +77,10 @@ class _FragmentedTrajectoryIterator(object):
             self._reader_it.chunksize = self._chunksize
             # chunk is contained in current reader
             if self.__chunk_contained_in_current_reader():
+                X = next(self._reader_it)
+                assert len(X) == self._chunksize
                 self._t += self._chunksize
                 self._reader_t += self._chunksize
-                X = next(self._reader_it)
                 return X
             # chunk has to be collected from subsequent readers
             else:
@@ -101,7 +102,7 @@ class _FragmentedTrajectoryIterator(object):
                         self._reader_at += 1
                         self._reader_t = 0
                         if self._reader_at >= len(self._readers):
-                            raise StopIteration()
+                            raise StopIteration('fragmented: out of readers')
                         self._reader_it.close()
                         if self.ra_indices is not None:
                             self._reader_it = self._select_next_ra_iterator()

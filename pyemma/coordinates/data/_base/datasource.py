@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod
 from math import ceil
 
 import numpy as np
+from pyemma._base.loggable import Loggable
 
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
@@ -645,7 +646,7 @@ class IteratorState(object):
         return True
 
 
-class DataSourceIterator(six.with_metaclass(ABCMeta)):
+class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
     """
     Abstract class for any data source iterator.
     """
@@ -1019,7 +1020,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             X = self._use_cols(self._next_chunk())
             self._t += len(X)
             self._skip_unselected_or_too_short_trajs()
-        except StopIteration:
+        except StopIteration as e:
+            self.logger.info('stop iter: %s', e)
             self._last_chunk_in_traj = True
             raise
         if self.state.current_itraj != self._itraj:
@@ -1034,6 +1036,18 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             else:
                 length = self.ra_trajectory_length(self.state.current_itraj)
             self._last_chunk_in_traj = self.state.pos_adv >= length
+
+        if config.coordinates_check_output:
+            finite = self.__chunk_finite(X)
+            if not np.all(finite):
+                # determine position
+                frames = np.where(np.logical_not(finite))
+                start = self.pos
+                msg = 'Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}] ' \
+                      'within frames {frames}.'.format(itraj=self.current_trajindex, start=start,
+                                                       stop=start + len(X), frames=frames)
+                raise InvalidDataInStreamException(msg)
+
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X
@@ -1047,19 +1061,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
     def next(self):
         X = self._it_next()
-
-        if config.coordinates_check_output:
-            assert len(X[1]) > 0 if self.return_traj_index else len(X) > 0
-            array = X if not self.return_traj_index else X[1]
-            finite = self.__chunk_finite(array)
-            if not np.all(finite):
-                # determine position
-                frames = np.where(np.logical_not(finite))
-                start = self.pos
-                msg = 'Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}] ' \
-                      'within frames {frames}.'.format(itraj=self.current_trajindex, start=start,
-                                                       stop=start + len(array), frames=frames)
-                raise InvalidDataInStreamException(msg)
         return X
 
     def __iter__(self):
