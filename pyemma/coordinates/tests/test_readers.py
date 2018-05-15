@@ -13,6 +13,9 @@ from pyemma.coordinates.data import FragmentedTrajectoryReader
 
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
+import mdtraj
+print('mdtraj:', mdtraj.__path__)
+
 
 def max_chunksize_from_config(itemsize):
     from pyemma import config
