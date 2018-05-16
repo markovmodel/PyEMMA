@@ -106,6 +106,14 @@ class TestMSMSimple(unittest.TestCase):
         pcca2 = msm.pcca(2)
         assert pcca2 is not pcca1
 
+    def test_rdl_recompute(self):
+        """ test for issue 1301. Should recompute RDL decomposition in case of new transition matrix. """
+        msm = estimate_markov_model(self.dtraj, self.tau)
+        ev1 = msm.eigenvectors_left(2)
+        msm.estimate(self.dtraj, lag=self.tau+1)
+        ev2 = msm.eigenvectors_left(2)
+        assert ev2 is not ev1
+
 
 class TestMSMRevPi(unittest.TestCase):
     r"""Checks if the MLMSM correctly handles the active set computation
