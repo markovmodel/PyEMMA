@@ -116,6 +116,8 @@ class _FragmentedTrajectoryIterator(object):
                 self._t += read
                 return X
 
+    next = __next__
+
     def _select_next_ra_iterator(self):
         assert self._reader_at < len(self._readers)
         ra_indices = self.__get_ifrag_ra_indices(self._fragment_indices, self._reader_at)
@@ -151,9 +153,6 @@ class _FragmentedTrajectoryIterator(object):
     def __chunk_contained_in_current_reader(self):
         trajlen = self.__get_reader_trajlen()
         return trajlen - self._reader_t - self._chunksize > 0
-
-    def next(self):
-        return self.__next__()
 
     def _allocate_chunk(self, expected_length, ndim):
         from pyemma.coordinates.data.feature_reader import FeatureReader

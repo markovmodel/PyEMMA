@@ -837,7 +837,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             The upcoming trajectory index.
         """
         if value != self._selected_itraj:
-            #self.logger.error('itraj {} not yet selected: reset t and pos_adv!'.format(value))
             self.state.itraj = value
             self.state.t = 0
             self.state.pos_adv = 0
@@ -851,13 +850,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                 value += 1
                 self._t = 0
         else:
-             # TODO: are there more conditions to inc itraj?
-             # TODO: skip too short trajs in terms of skip
+            # TODO: are there more conditions to inc itraj?
             while value < self.number_of_trajectories() and self._t >= self.trajectory_length(value):
                 value += 1
                 self._t = 0
         if value != self._itraj:
-            #self.logger.info('itraj changed from %s to %s', self._itraj, value)
             self._itraj = value
 
     @skip.setter
@@ -995,15 +992,12 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     def _next_chunk(self):
         raise NotImplementedError()
 
-    def __next__(self):
-        return self.next()
-
     def _use_cols(self, X):
         if self.use_cols is not None:
             return X[:, self.use_cols]
         return X
 
-    def _it_next(self):
+    def __next__(self):
         # increase itraj
         self._skip_unselected_or_too_short_trajs()
 
@@ -1051,16 +1045,14 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             return self.state.current_itraj, X
         return X
 
+    next = __next__
+
     def __chunk_finite(self, data):
         if isinstance(data, np.ndarray):
             return np.isfinite(data)
         elif hasattr(data, 'xyz'):
             return np.isfinite(data.xyz)
         return True
-
-    def next(self):
-        X = self._it_next()
-        return X
 
     def __iter__(self):
         return self
