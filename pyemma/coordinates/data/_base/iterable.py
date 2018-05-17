@@ -225,9 +225,6 @@ class _LaggedIterator(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
-        return self.next()
-
     @property
     def chunksize(self):
         return self._it.chunksize
@@ -235,7 +232,7 @@ class _LaggedIterator(object):
     def reset(self):
         self._it.reset()
 
-    def next(self):
+    def __next__(self):
         with attribute(self._it, 'chunksize', self._max_size if self.chunksize == 0 else self.chunksize):
             if (self._it._itraj not in self._sufficently_long_trajectories
                    and self._it.current_trajindex < self._it.number_of_trajectories()):
@@ -243,7 +240,7 @@ class _LaggedIterator(object):
                 idx = (np.abs(np.array(self._sufficently_long_trajectories) - self._it._itraj)).argmin()
                 if idx + 1 < len(self._sufficently_long_trajectories):
                     self._it._select_file(self._sufficently_long_trajectories[idx + 1])
-                elif len(self._sufficently_long_trajectories) == 1:
+                elif len(self._sufficently_long_trajectories) == 1 and self._sufficently_long_trajectories[0] > self._it._itraj:
                     assert idx == 0
                     self._it._select_file(self._sufficently_long_trajectories[0])
                 else:
@@ -251,13 +248,13 @@ class _LaggedIterator(object):
 
             if self._overlap is None:
                 with attribute(self._it, 'chunksize', self._lag):
-                    _, self._overlap = self._it.next()
+                    _, self._overlap = next(self._it)
                     assert len(self._overlap) <= self._lag, 'len(overlap) > lag... %s>%s' % (len(self._overlap), self._lag)
                     self._overlap = self._overlap[::self._actual_stride]
 
             with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
 
-                itraj, data_lagged = self._it.next()
+                itraj, data_lagged = next(self._it)
                 assert len(data_lagged) <= self._it.chunksize * self._actual_stride if self._it.chunksize > 0 else float('inf')
                 frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
                 data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
@@ -281,6 +278,8 @@ class _LaggedIterator(object):
             if self._return_trajindex:
                 return itraj, data, data_lagged
             return data, data_lagged
+
+    next = __next__
 
     def __enter__(self):
         self._it.__enter__()
@@ -326,9 +325,6 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        return self.next()
-
-    def next(self):
         itraj, data = self._it.next()
         itraj_lag, data_lagged = self._it_lagged.next()
 
@@ -347,6 +343,8 @@ class _LegacyLaggedIterator(object):
         if self._return_trajindex:
             return itraj, data, data_lagged
         return data, data_lagged
+
+    next = __next__
 
     def __enter__(self):
         self._it.__enter__()
