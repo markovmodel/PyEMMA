@@ -205,11 +205,6 @@ class iterload(object):
         self._closed = True
 
     def __next__(self):
-        return self.next()
-
-    def next(self):
-        import pytest
-        pytest.mark.skip
         if self._closed:
             raise StopIteration("closed file")
 
@@ -243,6 +238,8 @@ class iterload(object):
             raise StopIteration("eof")
 
         return traj
+
+    next = __next__
 
     def __enter__(self):
         return self
