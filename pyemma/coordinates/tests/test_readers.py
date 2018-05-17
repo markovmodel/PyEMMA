@@ -14,7 +14,6 @@ from pyemma.coordinates.data import FragmentedTrajectoryReader
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
 import mdtraj
-print('mdtraj:', mdtraj.__path__)
 
 
 def max_chunksize_from_config(itemsize):
@@ -195,6 +194,10 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
+
+        # TODO: remove this, when mdtraj-2.0 is released.
+        if file_format == 'dcd' and stride > 1 and lag > chunksize if chunksize is not None else 2**64-1:
+            raise unittest.SkipTest('wait for mdtraj 2.0')
 
         if FeatureReader.supports_format(trajs[0]):
             # we need the topology
