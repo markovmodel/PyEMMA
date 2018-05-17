@@ -646,7 +646,7 @@ class IteratorState(object):
         return True
 
 
-class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
+class DataSourceIterator(six.with_metaclass(ABCMeta)):
     """
     Abstract class for any data source iterator.
     """
@@ -1021,7 +1021,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta, Loggable)):
             self._t += len(X)
             self._skip_unselected_or_too_short_trajs()
         except StopIteration as e:
-            self.logger.info('stop iter: %s', e)
             self._last_chunk_in_traj = True
             raise
         if self.state.current_itraj != self._itraj:
