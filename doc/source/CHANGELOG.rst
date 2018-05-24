@@ -15,7 +15,7 @@ Changelog
 - msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #1294
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
 - base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
-
+- plots: fixed minor bug in plot_network (state_labels=None would not work). #1306
 
 2.5.2 (04-10-2018)
 ------------------
