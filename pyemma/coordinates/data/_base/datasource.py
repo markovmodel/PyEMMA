@@ -400,7 +400,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
                     frames = np.where(np.logical_not(finite))
                     if not len(frames):
                         raise RuntimeError('nothing got assigned for traj {}'.format(i))
-                    raise RuntimeError('unassigned sections in traj {i} in range [{}]'.format(frames, i=i))
+                    raise RuntimeError('unassigned sections in traj {i} in range [{frames}]'.format(frames=frames, i=i))
 
         return trajs
 
@@ -604,7 +604,6 @@ class IteratorState(object):
         self.ntraj = ntraj
         self.t = 0
         self.pos = 0
-        self.pos_adv = 0
         self.stride = None
         self.uniform_stride = False
         self.traj_keys = None
@@ -838,24 +837,23 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         """
         if value != self._selected_itraj:
             self.state.itraj = value
+            # TODO: this side effect is unexpected.
             self.state.t = 0
-            self.state.pos_adv = 0
 
     def _skip_unselected_or_too_short_trajs(self):
         value = self._itraj
         if not self.uniform_stride:
             # skip trajs not included in random access stride
             while (value not in self.traj_keys or self._t >= self.ra_trajectory_length(value)) \
-                    and value < self.number_of_trajectories():
+                    and value < self.state.ntraj:
                 value += 1
-                self._t = 0
         else:
-            # TODO: are there more conditions to inc itraj?
-            while value < self.number_of_trajectories() and self._t >= self.trajectory_length(value):
+            while value < self.state.ntraj and self._t >= self.trajectory_length(value):
                 value += 1
-                self._t = 0
         if value != self._itraj:
             self._itraj = value
+            self._t = 0
+            self.state.pos = 0
 
     @skip.setter
     def skip(self, value):
@@ -1003,51 +1001,50 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
-            raise StopIteration('out of files bound')
+            raise StopIteration('out of files bound: %s' % self)
 
-        # we have to obtain the current index before invoking next_chunk (which increments itraj)
+        # obtain the current trajectory index, before (potentially) incrementing it.
         self.state.current_itraj = self._itraj
-        self.state.pos = self.state.pos_adv
-
         self._select_file(self._itraj)
         try:
             X = self._use_cols(self._next_chunk())
             self._t += len(X)
-            self._skip_unselected_or_too_short_trajs()
-        except StopIteration as e:
+        except StopIteration:
             self._last_chunk_in_traj = True
             raise
+        # now increase itraj if needed, remember last time position, because the skip method resets _t
+        current_t = self._t
+        self._skip_unselected_or_too_short_trajs()
+
         if self.state.current_itraj != self._itraj:
-            self.state.pos_adv = 0
             self._last_chunk_in_traj = True
         else:
-            self.state.pos_adv += len(X)
-            assert self.state.pos_adv == self._t
             if self.uniform_stride:
                 length = self._data_source.trajectory_length(itraj=self.state.current_itraj,
                                                              stride=self.stride, skip=self.skip)
             else:
                 length = self.ra_trajectory_length(self.state.current_itraj)
-            self._last_chunk_in_traj = self.state.pos_adv >= length
+            self._last_chunk_in_traj = current_t >= length
 
         if config.coordinates_check_output:
             finite = self.__chunk_finite(X)
             if not np.all(finite):
                 # determine position
                 frames = np.where(np.logical_not(finite))
-                start = self.pos
                 msg = 'Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}] ' \
-                      'within frames {frames}.'.format(itraj=self.current_trajindex, start=start,
-                                                       stop=start + len(X), frames=frames)
+                      'within frames {frames}.'.format(itraj=self.current_trajindex, start=self._t,
+                                                       stop=self._t + len(X), frames=frames)
                 raise InvalidDataInStreamException(msg)
 
+        self.state.pos = current_t
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X
 
     next = __next__
 
-    def __chunk_finite(self, data):
+    @staticmethod
+    def __chunk_finite(data):
         if isinstance(data, np.ndarray):
             return np.isfinite(data)
         elif hasattr(data, 'xyz'):
@@ -1065,8 +1062,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         return False
 
     def __str__(self):
-        return "[{name} chunk={chunk}, stride={stride}, skip={skip}, itraj={itraj}, curr_traj_ind={cur_ind}, t={t}, " \
-               "pos={pos}, pos_adv={pos_adv}]".format(
+        return "[{name} itraj={itraj}, traj_len={traj_len}, curr_traj_ind={cur_ind}, chunk={chunk}," \
+               " stride={stride}, skip={skip}, t={t}, pos={pos}]".format(
             name=self.__class__.__name__,
             chunk=self.chunksize,
             stride=self.stride,
@@ -1075,7 +1072,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             itraj=self._itraj,
             cur_ind=self.current_trajindex,
             pos=self.pos,
-            pos_adv=self.state.pos_adv
+            traj_len=self.trajectory_length()
         )
 
 
