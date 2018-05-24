@@ -234,17 +234,9 @@ class _LaggedIterator(object):
 
     def __next__(self):
         with attribute(self._it, 'chunksize', self._max_size if self.chunksize == 0 else self.chunksize):
-            if (self._it._itraj not in self._sufficently_long_trajectories
-                   and self._it.current_trajindex < self._it.number_of_trajectories()):
+            changed = _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
+            if changed:
                 self._overlap = None
-                idx = (np.abs(np.array(self._sufficently_long_trajectories) - self._it._itraj)).argmin()
-                if idx + 1 < len(self._sufficently_long_trajectories):
-                    self._it._select_file(self._sufficently_long_trajectories[idx + 1])
-                elif len(self._sufficently_long_trajectories) == 1 and self._sufficently_long_trajectories[0] > self._it._itraj:
-                    assert idx == 0
-                    self._it._select_file(self._sufficently_long_trajectories[0])
-                else:
-                    raise StopIteration('no trajectory long enough.')
 
             if self._overlap is None:
                 with attribute(self._it, 'chunksize', self._lag):
@@ -325,9 +317,20 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        itraj, data = self._it.next()
-        itraj_lag, data_lagged = self._it_lagged.next()
-
+        c1 = _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
+        c2 = _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
+        try:
+            itraj, data = self._it.next()
+            assert itraj in self._sufficently_long_trajectories, itraj
+        except StopIteration as e:
+            raise e
+        try:
+            itraj_lag, data_lagged = self._it_lagged.next()
+            assert itraj_lag in self._sufficently_long_trajectories, itraj_lag
+        except StopIteration as e:
+            import traceback
+            traceback.print_exc()
+            raise e
         if itraj < itraj_lag:
             self._it._select_file(itraj_lag)
             itraj, data = self._it.next()
@@ -354,3 +357,25 @@ class _LegacyLaggedIterator(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._it.__exit__(exc_type, exc_val, exc_tb)
         self._it_lagged.__exit__(exc_type, exc_val, exc_tb)
+
+
+def _skip_too_short_trajs(it, sufficiently_long_traj_indices):
+    changed = False
+
+    while (it._itraj not in sufficiently_long_traj_indices
+           and it._itraj < it.number_of_trajectories()):
+        changed = True
+        if len(sufficiently_long_traj_indices) == 1:
+            if it._itraj > sufficiently_long_traj_indices[0]:
+                raise StopIteration('no traj long enough.')
+            it._select_file(sufficiently_long_traj_indices[0])
+            break
+
+        idx = (np.abs(np.array(sufficiently_long_traj_indices) - it._itraj)).argmin()
+        if idx + 1 < len(sufficiently_long_traj_indices):
+            next_itraj = sufficiently_long_traj_indices[idx + 1]
+            it._select_file(next_itraj)
+            assert it._itraj == next_itraj
+        else:
+            raise StopIteration('no trajectory long enough.')
+    return changed
