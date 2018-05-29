@@ -297,8 +297,6 @@ class _LegacyLaggedIterator(object):
         self._sufficently_long_trajectories = [i for i, x in
                                                enumerate(self._it_lagged._data_source.trajectory_lengths(1, 0))
                                                if x > it_lagged.skip]
-        self._it._select_file(self._sufficently_long_trajectories[0])
-        self._it_lagged._select_file(self._sufficently_long_trajectories[0])
 
     @property
     def n_chunks(self):
@@ -317,14 +315,13 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
         _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
+        self._it._itraj = self._it_lagged._itraj
 
         itraj, data = self._it.next()
         assert itraj in self._sufficently_long_trajectories, itraj
         itraj_lag, data_lagged = self._it_lagged.next()
         assert itraj_lag in self._sufficently_long_trajectories, itraj_lag
-
         if itraj < itraj_lag:
             self._it._select_file(itraj_lag)
             itraj, data = self._it.next()

@@ -1009,7 +1009,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         try:
             X = self._use_cols(self._next_chunk())
             self._t += len(X)
-        except StopIteration:
+        except StopIteration as e:
             self._last_chunk_in_traj = True
             raise
         # now increase itraj if needed, remember last time position, because the skip method resets _t
