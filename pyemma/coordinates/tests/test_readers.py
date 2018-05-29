@@ -90,21 +90,21 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     n_atoms = 6
     n_dims = 6 * 3
 
-    chunk_sizes = (0, 1, 127, 10000, None)
+    chunk_sizes = (0, 1, 127, 5000, 10000, None)
     strides = (1, 3, 100)
     ra_strides = (
         np.array([[0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7], [2, 1], [2, 1]]),
-        np.array([[0, 23], [0, 42], [0, 4999], [1, 999], [2, 666]])
+        np.array([[0, 23], [0, 42], [0, 4999], [1, 3], [2, 666], [3, 42], [4, 128]])
     )
     skips = (0, 123)
     lags = (1, 128, 5000)
-    file_formats = (#'in-memory',
+    file_formats = ('in-memory',
                     #'numpy',
                     #'xtc',
                     #  "trr",
-                    'dcd',
+                    #'dcd',
                     #'h5',
-                    #'csv'
+                    'csv',
                     )
     # transform data or not (identity does not change the data, but pushes it through a StreamingTransformer).
     transforms = (None, 'identity')
@@ -122,6 +122,10 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
         '_test_fragment_reader': [
             dict(file_format=f, stride=s, lag=l, chunksize=cs)
             for f, s, l, cs in itertools.product(file_formats, strides, lags, chunk_sizes)
+        ],
+        '_test_fragment_reader_unlagged': [
+            dict(file_format=f, stride=s, chunksize=cs)
+            for f, s, cs in itertools.product(file_formats, strides, chunk_sizes)
         ],
         '_test_base_reader_with_random_access_stride': [
           dict(file_format=f, stride=s, chunksize=cs)
@@ -141,7 +145,9 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
         cls.traj_data = [np.random.random((5000, cls.n_dims)).astype(np.float32),
+                         np.random.random((50, cls.n_dims)).astype(np.float32),
                          np.random.random((6000, cls.n_dims)).astype(np.float32),
+                         np.random.random((125, cls.n_dims)).astype(np.float32),
                          np.random.random((1000, cls.n_dims)).astype(np.float32)]
         # trajectory files for the different formats
         cls.test_trajs = {}
@@ -192,11 +198,36 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
                     t += chunk.shape[0]
 
+    def _test_fragment_reader_unlagged(self, file_format, stride, chunksize):
+        trajs = self.test_trajs[file_format]
+
+        # TODO: remove this, when mdtraj-2.0 is released.
+        if file_format == 'dcd' and stride > 1:
+            raise unittest.SkipTest('wait for mdtraj 2.0')
+
+        if FeatureReader.supports_format(trajs[0]):
+            # we need the topology
+            reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
+        else:
+            # no topology required
+            reader = coor.source([trajs], chunksize=chunksize)
+
+        assert isinstance(reader, FragmentedTrajectoryReader)
+
+        data = np.vstack(self.traj_data)
+
+        collected = []
+        for itraj, X in reader.iterator(stride=stride):
+            collected.append(X)
+        assert collected
+        collected = np.vstack(collected)
+        np.testing.assert_allclose(data[::stride], collected, atol=self.eps)
+
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
 
         # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1 and lag > chunksize if chunksize is not None else 2**64-1:
+        if file_format == 'dcd' and stride > 1 and lag > (chunksize if chunksize is not None else 2**64-1):
             raise unittest.SkipTest('wait for mdtraj 2.0')
 
         if FeatureReader.supports_format(trajs[0]):
