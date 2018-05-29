@@ -1001,7 +1001,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
-            raise StopIteration('out of files bound: %s' % self)
+            raise StopIteration('out of files bound')
 
         # obtain the current trajectory index, before (potentially) incrementing it.
         self.state.current_itraj = self._itraj
