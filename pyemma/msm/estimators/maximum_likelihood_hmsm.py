@@ -180,14 +180,20 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             # by default use lag as stride (=lag sampling), because we currently have no better theory for deciding
             # how many uncorrelated counts we can make
             self.stride = self.lag
-            # get a quick estimate from the spectral radius of the nonreversible
+            # get a quick estimate from the spectral radius of the non-reversible
             from pyemma.msm import estimate_markov_model
             msm_nr = estimate_markov_model(dtrajs, lag=self.lag, reversible=False, sparse=False,
                                            connectivity='largest', dt_traj=self.timestep_traj)
             # if we have more than nstates timescales in our MSM, we use the next (neglected) timescale as an
             # estimate of the decorrelation time
             if msm_nr.nstates > self.nstates:
-                corrtime = max(1, msm_nr.timescales()[self.nstates-1])
+                # because we use non-reversible msm, we want to silence the ImaginaryEigenvalueWarning
+                import warnings
+                from msmtools.util.exceptions import ImaginaryEigenValueWarning
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', category=ImaginaryEigenValueWarning,
+                                            module='msmtools.analysis.dense.decomposition')
+                    corrtime = max(1, msm_nr.timescales()[self.nstates - 1])
                 # use the smaller of these two pessimistic estimates
                 self.stride = int(min(self.lag, 2*corrtime))
 
