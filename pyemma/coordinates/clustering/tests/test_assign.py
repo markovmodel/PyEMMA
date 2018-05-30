@@ -153,7 +153,7 @@ class TestClusterAssign(unittest.TestCase):
 
     def test_output_type(self):
         c = self.ass
-        assert c.output_type() == np.int32
+        assert c.output_type() == np.int32()
 
     def test_save_dtrajs(self):
         c = self.ass
