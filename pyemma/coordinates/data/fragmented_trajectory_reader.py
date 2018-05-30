@@ -78,8 +78,9 @@ class _FragmentedTrajectoryIterator(object):
             # chunk is contained in current reader
             if self.__chunk_contained_in_current_reader():
                 X = next(self._reader_it)
-                self._t += len(X)
-                self._reader_t += len(X)
+                L = len(X)
+                self._t += L
+                self._reader_t += L
                 return X
             # chunk has to be collected from subsequent readers
             else:
@@ -129,20 +130,6 @@ class _FragmentedTrajectoryIterator(object):
                 raise RuntimeError("This should not happen as the loop is supposed to be terminated in __next__.")
         return self._readers[self._reader_at].iterator(ra_indices, return_trajindex=False)
 
-    def __get_reader_trajlen(self):
-        if self.ra_indices is not None:
-            reader_trajlen = self._readers[self._reader_at].trajectory_length(
-                0,
-                self.__get_ifrag_ra_indices(self._fragment_indices, self._reader_at),
-                self._skip if self._reader_at == 0 else 0
-            )
-        else:
-            reader_trajlen = self._readers[self._reader_at].trajectory_length(
-                0, self._stride,
-                self._skip if self._reader_at == 0 else 0
-            )
-        return reader_trajlen
-
     def __get_chunk_expected_length(self):
         if self.ra_indices is not None:
             expected_length = min(self._chunksize, len(self.ra_indices) - self._t)
@@ -151,7 +138,7 @@ class _FragmentedTrajectoryIterator(object):
         return expected_length
 
     def __chunk_contained_in_current_reader(self):
-        trajlen = self.__get_reader_trajlen()
+        trajlen = self._reader_it.trajectory_length()
         return trajlen - self._reader_t - self._chunksize > 0
 
     def _allocate_chunk(self, expected_length, ndim):
