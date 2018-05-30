@@ -41,18 +41,12 @@ class PyCSVIterator(DataSourceIterator):
                                             stride=stride,
                                             return_trajindex=return_trajindex)
         self._custom_cols = cols
-        self._open_file()
-        if isinstance(self._skip_rows, int):
-            self._skip_rows = np.arange(self._skip_rows)
-        self._skip_rows = (np.empty(0) if self._skip_rows is None
-                           else np.unique(self._skip_rows))
-        self.line = 0
-        self._reader = csv.reader(self._file_handle,
-                                  dialect=self._data_source._get_dialect(self._itraj))
+        self._file_handle = None
 
     def close(self):
         if self._file_handle is not None:
             self._file_handle.close()
+            self._file_handle = None
 
     def _next_chunk(self):
         lines = []
@@ -81,7 +75,7 @@ class PyCSVIterator(DataSourceIterator):
         if itraj != self._selected_itraj:
             self._itraj = self._selected_itraj = itraj
             # close current file handle
-            self._file_handle.close()
+            self.close()
             # open next one
             self._open_file()
             # reset line counter
@@ -96,8 +90,9 @@ class PyCSVIterator(DataSourceIterator):
         stack_of_strings = np.vstack(list_of_strings)
         if self._custom_cols:
             stack_of_strings = stack_of_strings[:, self._custom_cols]
+        result = None
         try:
-            result = stack_of_strings.astype(float)
+            result = stack_of_strings.astype(np.float32)
         except ValueError:
             fn = self._file_handle.name
             dialect_str = _dialect_to_str(self._reader.dialect)
@@ -111,7 +106,7 @@ class PyCSVIterator(DataSourceIterator):
                                                                             error=repr(ve),
                                                                             dialect=dialect_str)
                         raise ValueError(s)
-        #self._t += len(list_of_strings)
+        assert result is not None
         return result
 
     def _open_file(self):
@@ -139,13 +134,14 @@ class PyCSVIterator(DataSourceIterator):
                 all_frames, wanted_frames, assume_unique=True)
 
         self._skip_rows = skip_rows
-        try:
-            fh = open(self._data_source.filenames[self._itraj],
-                      mode=self._data_source.DEFAULT_OPEN_MODE)
-            self._file_handle = fh
-        except EnvironmentError:
-            self.logger.exception()
-            raise
+
+        fh = open(self._data_source.filenames[self._itraj], buffering=1,
+                  mode=self._data_source.DEFAULT_OPEN_MODE)
+        self._file_handle = fh
+        self._reader = csv.reader(self._file_handle,
+                                  dialect=self._data_source._get_dialect(self._itraj))
+
+        self.line = 0
 
 
 def _dialect_to_str(dialect):
