@@ -101,7 +101,6 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     file_formats = ('in-memory',
                     'numpy',
                     'xtc',
-                    'trr',
                     'dcd',
                     'h5',
                     'csv',
