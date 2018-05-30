@@ -101,9 +101,9 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     file_formats = ('in-memory',
                     'numpy',
                     'xtc',
-                    #  "trr",
-                    #'dcd',
-                    #'h5',
+                    'trr',
+                    'dcd',
+                    'h5',
                     'csv',
                     )
     # transform data or not (identity does not change the data, but pushes it through a StreamingTransformer).
@@ -114,7 +114,8 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     # pytest config
     params = {
         '_test_base_reader': [dict(file_format=f, stride=s, skip=skip, chunksize=cs, transform=t)
-                             for f, s, skip, cs,t  in itertools.product(file_formats, strides, skips, chunk_sizes, transforms)],
+                              for f, s, skip, cs,t  in itertools.product(file_formats, strides, skips,
+                                                                         chunk_sizes, transforms)],
         '_test_lagged_reader': [
             dict(file_format=f, stride=s, skip=skip, chunksize=cs, lag=lag)
             for f, s, skip, cs, lag in itertools.product(file_formats, strides, skips, chunk_sizes, lags)
@@ -122,10 +123,6 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
         '_test_fragment_reader': [
             dict(file_format=f, stride=s, lag=l, chunksize=cs)
             for f, s, l, cs in itertools.product(file_formats, strides, lags, chunk_sizes)
-        ],
-        '_test_fragment_reader_unlagged': [
-            dict(file_format=f, stride=s, chunksize=cs)
-            for f, s, cs in itertools.product(file_formats, strides, chunk_sizes)
         ],
         '_test_base_reader_with_random_access_stride': [
           dict(file_format=f, stride=s, chunksize=cs)
@@ -197,31 +194,6 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
                     np.testing.assert_allclose(chunk_lagged, traj_data_lagged[itraj][t:t + chunk.shape[0]])
 
                     t += chunk.shape[0]
-
-    def _test_fragment_reader_unlagged(self, file_format, stride, chunksize):
-        trajs = self.test_trajs[file_format]
-
-        # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1:
-            raise unittest.SkipTest('wait for mdtraj 2.0')
-
-        if FeatureReader.supports_format(trajs[0]):
-            # we need the topology
-            reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
-        else:
-            # no topology required
-            reader = coor.source([trajs], chunksize=chunksize)
-
-        assert isinstance(reader, FragmentedTrajectoryReader)
-
-        data = np.vstack(self.traj_data)
-
-        collected = []
-        for itraj, X in reader.iterator(stride=stride):
-            collected.append(X)
-        assert collected
-        collected = np.vstack(collected)
-        np.testing.assert_allclose(data[::stride], collected, atol=self.eps)
 
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
