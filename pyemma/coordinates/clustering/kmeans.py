@@ -31,6 +31,7 @@ import random
 import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporterMixin
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string

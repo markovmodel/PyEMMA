@@ -370,3 +370,4 @@ def _skip_too_short_trajs(it, sufficiently_long_traj_indices):
         else:
             raise StopIteration('no trajectory long enough.')
     return changed
+

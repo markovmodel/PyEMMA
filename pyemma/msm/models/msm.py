@@ -28,9 +28,8 @@ and provides them for later access.
 from __future__ import absolute_import
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-
 from pyemma.util.annotators import aliased, alias
-
+from pyemma.util.numeric import _hash_numpy_array
 
 __docformat__ = "restructuredtext en"
 
@@ -48,7 +47,7 @@ class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
     __serialize_version = 0
 
-    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
+    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues', '_p_id',
                           '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
                           '_metastable_memberships', '_metastable_sets', '_pcca',
                           '_nstates', '_timeunit_model')
@@ -318,6 +317,7 @@ class MSM(_Model, SerializableMixIn):
     def _compute_eigendecomposition(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from msmtools.analysis import rdl_decomposition
+        self._p_id = _hash_numpy_array(self.transition_matrix)
 
         if self.reversible:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, norm='reversible',
@@ -351,8 +351,9 @@ class MSM(_Model, SerializableMixIn):
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
-            if m < neig:
-                # not enough eigenpairs present - recompute:
+            if m < neig or self._p_id != _hash_numpy_array(self.P):
+                # not enough eigenpairs present
+                # or eigendecomposition computed for an outdated transition matrix - recompute.
                 self._compute_eigendecomposition(neig)
         except AttributeError:
             # no eigendecomposition yet - compute:

@@ -207,7 +207,9 @@ class NetworkPlot(object):
         # show or suppress frame
         self.ax.set_frame_on(show_frame)
         # set node labels
-        if isinstance(state_labels, str) and state_labels == 'auto':
+        if state_labels is None:
+            pass
+        elif isinstance(state_labels, str) and state_labels == 'auto':
             state_labels = [str(i) for i in _np.arange(n)]
         else:
             if len(state_labels) != n:
@@ -253,8 +255,8 @@ class NetworkPlot(object):
             circles.append(c)
             self.ax.add_artist(c)
             # add annotation
-            self.ax.text(
-                self.pos[i][0], self.pos[i][1], state_labels[i], zorder=3, **textkwargs)
+            if state_labels is not None:
+                self.ax.text(self.pos[i][0], self.pos[i][1], state_labels[i], zorder=3, **textkwargs)
 
         assert len(circles) == n, "%i != %i" % (len(circles), n)
 
