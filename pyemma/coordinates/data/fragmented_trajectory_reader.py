@@ -84,21 +84,18 @@ class _FragmentedTrajectoryIterator(object):
             # chunk has to be collected from subsequent readers
             else:
                 ndim = self._readers[0].ndim
-                expected_length = self.__get_chunk_expected_length() -1
+                expected_length = self.__get_chunk_expected_length()
                 X = self._allocate_chunk(expected_length, ndim)
                 read = 0
                 while read < expected_length or expected_length == 0:
                     # reader has data left:
-                    reader_trajlen = self.__get_reader_trajlen()
+                    reader_trajlen = self._reader_it.trajectory_length()
                     if reader_trajlen - self._reader_t > 0:
-                        try:
-                            chunk = next(self._reader_it)
-                            L = len(chunk)
-                            X[read:read + L, :] = chunk[:]
-                            read += L
-                            self._reader_t += L
-                        except StopIteration as e:
-                            pass
+                        chunk = next(self._reader_it)
+                        L = len(chunk)
+                        X[read:read + L, :] = chunk[:]
+                        read += L
+                        self._reader_t += L
                     # need new reader
                     if read < expected_length or expected_length == 0:
                         self._reader_at += 1

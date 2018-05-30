@@ -603,7 +603,8 @@ class IteratorState(object):
         self.itraj = 0
         self.ntraj = ntraj
         self.t = 0
-        self.pos = 0
+        self._pos = 0
+        self.pos_adv = 0
         self.stride = None
         self.uniform_stride = False
         self.traj_keys = None
@@ -611,6 +612,14 @@ class IteratorState(object):
         self.ra_indices_for_traj_dict = {}
         self.cols = cols
         self.current_itraj = 0
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        self._pos = value
 
     def ra_indices_for_traj(self, traj):
         """
@@ -753,7 +762,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     @property
     def pos(self):
         """
-        Gives the current position in the current trajectory.
+        Gives the current position in the current trajectory. The position is always referring to the index of the
+        first frame that got yielded.
+
         Returns
         -------
         int
@@ -847,13 +858,14 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             while (value not in self.traj_keys or self._t >= self.ra_trajectory_length(value)) \
                     and value < self.state.ntraj:
                 value += 1
+                self._t = 0
         else:
             while value < self.state.ntraj and self._t >= self.trajectory_length(value):
                 value += 1
+                self._t = 0
         if value != self._itraj:
             self._itraj = value
-            self._t = 0
-            self.state.pos = 0
+            self.state.pos_adv = 0
 
     @skip.setter
     def skip(self, value):
@@ -996,13 +1008,15 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         return X
 
     def __next__(self):
+        # the position is the previous advanced position
+        self.state.pos = self.state.pos_adv
+
         # increase itraj
         self._skip_unselected_or_too_short_trajs()
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
             raise StopIteration('out of files bound')
-
         # obtain the current trajectory index, before (potentially) incrementing it.
         self.state.current_itraj = self._itraj
         self._select_file(self._itraj)
@@ -1013,7 +1027,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             self._last_chunk_in_traj = True
             raise
         # now increase itraj if needed, remember last time position, because the skip method resets _t
-        current_t = self._t
         self._skip_unselected_or_too_short_trajs()
 
         if self.state.current_itraj != self._itraj:
@@ -1024,7 +1037,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                                              stride=self.stride, skip=self.skip)
             else:
                 length = self.ra_trajectory_length(self.state.current_itraj)
-            self._last_chunk_in_traj = current_t >= length
+            self._last_chunk_in_traj = self.pos >= length
 
         if config.coordinates_check_output:
             finite = self.__chunk_finite(X)
@@ -1036,7 +1049,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                                        stop=self._t + len(X), frames=frames)
                 raise InvalidDataInStreamException(msg)
 
-        self.state.pos = current_t
+        self.state.pos_adv = self._t
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X

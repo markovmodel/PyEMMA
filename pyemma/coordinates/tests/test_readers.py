@@ -99,8 +99,8 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     skips = (0, 123)
     lags = (1, 128, 5000)
     file_formats = ('in-memory',
-                    #'numpy',
-                    #'xtc',
+                    'numpy',
+                    'xtc',
                     #  "trr",
                     #'dcd',
                     #'h5',
