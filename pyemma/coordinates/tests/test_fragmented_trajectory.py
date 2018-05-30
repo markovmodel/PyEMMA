@@ -35,7 +35,8 @@ class TestFragmentedTrajectory(unittest.TestCase):
         reader = FragmentedTrajectoryReader([self.d, self.d])
         reader.chunksize = 0
         expected = np.vstack((self.d, self.d))
-        np.testing.assert_array_almost_equal(expected, reader.get_output(stride=1)[0])
+        output = reader.get_output(stride=1)[0]
+        np.testing.assert_array_almost_equal(expected, output)
 
     def test_full_trajectory_random_access(self):
         reader = FragmentedTrajectoryReader([self.d, self.d])
