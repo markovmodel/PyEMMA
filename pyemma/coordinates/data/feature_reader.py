@@ -334,18 +334,12 @@ class FeatureReaderLinearRandomAccessStrategy(RandomAccessStrategy):
 
 class FeatureReaderIterator(EncapsulatedIterator):
 
-    def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self.close()
-            self._it = self._create_mditer(itraj)
-            self._itraj = self._selected_itraj = itraj
-
-    def _create_mditer(self, itraj):
-        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
-        _it = self._create_patched_iter(
-                        self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
+    def _select_file(self):
+        self.close()
+        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(self._itraj)
+        self._it = self._create_patched_iter(
+                        self._data_source.filenames[self._itraj], itraj=self._itraj, stride=stride, skip=self.skip
         )
-        return _it
 
     def _create_patched_iter(self, filename, itraj, skip=0, stride=1, atom_indices=None):
         if self.is_uniform_stride(self.stride):
