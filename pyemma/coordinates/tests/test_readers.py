@@ -99,11 +99,11 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
     skips = (0, 123)
     lags = (1, 128, 5000)
     file_formats = ('in-memory',
-                    # 'numpy',
-                     'xtc',
-                    # 'dcd',
-                    # 'h5',
-                    # 'csv',
+                    'numpy',
+                    'xtc',
+                    'dcd',
+                    'h5',
+                    'csv',
                     )
     # transform data or not (identity does not change the data, but pushes it through a StreamingTransformer).
     transforms = (None, 'identity')
@@ -170,17 +170,15 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
             it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
             traj_data = [data[skip::stride] for data in self.traj_data]
             traj_data_lagged = [data[skip + lag::stride] for data in self.traj_data]
-            valid_itrajs = [i for i, x in enumerate(traj_data_lagged) if len(x) > 0]
 
             assert it.chunksize is not None
             if chunksize is None:
                 chunksize = max_chunksize_from_config(reader.output_type().itemsize)
 
             with it:
-                current_itraj = itraj = None
+                current_itraj = None
                 t = 0
                 for itraj, chunk, chunk_lagged in it:
-                    assert itraj in valid_itrajs
                     # reset t upon next trajectory
                     if itraj != current_itraj:
                         current_itraj = itraj
@@ -195,7 +193,6 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
                     np.testing.assert_allclose(chunk_lagged, traj_data_lagged[itraj][t:t + chunk.shape[0]])
 
                     t += chunk.shape[0]
-                assert itraj == valid_itrajs[-1]
 
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
@@ -264,22 +261,25 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
             chunksize = max_frames
 
         traj_data = [data[skip::stride] for data in self.traj_data]
-        valid_itrajs = [i for i, x in enumerate(traj_data) if len(x) > 0]
 
         with it:
             current_itraj = None
-            itraj = None
             t = 0
             for itraj, chunk in it:
-                assert itraj in valid_itrajs
                 # reset t upon next trajectory
                 if itraj != current_itraj:
                     current_itraj = itraj
                     t = 0
 
-                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]], atol=self.eps, err_msg=str(itraj))
+                assert chunk.shape[0] <= chunksize or chunksize == 0, '%s' % it
+                if chunksize != 0 and traj_data[itraj].shape[0] - t >= chunksize:
+                    assert chunk.shape[0] == chunksize
+                elif chunksize == 0:
+                    assert chunk.shape[0] == traj_data[itraj].shape[0]
+
+                np.testing.assert_allclose(chunk, traj_data[itraj][t:t+chunk.shape[0]], atol=self.eps)
+
                 t += chunk.shape[0]
-            assert itraj == valid_itrajs[-1]
 
     def _test_base_reader_with_random_access_stride(self, file_format, stride, chunksize):
         trajs = self.test_trajs[file_format]
