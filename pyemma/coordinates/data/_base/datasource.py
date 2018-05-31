@@ -19,7 +19,6 @@ from abc import ABCMeta, abstractmethod
 from math import ceil
 
 import numpy as np
-from pyemma._base.loggable import Loggable
 
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
@@ -737,6 +736,23 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     def close(self):
         """ closes the reader"""
         raise NotImplementedError()
+
+    def _select_file_guard(f):
+        """
+
+        Returns
+        -------
+
+        """
+        from functools import wraps
+        @wraps(f)
+        def wrapper(self, itraj):
+            # itraj already selected, we're done.
+            if itraj == self._selected_itraj:
+                return
+            f(self, itraj)
+            self._itraj = self._selected_itraj = itraj
+        return wrapper
 
     @abstractmethod
     def _select_file(self, itraj):

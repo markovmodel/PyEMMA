@@ -71,18 +71,17 @@ class PyCSVIterator(DataSourceIterator):
             result = self._convert_to_np_chunk(lines)
             return result
 
+    @DataSourceIterator._select_file_guard
     def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self._itraj = self._selected_itraj = itraj
-            # close current file handle
-            self.close()
-            # open next one
-            self._open_file()
-            # reset line counter
-            self.line = 0
-            # get new reader
-            self._reader = csv.reader(self._file_handle,
-                                      dialect=self._data_source._get_dialect(self._itraj))
+        # close current file handle
+        self.close()
+        # open next one
+        self._open_file(itraj)
+        # reset line counter
+        self.line = 0
+        # get new reader
+        self._reader = csv.reader(self._file_handle,
+                                  dialect=self._data_source._get_dialect(itraj))
 
     def _convert_to_np_chunk(self, list_of_strings):
         # filter empty strings
@@ -109,10 +108,10 @@ class PyCSVIterator(DataSourceIterator):
         assert result is not None
         return result
 
-    def _open_file(self):
+    def _open_file(self, itraj):
         # only apply _skip property at the beginning of the trajectory
-        skip = self._data_source._skip[self._itraj] + self.skip if self._t == 0 else 0
-        nt = self._data_source._skip[self._itraj] + self._data_source._lengths[self._itraj]
+        skip = self._data_source._skip[itraj] + self.skip if self._t == 0 else 0
+        nt = self._data_source._skip[itraj] + self._data_source._lengths[itraj]
 
         # calculate an index set, which rows to skip (includes stride)
         skip_rows = np.empty(0)
@@ -123,7 +122,7 @@ class PyCSVIterator(DataSourceIterator):
 
         if not self.uniform_stride:
             all_frames = np.arange(nt)
-            skip_rows = np.setdiff1d(all_frames, self.ra_indices_for_traj(self._itraj), assume_unique=True)
+            skip_rows = np.setdiff1d(all_frames, self.ra_indices_for_traj(itraj), assume_unique=True)
         elif self.stride > 1:
             all_frames = np.arange(nt)
             if skip_rows is not None:
@@ -135,12 +134,11 @@ class PyCSVIterator(DataSourceIterator):
 
         self._skip_rows = skip_rows
 
-        fh = open(self._data_source.filenames[self._itraj], buffering=1,
+        fh = open(self._data_source.filenames[itraj], buffering=1,
                   mode=self._data_source.DEFAULT_OPEN_MODE)
         self._file_handle = fh
         self._reader = csv.reader(self._file_handle,
-                                  dialect=self._data_source._get_dialect(self._itraj))
-
+                                  dialect=self._data_source._get_dialect(itraj))
         self.line = 0
 
 

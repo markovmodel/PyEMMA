@@ -188,12 +188,11 @@ class H5Iterator(DataSourceIterator):
             self._fh.close()
             del self._fh
 
+    @DataSourceIterator._select_file_guard
     def _select_file(self, itraj):
-        if self._selected_itraj != itraj:
-            self.close()
-            self.data = self._data_source._load_file(itraj)
-            self._fh = self.data.file
-            self._itraj = self._selected_itraj = itraj
+        self.close()
+        self.data = self._data_source._load_file(itraj)
+        self._fh = self.data.file
 
     def _next_chunk(self):
         cs = np.iinfo(np.int64).max if self.chunksize == 0 else self.chunksize

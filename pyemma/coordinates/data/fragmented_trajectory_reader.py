@@ -249,15 +249,13 @@ class FragmentIterator(EncapsulatedIterator):
     """
     outer iterator, which encapsulates _FragmentedTrajectoryIterator
     """
+    @EncapsulatedIterator._select_file_guard
     def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self.close()
-            assert itraj < self.number_of_trajectories()
-            self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
+        self.close()
+        self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
                                                      self.chunksize, self.stride, self.skip)
-            if not self.uniform_stride:
-                self._it.ra_indices = self.ra_indices_for_traj(itraj)
-            self._itraj = self._selected_itraj = itraj
+        if not self.uniform_stride:
+            self._it.ra_indices = self.ra_indices_for_traj(itraj)
 
     # We have to delegate the chunksize to the underlying iterator, because it is not a DataSourceIterator itself.
     # All other properties are passed during the creation during changing files.

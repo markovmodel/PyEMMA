@@ -120,13 +120,11 @@ class NPYIterator(DataInMemoryIterator):
             del self.data
             self.data = None
 
+    @DataInMemoryIterator._select_file_guard
     def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self.close()
-            self._itraj = self._selected_itraj = itraj
-            if itraj < self.number_of_trajectories():
-                self.data = self._data_source._load_file(itraj)
+        self.close()
+        assert itraj < self.number_of_trajectories()
+        self.data = self._data_source._load_file(itraj)
 
     def _next_chunk(self):
-        self._select_file(self._itraj)
         return self._next_chunk_impl(self.data)

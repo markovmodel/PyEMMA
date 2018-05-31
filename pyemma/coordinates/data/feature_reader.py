@@ -334,6 +334,7 @@ class FeatureReaderLinearRandomAccessStrategy(RandomAccessStrategy):
 
 class FeatureReaderIterator(EncapsulatedIterator):
 
+    @EncapsulatedIterator._select_file_guard
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
