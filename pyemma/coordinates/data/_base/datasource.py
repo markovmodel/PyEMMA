@@ -19,7 +19,6 @@ from abc import ABCMeta, abstractmethod
 from math import ceil
 
 import numpy as np
-from pyemma._base.loggable import Loggable
 
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
@@ -666,9 +665,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                    cols=cols)
         self.__init_stride(stride)
         self._last_chunk_in_traj = False
-        # the currently selected itraj, used to distinguish self._itraj in _select_file
-        # TODO: this is duplicated with self.state.current_trajindex or so?!
-        self._selected_itraj = -1
         #TODO: replace with self._skip_unselected_trajs?
         if not isinstance(stride, np.ndarray) and skip > 0:
             # skip over the trajectories that are smaller than skip
@@ -739,17 +735,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         raise NotImplementedError()
 
     @abstractmethod
-    def _select_file(self, itraj):
-        """ opens the next file defined by itraj.
-
-        Notes
-        -----
-        Should also set self._itraj and self._selected_itraj, if the opening was successful.
-
-        Parameters
-        ----------
-        itraj : int
-            index of trajectory to open.
+    def _select_file(self):
+        """ opens the next file defined by self._itraj.
         """
         raise NotImplementedError()
 
@@ -757,7 +744,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         """
         Method allowing to reset the iterator so that it can iteration from beginning on again.
         """
-        self._select_file(0)
+        self._itraj = 0
+        self._select_file()
 
     @property
     def pos(self):
@@ -846,10 +834,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         value : int
             The upcoming trajectory index.
         """
-        if value != self._selected_itraj:
-            self.state.itraj = value
-            # TODO: this side effect is unexpected.
-            self.state.t = 0
+        self.state.itraj = value
+        self.state.t = 0
+        #self.state.pos_adv = 0
 
     def _skip_unselected_or_too_short_trajs(self):
         value = self._itraj
@@ -866,6 +853,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         if value != self._itraj:
             self._itraj = value
             self.state.pos_adv = 0
+            return True
+        return False
 
     @skip.setter
     def skip(self, value):
@@ -1011,18 +1000,20 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         # the position is the previous advanced position
         self.state.pos = self.state.pos_adv
 
-        # increase itraj
-        self._skip_unselected_or_too_short_trajs()
+        # increase itraj, open next file handle, this may run out of bounds, so check it.
+        changed = self._skip_unselected_or_too_short_trajs()
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
             raise StopIteration('out of files bound')
         # obtain the current trajectory index, before (potentially) incrementing it.
         self.state.current_itraj = self._itraj
-        self._select_file(self._itraj)
+        if changed or self._t == 0:
+            self._select_file()
         try:
             X = self._use_cols(self._next_chunk())
             self._t += len(X)
+            self.state.pos = self._t
         except StopIteration as e:
             self._last_chunk_in_traj = True
             raise
@@ -1049,7 +1040,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                                        stop=self._t + len(X), frames=frames)
                 raise InvalidDataInStreamException(msg)
 
-        self.state.pos_adv = self._t
+        self.state.pos_adv = self.state.pos
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X
@@ -1108,7 +1099,7 @@ class EncapsulatedIterator(DataSourceIterator):
                                                    stride=stride, return_trajindex=return_trajindex, cols=cols)
         self._it = iterator
         self._transform_function = transform_function
-        self._select_file(0)
+        self._select_file()
         assert self._it is not None
         # map the reference of the real used iterator to this instance to avoid overriding every attribute.
         if hasattr(self._it, 'state'):
@@ -1137,19 +1128,18 @@ class EncapsulatedIterator(DataSourceIterator):
         assert callable(value)
         self._transform_function = value
 
-    def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self._itraj = self._selected_itraj = itraj
-            assert self._it is not None
-            self._it._select_file(itraj)
+    def _select_file(self):
+        assert self._it is not None
+        assert self._it._itraj == self._itraj
+        self._it._select_file()
 
     def close(self):
         if self._it is not None and hasattr(self._it, 'close'):
             self._it.close()
-        self._selected_itraj = -1
 
     def _next_chunk(self):
         assert self._it is not None
+        #todo: document why this switch is needed.
         if hasattr(self._it, '_next_chunk'):
             x = self._it._next_chunk()
         else:

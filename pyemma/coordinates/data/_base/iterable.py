@@ -285,8 +285,8 @@ class _LegacyLaggedIterator(object):
 
     Parameters
     ----------
-    it: DataSource, skip=0
-    it_lagged: DataSource, skip=lag
+    it: DataSourceIterator, skip=0
+    it_lagged: DataSourceIterator, skip=lag
     return_trajindex: bool
         whether to return the current trajectory index during iteration (itraj).
     """
@@ -315,15 +315,18 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
-        self._it._itraj = self._it_lagged._itraj
+        changed = _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
+        if changed or self._it._itraj != self._it_lagged._itraj:
+            self._it._itraj = self._it_lagged._itraj
+            self._it._select_file()
 
         itraj, data = self._it.next()
         assert itraj in self._sufficently_long_trajectories, itraj
         itraj_lag, data_lagged = self._it_lagged.next()
         assert itraj_lag in self._sufficently_long_trajectories, itraj_lag
         if itraj < itraj_lag:
-            self._it._select_file(itraj_lag)
+            self._it._itraj = itraj_lag
+            self._it._select_file()
             itraj, data = self._it.next()
             assert not itraj > itraj_lag
         assert itraj == itraj_lag
@@ -351,23 +354,38 @@ class _LegacyLaggedIterator(object):
 
 
 def _skip_too_short_trajs(it, sufficiently_long_traj_indices):
-    changed = False
+    """ skip over too short trajectories.
 
-    while (it._itraj not in sufficiently_long_traj_indices
-           and it._itraj < it.state.ntraj):
+    Parameters
+    ----------
+    it: DataSourceIterator
+        the iterator to change
+    sufficiently_long_traj_indices: list
+        list of trajectory indices, which are long enough
+
+    Returns
+    -------
+    res: bool
+    True, if it._itraj was changed.
+    False, otherwise
+    """
+    changed = False
+    itraj = it._itraj
+    while (itraj not in sufficiently_long_traj_indices
+           and itraj < it.state.ntraj):
         changed = True
         if len(sufficiently_long_traj_indices) == 1:
-            if it._itraj > sufficiently_long_traj_indices[0]:
+            if itraj > sufficiently_long_traj_indices[0]:
                 raise StopIteration('no traj long enough.')
-            it._select_file(sufficiently_long_traj_indices[0])
+            itraj = sufficiently_long_traj_indices[0]
             break
 
-        idx = (np.abs(np.array(sufficiently_long_traj_indices) - it._itraj)).argmin()
+        idx = (np.abs(np.array(sufficiently_long_traj_indices) - itraj)).argmin()
         if idx + 1 < len(sufficiently_long_traj_indices):
-            next_itraj = sufficiently_long_traj_indices[idx + 1]
-            it._select_file(next_itraj)
-            assert it._itraj == next_itraj
+            itraj = sufficiently_long_traj_indices[idx + 1]
         else:
             raise StopIteration('no trajectory long enough.')
+    if changed:
+        it._itraj = itraj
+        it._select_file()
     return changed
-
