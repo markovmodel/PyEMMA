@@ -249,8 +249,9 @@ class DataInMemoryIterator(DataSourceIterator):
     def close(self):
         pass
 
-    def _select_file(self):
-        pass
+    def _select_file(self, itraj):
+        if itraj != self._selected_itraj:
+            self._itraj = self._selected_itraj = itraj
 
     def _next_chunk_impl(self, data):
         # only apply _skip at the beginning of each trajectory

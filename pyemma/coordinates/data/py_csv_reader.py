@@ -71,16 +71,18 @@ class PyCSVIterator(DataSourceIterator):
             result = self._convert_to_np_chunk(lines)
             return result
 
-    def _select_file(self):
-        # close current file handle
-        self.close()
-        # open next one
-        self._open_file()
-        # reset line counter
-        self.line = 0
-        # get new reader
-        self._reader = csv.reader(self._file_handle,
-                                  dialect=self._data_source._get_dialect(self._itraj))
+    def _select_file(self, itraj):
+        if itraj != self._selected_itraj:
+            self._itraj = self._selected_itraj = itraj
+            # close current file handle
+            self.close()
+            # open next one
+            self._open_file()
+            # reset line counter
+            self.line = 0
+            # get new reader
+            self._reader = csv.reader(self._file_handle,
+                                      dialect=self._data_source._get_dialect(self._itraj))
 
     def _convert_to_np_chunk(self, list_of_strings):
         # filter empty strings
