@@ -289,8 +289,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
                                 for itraj in range(n)),
                                dtype=int, count=n)
         else:
-            return np.fromiter(((l - skip - 1) // stride + 1 for l in self._lengths),
-                               dtype=int, count=n)
+            return np.fromiter((max(0, ((l - skip - 1) // stride + 1)) for l in self._lengths),
+                               dtype=np.int64, count=n)
 
     def n_frames_total(self, stride=1, skip=0):
         r"""Returns total number of frames.
