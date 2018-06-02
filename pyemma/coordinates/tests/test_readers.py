@@ -160,61 +160,55 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
     def _test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
         trajs = self.test_trajs[file_format]
+        reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
-        if FeatureReader.supports_format(trajs[0]):
-            # we need the topology
-            reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
-        else:
-            # no topology required
-            reader = coor.source(trajs, chunksize=chunksize)
+        it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
+        traj_data = [data[skip::stride] for data in self.traj_data]
+        traj_data_lagged = [data[skip + lag::stride] for data in self.traj_data]
+        valid_itrajs = [i for i, x in enumerate(traj_data_lagged) if len(x) > 0]
 
-            it = reader.iterator(stride=stride, skip=skip, lag=lag, chunk=chunksize)
-            traj_data = [data[skip::stride] for data in self.traj_data]
-            traj_data_lagged = [data[skip + lag::stride] for data in self.traj_data]
-            valid_itrajs = [i for i, x in enumerate(traj_data_lagged) if len(x) > 0]
+        assert it.chunksize is not None
+        if chunksize is None:
+            chunksize = max_chunksize_from_config(reader.output_type().itemsize)
 
-            assert it.chunksize is not None
-            if chunksize is None:
-                chunksize = max_chunksize_from_config(reader.output_type().itemsize)
+        with it:
+            current_itraj = None
+            t = t_total = 0
+            collected = defaultdict(list)
+            collected_lag = defaultdict(list)
 
-            with it:
-                current_itraj = None
-                t = t_total = 0
-                collected = defaultdict(list)
-                collected_lag = defaultdict(list)
+            for itraj, chunk, chunk_lagged in it:
+                # reset t upon next trajectory
+                if itraj != current_itraj:
+                    current_itraj = itraj
+                    t = 0
+                assert len(chunk) <= chunksize or chunksize == 0
+                if chunksize != 0 and len(traj_data[itraj]) - t >= chunksize:
+                    assert len(chunk) <= chunksize
+                elif chunksize == 0:
+                    assert len(chunk) == len(chunk_lagged) == len(traj_data_lagged[itraj])
+                collected[itraj].append(chunk)
+                collected_lag[itraj].append(chunk_lagged)
 
-                for itraj, chunk, chunk_lagged in it:
-                    # reset t upon next trajectory
-                    if itraj != current_itraj:
-                        current_itraj = itraj
-                        t = 0
-                    assert len(chunk) <= chunksize or chunksize == 0
-                    if chunksize != 0 and len(traj_data[itraj]) - t >= chunksize:
-                        assert len(chunk) <= chunksize
-                    elif chunksize == 0:
-                        assert len(chunk) == len(chunk_lagged) == len(traj_data_lagged[itraj])
-                    collected[itraj].append(chunk)
-                    collected_lag[itraj].append(chunk_lagged)
+                t += len(chunk)
+                t_total += len(chunk)
 
-                    t += len(chunk)
-                    t_total += len(chunk)
+        for itraj in valid_itrajs:
+            assert itraj in collected.keys()
+            assert itraj in collected_lag.keys()
 
-            for itraj in valid_itrajs:
-                assert itraj in collected.keys()
-                assert itraj in collected_lag.keys()
+        assert set(collected.keys()) == set(collected_lag.keys())
+        for itraj in collected.keys():
+            assert itraj in valid_itrajs
+            collected[itraj] = np.vstack(collected[itraj])
+            collected_lag[itraj] = np.vstack(collected_lag[itraj])
+            # unlagged data is truncated to the length of the lagged data.
+            max_len = len(traj_data_lagged[itraj])
+            np.testing.assert_allclose(collected[itraj], traj_data[itraj][:max_len], atol=self.eps)
+            np.testing.assert_allclose(collected_lag[itraj], traj_data_lagged[itraj], atol=self.eps)
 
-            assert set(collected.keys()) == set(collected_lag.keys())
-            for itraj in collected.keys():
-                assert itraj in valid_itrajs
-                collected[itraj] = np.vstack(collected[itraj])
-                collected_lag[itraj] = np.vstack(collected_lag[itraj])
-                # unlagged data is truncated to the length of the lagged data.
-                max_len = len(traj_data_lagged[itraj])
-                np.testing.assert_allclose(collected[itraj], traj_data[itraj][:max_len], atol=self.eps)
-                np.testing.assert_allclose(collected_lag[itraj], traj_data_lagged[itraj], atol=self.eps)
-
-            assert t_total == sum(len(x) for x in collected.values())
-            assert t_total == reader.n_frames_total(stride=stride, skip=skip+lag)
+        assert t_total == sum(len(x) for x in collected.values())
+        assert t_total == reader.n_frames_total(stride=stride, skip=skip+lag)
 
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
@@ -223,13 +217,7 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
         if file_format == 'dcd' and stride > 1 and lag > (chunksize if chunksize is not None else 2**64-1):
             raise unittest.SkipTest('wait for mdtraj 2.0')
 
-        if FeatureReader.supports_format(trajs[0]):
-            # we need the topology
-            reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
-        else:
-            # no topology required
-            reader = coor.source([trajs], chunksize=chunksize)
-
+        reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
         assert isinstance(reader, FragmentedTrajectoryReader)
 
         data = np.vstack(self.traj_data)
@@ -262,13 +250,7 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
     def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
         trajs = self.test_trajs[file_format]
-
-        if FeatureReader.supports_format(trajs[0]):
-            # we need the topology
-            reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
-        else:
-            # no topology required
-            reader = coor.source(trajs, chunksize=chunksize)
+        reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
         if transform == 'identity':
             reader = util.create_transform(reader)
@@ -322,13 +304,8 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
 
     def _test_base_reader_with_random_access_stride(self, file_format, stride, chunksize):
         trajs = self.test_trajs[file_format]
+        reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
-        if FeatureReader.supports_format(trajs[0]):
-            # we need the topology
-            reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
-        else:
-            # no topology required
-            reader = coor.source(trajs, chunksize=chunksize)
         if chunksize is not None:
             np.testing.assert_equal(reader.chunksize, chunksize)
 
