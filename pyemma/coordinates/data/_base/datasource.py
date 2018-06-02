@@ -246,9 +246,9 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
         else:
+            assert skip is not None
             skip = 0 if skip is None else skip
-            res = (self._lengths[itraj] - skip - 1) // int(stride) + 1
-            #assert res >= 0
+            res = max((self._lengths[itraj] - skip - 1) // int(stride) + 1, 0)
             return res
 
     def n_chunks(self, chunksize, stride=1, skip=0):
