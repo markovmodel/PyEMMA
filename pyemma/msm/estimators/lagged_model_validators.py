@@ -32,6 +32,11 @@ from pyemma.util import types
 __author__ = 'noe'
 
 
+def _serial_fix_lagged_model_validatior_version_1(state):
+    state['has_errors'] = issubclass(state['test_model'].__class__, SampledModel)
+    return state
+
+
 class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
     r""" Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
@@ -68,10 +73,15 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
         Show progressbars for calculation?
 
     """
-    __serialize_version = 1
+    __serialize_version = 2
     __serialize_fields = ('_lags',
                           '_pred', '_pred_L', '_pred_R',
-                          '_est', '_est_L', '_est_R')
+                          '_est', '_est_L', '_est_R',
+                          'has_errors',
+                          )
+
+    __serialize_modifications_map = {1: Modifications().transform(_serial_fix_lagged_model_validatior_version_1).list(),
+                                     }
 
     def __init__(self, test_model, test_estimator, mlags=None, conf=0.95, err_est=False,
                  n_jobs=1, show_progress=True):
@@ -146,9 +156,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
             estimated_models = [None] + estimated_models
             estimators = [None] + estimators
 
-        for i in range(len(self.mlags)):
-            mlag = self.mlags[i]
-
+        for i, mlag in enumerate(self.mlags):
             # make a prediction using the current model
             self._pred.append(self._compute_observables(self.test_model, self.test_estimator, mlag))
             # compute prediction errors if we can
