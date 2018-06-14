@@ -1123,7 +1123,7 @@ class EncapsulatedIterator(DataSourceIterator):
         super(EncapsulatedIterator, self).__init__(data_source=data_source, skip=skip, chunk=chunk,
                                                    stride=stride, return_trajindex=return_trajindex, cols=cols)
         self._it = iterator
-        self._transform_function = transform_function
+        self.transform_function = transform_function
         self._select_file(0)
         assert self._it is not None
         # map the reference of the real used iterator to this instance to avoid overriding every attribute.
@@ -1133,14 +1133,12 @@ class EncapsulatedIterator(DataSourceIterator):
     @DataSourceIterator.chunksize.setter
     def chunksize(self, value):
         self.state.chunk = value
-        assert self._it is not None
         if hasattr(self._it, 'chunksize'):
             self._it.chunksize = value
 
     @DataSourceIterator.skip.setter
     def skip(self, value):
         self.state.skip = value
-        assert self._it is not None
         if hasattr(self._it, 'skip'):
             self._it.skip = value
 
@@ -1150,22 +1148,19 @@ class EncapsulatedIterator(DataSourceIterator):
 
     @transform_function.setter
     def transform_function(self, value):
-        assert callable(value)
+        if value is not None and not callable(value):
+            raise ValueError('transform function has to be callable. Given value: {}'.format(value))
         self._transform_function = value
 
     def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self._itraj = self._selected_itraj = itraj
-            assert self._it is not None
-            self._it._select_file(itraj)
+        self._it._select_file(itraj)
 
     def close(self):
         if self._it is not None and hasattr(self._it, 'close'):
             self._it.close()
-        self._selected_itraj = -1
+        #self._selected_itraj = -1
 
     def _next_chunk(self):
-        assert self._it is not None
         if hasattr(self._it, '_next_chunk'):
             x = self._it._next_chunk()
         else:
