@@ -133,9 +133,9 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
             'csv': util.create_trajectory_csv,
             'in-memory': lambda dirname, data: data,
             'numpy': util.create_trajectory_numpy,
-            'xtc': lambda *args: util.create_trajectory_xtc(cls.n_atoms, *args),
-            'dcd': lambda *args: util.create_trajectory_dcd(cls.n_atoms, *args),
-            'h5': lambda *args: util.create_trajectory_h5(cls.n_atoms, *args)
+            'xtc': lambda dirname, data: util.create_trajectory_xtc(cls.n_atoms, dirname, data),
+            'dcd': lambda dirname, data: util.create_trajectory_dcd(cls.n_atoms, dirname, data),
+            'h5': lambda dirname, data: util.create_trajectory_h5(cls.n_atoms, dirname, data)
         }
         cls.tempdir = tempfile.mkdtemp("test-api-src")
         cls.traj_data = [np.random.random((5000, cls.n_dims)).astype(np.float32),
