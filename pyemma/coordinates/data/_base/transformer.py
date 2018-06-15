@@ -196,7 +196,7 @@ class StreamingTransformer(Transformer, DataSource):
     def number_of_trajectories(self, stride=1):
         return self.data_producer.number_of_trajectories(stride)
 
-    def trajectory_length(self, itraj, stride=1, skip=None):
+    def trajectory_length(self, itraj, stride=1, skip=0):
         return self.data_producer.trajectory_length(itraj, stride=stride, skip=skip)
 
     def trajectory_lengths(self, stride=1, skip=0):
