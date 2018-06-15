@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import six
 import unittest
 import tempfile
 import shutil
@@ -12,10 +13,6 @@ import pyemma.coordinates as coor
 import pyemma.coordinates.tests.util as util
 from pyemma.coordinates.data import FragmentedTrajectoryReader
 
-from pyemma.coordinates.data.feature_reader import FeatureReader
-
-import mdtraj
-
 
 def max_chunksize_from_config(itemsize):
     from pyemma import config
@@ -25,28 +22,28 @@ def max_chunksize_from_config(itemsize):
     return max_frames
 
 
-def add_testcases_from_parameter_matrix(cls_name, parent_cl, attr):
-    ''' parametrize _test functions in TestReaders'''
-    from functools import partialmethod
-    new_test_methods = {}
+class GenerateTestMatrix(type):
+    def __new__(mcs, name, bases, attr):
+        from functools import partialmethod
+        new_test_methods = {}
 
-    test_templates = {k: v for k, v in attr.items() if k.startswith('_test') }
-    test_parameters = attr['params']
-    for test, params in test_templates.items():
-        test_param = test_parameters[test]
-        for param_set in test_param:
-            func = partialmethod(attr[test], **param_set)
-            # only 'primitive' types should be used as part of test name.
-            vals_str = '_'.join((str(v) if not isinstance(v, np.ndarray) else 'array' for v in param_set.values()))
-            assert '[' not in vals_str, 'this char makes pytest think it has to extract parameters out of the testname.'
-            out_name = '{}_{}'.format(test[1:], vals_str)
-            new_test_methods[out_name] = func
+        test_templates = {k: v for k, v in attr.items() if k.startswith('_test') }
+        test_parameters = attr['params']
+        for test, params in test_templates.items():
+            test_param = test_parameters[test]
+            for param_set in test_param:
+                func = partialmethod(attr[test], **param_set)
+                # only 'primitive' types should be used as part of test name.
+                vals_str = '_'.join((str(v) if not isinstance(v, np.ndarray) else 'array' for v in param_set.values()))
+                assert '[' not in vals_str, 'this char makes pytest think it has to extract parameters out of the testname.'
+                out_name = '{}_{}'.format(test[1:], vals_str)
+                new_test_methods[out_name] = func
 
-    attr.update(new_test_methods)
-    return type(cls_name, parent_cl, attr)
+        attr.update(new_test_methods)
+        return type.__new__(mcs, name, bases, attr)
 
 
-class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matrix):
+class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
     """
     trajectory lengths:
         - 5000
