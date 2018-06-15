@@ -159,6 +159,9 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
         shutil.rmtree(cls.tempdir, ignore_errors=True)
 
     def _test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
+        # TODO: remove this, when mdtraj-2.0 is released.
+        if file_format == 'dcd' and stride > 1:
+            raise unittest.SkipTest('wait for mdtraj 2.0')
         trajs = self.test_trajs[file_format]
         reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
@@ -249,6 +252,10 @@ class TestReaders(unittest.TestCase, metaclass=add_testcases_from_parameter_matr
             assert itraj == 0 # only one trajectory
 
     def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
+        # TODO: remove this, when mdtraj-2.0 is released.
+        if file_format == 'dcd' and stride > 1:
+            raise unittest.SkipTest('wait for mdtraj 2.0')
+
         trajs = self.test_trajs[file_format]
         reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 

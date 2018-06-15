@@ -205,6 +205,14 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         res = res[::-1]
         return res
 
+    @staticmethod
+    def _chunk_finite(data):
+        if isinstance(data, np.ndarray):
+            return np.isfinite(data)
+        elif hasattr(data, 'xyz'):
+            return np.isfinite(data.xyz)
+        return True
+
     def number_of_trajectories(self, stride=None):
         r""" Returns the number of trajectories.
 
@@ -247,7 +255,6 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             return 0 if itraj not in selection else len(selection)
         else:
             assert skip is not None
-            skip = 0 if skip is None else skip
             res = max((self._lengths[itraj] - skip - 1) // int(stride) + 1, 0)
             return res
 
@@ -289,8 +296,9 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
                                 for itraj in range(n)),
                                dtype=int, count=n)
         else:
-            return np.fromiter((max(0, ((l - skip - 1) // stride + 1)) for l in self._lengths),
-                               dtype=np.int64, count=n)
+            return np.fromiter((self.trajectory_length(itraj, stride, skip)
+                                for itraj in range(n)),
+                               dtype=int, count=n)
 
     def n_frames_total(self, stride=1, skip=0):
         r"""Returns total number of frames.
@@ -393,7 +401,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
 
         if config.coordinates_check_output:
             for i, t in enumerate(trajs):
-                finite = np.isfinite(t)
+                finite = self._chunk_finite(t)
                 if not np.all(finite):
                     # determine position
                     frames = np.where(np.logical_not(finite))
@@ -668,12 +676,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         # the currently selected itraj, used to distinguish self._itraj in _select_file
         # TODO: this is duplicated with self.state.current_trajindex or so?!
         self._selected_itraj = -1
-        #TODO: replace with self._skip_unselected_trajs?
-        if not isinstance(stride, np.ndarray) and skip > 0:
-            # skip over the trajectories that are smaller than skip
-            while self.state.itraj < self._data_source.ntraj \
-                    and self._data_source.trajectory_length(self.state.itraj, 1, 0) <= skip:
-                self.state.itraj += 1
+        self._skip_unselected_or_too_short_trajs()
         super(DataSourceIterator, self).__init__()
 
     def __init_stride(self, stride):
@@ -1023,9 +1026,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         # the position is the previous advanced position
         self.state.pos = self.state.pos_adv
 
-        # increase itraj
-        self._skip_unselected_or_too_short_trajs()
-
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
             raise StopIteration('out of files bound')
@@ -1052,7 +1052,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
             self._last_chunk_in_traj = self.pos >= length
 
         if config.coordinates_check_output:
-            finite = self.__chunk_finite(X)
+            finite = self._data_source._chunk_finite(X)
             if not np.all(finite):
                 # determine position
                 frames = np.where(np.logical_not(finite))
@@ -1067,14 +1067,6 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         return X
 
     next = __next__
-
-    @staticmethod
-    def __chunk_finite(data):
-        if isinstance(data, np.ndarray):
-            return np.isfinite(data)
-        elif hasattr(data, 'xyz'):
-            return np.isfinite(data.xyz)
-        return True
 
     def __iter__(self):
         return self
