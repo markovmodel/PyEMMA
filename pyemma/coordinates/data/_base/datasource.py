@@ -737,20 +737,16 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         """ closes the reader"""
         raise NotImplementedError()
 
-    def _select_file_guard(f):
-        """
-
-        Returns
-        -------
-
-        """
+    @staticmethod
+    def _select_file_guard(datasource_method):
+        """ in case we call _select_file multiple times with the same value, we do not want to reopen file handles."""
         from functools import wraps
-        @wraps(f)
+        @wraps(datasource_method)
         def wrapper(self, itraj):
             # itraj already selected, we're done.
             if itraj == self._selected_itraj:
                 return
-            f(self, itraj)
+            datasource_method(self, itraj)
             self._itraj = self._selected_itraj = itraj
         return wrapper
 
@@ -1152,13 +1148,13 @@ class EncapsulatedIterator(DataSourceIterator):
             raise ValueError('transform function has to be callable. Given value: {}'.format(value))
         self._transform_function = value
 
+    @DataSourceIterator._select_file_guard
     def _select_file(self, itraj):
         self._it._select_file(itraj)
 
     def close(self):
         if self._it is not None and hasattr(self._it, 'close'):
             self._it.close()
-        #self._selected_itraj = -1
 
     def _next_chunk(self):
         if hasattr(self._it, '_next_chunk'):
