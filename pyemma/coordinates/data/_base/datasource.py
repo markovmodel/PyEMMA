@@ -254,7 +254,6 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
         else:
-            assert skip is not None
             res = max((self._lengths[itraj] - skip - 1) // int(stride) + 1, 0)
             return res
 
@@ -1025,6 +1024,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     def __next__(self):
         # the position is the previous advanced position
         self.state.pos = self.state.pos_adv
+
+        # increase itraj, needed for RA stride
+        # TODO: figure out why, shouldn't ctor and post iteration skipping be sufficient?
+        self._skip_unselected_or_too_short_trajs()
 
         if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
             self.close()
