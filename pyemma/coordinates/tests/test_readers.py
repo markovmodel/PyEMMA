@@ -24,7 +24,14 @@ def max_chunksize_from_config(itemsize):
 
 class GenerateTestMatrix(type):
     def __new__(mcs, name, bases, attr):
-        from functools import partialmethod
+        from functools import partial
+
+        class partialmethod(partial):
+            def __get__(self, instance, owner):
+                if instance is None:
+                    return self
+                return partial(self.func, instance,
+                               *(self.args or ()), **(self.keywords or {}))
         new_test_methods = {}
 
         test_templates = {k: v for k, v in attr.items() if k.startswith('_test') }
