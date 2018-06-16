@@ -32,40 +32,28 @@ def _get_cmap(cmap):
     return cmap
 
 
-def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='linear', zlim=None, cmap=None):
-    import matplotlib.pylab as _plt
-    from scipy.interpolate import griddata as gd
-    # check input
+def contour(
+        x, y, z, ncontours=50, colorbar=True, fig=None, ax=None,
+        method='linear', zlim=None, cmap=None):
+    cmap = _get_cmap(cmap)
+    if cmap is None:
+        cmap = 'jet'
     if ax is None:
         if fig is None:
-            ax = _plt.gca()
+            fig, ax = _plt.subplots()
         else:
             ax = fig.gca()
-
-    cmap = _get_cmap(cmap)
-
-    # grid data
-    points = _np.hstack([x[:,None],y[:,None]])
-    xi, yi = _np.mgrid[x.min():x.max():100j, y.min():y.max():100j]
-    zi = gd(points, z, (xi, yi), method=method)
-    # contour level levels
-    if zlim is None:
-        zlim = (z.min(), z.max())
-    eps = (zlim[1] - zlim[0]) / float(ncontours)
-    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
-    # contour plot
-    if cmap is None:
-        cmap=_plt.cm.jet
-    cf = ax.contourf(xi, yi, zi, ncontours, cmap=cmap, levels=levels)
-    # color bar if requested
-    if colorbar:
-        _plt.colorbar(cf, ax=ax)
-
+    _, ax, _ = plot_countour(
+        x, y, z, ax=ax, cmap=cmap, nbins=nbins, ncontours=ncontours,
+        method=method, cbar=cbar, cax=None, cbar_label=None, zlim=None)
     return ax
 
 
-def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, cmap=None, outfile=None):
-    """Contour plot on scattered data (x,y,z) and the plots the positions of the points (x,y) on top.
+def scatter_contour(
+        x, y, z, ncontours=50, colorbar=True, fig=None,
+        ax=None, cmap=None, outfile=None):
+    """Contour plot on scattered data (x,y,z) and
+    plots the positions of the points (x,y) on top.
 
     Parameters
     ----------
@@ -78,39 +66,42 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
     ncontours : int, optional, default = 50
         number of contour levels
     fig : matplotlib Figure object, optional, default = None
-        the figure to plot into. When set to None the default Figure object will be used
+        the figure to plot into. When set to None the default
+        Figure object will be used
     ax : matplotlib Axes object, optional, default = None
-        the axes to plot to. When set to None the default Axes object will be used.
+        the axes to plot to. When set to None the default Axes
+        object will be used.
     cmap : matplotlib colormap, optional, default = None
         the color map to use. None will use pylab.cm.jet.
     outfile : str, optional, default = None
-        output file to write the figure to. When not given, the plot will be displayed
+        output file to write the figure to. When not given,
+        the plot will be displayed
 
     Returns
     -------
     ax : Axes object containing the plot
 
     """
-    import matplotlib.pylab as _plt
-    ax = contour(x, y, z, ncontours=ncontours, colorbar=colorbar, fig=fig, ax=ax, cmap=cmap)
-
+    ax = contour(
+        x, y, z, ncontours=ncontours, colorbar=colorbar,
+        fig=fig, ax=ax, cmap=cmap)
     # scatter points
-    ax.scatter(x,y,marker='o',c='b',s=5)
-
+    ax.scatter(x , y, marker='o', c='b', s=5)
     # show or save
     if outfile is not None:
-        _plt.savefig(outfile)
-
+        ax.get_figure().savefig(outfile)
     return ax
 
 
-def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=100, offset=-1,
-                     avoid_zero_count=True, minener_zero=True, kT=1.0, vmin=0.0, vmax=None,
-                     cmap='spectral', cbar=True, cbar_label='Free energy (kT)'):
+def plot_free_energy(
+        xall, yall, weights=None, ax=None, nbins=100,
+        ncountours=100, offset=-1, avoid_zero_count=True,
+        minener_zero=True, kT=1.0, vmin=0.0, vmax=None,
+        cmap='spectral', cbar=True, cbar_label='Free energy (kT)'):
     """Free energy plot given 2D scattered data
 
-    Builds a 2D-histogram of the given data points and plots -log(p) where p is
-    the probability computed from the histogram count.
+    Builds a 2D-histogram of the given data points and plots -log(p)
+    where p is the probability computed from the histogram count.
 
     Parameters
     ----------
@@ -121,7 +112,8 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
     weights : ndarray(T), default = None
         sample weights. By default all samples have the same weight
     ax : matplotlib Axes object, default = None
-        the axes to plot to. When set to None the default Axes object will be used.
+        the axes to plot to. When set to None the default Axes object
+        will be used.
     nbins : int, default=100
         number of histogram bins used in each dimension
     ncountours : int, default=100
@@ -129,15 +121,18 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
     offset : float, default=0.1
         DEPRECATED and ineffective.
     avoid_zero_count : bool, default=True
-        avoid zero counts by lifting all histogram elements to the minimum value
-        before computing the free energy. If False, zero histogram counts will
-        yield NaNs in the free energy which and thus regions that are not plotted.
+        avoid zero counts by lifting all histogram elements to the
+        minimum value before computing the free energy. If False,
+        zero histogram counts will yield NaNs in the free energy
+        which and thus regions that are not plotted.
     minener_zero : bool, default=True
-        Shifts the energy minimum to zero. If false, will not shift at all.
+        Shifts the energy minimum to zero. If False, will not
+        shift at all.
     kT : float, default=1.0
-        The value of kT in the desired energy unit. By default, will compute
-        energies in kT (setting 1.0). If you want to measure the energy in
-        kJ/mol at 298 K, use kT=2.479 and change the cbar_label accordingly.
+        The value of kT in the desired energy unit. By default,
+        will compute energies in kT (setting 1.0). If you want to
+        measure the energy in kJ/mol at 298 K, use kT=2.479 and
+        change the cbar_label accordingly.
     vmin : float or None, default=0.0
         Lowest energy that will be plotted
     vmax : float or None, default=None
@@ -156,35 +151,20 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
     ax : Axes object containing the plot
 
     """
-    import matplotlib.pylab as _plt
+    #import matplotlib.pylab as _plt
     import warnings
     cmap = _get_cmap(cmap)
     # check input
     if offset != -1:
-        warnings.warn("Parameter offset is deprecated and will be ignored", DeprecationWarning)
-    # histogram
-    z, xedge, yedge = _np.histogram2d(xall, yall, bins=nbins, weights=weights)
-    x = 0.5*(xedge[:-1] + xedge[1:])
-    y = 0.5*(yedge[:-1] + yedge[1:])
-    # avoid zeros
-    if avoid_zero_count:
-        zmin_nonzero = _np.min(z[_np.where(z > 0)])
-        z = _np.maximum(z, zmin_nonzero)
-    # compute free energies
-    F = -kT * _np.log(z)
-    if minener_zero:
-        F -= _np.min(F)
-    # do a contour plot
-    extent = [yedge[0], yedge[-1], xedge[0], xedge[-1]]
-    if ax is None:
-        ax = _plt.gca()
-    CS = ax.contourf(x, y, F.T, ncountours, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
-    if cbar:
-        cbar = _plt.colorbar(CS)
-        if cbar_label is not None:
-            cbar.ax.set_ylabel(cbar_label)
-
-    return _plt.gcf(), ax
+        warnings.warn(
+            "Parameter offset is deprecated and will be ignored",
+            DeprecationWarning)
+    fig, ax, _ = plot_free_energy_new(
+        xall, yall, weights=weights, ax=ax, cmap=cmap, nbins=nbins,
+        ncontours=ncontours, avoid_zero_count=avoid_zero_count,
+        cbar=cbar, cax=None, cbar_label=cbar_label,
+        minener_zero=minener_zero, kt=kT)
+    return fig, ax
 
 
 # ######################################################################
@@ -192,6 +172,7 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
 # auxiliary functions to help constructing custom plots
 #
 # ######################################################################
+
 
 def get_histogram(
         xall, yall, nbins=100,
@@ -455,7 +436,7 @@ def plot_free_energy_new(
         xall, yall, weights=None, ax=None, cmap='nipy_spectral',
         nbins=100, ncontours=100, avoid_zero_count=False,
         cbar=True, cax=None, cbar_label='free energy / kT',
-        minener_zero=True):
+        minener_zero=True, kt=1.0):
     """Plot a two-dimensional free energy map.
 
     Parameters
@@ -488,6 +469,11 @@ def plot_free_energy_new(
         Colorbar label string; use None to suppress it.
     minener_zero : boolean, optional, default=True
         Shifts the energy minimum to zero.
+    kt : float, optional, default=1.0
+        The value of kT in the desired energy unit. By default,
+        energies are computed in kT (setting 1.0). If you want to
+        measure the energy in kJ/mol at 298 K, use kt=2.479 and
+        change the cbar_label accordingly.
 
     Returns
     -------
@@ -503,7 +489,7 @@ def plot_free_energy_new(
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
-    f = _to_free_energy(z, minener_zero=minener_zero)
+    f = _to_free_energy(z, minener_zero=minener_zero) * kt
     return plot_map(
         x, y, f.T, ncontours=ncontours, ax=ax,
         cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label)
