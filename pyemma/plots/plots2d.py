@@ -35,6 +35,7 @@ def _get_cmap(cmap):
 def contour(
         x, y, z, ncontours=50, colorbar=True, fig=None, ax=None,
         method='linear', zlim=None, cmap=None):
+    import matplotlib.pyplot as _plt
     cmap = _get_cmap(cmap)
     if cmap is None:
         cmap = 'jet'
