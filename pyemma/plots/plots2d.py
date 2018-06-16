@@ -45,8 +45,9 @@ def contour(
         else:
             ax = fig.gca()
     _, ax, _ = plot_contour(
-        x, y, z, ax=ax, cmap=cmap, nbins=nbins, ncontours=ncontours,
-        method=method, cbar=cbar, cax=None, cbar_label=None, zlim=None)
+        x, y, z, ax=ax, cmap=cmap, nbins=100, ncontours=ncontours,
+        method=method, cbar=colorbar, cax=None, cbar_label=None,
+        zlim=None)
     return ax
 
 
