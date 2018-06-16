@@ -451,7 +451,7 @@ def plot_density(
         logscale=logscale)
     
 
-def plot_free_energy(
+def plot_free_energy_new(
         xall, yall, weights=None, ax=None, cmap='nipy_spectral',
         nbins=100, ncontours=100, avoid_zero_count=False,
         cbar=True, cax=None, cbar_label='free energy / kT',
