@@ -43,7 +43,7 @@ def contour(
             fig, ax = _plt.subplots()
         else:
             ax = fig.gca()
-    _, ax, _ = plot_countour(
+    _, ax, _ = plot_contour(
         x, y, z, ax=ax, cmap=cmap, nbins=nbins, ncontours=ncontours,
         method=method, cbar=cbar, cax=None, cbar_label=None, zlim=None)
     return ax
@@ -161,7 +161,7 @@ def plot_free_energy(
             DeprecationWarning)
     fig, ax, _ = plot_free_energy_new(
         xall, yall, weights=weights, ax=ax, cmap=cmap, nbins=nbins,
-        ncontours=ncontours, avoid_zero_count=avoid_zero_count,
+        ncontours=ncountours, avoid_zero_count=avoid_zero_count,
         cbar=cbar, cax=None, cbar_label=cbar_label,
         minener_zero=minener_zero, kt=kT)
     return fig, ax
@@ -495,7 +495,7 @@ def plot_free_energy_new(
         cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label)
 
 
-def plot_countour(
+def plot_contour(
         xall, yall, zall, ax=None, cmap='viridis',
         nbins=100, ncontours=100, method='nearest',
         cbar=True, cax=None, cbar_label=None, zlim=None):
