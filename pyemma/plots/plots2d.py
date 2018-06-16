@@ -1,7 +1,7 @@
 
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2014-2018 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -186,3 +186,382 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
 
     return _plt.gcf(), ax
 
+
+# ######################################################################
+#
+# auxiliary functions to help constructing custom plots
+#
+# ######################################################################
+
+def get_histogram(
+        xall, yall, nbins=100,
+        weights=None, avoid_zero_count=False):
+    """Compute a two-dimensional histogram.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    nbins : int, default=100
+        Number of histogram bins used in each dimension.
+    weights : ndarray(T), default=None
+        Sample weights; by default all samples have the same weight.
+    avoid_zero_count : bool, default=True
+        Avoid zero counts by lifting all histogram elements to the
+        minimum value before computing the free energy. If False,
+        zero histogram counts would yield infinity in the free energy.
+
+    Returns
+    -------
+    x : ndarray(nbins, nbins)
+        The bins' x-coordinates in meshgrid format.
+    y : ndarray(nbins, nbins)
+        The bins' y-coordinates in meshgrid format.
+    z : ndarray(nbins, nbins)
+        Histogram counts in meshgrid format.
+
+    """
+    z, xedge, yedge = _np.histogram2d(
+        xall, yall, bins=nbins, weights=weights)
+    x = 0.5 * (xedge[:-1] + xedge[1:])
+    y = 0.5 * (yedge[:-1] + yedge[1:])
+    if avoid_zero_count:
+        z = _np.maximum(z, _np.min(z[z.nonzero()]))
+    return x, y, z
+
+
+def get_grid_data(xall, yall, zall, nbins=100, method='nearest'):
+    """Interpolate unstructured two-dimensional data.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    zall : ndarray(T)
+        Sample z-coordinates.
+    nbins : int, optional, default=100
+        Number of histogram bins used in x/y-dimensions.
+    method : str, optional, default='nearest'
+        Assignment method; scipy.interpolate.griddata supports the
+        methods 'nearest', 'linear', and 'cubic'.
+
+    Returns
+    -------
+    x : ndarray(nbins, nbins)
+        The bins' x-coordinates in meshgrid format.
+    y : ndarray(nbins, nbins)
+        The bins' y-coordinates in meshgrid format.
+    z : ndarray(nbins, nbins)
+        Interpolated z-data in meshgrid format.
+
+    """
+    from scipy.interpolate import griddata
+    x, y = _np.meshgrid(
+        _np.linspace(xall.min(), xall.max(), nbins),
+        _np.linspace(yall.min(), yall.max(), nbins),
+        indexing='ij')
+    z = griddata(
+        _np.hstack([xall[:,None], yall[:,None]]),
+        zall, (x, y), method=method)
+    return x, y, z
+
+
+def _to_density(z):
+    """Normalize histogram counts.
+
+    Parameters
+    ----------
+    z : ndarray(T)
+        Histogram counts.
+
+    """
+    return z / float(z.sum())
+
+
+def _to_free_energy(z, minener_zero=False):
+    """Compute free energies from histogram counts.
+
+    Parameters
+    ----------
+    z : ndarray(T)
+        Histogram counts.
+    minener_zero : boolean, optional, default=False
+        Shifts the energy minimum to zero.
+
+    Returns
+    -------
+    free_energy : ndarray(T)
+        The free energy values in units of kT.
+
+    """
+    pi = _to_density(z)
+    free_energy = _np.inf * _np.ones(shape=z.shape)
+    nonzero = pi.nonzero()
+    free_energy[nonzero] = -_np.log(pi[nonzero])
+    if minener_zero:
+        free_energy[nonzero] -= _np.min(free_energy[nonzero])
+    return free_energy
+
+
+def plot_map(
+        x, y, z, ncontours=100, ax=None,
+        cmap='Blues', vmin=None, vmax=None,
+        cbar=True, cax=None, cbar_label=None,
+        logscale=False, levels=None):
+    """Plot a two-dimensional map.
+
+    Parameters
+    ----------
+    x : ndarray(T)
+        Binned x-coordinates.
+    y : ndarray(T)
+        Binned y-coordinates.
+    z : ndarray(T)
+        Binned z-coordinates.
+    ncontours : int, optional, default=100
+        Number of contour levels.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+    cmap : matplotlib colormap, optional, default='Blues'
+        The color map to use.
+    vmin : float, optional, default=None
+        Lowest z-value to be plotted.
+    vmax : float, optional, default=None
+        Highest z-value to be plotted.
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default=None
+        Colorbar label string; use None to suppress it.
+    logscale : boolean, optional, default=False
+        Plot the z-values in logscale.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    cbar : matplotlib.Colorbar object
+        The corresponding colorbar object; None if no colorbar
+        was requested.
+
+    """
+    import matplotlib.pyplot as _plt
+    if ax is None:
+        fig, ax = _plt.subplots()
+    else:
+        fig = ax.get_figure()
+    if logscale:
+        from matplotlib.colors import LogNorm
+        norm = LogNorm()
+        z = _np.ma.masked_where(z <= 0, z)
+    else:
+        norm = None
+        if vmin is None:
+            vmin = _np.min(z)
+        if vmax is None:
+            vmax = _np.max(z)
+    cs = ax.contourf(
+        x, y, z, ncontours, norm=norm,
+        vmin=vmin, vmax=vmax, cmap=cmap,
+        levels=levels)
+    if cbar:
+        if cax is None:
+            cbar = fig.colorbar(cs, ax=ax)
+        else:
+            cbar = fig.colorbar(cs, cax=cax)
+        if cbar_label is not None:
+            cbar.set_label(cbar_label)
+    else:
+        cbar = None
+    return fig, ax, cbar
+
+
+# ######################################################################
+#
+# new plotting functions
+#
+# ######################################################################
+    
+
+def plot_density(
+        xall, yall, weights=None, ax=None, cmap='Blues',
+        nbins=100, ncontours=100, avoid_zero_count=False,
+        cbar=True, cax=None, cbar_label='density',
+        logscale=False):
+    """Plot a two-dimensional density map.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    weights : ndarray(T), default=None
+        Sample weights; by default all samples have the same weight.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+        Number of contour levels.
+    cmap : matplotlib colormap, optional, default='Blues'
+        The color map to use.
+    nbins : int, default=100
+        Number of histogram bins used in each dimension.
+    ncontours : int, optional, default=100
+    avoid_zero_count : bool, default=False
+        Avoid zero counts by lifting all histogram elements to the
+        minimum value before computing the free energy. If False,
+        zero histogram counts would yield infinity in the free energy.
+    vmin : float, optional, default=None
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default='density'
+        Colorbar label string; use None to suppress it.
+    logscale : boolean, optional, default=False
+        Plot the density values in logscale.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    cbar : matplotlib.Colorbar object
+        The corresponding colorbar object; None if no colorbar
+        was requested.
+
+    """
+    x, y, z = get_histogram(
+        xall, yall, nbins=nbins,weights=weights,
+        avoid_zero_count=avoid_zero_count)
+    return plot_map(
+        x, y, _to_density(z).T, ncontours=ncontours, ax=ax,
+        cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label,
+        logscale=logscale)
+    
+
+def plot_free_energy(
+        xall, yall, weights=None, ax=None, cmap='nipy_spectral',
+        nbins=100, ncontours=100, avoid_zero_count=False,
+        cbar=True, cax=None, cbar_label='free energy / kT',
+        minener_zero=True):
+    """Plot a two-dimensional free energy map.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    weights : ndarray(T), default=None
+        Sample weights; by default all samples have the same weight.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+        Number of contour levels.
+    cmap : matplotlib colormap, optional, default='nipy_spectral'
+        The color map to use.
+    nbins : int, default=100
+        Number of histogram bins used in each dimension.
+    ncontours : int, optional, default=100
+    avoid_zero_count : bool, default=False
+        Avoid zero counts by lifting all histogram elements to the
+        minimum value before computing the free energy. If False,
+        zero histogram counts would yield infinity in the free energy.
+    vmin : float, optional, default=None
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default='free energy / kT'
+        Colorbar label string; use None to suppress it.
+    minener_zero : boolean, optional, default=True
+        Shifts the energy minimum to zero.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    cbar : matplotlib.Colorbar object
+        The corresponding colorbar object; None if no colorbar
+        was requested.
+
+    """
+    x, y, z = get_histogram(
+        xall, yall, nbins=nbins, weights=weights,
+        avoid_zero_count=avoid_zero_count)
+    f = _to_free_energy(z, minener_zero=minener_zero)
+    return plot_map(
+        x, y, f.T, ncontours=ncontours, ax=ax,
+        cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label)
+
+
+def plot_countour(
+        xall, yall, zall, ax=None, cmap='viridis',
+        nbins=100, ncontours=100, method='nearest',
+        cbar=True, cax=None, cbar_label=None, zlim=None):
+    """Plot a two-dimensional free energy map.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    zall : ndarray(T)
+        Sample z-coordinates.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+        Number of contour levels.
+    cmap : matplotlib colormap, optional, default='viridis'
+        The color map to use.
+    nbins : int, default=100
+        Number of histogram bins used in each dimension.
+    ncontours : int, optional, default=100
+    method : str, optional, default='nearest'
+        Assignment method; scipy.interpolate.griddata supports the
+        methods 'nearest', 'linear', and 'cubic'.
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default=None
+        Colorbar label string; use None to suppress it.
+    zlim : tuple of float, optional, default=None
+        If None, zlim is set to (vmin, vmax); this parameter is only
+        present for compatibility reasons.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    cbar : matplotlib.Colorbar object
+        The corresponding colorbar object; None if no colorbar
+        was requested.
+
+    """
+    x, y, z = get_grid_data(
+        xall, yall, zall, nbins=nbins, method='nearest')
+    if zlim is None:
+        zlim = (z.min(), z.max())
+    eps = (zlim[1] - zlim[0]) / float(ncontours)
+    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
+    return plot_map(
+        x, y, z, ncontours=ncontours, ax=ax, cmap=cmap,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, levels=levels)
