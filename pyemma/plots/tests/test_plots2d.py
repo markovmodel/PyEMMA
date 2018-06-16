@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2017 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2017, 2018 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,9 @@ import unittest
 import numpy as np
 
 from pyemma.plots.plots2d import plot_free_energy, contour, scatter_contour
+from pyemma.plots.plots2d import plot_density
+from pyemma.plots.plots2d import plot_free_energy_new
+from pyemma.plots.plots2d import plot_countour
 
 
 class TestPlots2d(unittest.TestCase):
@@ -36,3 +39,12 @@ class TestPlots2d(unittest.TestCase):
 
     def test_scatter_contour(self):
         scatter_contour(self.data[:,0], self.data[:,1], self.data[:,0])
+
+    def test_plot_density(self):
+        plot_density(*self.data.T)
+
+    def test_plot_free_energy_new(self):
+        plot_free_energy_new(*self.data.T)
+
+    def test_plot_contour(self):
+        plot_contour(*self.data.T, self.data[:,0])
