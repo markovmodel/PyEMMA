@@ -24,7 +24,7 @@ import warnings
 from pyemma.plots.plots1d import plot_feature_histograms
 
 
-class TestPlots2d(unittest.TestCase):
+class TestPlots1d(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data = np.random.rand(500, 10)
