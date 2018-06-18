@@ -358,5 +358,5 @@ class FeatureReaderIterator(EncapsulatedIterator):
 
     @EncapsulatedIterator.chunksize.setter
     def chunksize(self, value):
-        super(FeatureReaderIterator, __class__).chunksize.__set__(self, value)
+        super(FeatureReaderIterator, self.__class__).chunksize.__set__(self, value)
         self._it.chunksize = value
