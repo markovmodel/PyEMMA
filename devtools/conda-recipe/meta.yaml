@@ -19,7 +19,7 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ compiler('cpp') }}
+    - {{ compiler('cxx') }}
     - toolchain
 
   host:
