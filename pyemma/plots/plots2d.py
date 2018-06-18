@@ -366,15 +366,14 @@ def plot_density(
         x, y, _to_density(z).T, ncontours=ncontours, ax=ax,
         cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label,
         logscale=logscale)
-    
+
 
 def plot_free_energy(
-        xall, yall, weights=None, ax=None, cmap='nipy_spectral',
-        nbins=100, ncontours=100, avoid_zero_count=False,
-        vmin=None, vmax=None,
-        cbar=True, cax=None, cbar_label='free energy / kT',
-        minener_zero=True, kt=1.0,
-        legacy=True, ncountours=None, offset=-1):
+        xall, yall, weights=None, ax=None, nbins=100, ncontours=100,
+        offset=-1, avoid_zero_count=False, minener_zero=True, kT=1.0,
+        vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
+        cbar_label='free energy / kT', cax=None, legacy=True,
+        ncountours=None):
     """Plot a two-dimensional free energy map.
 
     Parameters
@@ -388,39 +387,42 @@ def plot_free_energy(
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
         Number of contour levels.
-    cmap : matplotlib colormap, optional, default='nipy_spectral'
-        The color map to use.
     nbins : int, default=100
         Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
         Number of contour levels.
+    offset : float, optional, default=-1
+        Deprecated and ineffective; raises a ValueError
+        outside legacy mode.
     avoid_zero_count : bool, default=False
         Avoid zero counts by lifting all histogram elements to the
         minimum value before computing the free energy. If False,
         zero histogram counts would yield infinity in the free energy.
+    minener_zero : boolean, optional, default=True
+        Shifts the energy minimum to zero.
+    kT : float, optional, default=1.0
+        The value of kT in the desired energy unit. By default,
+        energies are computed in kT (setting 1.0). If you want to
+        measure the energy in kJ/mol at 298 K, use kT=2.479 and
+        change the cbar_label accordingly.
     vmin : float, optional, default=None
         Lowest free energy value to be plotted.
         (default=0.0 in legacy mode)
     vmax : float, optional, default=None
         Highest free energy value to be plotted.
+    cmap : matplotlib colormap, optional, default='nipy_spectral'
+        The color map to use.
     cbar : boolean, optional, default=True
         Plot a color bar.
+    cbar_label : str, optional, default='free energy / kT'
+        Colorbar label string; use None to suppress it.
     cax : matplotlib.Axes object, optional, default=None
         Plot the colorbar into a custom axes object instead of
         stealing space from ax.
-    cbar_label : str, optional, default='free energy / kT'
-        Colorbar label string; use None to suppress it.
-    minener_zero : boolean, optional, default=True
-        Shifts the energy minimum to zero.
-    kt : float, optional, default=1.0
-        The value of kT in the desired energy unit. By default,
-        energies are computed in kT (setting 1.0). If you want to
-        measure the energy in kJ/mol at 298 K, use kt=2.479 and
-        change the cbar_label accordingly.
     legacy : boolean, optional, default=True
         Switch to use the function in legacy mode (deprecated).
     ncountours : int, optional, default=None
-        Legacy parameter for number of contour levels.
+        Legacy parameter (typo) for number of contour levels.
 
     Returns
     -------
@@ -455,14 +457,14 @@ def plot_free_energy(
         if offset != -1:
             raise ValueError(
                 'Parameter offset is not allowed outside legacy mode')
-        if ncountours is noit None:
+        if ncountours is not None:
             raise ValueError(
                 'Parameter ncountours is not allowed outside'
                 ' legacy mode; use ncontours instead')
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
-    f = _to_free_energy(z, minener_zero=minener_zero) * kt
+    f = _to_free_energy(z, minener_zero=minener_zero) * kT
     fig, ax, cb = plot_map(
         x, y, f.T, ncontours=ncontours, ax=ax,
         cmap=cmap, vmin=vmin, vmax=vmax,
