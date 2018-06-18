@@ -539,9 +539,9 @@ def plot_contour(
     x, y, z = get_grid_data(
         xall, yall, zall, nbins=nbins, method='nearest')
     if vmin is None:
-        vmin = _np.min(zall[z > -_np.inf])
+        vmin = _np.min(zall[zall > -_np.inf])
     if vmax is None:
-        vmax = _np.max(zall[z < _np.inf])
+        vmax = _np.max(zall[zall < _np.inf])
     if levels is None:
         eps = (vmax - vmin) / float(ncontours)
         levels = _np.linspace(vmin - eps, vmax + eps)
