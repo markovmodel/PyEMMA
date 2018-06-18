@@ -283,10 +283,6 @@ def plot_map(
         z = _np.ma.masked_where(z <= 0, z)
     else:
         norm = None
-        if vmin is None:
-            vmin = _np.min(z[z > -_np.inf])
-        if vmax is None:
-            vmax = _np.max(z[z < _np.inf])
     cs = ax.contourf(
         x, y, z, ncontours, norm=norm,
         vmin=vmin, vmax=vmax, cmap=cmap,
