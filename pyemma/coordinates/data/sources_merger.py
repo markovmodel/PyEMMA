@@ -54,13 +54,11 @@ class _JoiningIterator(DataSourceIterator):
     def __init__(self, src, sources, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
         super(_JoiningIterator, self).__init__(src, skip, chunk,
                                                stride, return_trajindex, cols)
+        if not sources:
+            raise ValueError('need some data sources.')
         self._iterators = [s.iterator(skip=skip, chunk=chunk, stride=stride,
                                       return_trajindex=return_trajindex, cols=cols)
                            for s in sources]
-        # tie the state of the wrapped iterators to this one.
-        for it in self._iterators:
-            it.state = self.state
-        self.sources = sources
 
     def close(self):
         for it in self._iterators:
@@ -73,7 +71,7 @@ class _JoiningIterator(DataSourceIterator):
         for it in self._iterators:
             if it.return_traj_index:
                 itraj, X = next(it)
-                assert itraj == self._itraj
+                assert itraj == self.current_trajindex
             else:
                 X = next(it)
             chunks.append(X)
@@ -85,6 +83,3 @@ class _JoiningIterator(DataSourceIterator):
     def _select_file(self, itraj):
         for it in self._iterators:
             it._select_file(itraj)
-            assert it._itraj == itraj
-            assert it._selected_itraj == itraj
-            assert it._t == self._t

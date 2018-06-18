@@ -672,8 +672,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                    cols=cols)
         self.__init_stride(stride)
         self._last_chunk_in_traj = False
-        # the currently selected itraj, used to distinguish self._itraj in _select_file
-        # TODO: this is duplicated with self.state.current_trajindex or so?!
+        # the currently selected itraj, used as a guard to avoid opening the same file multiple times.
         self._selected_itraj = -1
         self._skip_unselected_or_too_short_trajs()
         super(DataSourceIterator, self).__init__()

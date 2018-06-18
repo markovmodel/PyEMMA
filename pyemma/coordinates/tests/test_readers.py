@@ -26,6 +26,7 @@ class GenerateTestMatrix(type):
     def __new__(mcs, name, bases, attr):
         from functools import partial
 
+        # needed for python2
         class partialmethod(partial):
             def __get__(self, instance, owner):
                 if instance is None:
