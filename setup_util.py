@@ -129,8 +129,8 @@ def cpp_flag(compiler):
     elif has_flag(compiler, '-std=c++11'):
         return '-std=c++11'
     else:
-        raise RuntimeError('Unsupported compiler -- at least C++11 support '
-                           'is needed!')
+        raise RuntimeError('Unsupported compiler ({})-- at least C++11 support '
+                           'is needed!'.format(compiler))
 
 
 class lazy_cythonize(list):
