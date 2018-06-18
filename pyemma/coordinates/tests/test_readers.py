@@ -128,7 +128,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
         ],
         '_test_fragment_reader': [
             dict(file_format=f, stride=s, lag=l, chunksize=cs)
-            for f, s, l, cs in itertools.product(file_formats, strides, [0] + lags, chunk_sizes)
+            for f, s, l, cs in itertools.product(file_formats, strides, [0] + list(lags), chunk_sizes)
         ],
         '_test_base_reader_with_random_access_stride': [
           dict(file_format=f, stride=s, chunksize=cs)
