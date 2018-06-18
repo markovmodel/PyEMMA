@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 
 import numpy as _np
+from warnings import warn as _warn
 
 __author__ = 'noe'
 
@@ -36,6 +37,9 @@ def contour(
         x, y, z, ncontours=50, colorbar=True, fig=None, ax=None,
         method='linear', zlim=None, cmap=None):
     import matplotlib.pyplot as _plt
+    _warn(
+        'contour is deprected; use plot_contour instead.',
+        DeprecationWarning)
     cmap = _get_cmap(cmap)
     if cmap is None:
         cmap = 'jet'
@@ -84,6 +88,10 @@ def scatter_contour(
     ax : Axes object containing the plot
 
     """
+    _warn(
+        'scatter_contour is deprected; use'
+        ' plot_scatter_contour instead.',
+        DeprecationWarning)
     ax = contour(
         x, y, z, ncontours=ncontours, colorbar=colorbar,
         fig=fig, ax=ax, cmap=cmap)
@@ -93,79 +101,6 @@ def scatter_contour(
     if outfile is not None:
         ax.get_figure().savefig(outfile)
     return ax
-
-
-def plot_free_energy(
-        xall, yall, weights=None, ax=None, nbins=100,
-        ncountours=100, offset=-1, avoid_zero_count=True,
-        minener_zero=True, kT=1.0, vmin=0.0, vmax=None,
-        cmap='spectral', cbar=True, cbar_label='Free energy (kT)'):
-    """Free energy plot given 2D scattered data
-
-    Builds a 2D-histogram of the given data points and plots -log(p)
-    where p is the probability computed from the histogram count.
-
-    Parameters
-    ----------
-    xall : ndarray(T)
-        sample x-coordinates
-    yall : ndarray(T)
-        sample y-coordinates
-    weights : ndarray(T), default = None
-        sample weights. By default all samples have the same weight
-    ax : matplotlib Axes object, default = None
-        the axes to plot to. When set to None the default Axes object
-        will be used.
-    nbins : int, default=100
-        number of histogram bins used in each dimension
-    ncountours : int, default=100
-        number of contours used
-    offset : float, default=-1
-        DEPRECATED and ineffective.
-    avoid_zero_count : bool, default=True
-        avoid zero counts by lifting all histogram elements to the
-        minimum value before computing the free energy. If False,
-        zero histogram counts will yield NaNs in the free energy
-        which and thus regions that are not plotted.
-    minener_zero : bool, default=True
-        Shifts the energy minimum to zero. If False, will not
-        shift at all.
-    kT : float, default=1.0
-        The value of kT in the desired energy unit. By default,
-        will compute energies in kT (setting 1.0). If you want to
-        measure the energy in kJ/mol at 298 K, use kT=2.479 and
-        change the cbar_label accordingly.
-    vmin : float or None, default=0.0
-        Lowest energy that will be plotted
-    vmax : float or None, default=None
-        Highest energy that will be plotted
-    cmap : matplotlib colormap, optional, default = None
-        the color map to use. None will use pylab.cm.spectral.
-    cbar : boolean, default=True
-        plot a color bar
-    cbar_label : str or None, default='Free energy (kT)'
-        colorbar label string. Use None to suppress it.
-
-    Returns
-    -------
-    fig : Figure object containing the plot
-
-    ax : Axes object containing the plot
-
-    """
-    import warnings
-    cmap = _get_cmap(cmap)
-    # check input
-    if offset != -1:
-        warnings.warn(
-            "Parameter offset is deprecated and will be ignored",
-            DeprecationWarning)
-    fig, ax, _ = plot_free_energy_new(
-        xall, yall, weights=weights, ax=ax, cmap=cmap, nbins=nbins,
-        ncontours=ncountours, avoid_zero_count=avoid_zero_count,
-        cbar=cbar, cax=None, cbar_label=cbar_label,
-        minener_zero=minener_zero, kt=kT)
-    return fig, ax
 
 
 # ######################################################################
@@ -433,11 +368,13 @@ def plot_density(
         logscale=logscale)
     
 
-def plot_free_energy_new(
+def plot_free_energy(
         xall, yall, weights=None, ax=None, cmap='nipy_spectral',
         nbins=100, ncontours=100, avoid_zero_count=False,
+        vmin=None, vmax=None,
         cbar=True, cax=None, cbar_label='free energy / kT',
-        minener_zero=True, kt=1.0):
+        minener_zero=True, kt=1.0,
+        legacy=True, ncountours=None, offset=-1):
     """Plot a two-dimensional free energy map.
 
     Parameters
@@ -456,11 +393,16 @@ def plot_free_energy_new(
     nbins : int, default=100
         Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
+        Number of contour levels.
     avoid_zero_count : bool, default=False
         Avoid zero counts by lifting all histogram elements to the
         minimum value before computing the free energy. If False,
         zero histogram counts would yield infinity in the free energy.
     vmin : float, optional, default=None
+        Lowest free energy value to be plotted.
+        (default=0.0 in legacy mode)
+    vmax : float, optional, default=None
+        Highest free energy value to be plotted.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -475,6 +417,10 @@ def plot_free_energy_new(
         energies are computed in kT (setting 1.0). If you want to
         measure the energy in kJ/mol at 298 K, use kt=2.479 and
         change the cbar_label accordingly.
+    legacy : boolean, optional, default=True
+        Switch to use the function in legacy mode (deprecated).
+    ncountours : int, optional, default=None
+        Legacy parameter for number of contour levels.
 
     Returns
     -------
@@ -484,23 +430,53 @@ def plot_free_energy_new(
         The ax in which the map was plotted.
     cbar : matplotlib.Colorbar object
         The corresponding colorbar object; None if no colorbar
-        was requested.
+        was requested. (suppressed in legacy mode)
 
     """
+    if legacy:
+        _warn(
+            'Legacy mode is deprecated is will be removed in the'
+            ' next major release. Until then use legacy=False',
+            DeprecationWarning)
+        cmap = _get_cmap(cmap)
+        if offset != -1:
+            _warn(
+                'Parameter offset is deprecated and will be ignored',
+                DeprecationWarning)
+        if ncountours is not None:
+            _warn(
+                'Parameter ncountours is deprecated;'
+                ' use ncontours instead',
+                DeprecationWarning)
+            ncontours = ncountours
+        if vmin is None:
+            vmin = 0.0
+    else:
+        if offset != -1:
+            raise ValueError(
+                'Parameter offset is not allowed outside legacy mode')
+        if ncountours is noit None:
+            raise ValueError(
+                'Parameter ncountours is not allowed outside'
+                ' legacy mode; use ncontours instead')
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kt
-    return plot_map(
+    fig, ax, cb = plot_map(
         x, y, f.T, ncontours=ncontours, ax=ax,
-        cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label)
+        cmap=cmap, vmin=vmin, vmax=vmax,
+        cbar=cbar, cax=cax, cbar_label=cbar_label)
+    if legacy:
+        return fig, ax
+    return fig, ax, cbar
 
 
 def plot_contour(
         xall, yall, zall, ax=None, cmap='viridis',
         nbins=100, ncontours=100, method='nearest',
         cbar=True, cax=None, cbar_label=None, zlim=None):
-    """Plot a two-dimensional free energy map.
+    """Plot a two-dimensional contour map.
 
     Parameters
     ----------
@@ -552,3 +528,63 @@ def plot_contour(
     return plot_map(
         x, y, z, ncontours=ncontours, ax=ax, cmap=cmap,
         cbar=cbar, cax=cax, cbar_label=cbar_label, levels=levels)
+
+
+def plot_scatter_contour(
+        xall, yall, zall, ax=None, cmap='viridis',
+        nbins=100, ncontours=100, method='nearest',
+        cbar=True, cax=None, cbar_label=None, zlim=None):
+    """Plot a two-dimensional contour map and a scatter plot on top.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    zall : ndarray(T)
+        Sample z-coordinates.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+        Number of contour levels.
+    cmap : matplotlib colormap, optional, default='viridis'
+        The color map to use.
+    nbins : int, default=100
+        Number of histogram bins used in each dimension.
+    ncontours : int, optional, default=100
+    method : str, optional, default='nearest'
+        Assignment method; scipy.interpolate.griddata supports the
+        methods 'nearest', 'linear', and 'cubic'.
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default=None
+        Colorbar label string; use None to suppress it.
+    zlim : tuple of float, optional, default=None
+        If None, zlim is set to (vmin, vmax); this parameter is only
+        present for compatibility reasons.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    cbar : matplotlib.Colorbar object
+        The corresponding colorbar object; None if no colorbar
+        was requested.
+
+    """
+    x, y, z = get_grid_data(
+        xall, yall, zall, nbins=nbins, method='nearest')
+    if zlim is None:
+        zlim = (z.min(), z.max())
+    eps = (zlim[1] - zlim[0]) / float(ncontours)
+    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
+    fig, ax, cbar = plot_map(
+        x, y, z, ncontours=ncontours, ax=ax, cmap=cmap,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, levels=levels)
+    ax.scatter(xall , yall, marker='o', c='b', s=5)
+    return fig, ax, cbar
