@@ -120,7 +120,7 @@ def plot_free_energy(
         number of histogram bins used in each dimension
     ncountours : int, default=100
         number of contours used
-    offset : float, default=0.1
+    offset : float, default=-1
         DEPRECATED and ineffective.
     avoid_zero_count : bool, default=True
         avoid zero counts by lifting all histogram elements to the
@@ -153,7 +153,6 @@ def plot_free_energy(
     ax : Axes object containing the plot
 
     """
-    #import matplotlib.pylab as _plt
     import warnings
     cmap = _get_cmap(cmap)
     # check input
