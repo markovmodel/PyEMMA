@@ -378,7 +378,7 @@ def plot_free_energy(
         offset=-1, avoid_zero_count=False, minener_zero=True, kT=1.0,
         vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
         cbar_label='free energy / kT', cax=None, levels=None,
-        legacy=True, ncountours=None):
+        logscale=False, legacy=True, ncountours=None):
     """Plot a two-dimensional free energy map.
 
     Parameters
@@ -426,6 +426,8 @@ def plot_free_energy(
         stealing space from ax.
     levels : iterable of float, optional, default=None
         Contour levels to plot.
+    logscale : boolean, optional, default=False
+        Plot the z-values in logscale.
     legacy : boolean, optional, default=True
         Switch to use the function in legacy mode (deprecated).
     ncountours : int, optional, default=None
