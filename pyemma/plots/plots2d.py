@@ -377,8 +377,8 @@ def plot_free_energy(
         xall, yall, weights=None, ax=None, nbins=100, ncontours=100,
         offset=-1, avoid_zero_count=False, minener_zero=True, kT=1.0,
         vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
-        cbar_label='free energy / kT', cax=None, legacy=True,
-        ncountours=None):
+        cbar_label='free energy / kT', cax=None, levels=None,
+        legacy=True, ncountours=None):
     """Plot a two-dimensional free energy map.
 
     Parameters
@@ -424,6 +424,8 @@ def plot_free_energy(
     cax : matplotlib.Axes object, optional, default=None
         Plot the colorbar into a custom axes object instead of
         stealing space from ax.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
     legacy : boolean, optional, default=True
         Switch to use the function in legacy mode (deprecated).
     ncountours : int, optional, default=None
