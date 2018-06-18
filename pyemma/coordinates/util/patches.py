@@ -270,7 +270,7 @@ class iterload(object):
                     yield _join_traj_data(coords, self._topology)
                     chunksize = self._chunksize
                     curr_size = 0
-                    coords.clear()
+                    del coords[:]  # clears a list in py27... lol
                 while leftovers:
                     # TODO: local chunk can get longer than chunk size, because len(leftovers) + curr_size > chunksize
                     local_chunk = leftovers[:min(chunksize, len(leftovers))]
@@ -281,7 +281,7 @@ class iterload(object):
                     if curr_size == chunksize:
                         yield _join_traj_data(coords, self._topology)
                         curr_size = 0
-                        coords.clear()
+                        del coords[:]
                 assert not leftovers
             if coords:
                 yield _join_traj_data(coords, self._topology)
