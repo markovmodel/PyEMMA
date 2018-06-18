@@ -99,7 +99,6 @@ class TestFeatureReader(unittest.TestCase):
             r1 = FeatureReader(self.trajfile, self.topfile)
             out_with_skip = r1.get_output(skip=skip)[0]
             r2 = FeatureReader(self.trajfile, self.topfile)
-            r2.logger.info('----------------------')
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
                                            err_msg="The first %s rows were skipped, but that did not "
@@ -225,7 +224,6 @@ class TestFeatureReader(unittest.TestCase):
         # now get output with different strides
         strides = [1, 2, 3, 4, 5]
         for s in strides:
-            reader.logger.info('--------------------------------')
             out = reader.get_output(stride=s)
             shape = (reader.trajectory_length(0, stride=s), reader.dimension())
             self.assertEqual(out[0].shape, shape, "not equal for stride=%i" % s)
