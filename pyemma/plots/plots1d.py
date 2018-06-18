@@ -57,7 +57,7 @@ def plot_feature_histograms(xyzall,
 
     if xyzall.shape[1] > 50 and not ignore_dim_warning:
         raise RuntimeError('This function is only useful for less than 50 dimensions. Turn-off this warning '
-                           'on your own risk with ignore_dim_warning=True.')
+                           'at your own risk with ignore_dim_warning=True.')
 
     if feature_labels is not None:
         if not isinstance(feature_labels, list):
@@ -78,7 +78,9 @@ def plot_feature_histograms(xyzall,
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
-        ax = _plt.gca()
+        fig, ax = _plt.subplots()
+    else:
+        fig = ax.get_figure()
 
     hist_offset = -.2
     for h, coordinate in enumerate(xyzall.T):
@@ -103,5 +105,5 @@ def plot_feature_histograms(xyzall,
 
     # save
     if outfile is not None:
-        _plt.savefig(outfile)
+        fig.savefig(outfile)
     return ax
