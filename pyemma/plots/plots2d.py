@@ -479,11 +479,6 @@ def plot_free_energy(
     return fig, ax, cbar
 
 
-def plot_map(
-        x, y, z, ax=None, cmap='Blues',
-        ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, logscale=False)
-
 def plot_contour(
         xall, yall, zall, ax=None, cmap='viridis',
         ncontours=100, vmin=None, vmax=None, levels=None,
