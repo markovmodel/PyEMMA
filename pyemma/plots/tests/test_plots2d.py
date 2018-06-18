@@ -45,7 +45,7 @@ class TestPlots2d(unittest.TestCase):
         plot_density(self.data[:, 0], self.data[:, 1])
 
     def test_plot_free_energy(self):
-        plot_free_energy_new(
+        plot_free_energy(
             self.data[:, 0], self.data[:, 1], legacy=False)
 
     def test_plot_contour(self):
