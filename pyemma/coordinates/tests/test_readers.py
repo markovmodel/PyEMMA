@@ -143,6 +143,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
             'in-memory': lambda dirname, data: data,
             'numpy': util.create_trajectory_numpy,
             'xtc': lambda dirname, data: util.create_trajectory_xtc(cls.n_atoms, dirname, data),
+            'trr': lambda dirname, data: util.create_trajectory_trr(cls.n_atoms, dirname, data),
             'dcd': lambda dirname, data: util.create_trajectory_dcd(cls.n_atoms, dirname, data),
             'h5': lambda dirname, data: util.create_trajectory_h5(cls.n_atoms, dirname, data)
         }
@@ -223,7 +224,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
         trajs = self.test_trajs[file_format]
 
         # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1 and lag > (chunksize if chunksize is not None else 2**64-1):
+        if file_format == 'dcd' and stride > 1:
             raise unittest.SkipTest('wait for mdtraj 2.0')
 
         reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
