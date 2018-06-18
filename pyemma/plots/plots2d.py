@@ -53,9 +53,9 @@ def contour(
     else:
         vmin, vmax = zlim
     _, ax, _ = plot_contour(
-        xall, yall, zall, ax=ax, cmap=cmap,
+        x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=None,
-        cbar=cbar, cax=None, cbar_label=None, logscale=False,
+        cbar=colorbar, cax=None, cbar_label=None, logscale=False,
         nbins=100, method=method)
     return ax
 
@@ -537,7 +537,7 @@ def plot_contour(
 
     """
     x, y, z = get_grid_data(
-        xall, yall, zall, nbins=nbins, method='nearest')
+        xall, yall, zall, nbins=nbins, method=method)
     if vmin is None:
         vmin = _np.min(zall[zall > -_np.inf])
     if vmax is None:
