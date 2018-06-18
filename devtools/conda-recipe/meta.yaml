@@ -20,8 +20,6 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    #- {{ bintuils }}
-    #- toolchain
 
   host:
     - cython
@@ -33,7 +31,7 @@ requirements:
     - python
     - scipy
     - setuptools
-    - toolchain
+    #- toolchain
 
   run:
     - bhmm >=0.6,<0.7
