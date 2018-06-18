@@ -48,10 +48,15 @@ def contour(
             fig, ax = _plt.subplots()
         else:
             ax = fig.gca()
+    if zlim is None:
+        vmin, vmax = None, None
+    else:
+        vmin, vmax = zlim
     _, ax, _ = plot_contour(
-        x, y, z, ax=ax, cmap=cmap, nbins=100, ncontours=ncontours,
-        method=method, cbar=colorbar, cax=None, cbar_label=None,
-        zlim=None)
+        xall, yall, zall, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=None,
+        cbar=cbar, cax=None, cbar_label=None, logscale=False,
+        nbins=100, method=method)
     return ax
 
 
@@ -121,11 +126,11 @@ def get_histogram(
         Sample x-coordinates.
     yall : ndarray(T)
         Sample y-coordinates.
-    nbins : int, default=100
+    nbins : int, optional, default=100
         Number of histogram bins used in each dimension.
-    weights : ndarray(T), default=None
+    weights : ndarray(T), optional, default=None
         Sample weights; by default all samples have the same weight.
-    avoid_zero_count : bool, default=True
+    avoid_zero_count : bool, optional, default=True
         Avoid zero counts by lifting all histogram elements to the
         minimum value before computing the free energy. If False,
         zero histogram counts would yield infinity in the free energy.
@@ -225,10 +230,9 @@ def _to_free_energy(z, minener_zero=False):
 
 
 def plot_map(
-        x, y, z, ncontours=100, ax=None,
-        cmap='Blues', vmin=None, vmax=None,
-        cbar=True, cax=None, cbar_label=None,
-        logscale=False, levels=None):
+        x, y, z, ax=None, cmap='Blues',
+        ncontours=100, vmin=None, vmax=None, levels=None,
+        cbar=True, cax=None, cbar_label=None, logscale=False):
     """Plot a two-dimensional map.
 
     Parameters
@@ -239,16 +243,18 @@ def plot_map(
         Binned y-coordinates.
     z : ndarray(T)
         Binned z-coordinates.
-    ncontours : int, optional, default=100
-        Number of contour levels.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
     cmap : matplotlib colormap, optional, default='Blues'
         The color map to use.
+    ncontours : int, optional, default=100
+        Number of contour levels.
     vmin : float, optional, default=None
         Lowest z-value to be plotted.
     vmax : float, optional, default=None
         Highest z-value to be plotted.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -258,8 +264,6 @@ def plot_map(
         Colorbar label string; use None to suppress it.
     logscale : boolean, optional, default=False
         Plot the z-values in logscale.
-    levels : iterable of float, optional, default=None
-        Contour levels to plot.
 
     Returns
     -------
@@ -304,13 +308,13 @@ def plot_map(
 # new plotting functions
 #
 # ######################################################################
-    
+
 
 def plot_density(
-        xall, yall, weights=None, ax=None, cmap='Blues',
-        nbins=100, ncontours=100, avoid_zero_count=False,
-        cbar=True, cax=None, cbar_label='density',
-        logscale=False):
+        xall, yall, ax=None, cmap='Blues',
+        ncontours=100, vmin=None, vmax=None, levels=None,
+        cbar=True, cax=None, cbar_label=None, logscale=False,
+        nbins=100, weights=None, avoid_zero_count=False,):
     """Plot a two-dimensional density map.
 
     Parameters
@@ -319,30 +323,35 @@ def plot_density(
         Sample x-coordinates.
     yall : ndarray(T)
         Sample y-coordinates.
-    weights : ndarray(T), default=None
-        Sample weights; by default all samples have the same weight.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-        Number of contour levels.
     cmap : matplotlib colormap, optional, default='Blues'
         The color map to use.
-    nbins : int, default=100
-        Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
-    avoid_zero_count : bool, default=False
-        Avoid zero counts by lifting all histogram elements to the
-        minimum value before computing the free energy. If False,
-        zero histogram counts would yield infinity in the free energy.
+        Number of contour levels.
     vmin : float, optional, default=None
+        Lowest z-value to be plotted.
+    vmax : float, optional, default=None
+        Highest z-value to be plotted.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
         Plot the colorbar into a custom axes object instead of
         stealing space from ax.
-    cbar_label : str, optional, default='density'
+    cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
     logscale : boolean, optional, default=False
-        Plot the density values in logscale.
+        Plot the z-values in logscale.
+    nbins : int, optional, default=100
+        Number of histogram bins used in each dimension.
+    weights : ndarray(T), optional, default=None
+        Sample weights; by default all samples have the same weight.
+    avoid_zero_count : bool, optional, default=True
+        Avoid zero counts by lifting all histogram elements to the
+        minimum value before computing the free energy. If False,
+        zero histogram counts would yield infinity in the free energy.
 
     Returns
     -------
@@ -356,12 +365,12 @@ def plot_density(
 
     """
     x, y, z = get_histogram(
-        xall, yall, nbins=nbins,weights=weights,
+        xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     return plot_map(
-        x, y, _to_density(z).T, ncontours=ncontours, ax=ax,
-        cmap=cmap, cbar=cbar, cax=cax, cbar_label=cbar_label,
-        logscale=logscale)
+        x, y, _to_density(z).T, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
 
 
 def plot_free_energy(
@@ -378,19 +387,19 @@ def plot_free_energy(
         Sample x-coordinates.
     yall : ndarray(T)
         Sample y-coordinates.
-    weights : ndarray(T), default=None
+    weights : ndarray(T), optional, default=None
         Sample weights; by default all samples have the same weight.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
         Number of contour levels.
-    nbins : int, default=100
+    nbins : int, optional, default=100
         Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
         Number of contour levels.
     offset : float, optional, default=-1
         Deprecated and ineffective; raises a ValueError
         outside legacy mode.
-    avoid_zero_count : bool, default=False
+    avoid_zero_count : bool, optional, default=False
         Avoid zero counts by lifting all histogram elements to the
         minimum value before computing the free energy. If False,
         zero histogram counts would yield infinity in the free energy.
@@ -462,18 +471,24 @@ def plot_free_energy(
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kT
     fig, ax, cb = plot_map(
-        x, y, f.T, ncontours=ncontours, ax=ax,
-        cmap=cmap, vmin=vmin, vmax=vmax,
-        cbar=cbar, cax=cax, cbar_label=cbar_label)
+        x, y, f.T, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
     if legacy:
         return fig, ax
     return fig, ax, cbar
 
 
+def plot_map(
+        x, y, z, ax=None, cmap='Blues',
+        ncontours=100, vmin=None, vmax=None, levels=None,
+        cbar=True, cax=None, cbar_label=None, logscale=False)
+
 def plot_contour(
         xall, yall, zall, ax=None, cmap='viridis',
-        nbins=100, ncontours=100, method='nearest',
-        cbar=True, cax=None, cbar_label=None, zlim=None):
+        ncontours=100, vmin=None, vmax=None, levels=None,
+        cbar=True, cax=None, cbar_label=None, logscale=False,
+        nbins=100, method='nearest'):
     """Plot a two-dimensional contour map.
 
     Parameters
@@ -486,15 +501,16 @@ def plot_contour(
         Sample z-coordinates.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-        Number of contour levels.
-    cmap : matplotlib colormap, optional, default='viridis'
+    cmap : matplotlib colormap, optional, default='Blues'
         The color map to use.
-    nbins : int, default=100
-        Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
-    method : str, optional, default='nearest'
-        Assignment method; scipy.interpolate.griddata supports the
-        methods 'nearest', 'linear', and 'cubic'.
+        Number of contour levels.
+    vmin : float, optional, default=None
+        Lowest z-value to be plotted.
+    vmax : float, optional, default=None
+        Highest z-value to be plotted.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -502,9 +518,13 @@ def plot_contour(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
-    zlim : tuple of float, optional, default=None
-        If None, zlim is set to (vmin, vmax); this parameter is only
-        present for compatibility reasons.
+    logscale : boolean, optional, default=False
+        Plot the z-values in logscale.
+    nbins : int, optional, default=100
+        Number of grid points used in each dimension.
+    method : str, optional, default='nearest'
+        Assignment method; scipy.interpolate.griddata supports the
+        methods 'nearest', 'linear', and 'cubic'.
 
     Returns
     -------
@@ -519,19 +539,24 @@ def plot_contour(
     """
     x, y, z = get_grid_data(
         xall, yall, zall, nbins=nbins, method='nearest')
-    if zlim is None:
-        zlim = (z.min(), z.max())
-    eps = (zlim[1] - zlim[0]) / float(ncontours)
-    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
+    if vmin is None:
+        vmin = _np.min(zall[z > -_np.inf])
+    if vmax is None:
+        vmax = _np.max(zall[z < _np.inf])
+    if levels is None:
+        eps = (vmax - vmin) / float(ncontours)
+        levels = _np.linspace(vmin - eps, vmax + eps)
     return plot_map(
-        x, y, z, ncontours=ncontours, ax=ax, cmap=cmap,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, levels=levels)
+        x, y, z, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=None, vmax=None, levels=levels,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
 
 
 def plot_scatter_contour(
         xall, yall, zall, ax=None, cmap='viridis',
-        nbins=100, ncontours=100, method='nearest',
-        cbar=True, cax=None, cbar_label=None, zlim=None):
+        ncontours=100, vmin=None, vmax=None, levels=None,
+        cbar=True, cax=None, cbar_label=None, logscale=False,
+        nbins=100, method='nearest', scatter_xy=None):
     """Plot a two-dimensional contour map and a scatter plot on top.
 
     Parameters
@@ -544,15 +569,16 @@ def plot_scatter_contour(
         Sample z-coordinates.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-        Number of contour levels.
-    cmap : matplotlib colormap, optional, default='viridis'
+    cmap : matplotlib colormap, optional, default='Blues'
         The color map to use.
-    nbins : int, default=100
-        Number of histogram bins used in each dimension.
     ncontours : int, optional, default=100
-    method : str, optional, default='nearest'
-        Assignment method; scipy.interpolate.griddata supports the
-        methods 'nearest', 'linear', and 'cubic'.
+        Number of contour levels.
+    vmin : float, optional, default=None
+        Lowest z-value to be plotted.
+    vmax : float, optional, default=None
+        Highest z-value to be plotted.
+    levels : iterable of float, optional, default=None
+        Contour levels to plot.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -560,9 +586,16 @@ def plot_scatter_contour(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
-    zlim : tuple of float, optional, default=None
-        If None, zlim is set to (vmin, vmax); this parameter is only
-        present for compatibility reasons.
+    logscale : boolean, optional, default=False
+        Plot the z-values in logscale.
+    nbins : int, optional, default=100
+        Number of grid points used in each dimension.
+    method : str, optional, default='nearest'
+        Assignment method; scipy.interpolate.griddata supports the
+        methods 'nearest', 'linear', and 'cubic'.
+    scatter_xy : (ndarray(N), ndarray(N))
+        Tuple of (x,y)-coordinates used in the scatter plot; defaults
+        to (xall,yall) if None.
 
     Returns
     -------
@@ -575,14 +608,14 @@ def plot_scatter_contour(
         was requested.
 
     """
-    x, y, z = get_grid_data(
-        xall, yall, zall, nbins=nbins, method='nearest')
-    if zlim is None:
-        zlim = (z.min(), z.max())
-    eps = (zlim[1] - zlim[0]) / float(ncontours)
-    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
-    fig, ax, cbar = plot_map(
-        x, y, z, ncontours=ncontours, ax=ax, cmap=cmap,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, levels=levels)
-    ax.scatter(xall , yall, marker='o', c='b', s=5)
+    fig, ax, cbar = plot_contour(
+        xall, yall, zall, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale,
+        nbins=nbins, method=method)
+    if scatter_xy is None:
+        x, y = xall, yall
+    else:
+        x, y = scatter_xy
+    ax.scatter(x, y, c='C1', s=15)
     return fig, ax, cbar
