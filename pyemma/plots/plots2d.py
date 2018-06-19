@@ -151,7 +151,7 @@ def get_histogram(
     y = 0.5 * (yedge[:-1] + yedge[1:])
     if avoid_zero_count:
         z = _np.maximum(z, _np.min(z[z.nonzero()]))
-    return x, y, z
+    return x, y, z.T # transpose to match x/y-directions
 
 
 def get_grid_data(xall, yall, zall, nbins=100, method='nearest'):
@@ -362,7 +362,7 @@ def plot_density(
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
-    pi = _to_density(z.T) # transpose to match x/y-directions
+    pi = _to_density(z)
     pi = _np.ma.masked_where(pi <= 0, pi)
     if logscale:
         from matplotlib.colors import LogNorm
@@ -485,7 +485,7 @@ def plot_free_energy(
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kT
     fig, ax, misc = plot_map(
-        x, y, f.T, ax=ax, cmap=cmap,
+        x, y, f, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if legacy:
