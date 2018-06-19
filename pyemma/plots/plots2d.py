@@ -55,7 +55,7 @@ def contour(
     _, ax, _ = plot_contour(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels='legacy',
-        cbar=colorbar, cax=None, cbar_label=None, logscale=False,
+        cbar=colorbar, cax=None, cbar_label=None, norm=None,
         nbins=100, method=method)
     return ax
 
@@ -545,7 +545,7 @@ def plot_contour(
         vmin = _np.min(zall[zall > -_np.inf])
     if vmax is None:
         vmax = _np.max(zall[zall < _np.inf])
-    if levels is None:
+    if levels == 'legacy':
         eps = (vmax - vmin) / float(ncontours)
         levels = _np.linspace(vmin - eps, vmax + eps)
     return plot_map(

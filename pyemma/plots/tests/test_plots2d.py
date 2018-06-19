@@ -63,3 +63,6 @@ class TestPlots2d(unittest.TestCase):
 
     def test_plot_contour(self):
         plot_contour(self.data[:, 0], self.data[:, 1], self.data[:,0])
+        plot_contour(
+            self.data[:, 0], self.data[:, 1], self.data[:,0],
+            levels='legacy')
