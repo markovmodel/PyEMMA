@@ -605,15 +605,20 @@ def plot_state_map(
 
     """
     from matplotlib.cm import get_cmap
+    x, y, z = get_grid_data(
+        xall, yall, states, nbins=nbins, method='nearest')
+    _, _, counts = get_histogram(
+        xall, yall, nbins=nbins, weights=None,
+        avoid_zero_count=None)
+    z = _np.ma.masked_where(counts <= 0, z)
     nstates = _np.max(states) + 1
     n = _np.arange(nstates)
     f = float(nstates - 1) / float(nstates)
     cmap_ = get_cmap(cmap, nstates)
-    fig, ax, misc = plot_contour(
-        xall, yall, states, ax=ax, cmap=cmap_,
+    fig, ax, misc = plot_map(
+        x, y, z, ax=ax, cmap=cmap_,
         ncontours=ncontours, vmin=None, vmax=None, levels=None,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
-        nbins=nbins, method='nearest')
+        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if cbar:
         misc['cbar'].set_ticks((n + 0.5) * f)
         misc['cbar'].set_ticklabels(n)
