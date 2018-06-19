@@ -1,4 +1,12 @@
 version: 2
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - test
+
 jobs:
   build:
     working_directory: ~/markovmodel/PyEMMA
@@ -53,10 +61,3 @@ jobs:
         path: /tmp/circleci-artifacts
     - store_artifacts:
         path: /tmp/circleci-test-results
-
-workflows:
-  version: 2
-  build:
-    jobs:
-      - build
-      - test
