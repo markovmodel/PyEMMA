@@ -233,7 +233,7 @@ def plot_map(
         x, y, z, ax=None, cmap='Blues',
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False):
-    """Plot a two-dimensional map.
+    """Plot a two-dimensional map from data on a grid.
 
     Parameters
     ----------
@@ -315,7 +315,8 @@ def plot_density(
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
         nbins=100, weights=None, avoid_zero_count=False,):
-    """Plot a two-dimensional density map.
+    """Plot a two-dimensional density map using a histogram of
+    scattered data.
 
     Parameters
     ----------
@@ -379,7 +380,8 @@ def plot_free_energy(
         vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
         cbar_label='free energy / kT', cax=None, levels=None,
         logscale=False, legacy=True, ncountours=None):
-    """Plot a two-dimensional free energy map.
+    """Plot a two-dimensional free energy map using a histogram of
+    scattered data.
 
     Parameters
     ----------
@@ -488,7 +490,8 @@ def plot_contour(
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
         nbins=100, method='nearest'):
-    """Plot a two-dimensional contour map.
+    """Plot a two-dimensional contour map by interpolating
+    scattered data on a grid.
 
     Parameters
     ----------
@@ -555,8 +558,10 @@ def plot_scatter_contour(
         xall, yall, zall, ax=None, cmap='viridis',
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
-        nbins=100, method='nearest', scatter_xy=None):
-    """Plot a two-dimensional contour map and a scatter plot on top.
+        nbins=100, method='nearest',
+        scatter_xy=None, scatter_args=None):
+    """Plot a two-dimensional contour map by interpolating
+    scattered data on a grid and place a scatter plot on top.
 
     Parameters
     ----------
@@ -595,6 +600,8 @@ def plot_scatter_contour(
     scatter_xy : (ndarray(N), ndarray(N))
         Tuple of (x,y)-coordinates used in the scatter plot; defaults
         to (xall,yall) if None.
+    scatter_args : dict, optional, default=None
+        Named parameters for the maplotlib.pyplot.scatter call.
 
     Returns
     -------
@@ -607,6 +614,9 @@ def plot_scatter_contour(
         was requested.
 
     """
+    scatter_args = dict(
+        c='C1',
+        s=15).update(scatter_args)
     fig, ax, cbar = plot_contour(
         xall, yall, zall, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
@@ -616,5 +626,5 @@ def plot_scatter_contour(
         x, y = xall, yall
     else:
         x, y = scatter_xy
-    ax.scatter(x, y, c='C1', s=15)
+    ax.scatter(x, y, **scatter_args)
     return fig, ax, cbar
