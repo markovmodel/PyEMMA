@@ -610,7 +610,7 @@ def plot_state_map(
     _, _, counts = get_histogram(
         xall, yall, nbins=nbins, weights=None,
         avoid_zero_count=None)
-    z = _np.ma.masked_where(counts <= 0, z)
+    z = _np.ma.masked_where(counts.T <= 0, z)
     nstates = _np.max(states) + 1
     n = _np.arange(nstates)
     f = float(nstates - 1) / float(nstates)
