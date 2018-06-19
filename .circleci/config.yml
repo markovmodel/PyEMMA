@@ -1,0 +1,36 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/markovmodel/PyEMMA
+    parallelism: 1
+    environment:
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+      PYTHONHASHSEED: 0
+      OMP_NUM_THREADS: 1
+      PYEMMA_NJOBS: 1
+    docker:
+    - image: continuumio/miniconda3
+
+    steps:
+    - checkout
+    # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+    # In many cases you can simplify this from what is generated here.
+    # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
+    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+    - run: git fetch --unshallow || true
+    - run: conda config --add channels conda-forge
+    - run: conda config --set always_yes true
+    - run: conda install conda-build
+    - run: conda build devtools/conda-recipe --python=3.6
+
+    # Teardown
+    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
+    # Save test results
+    - store_test_results:
+        path: /tmp/circleci-test-results
+    # Save artifacts
+    - store_artifacts:
+        path: /tmp/circleci-artifacts
+    - store_artifacts:
+        path: /tmp/circleci-test-results
