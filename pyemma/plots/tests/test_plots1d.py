@@ -19,7 +19,6 @@
 from __future__ import absolute_import
 import unittest
 import numpy as np
-import warnings
 
 from pyemma.plots.plots1d import plot_feature_histograms
 
@@ -32,11 +31,19 @@ class TestPlots1d(unittest.TestCase):
     def test_feature_histograms(self):
         plot_feature_histograms(self.data)
 
-    def test_feature_histograms_nowarning(self):
-        with warnings.catch_warnings(record=True) as w:
-            plot_feature_histograms(self.data)
-            assert len(w) == 0
-
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             plot_feature_histograms(self.data, feature_labels=np.random.rand(5))
+
+    def test_feature_histograms_mpl_arguments(self):
+        labels = ['PyEMMA' for _ in range(self.data.shape[1])]
+        plot_feature_histograms(self.data,
+                                feature_labels=labels,
+                                ylog=True,
+                                n_bins=10,
+                                color='g')
+
+    def test_feature_histograms_ax_argument(self):
+        from matplotlib.pyplot import subplots
+        fig, ax = subplots()
+        plot_feature_histograms(self.data, ax=ax)
