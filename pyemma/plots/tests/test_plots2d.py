@@ -36,16 +36,30 @@ class TestPlots2d(unittest.TestCase):
 
     def test_contour(self):
         contour(self.data[:,0], self.data[:,1], self.data[:,0])
+        contour(
+            self.data[:,0], self.data[:,1], self.data[:,0],
+            zlim=(self.data[:, 0].min(), self.data[:, 0].max()))
 
     def test_scatter_contour(self):
         scatter_contour(self.data[:,0], self.data[:,1], self.data[:,0])
 
     def test_plot_density(self):
-        plot_density(self.data[:, 0], self.data[:, 1])
+        plot_density(
+            self.data[:, 0], self.data[:, 1], logscale=True)
+        plot_density(
+            self.data[:, 0], self.data[:, 1], logscale=False)
 
     def test_plot_free_energy(self):
         plot_free_energy(
             self.data[:, 0], self.data[:, 1], legacy=False)
+        with self.assertRaises(ValueError):
+            plot_free_energy(
+                self.data[:, 0], self.data[:, 1],
+                legacy=False, offset=42)
+        with self.assertRaises(ValueError):
+            plot_free_energy(
+                self.data[:, 0], self.data[:, 1],
+                legacy=False, ncountours=42)
 
     def test_plot_contour(self):
         plot_contour(self.data[:, 0], self.data[:, 1], self.data[:,0])

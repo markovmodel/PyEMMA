@@ -54,7 +54,7 @@ def contour(
         vmin, vmax = zlim
     _, ax, _ = plot_contour(
         x, y, z, ax=ax, cmap=cmap,
-        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=None,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels='legacy',
         cbar=colorbar, cax=None, cbar_label=None, logscale=False,
         nbins=100, method=method)
     return ax
@@ -232,7 +232,7 @@ def _to_free_energy(z, minener_zero=False):
 def plot_map(
         x, y, z, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, logscale=False):
+        cbar=True, cax=None, cbar_label=None, norm=None):
     """Plot a two-dimensional map from data on a grid.
 
     Parameters
@@ -262,8 +262,8 @@ def plot_map(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
-    logscale : boolean, optional, default=False
-        Plot the z-values in logscale.
+    norm : matplotlib norm, optional, default=None
+        Use a norm when coloring the contour plot.
 
     Returns
     -------
@@ -511,7 +511,8 @@ def plot_contour(
     vmax : float, optional, default=None
         Highest z-value to be plotted.
     levels : iterable of float, optional, default=None
-        Contour levels to plot.
+        Contour levels to plot; use legacy style calculation
+        if 'legacy'.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
