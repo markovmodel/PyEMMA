@@ -74,17 +74,17 @@ def scatter_contour(
         y-coordinates
     z : ndarray(T)
         z-coordinates
-    ncontours : int, optional, default = 50
+    ncontours : int, optional, default=50
         number of contour levels
-    fig : matplotlib Figure object, optional, default = None
+    fig : matplotlib Figure object, optional, default=None
         the figure to plot into. When set to None the default
         Figure object will be used
-    ax : matplotlib Axes object, optional, default = None
+    ax : matplotlib Axes object, optional, default=None
         the axes to plot to. When set to None the default Axes
         object will be used.
-    cmap : matplotlib colormap, optional, default = None
+    cmap : matplotlib colormap, optional, default=None
         the color map to use. None will use pylab.cm.jet.
-    outfile : str, optional, default = None
+    outfile : str, optional, default=None
         output file to write the figure to. When not given,
         the plot will be displayed
 
@@ -230,7 +230,7 @@ def _to_free_energy(z, minener_zero=False):
 
 
 def plot_map(
-        x, y, z, ax=None, cmap='Blues',
+        x, y, z, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False):
     """Plot a two-dimensional map from data on a grid.
@@ -245,7 +245,7 @@ def plot_map(
         Binned z-coordinates.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-    cmap : matplotlib colormap, optional, default='Blues'
+    cmap : matplotlib colormap, optional, default=None
         The color map to use.
     ncontours : int, optional, default=100
         Number of contour levels.
@@ -311,7 +311,7 @@ def plot_map(
 
 
 def plot_density(
-        xall, yall, ax=None, cmap='Blues',
+        xall, yall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
         nbins=100, weights=None, avoid_zero_count=False,):
@@ -326,7 +326,7 @@ def plot_density(
         Sample y-coordinates.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-    cmap : matplotlib colormap, optional, default='Blues'
+    cmap : matplotlib colormap, optional, default=None
         The color map to use.
     ncontours : int, optional, default=100
         Number of contour levels.
@@ -486,7 +486,7 @@ def plot_free_energy(
 
 
 def plot_contour(
-        xall, yall, zall, ax=None, cmap='viridis',
+        xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
         nbins=100, method='nearest'):
@@ -503,7 +503,7 @@ def plot_contour(
         Sample z-coordinates.
     ax : matplotlib.Axes object, optional, default=None
         The ax to plot to; if ax=None, a new ax (and fig) is created.
-    cmap : matplotlib colormap, optional, default='Blues'
+    cmap : matplotlib colormap, optional, default=None
         The color map to use.
     ncontours : int, optional, default=100
         Number of contour levels.
