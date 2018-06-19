@@ -4,6 +4,11 @@ defaults: &defaults
   docker:
     - image: continuumio/miniconda3
 
+inst_conda_bld: &inst_conda_bld
+  - run: conda config --add channels conda-forge
+  - run: conda config --set always_yes true
+  - run: conda config --set quiet true
+  - run: conda install conda-build
 
 version: 2
 
