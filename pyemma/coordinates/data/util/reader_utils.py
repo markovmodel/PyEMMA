@@ -72,6 +72,8 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
         # TODO: this does not handle suffixes like .xyz.gz (rare)
         _, suffix = os.path.splitext(input_list[0])
 
+        suffix = str(suffix)
+
         # check: do all files have the same file type? If not: raise ValueError.
         if all(item.endswith(suffix) for item in input_list):
 
