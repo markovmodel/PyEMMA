@@ -222,10 +222,7 @@ def get_cmdclass():
                 compiler = os.path.basename(sysconfig.get_config_var("CC"))
                 if str(compiler).startswith('clang'):
                     self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-            print('linker exe:', self.compiler.linker_exe, '\nlinker so:', self.compiler.linker_so)
-            env_ld = os.getenv('LD')
-            if env_ld:
-                self.compiler.linker_exe = env_ld
+
             ct = self.compiler.compiler_type
             opts = self.c_opts.get(ct, [])
             if ct == 'unix':

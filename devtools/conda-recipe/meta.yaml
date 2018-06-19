@@ -14,7 +14,7 @@ build:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
-  script: python setup.py install --single-version-externally-managed --record record.txt
+  script: LDSHARED=$LD python setup.py install --single-version-externally-managed --record record.txt
 
 requirements:
   build:
