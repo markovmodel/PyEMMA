@@ -281,26 +281,20 @@ def plot_map(
         fig, ax = _plt.subplots()
     else:
         fig = ax.get_figure()
-    if logscale:
-        from matplotlib.colors import LogNorm
-        norm = LogNorm()
-        z = _np.ma.masked_where(z <= 0, z)
-    else:
-        norm = None
     cs = ax.contourf(
         x, y, z, ncontours, norm=norm,
         vmin=vmin, vmax=vmax, cmap=cmap,
         levels=levels)
     if cbar:
         if cax is None:
-            cbar = fig.colorbar(cs, ax=ax)
+            cbar_ = fig.colorbar(cs, ax=ax)
         else:
-            cbar = fig.colorbar(cs, cax=cax)
+            cbar_ = fig.colorbar(cs, cax=cax)
         if cbar_label is not None:
-            cbar.set_label(cbar_label)
+            cbar_.set_label(cbar_label)
     else:
-        cbar = None
-    return fig, ax, cbar
+        cbar_ = None
+    return fig, ax, cbar_
 
 
 # ######################################################################
@@ -368,10 +362,17 @@ def plot_density(
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
+    pi = _to_density(z.T) # transpose to match x/y-directions
+    if logscale:
+        from matplotlib.colors import LogNorm
+        norm = LogNorm()
+        pi = _np.ma.masked_where(pi <= 0, pi)
+    else:
+        norm = None
     return plot_map(
-        x, y, _to_density(z).T, ax=ax, cmap=cmap,
+        x, y, pi, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
+        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
 
 
 def plot_free_energy(
@@ -379,7 +380,7 @@ def plot_free_energy(
         offset=-1, avoid_zero_count=False, minener_zero=True, kT=1.0,
         vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
         cbar_label='free energy / kT', cax=None, levels=None,
-        logscale=False, legacy=True, ncountours=None):
+        legacy=True, ncountours=None):
     """Plot a two-dimensional free energy map using a histogram of
     scattered data.
 
@@ -428,8 +429,6 @@ def plot_free_energy(
         stealing space from ax.
     levels : iterable of float, optional, default=None
         Contour levels to plot.
-    logscale : boolean, optional, default=False
-        Plot the z-values in logscale.
     legacy : boolean, optional, default=True
         Switch to use the function in legacy mode (deprecated).
     ncountours : int, optional, default=None
@@ -476,19 +475,19 @@ def plot_free_energy(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kT
-    fig, ax, cb = plot_map(
+    fig, ax, cbar_ = plot_map(
         x, y, f.T, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
+        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if legacy:
         return fig, ax
-    return fig, ax, cbar
+    return fig, ax, cbar_
 
 
 def plot_contour(
         xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, logscale=False,
+        cbar=True, cax=None, cbar_label=None, norm=None,
         nbins=100, method='nearest'):
     """Plot a two-dimensional contour map by interpolating
     scattered data on a grid.
@@ -520,8 +519,8 @@ def plot_contour(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
-    logscale : boolean, optional, default=False
-        Plot the z-values in logscale.
+    norm : matplotlib norm, optional, default=None
+        Use a norm when coloring the contour plot.
     nbins : int, optional, default=100
         Number of grid points used in each dimension.
     method : str, optional, default='nearest'
@@ -551,4 +550,4 @@ def plot_contour(
     return plot_map(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=None, vmax=None, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
+        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
