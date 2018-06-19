@@ -271,9 +271,8 @@ def plot_map(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    cbar : matplotlib.Colorbar object
-        The corresponding colorbar object; None if no colorbar
-        was requested.
+    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
+        (if requested) matplotlib.Colorbar object ['cbar'].
 
     """
     import matplotlib.pyplot as _plt
@@ -285,6 +284,7 @@ def plot_map(
         x, y, z, ncontours, norm=norm,
         vmin=vmin, vmax=vmax, cmap=cmap,
         levels=levels)
+    d = {}
     if cbar:
         if cax is None:
             cbar_ = fig.colorbar(cs, ax=ax)
@@ -292,9 +292,13 @@ def plot_map(
             cbar_ = fig.colorbar(cs, cax=cax)
         if cbar_label is not None:
             cbar_.set_label(cbar_label)
+
+        d['cbar'] = cbar_
     else:
-        cbar_ = None
-    return fig, ax, cbar_
+        d['cbar'] = None
+    d['cs'] = cs
+
+    return fig, ax, d
 
 
 # ######################################################################
@@ -354,9 +358,8 @@ def plot_density(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    cbar : matplotlib.Colorbar object
-        The corresponding colorbar object; None if no colorbar
-        was requested.
+    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
+        (if requested) matplotlib.Colorbar object ['cbar'].
 
     """
     x, y, z = get_histogram(
@@ -365,14 +368,24 @@ def plot_density(
     pi = _to_density(z.T) # transpose to match x/y-directions
     if logscale:
         from matplotlib.colors import LogNorm
-        norm = LogNorm()
+        norm = LogNorm(vmin=vmin, vmax=vmax)
         pi = _np.ma.masked_where(pi <= 0, pi)
+        if levels is None:
+            levels = _np.logspace(_np.floor(_np.log10(pi.min())),
+                                  _np.ceil(_np.log10(pi.max())),
+                                  ncontours + 1)
     else:
         norm = None
-    return plot_map(
-        x, y, pi, ax=ax, cmap=cmap,
-        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
+    fig, ax, d = plot_map(
+            x, y, pi, ax=ax, cmap=cmap,
+            ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
+            cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
+
+    if cbar and logscale:
+        from matplotlib.ticker import LogLocator
+        d['cbar'].set_ticks(LogLocator(base=10.0, subs=range(10)))
+
+    return fig, ax, d
 
 
 def plot_free_energy(
@@ -441,8 +454,9 @@ def plot_free_energy(
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
     cbar : matplotlib.Colorbar object
-        The corresponding colorbar object; None if no colorbar
-        was requested. (suppressed in legacy mode)
+    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
+        (if requested) matplotlib.Colorbar object ['cbar']
+        (suppressed in legacy mode).
 
     """
     if legacy:
@@ -475,13 +489,13 @@ def plot_free_energy(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kT
-    fig, ax, cbar_ = plot_map(
+    fig, ax, d = plot_map(
         x, y, f.T, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if legacy:
         return fig, ax
-    return fig, ax, cbar_
+    return fig, ax, d
 
 
 def plot_contour(
@@ -534,9 +548,8 @@ def plot_contour(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    cbar : matplotlib.Colorbar object
-        The corresponding colorbar object; None if no colorbar
-        was requested.
+    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
+        (if requested) matplotlib.Colorbar object ['cbar'].
 
     """
     x, y, z = get_grid_data(
