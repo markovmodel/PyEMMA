@@ -44,7 +44,6 @@ User-API
    plot_density
    plot_free_energy
    plot_contour
-   plot_scatter_contour
    scatter_contour
 
 **Network plots**

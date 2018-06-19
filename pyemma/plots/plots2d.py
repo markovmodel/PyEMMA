@@ -94,8 +94,8 @@ def scatter_contour(
 
     """
     _warn(
-        'scatter_contour is deprected; use'
-        ' plot_scatter_contour instead.',
+        'scatter_contour is deprected; use plot_contour instead'
+        ' and manually add a scatter plot on top.',
         DeprecationWarning)
     ax = contour(
         x, y, z, ncontours=ncontours, colorbar=colorbar,
@@ -552,79 +552,3 @@ def plot_contour(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=None, vmax=None, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale)
-
-
-def plot_scatter_contour(
-        xall, yall, zall, ax=None, cmap='viridis',
-        ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, logscale=False,
-        nbins=100, method='nearest',
-        scatter_xy=None, scatter_args=None):
-    """Plot a two-dimensional contour map by interpolating
-    scattered data on a grid and place a scatter plot on top.
-
-    Parameters
-    ----------
-    xall : ndarray(T)
-        Sample x-coordinates.
-    yall : ndarray(T)
-        Sample y-coordinates.
-    zall : ndarray(T)
-        Sample z-coordinates.
-    ax : matplotlib.Axes object, optional, default=None
-        The ax to plot to; if ax=None, a new ax (and fig) is created.
-    cmap : matplotlib colormap, optional, default='Blues'
-        The color map to use.
-    ncontours : int, optional, default=100
-        Number of contour levels.
-    vmin : float, optional, default=None
-        Lowest z-value to be plotted.
-    vmax : float, optional, default=None
-        Highest z-value to be plotted.
-    levels : iterable of float, optional, default=None
-        Contour levels to plot.
-    cbar : boolean, optional, default=True
-        Plot a color bar.
-    cax : matplotlib.Axes object, optional, default=None
-        Plot the colorbar into a custom axes object instead of
-        stealing space from ax.
-    cbar_label : str, optional, default=None
-        Colorbar label string; use None to suppress it.
-    logscale : boolean, optional, default=False
-        Plot the z-values in logscale.
-    nbins : int, optional, default=100
-        Number of grid points used in each dimension.
-    method : str, optional, default='nearest'
-        Assignment method; scipy.interpolate.griddata supports the
-        methods 'nearest', 'linear', and 'cubic'.
-    scatter_xy : (ndarray(N), ndarray(N))
-        Tuple of (x,y)-coordinates used in the scatter plot; defaults
-        to (xall,yall) if None.
-    scatter_args : dict, optional, default=None
-        Named parameters for the maplotlib.pyplot.scatter call.
-
-    Returns
-    -------
-    fig : matplotlib.Figure object
-        The figure in which the used ax resides.
-    ax : matplotlib.Axes object
-        The ax in which the map was plotted.
-    cbar : matplotlib.Colorbar object
-        The corresponding colorbar object; None if no colorbar
-        was requested.
-
-    """
-    scatter_args = dict(
-        c='C1',
-        s=15).update(scatter_args)
-    fig, ax, cbar = plot_contour(
-        xall, yall, zall, ax=ax, cmap=cmap,
-        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, logscale=logscale,
-        nbins=nbins, method=method)
-    if scatter_xy is None:
-        x, y = xall, yall
-    else:
-        x, y = scatter_xy
-    ax.scatter(x, y, **scatter_args)
-    return fig, ax, cbar

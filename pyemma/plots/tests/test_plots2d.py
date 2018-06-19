@@ -24,7 +24,6 @@ from pyemma.plots.plots2d import contour, scatter_contour
 from pyemma.plots.plots2d import plot_density
 from pyemma.plots.plots2d import plot_free_energy
 from pyemma.plots.plots2d import plot_contour
-from pyemma.plots.plots2d import plot_scatter_contour
 
 
 class TestPlots2d(unittest.TestCase):
@@ -50,7 +49,3 @@ class TestPlots2d(unittest.TestCase):
 
     def test_plot_contour(self):
         plot_contour(self.data[:, 0], self.data[:, 1], self.data[:,0])
-
-    def test_plot_scattercontour(self):
-        plot_scatter_contour(
-            self.data[:, 0], self.data[:, 1], self.data[:,0])
