@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  "conda_build":
+  build:
     working_directory: ~/markovmodel/PyEMMA
     parallelism: 1
     docker:
@@ -58,5 +58,5 @@ workflows:
   version: 2
   build:
     jobs:
-      - conda_build
+      - build
       - test
