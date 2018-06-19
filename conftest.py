@@ -11,6 +11,7 @@ def no_progress_bars():
     if 'pyemma' in sys.modules:
         pyemma = sys.modules['pyemma']
         pyemma.config.show_progress_bars = False
+        pyemma.config.coordinates_check_output = True
         pyemma.config.use_trajectory_lengths_cache = False
     yield
 

@@ -20,11 +20,11 @@ import itertools
 import numpy as np
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource, EncapsulatedIterator
 from pyemma.coordinates.data.util.reader_utils import preallocate_empty_trajectory
 from pyemma.util.annotators import fix_docs
 
-
+# NEVER AGAIN TOUCH THIS BEAST!!!!!11111elevenoneoneone
 class _FragmentedTrajectoryIterator(object):
     def __init__(self, fragmented_reader, readers, chunksize, stride, skip):
         # global time variable
@@ -71,16 +71,16 @@ class _FragmentedTrajectoryIterator(object):
                     self._fragment_indices = self.__get_ra_index_indices()
                     self._reader_it = self._select_next_ra_iterator()
                 else:
-                    self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False)
-            if self.ra_indices is None:
-                self._reader_it.skip = self._reader_overlap
+                    self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False,
+                                                                              skip=self._reader_overlap)
             # set original chunksize
             self._reader_it.chunksize = self._chunksize
             # chunk is contained in current reader
             if self.__chunk_contained_in_current_reader():
-                self._t += self._chunksize
-                self._reader_t += self._chunksize
                 X = next(self._reader_it)
+                L = len(X)
+                self._t += L
+                self._reader_t += L
                 return X
             # chunk has to be collected from subsequent readers
             else:
@@ -90,7 +90,7 @@ class _FragmentedTrajectoryIterator(object):
                 read = 0
                 while read < expected_length or expected_length == 0:
                     # reader has data left:
-                    reader_trajlen = self.__get_reader_trajlen()
+                    reader_trajlen = self._reader_it.trajectory_length()
                     if reader_trajlen - self._reader_t > 0:
                         chunk = next(self._reader_it)
                         L = len(chunk)
@@ -102,21 +102,22 @@ class _FragmentedTrajectoryIterator(object):
                         self._reader_at += 1
                         self._reader_t = 0
                         if self._reader_at >= len(self._readers):
-                            raise StopIteration()
+                            raise StopIteration('fragmented: out of readers')
                         self._reader_it.close()
                         if self.ra_indices is not None:
                             self._reader_it = self._select_next_ra_iterator()
                         else:
-                            self._reader_it = self._readers[self._reader_at].iterator(self._stride, return_trajindex=False)
-                            self._reader_it.skip = skip
                             self._reader_overlap = self._calculate_new_overlap(self._stride,
                                                                                self._reader_lengths[self._reader_at - 1],
                                                                                self._reader_overlap)
-                            self._reader_it.skip = self._reader_overlap
+                            self._reader_it = self._readers[self._reader_at].iterator(self._stride, skip=self._reader_overlap,
+                                                                                      return_trajindex=False)
                         if expected_length - read > 0:
                             self._reader_it.chunksize = expected_length - read
                 self._t += read
                 return X
+
+    next = __next__
 
     def _select_next_ra_iterator(self):
         assert self._reader_at < len(self._readers)
@@ -129,20 +130,6 @@ class _FragmentedTrajectoryIterator(object):
                 raise RuntimeError("This should not happen as the loop is supposed to be terminated in __next__.")
         return self._readers[self._reader_at].iterator(ra_indices, return_trajindex=False)
 
-    def __get_reader_trajlen(self):
-        if self.ra_indices is not None:
-            reader_trajlen = self._readers[self._reader_at].trajectory_length(
-                0,
-                self.__get_ifrag_ra_indices(self._fragment_indices, self._reader_at),
-                self._skip if self._reader_at == 0 else 0
-            )
-        else:
-            reader_trajlen = self._readers[self._reader_at].trajectory_length(
-                0, self._stride,
-                self._skip if self._reader_at == 0 else 0
-            )
-        return reader_trajlen
-
     def __get_chunk_expected_length(self):
         if self.ra_indices is not None:
             expected_length = min(self._chunksize, len(self.ra_indices) - self._t)
@@ -151,11 +138,8 @@ class _FragmentedTrajectoryIterator(object):
         return expected_length
 
     def __chunk_contained_in_current_reader(self):
-        trajlen = self.__get_reader_trajlen()
+        trajlen = self._reader_it.trajectory_length()
         return trajlen - self._reader_t - self._chunksize > 0
-
-    def next(self):
-        return self.__next__()
 
     def _allocate_chunk(self, expected_length, ndim):
         from pyemma.coordinates.data.feature_reader import FeatureReader
@@ -261,62 +245,24 @@ class _FragmentedTrajectoryIterator(object):
             self._reader_it.close()
 
 
-class FragmentIterator(DataSourceIterator):
+class FragmentIterator(EncapsulatedIterator):
     """
     outer iterator, which encapsulates _FragmentedTrajectoryIterator
     """
-
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
-        super(FragmentIterator, self).__init__(data_source, skip=skip, chunk=chunk,
-                                               stride=stride, return_trajindex=return_trajindex,
-                                               cols=cols)
-        self._it = None
-        self._itraj = 0
-
+    @EncapsulatedIterator._select_file_guard
     def _select_file(self, itraj):
         self.close()
-        self._t = 0
-        self._itraj = itraj
-        if itraj < self.number_of_trajectories():
-            self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
+        self._it = _FragmentedTrajectoryIterator(self._data_source, self._data_source._readers[itraj],
                                                      self.chunksize, self.stride, self.skip)
-            if not self.uniform_stride:
-                self._it.ra_indices = self.ra_indices_for_traj(self._itraj)
-        else:
-            self._it = None
+        if not self.uniform_stride:
+            self._it.ra_indices = self.ra_indices_for_traj(itraj)
 
-    @DataSourceIterator.chunksize.setter
+    # We have to delegate the chunksize to the underlying iterator, because it is not a DataSourceIterator itself.
+    # All other properties are passed during the creation during changing files.
+    @EncapsulatedIterator.chunksize.setter
     def chunksize(self, value):
-        self.state.chunk = value
-        if self._it is not None:
-            self._it._chunksize = value
-
-    def reset(self):
-        self._select_file(0)
-
-    def _next_chunk(self):
-        if self._it is None:
-            if self._itraj < self.number_of_trajectories():
-                self._select_file(0)
-            else:
-                raise StopIteration()
-
-        X = next(self._it, None)
-        if X is None:
-            raise StopIteration()
-        self._t += len(X)
-        if self._t >= self._data_source.trajectory_length(self._itraj, stride=self.stride, skip=self.skip):
-            self._itraj += 1
-            self._select_file(self._itraj)
-        while (not self.uniform_stride) and (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-                and self._itraj < self.number_of_trajectories():
-            self._itraj += 1
-            self._select_file(self._itraj)
-        return X
-
-    def close(self):
-        if self._it is not None:
-            self._it.close()
+        super(FragmentIterator, self.__class__).chunksize.__set__(self, value)
+        self._it._chunksize = value
 
 
 @fix_docs
@@ -404,7 +350,7 @@ class FragmentedTrajectoryReader(DataSource, SerializableMixIn):
         return res
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
-        return FragmentIterator(self, skip, chunk, stride, return_trajindex, cols=cols)
+        return FragmentIterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols)
 
     def describe(self):
         return "[FragmentedTrajectoryReader files=%s]" % self._trajectories

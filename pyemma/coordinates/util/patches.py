@@ -205,9 +205,6 @@ class iterload(object):
         self._closed = True
 
     def __next__(self):
-        return self.next()
-
-    def next(self):
         if self._closed:
             raise StopIteration("closed file")
 
@@ -226,7 +223,9 @@ class iterload(object):
             if self._chunksize == 0:
                 n_frames = None  # read all frames
             else:
-                n_frames = self._chunksize * self._stride
+                n_frames = self._chunksize
+                if self._extension != '.dcd':
+                    n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
                 traj = self._f.read_as_traj(self._topology, n_frames=n_frames,
@@ -239,6 +238,8 @@ class iterload(object):
             raise StopIteration("eof")
 
         return traj
+
+    next = __next__
 
     def __enter__(self):
         return self
@@ -269,8 +270,9 @@ class iterload(object):
                     yield _join_traj_data(coords, self._topology)
                     chunksize = self._chunksize
                     curr_size = 0
-                    coords = []
+                    del coords[:]  # clears a list in py27... lol
                 while leftovers:
+                    # TODO: local chunk can get longer than chunk size, because len(leftovers) + curr_size > chunksize
                     local_chunk = leftovers[:min(chunksize, len(leftovers))]
                     local_traj_data = _read_traj_data(self._atom_indices, f, len(local_chunk), **self._kwargs)
                     coords.append(local_traj_data)
@@ -279,7 +281,8 @@ class iterload(object):
                     if curr_size == chunksize:
                         yield _join_traj_data(coords, self._topology)
                         curr_size = 0
-                        coords = []
+                        del coords[:]
+                assert not leftovers
             if coords:
                 yield _join_traj_data(coords, self._topology)
 
@@ -288,7 +291,7 @@ class iterload(object):
 
 def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     """
-    
+
     Parameters
     ----------
     atom_indices
@@ -299,7 +302,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     Returns
     -------
     data : TrajData(xyz, unitcell_length, unitcell_angles, box)
-    
+
     Format read() return values:
      amber_netcdf_restart_f: xyz [Ang], time, cell_l, cell_a
      amber restart: xyz[Ang], time, cell_l, cell_a
@@ -317,7 +320,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
 
      trr: xyz[nm], time, step, box (n, 3, 3), lambd?
      xtc: xyz[nm], time, step, box
-     
+
      xyz: xyz
      lh5: xyz [nm]
      arc: xyz[Ang]

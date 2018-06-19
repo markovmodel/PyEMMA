@@ -31,6 +31,7 @@ import random
 import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporterMixin
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
@@ -41,6 +42,10 @@ import numpy as np
 
 __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
+
+@contextmanager
+def _dummy():
+    yield
 
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
@@ -200,13 +205,13 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
 
     def _estimate(self, iterable, **kw):
         self._init_estimate()
-
+        ctx = _dummy() if 'data' not in self._progress_registered_stages else self._progress_context(stage='data')
         # collect the data only if, we have not done this previously (eg. keep_data=True)
         # or the centers are not initialized.
         if not self._check_resume_iteration() or not self._in_memory_chunks_set:
             resume_centers = self._check_resume_iteration()
             with iterable.iterator(return_trajindex=True, stride=self.stride,
-                                   chunk=self.chunksize, skip=self.skip) as it:
+                                   chunk=self.chunksize, skip=self.skip) as it, ctx:
                 # first pass: gather data and run k-means
                 first_chunk = True
                 for itraj, X in it:
@@ -316,10 +321,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 context = self._progress_context(stage=0)
             else:
                 callback = None
-                @contextmanager
-                def dummy():
-                    yield
-                context = dummy()
+                context = _dummy()
             with context:
                 self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
                                                                    callback)

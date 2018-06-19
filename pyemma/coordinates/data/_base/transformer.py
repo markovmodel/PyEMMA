@@ -24,7 +24,7 @@ import numpy as np
 import six
 
 from pyemma._ext.sklearn.base import TransformerMixin
-from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
+from pyemma.coordinates.data._base.datasource import DataSource, EncapsulatedIterator
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 
@@ -168,8 +168,12 @@ class StreamingTransformer(Transformer, DataSource):
         self._set_random_access_strategies()
 
     def _create_iterator(self, skip=0, chunk=None, stride=1, return_trajindex=True, cols=None):
-        return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
-                                            return_trajindex=return_trajindex, cols=cols)
+        real_iter = self.data_producer.iterator(
+            skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols
+        )
+        return EncapsulatedIterator(self, iterator=real_iter, transform_function=self._transform_array,
+                                    skip=skip, chunk=chunk, stride=stride,
+                                    return_trajindex=return_trajindex, cols=cols)
 
     @property
     def chunksize(self):
@@ -192,7 +196,7 @@ class StreamingTransformer(Transformer, DataSource):
     def number_of_trajectories(self, stride=1):
         return self.data_producer.number_of_trajectories(stride)
 
-    def trajectory_length(self, itraj, stride=1, skip=None):
+    def trajectory_length(self, itraj, stride=1, skip=0):
         return self.data_producer.trajectory_length(itraj, stride=stride, skip=skip)
 
     def trajectory_lengths(self, stride=1, skip=0):
@@ -221,38 +225,6 @@ class StreamingEstimationTransformer(StreamingTransformer, StreamingEstimator):
             self.estimate(self.data_producer, stride=stride)
 
         return super(StreamingTransformer, self).get_output(dimensions, stride, skip, chunk)
-
-
-class StreamingTransformerIterator(DataSourceIterator):
-
-    def __init__(self, data_source, skip=0, chunk=None, stride=1, return_trajindex=False, cols=None):
-        super(StreamingTransformerIterator, self).__init__(
-            data_source, return_trajindex=return_trajindex)
-        self._it = self._data_source.data_producer.iterator(
-            skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols
-        )
-        # map the reference of the real used iterator to this instance to avoid overriding every attribute.
-        # TODO: investiage, if more attributes need overriding (especially setters!).
-        self.state = self._it.state
-
-    def close(self):
-        self._it.close()
-
-    def reset(self):
-        self._it.reset()
-
-    def _select_file(self, itraj):
-        self._it._select_file(itraj)
-
-    @DataSourceIterator.chunksize.setter
-    def chunksize(self, val):
-        self.state.chunk = val
-        self._it.chunksize = val
-
-    def _next_chunk(self):
-        assert self.state.chunk == self._it.chunksize
-        X = self._it._next_chunk()
-        return self._data_source._transform_array(X)
 
 
 class StreamingTransformerRandomAccessStrategy(RandomAccessStrategy):

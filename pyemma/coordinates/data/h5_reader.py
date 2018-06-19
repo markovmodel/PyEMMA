@@ -1,7 +1,9 @@
+import numpy as np
+from pyemma.util.contexts import attribute
+
 from pyemma._base.serialization.serialization import SerializableMixIn
 
-from pyemma.coordinates.data._base.datasource import DataSource
-from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
+from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
 from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
 
 __author__ = 'marscher'
@@ -179,29 +181,36 @@ class H5Reader(DataSource, SerializableMixIn):
         return H5Iterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols)
 
 
-class H5Iterator(DataInMemoryIterator):
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=False):
-        super(H5Iterator, self).__init__(data_source=data_source, skip=skip,
-                                         chunk=chunk, stride=stride,
-                                         return_trajindex=return_trajindex,
-                                         cols=cols)
+class H5Iterator(DataSourceIterator):
 
     def close(self):
         if hasattr(self, '_fh'):
             self._fh.close()
             del self._fh
 
+    @DataSourceIterator._select_file_guard
     def _select_file(self, itraj):
-        if self._selected_itraj != itraj:
-            self.close()
-            self._t = 0
-            self._itraj = itraj
-            self._selected_itraj = self._itraj
-            if itraj < self.number_of_trajectories():
-                self.data = self._data_source._load_file(itraj)
-                self._fh = self.data.file
+        self.close()
+        self.data = self._data_source._load_file(itraj)
+        self._fh = self.data.file
 
     def _next_chunk(self):
-        X = self._next_chunk_impl(self.data)
-        X, _ = self._data_source._reshape(X, dry=False)
-        return X
+        cs = np.iinfo(np.int64).max if self.chunksize == 0 else self.chunksize
+        with attribute(self, 'chunksize', cs):
+            if not self.uniform_stride:
+                # h5py does not allow duplicated indices, so we need to filter, and re-apply them.
+                ids = self.ra_indices_for_traj(self._itraj)[self._t:min(
+                    self._t + self.chunksize, self.ra_trajectory_length(self._itraj)
+                )]
+                # check for dupes
+                uids, inverse = np.unique(ids, return_inverse=True)
+                chunk = self.data[list(uids)]
+                if len(uids) < len(ids):
+                    # map dupes into output.
+                    chunk = chunk[inverse]
+            else:
+                t_next = self._t_abs + self.chunksize * self.stride
+                slice_x = slice(self._t_abs, t_next, self.stride)
+                chunk = self.data[slice_x]
+        chunk, _ = self._data_source._reshape(chunk)
+        return chunk

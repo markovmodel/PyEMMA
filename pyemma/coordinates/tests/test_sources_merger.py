@@ -6,17 +6,9 @@ import numpy as np
 
 from pyemma.coordinates import source, tica
 from pyemma.coordinates.data.sources_merger import SourcesMerger
-from pyemma import config
 
 
 class TestSourcesMerger(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        config.coordinates_check_output = True
-
-    @classmethod
-    def tearDownClass(cls):
-        config.coordinates_check_output = False
 
     def setUp(self):
         self.readers = []
@@ -51,9 +43,9 @@ class TestSourcesMerger(unittest.TestCase):
     def test_combined_output(self):
         j = SourcesMerger(self.readers)
         self._get_output_compare(j, stride=1, chunk=0, skip=0)
-        self._get_output_compare(j, stride=2, chunk=5, skip=0)
-        self._get_output_compare(j, stride=2, chunk=9, skip=3)
+        self._get_output_compare(j, stride=2, chunk=1, skip=0)
         self._get_output_compare(j, stride=3, chunk=2, skip=7)
+        self._get_output_compare(j, stride=5, chunk=9, skip=3)
 
     def test_ra_stride(self):
         ra_indices = np.array([[0,7], [0, 23], [1, 30], [2, 9]])

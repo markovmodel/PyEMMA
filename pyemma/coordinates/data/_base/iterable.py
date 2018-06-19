@@ -73,6 +73,7 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
         """
         if self._default_chunksize is None:
             try:
+                # TODO: if dimension is not yet fixed (eg tica var cutoff, use dim of data_producer.
                 self.dimension()
                 self.output_type()
             except:
@@ -145,18 +146,19 @@ class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
                 lag=lag, chunk=chunk, stride=stride, return_trajindex=return_trajindex, skip=skip
             )
         chunk = chunk if chunk is not None else self.chunksize
-        if 0 < lag <= chunk:
-            it = self._create_iterator(skip=skip, chunk=chunk, stride=1,
-                                       return_trajindex=return_trajindex, cols=cols)
-            it.return_traj_index = True
-            return _LaggedIterator(it, lag, return_trajindex, stride)
-        elif lag > 0:
-            it = self._create_iterator(skip=skip, chunk=chunk, stride=stride,
-                                       return_trajindex=return_trajindex, cols=cols)
-            it.return_traj_index = True
-            it_lagged = self._create_iterator(skip=skip + lag, chunk=chunk, stride=stride,
-                                              return_trajindex=True, cols=cols)
-            return _LegacyLaggedIterator(it, it_lagged, return_trajindex)
+        if lag > 0:
+            if chunk == 0 or lag <= chunk:
+                it = self._create_iterator(skip=skip, chunk=chunk, stride=1,
+                                           return_trajindex=return_trajindex, cols=cols)
+                it.return_traj_index = True
+                return _LaggedIterator(it, lag, return_trajindex, stride)
+            else:
+                it = self._create_iterator(skip=skip, chunk=chunk, stride=stride,
+                                           return_trajindex=return_trajindex, cols=cols)
+                it.return_traj_index = True
+                it_lagged = self._create_iterator(skip=skip + lag, chunk=chunk, stride=stride,
+                                                  return_trajindex=True, cols=cols)
+                return _LegacyLaggedIterator(it, it_lagged, return_trajindex)
         return self._create_iterator(skip=skip, chunk=chunk, stride=stride,
                                      return_trajindex=return_trajindex, cols=cols)
 
@@ -206,6 +208,7 @@ class _LaggedIterator(object):
         self._sufficently_long_trajectories = [i for i, x in
                                                enumerate(self._it._data_source.trajectory_lengths(1, 0))
                                                if x > lag]
+        self._max_size = max(x for x in self._it._data_source.trajectory_lengths(1, 0))
 
     @property
     def n_chunks(self):
@@ -222,54 +225,53 @@ class _LaggedIterator(object):
     def __iter__(self):
         return self
 
+    @property
+    def chunksize(self):
+        return self._it.chunksize
+
+    def reset(self):
+        self._it.reset()
+
     def __next__(self):
-        return self.next()
+        with attribute(self._it, 'chunksize', self._max_size if self.chunksize == 0 else self.chunksize):
+            changed = _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
+            if changed:
+                self._overlap = None
 
-    def next(self):
-        itraj_changed = False
-        while (self._it._itraj not in self._sufficently_long_trajectories
-               and self._it.number_of_trajectories() > self._it.current_trajindex):
-            self._it._itraj += 1
-            self._overlap = None
-            itraj_changed = True
-        # ensure file next handle gets opened.
-        if itraj_changed:
-            self._it._select_file(self._it._itraj)
+            if self._overlap is None:
+                with attribute(self._it, 'chunksize', self._lag):
+                    _, self._overlap = next(self._it)
+                    assert len(self._overlap) <= self._lag, 'len(overlap) > lag... %s>%s' % (len(self._overlap), self._lag)
+                    self._overlap = self._overlap[::self._actual_stride]
 
-        if self._overlap is None:
-            with attribute(self._it, 'chunksize', self._lag):
-                _, self._overlap = self._it.next()
-                assert len(self._overlap) <= self._lag
-                self._overlap = self._overlap[::self._actual_stride]
+            with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
 
-        with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
+                itraj, data_lagged = next(self._it)
+                assert len(data_lagged) <= self._it.chunksize * self._actual_stride if self._it.chunksize > 0 else float('inf')
+                frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
+                data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
+                                                           % self._actual_stride::self._actual_stride]), axis=0)
 
-            itraj, data_lagged = self._it.next()
-            assert len(data_lagged) <= self._it.chunksize * self._actual_stride
-            frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
-            data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
-                                                       % self._actual_stride::self._actual_stride]), axis=0)
-            data_len = len(data)
+                offset = min(self._it.chunksize - self._lag, len(data_lagged))
+                self._overlap = data_lagged[offset::self._actual_stride, :]
 
-            offset = min(self._it.chunksize - self._lag, len(data_lagged))
-            self._overlap = data_lagged[offset::self._actual_stride, :]
+                data_lagged = data_lagged[::self._actual_stride]
 
-            data_lagged = data_lagged[::self._actual_stride]
-            data_lagged_len = len(data_lagged)
-        if self._it._last_chunk_in_traj:
-            self._overlap = None
+            if self._it.last_chunk_in_traj:
+                self._overlap = None
 
-        if data_len > data_lagged_len:
-            # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged_len]
-        elif data_len< data_lagged_len:
-            raise RuntimeError(
-                'chunk was smaller than time-lagged chunk ({chunk} < {chunk_lagged}), that should not happen!'
-                .format(chunk=data_len, chunk_lagged=data_lagged_len))
+            if len(data) > len(data_lagged):
+                # data chunk is bigger, truncate it to match data_lagged's shape
+                data = data[:len(data_lagged)]
+            elif len(data) < len(data_lagged):
+                raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
+                                   % (len(data), len(data_lagged)))
 
-        if self._return_trajindex:
-            return itraj, data, data_lagged
-        return data, data_lagged
+            if self._return_trajindex:
+                return itraj, data, data_lagged
+            return data, data_lagged
+
+    next = __next__
 
     def __enter__(self):
         self._it.__enter__()
@@ -292,12 +294,19 @@ class _LegacyLaggedIterator(object):
         self._it = it
         self._it_lagged = it_lagged
         self._return_trajindex = return_trajindex
+        self._sufficently_long_trajectories = [i for i, x in
+                                               enumerate(self._it_lagged._data_source.trajectory_lengths(1, 0))
+                                               if x > it_lagged.skip]
 
     @property
     def n_chunks(self):
         n1 = self._it.n_chunks
         n2 = self._it_lagged.n_chunks
         return min(n1, n2)
+
+    @property
+    def chunksize(self):
+        return min(self._it.chunksize, self._it_lagged.chunksize)
 
     def __len__(self):
         return min(self._it.trajectory_lengths().min(), self._it_lagged.trajectory_lengths().min())
@@ -306,30 +315,59 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        return self.next()
+        _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
+        self._it._itraj = self._it_lagged._itraj
 
-    def next(self):
         itraj, data = self._it.next()
+        assert itraj in self._sufficently_long_trajectories, itraj
         itraj_lag, data_lagged = self._it_lagged.next()
-
-        while itraj < itraj_lag:
+        assert itraj_lag in self._sufficently_long_trajectories, itraj_lag
+        if itraj < itraj_lag:
+            self._it._select_file(itraj_lag)
             itraj, data = self._it.next()
+            assert not itraj > itraj_lag
         assert itraj == itraj_lag
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if len(data) > len(data_lagged):
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
+            data = data[:len(data_lagged)]
+        elif len(data) < len(data_lagged):
             raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+                               % (len(data), len(data_lagged)))
         if self._return_trajindex:
             return itraj, data, data_lagged
         return data, data_lagged
 
+    next = __next__
+
     def __enter__(self):
         self._it.__enter__()
         self._it_lagged.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._it.__exit__(exc_type, exc_val, exc_tb)
         self._it_lagged.__exit__(exc_type, exc_val, exc_tb)
+
+
+def _skip_too_short_trajs(it, sufficiently_long_traj_indices):
+    changed = False
+
+    while (it._itraj not in sufficiently_long_traj_indices
+           and it._itraj < it.state.ntraj):
+        changed = True
+        if len(sufficiently_long_traj_indices) == 1:
+            if it._itraj > sufficiently_long_traj_indices[0]:
+                raise StopIteration('no traj long enough.')
+            it._select_file(sufficiently_long_traj_indices[0])
+            break
+
+        idx = (np.abs(np.array(sufficiently_long_traj_indices) - it._itraj)).argmin()
+        if idx + 1 < len(sufficiently_long_traj_indices):
+            next_itraj = sufficiently_long_traj_indices[idx + 1]
+            it._select_file(next_itraj)
+            assert it._itraj == next_itraj
+        else:
+            raise StopIteration('no trajectory long enough.')
+    return changed
+

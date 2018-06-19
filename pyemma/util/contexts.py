@@ -68,22 +68,18 @@ def random_seed(seed=42):
 def settings(**kwargs):
     """ apply given PyEMMA config values temporarily within the given context."""
     from pyemma import config
-    # validate:
-    valid_keys = config.keys()
-    for k in kwargs.keys():
-        if k not in valid_keys:
-            raise ValueError("not a valid settings: {key}".format(key=k))
 
     old_settings = {}
-    for k, v in kwargs.items():
-        old_settings[k] = getattr(config, k)
-        setattr(config, k, v)
-
-    yield
-
-    # restore old settings
-    for k, v in old_settings.items():
-        setattr(config, k, v)
+    try:
+        # remember old setting, set new one. May raise ValueError, if invalid setting is given.
+        for k, v in kwargs.items():
+            old_settings[k] = getattr(config, k)
+            setattr(config, k, v)
+        yield
+    finally:
+        # restore old settings
+        for k, v in old_settings.items():
+            setattr(config, k, v)
 
 
 @contextmanager
@@ -92,8 +88,6 @@ def attribute(obj, attr, val):
     setattr(obj, attr, val)
     try:
         yield
-    except:
-        raise
     finally:
         setattr(obj, attr, previous)
 

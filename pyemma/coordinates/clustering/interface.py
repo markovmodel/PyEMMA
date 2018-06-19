@@ -174,7 +174,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         return 1
 
     def output_type(self):
-        return np.int32
+        return np.int32()
 
     def assign(self, X=None, stride=1):
         """

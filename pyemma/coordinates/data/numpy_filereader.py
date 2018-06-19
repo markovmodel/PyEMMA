@@ -113,29 +113,18 @@ class NumPyFileReader(DataSource, SerializableMixIn):
 
 class NPYIterator(DataInMemoryIterator):
 
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=False):
-        super(NPYIterator, self).__init__(data_source=data_source, skip=skip,
-                                          chunk=chunk, stride=stride,
-                                          return_trajindex=return_trajindex,
-                                          cols=cols)
-
     def close(self):
-        if not hasattr(self, 'data') or self.data is None:
-            return
-        # delete the memmap to close it.
-        # https://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.memmap.html
-        del self.data
-        self.data = None
+        if hasattr(self, 'data') and self.data is not None:
+            # delete the memmap to close it.
+            # https://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.memmap.html
+            del self.data
+            self.data = None
 
+    @DataInMemoryIterator._select_file_guard
     def _select_file(self, itraj):
-        if self._selected_itraj != itraj:
-            self._first_file_opened = True
-            self.close()
-            self._t = 0
-            self._itraj = itraj
-            self._selected_itraj = self._itraj
-            if itraj < self.number_of_trajectories():
-                self.data = self._data_source._load_file(itraj)
+        self.close()
+        assert itraj < self.number_of_trajectories()
+        self.data = self._data_source._load_file(itraj)
 
     def _next_chunk(self):
         return self._next_chunk_impl(self.data)

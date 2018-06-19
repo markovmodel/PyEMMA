@@ -23,7 +23,7 @@ import numpy as np
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import TrajectoryRandomAccessible
 from pyemma.util import config
-from pyemma.util.annotators import deprecated
+
 import six
 import os
 
@@ -205,6 +205,14 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         res = res[::-1]
         return res
 
+    @staticmethod
+    def _chunk_finite(data):
+        if isinstance(data, np.ndarray):
+            return np.isfinite(data)
+        elif hasattr(data, 'xyz'):
+            return np.isfinite(data.xyz)
+        return True
+
     def number_of_trajectories(self, stride=None):
         r""" Returns the number of trajectories.
 
@@ -246,9 +254,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
         else:
-            skip = 0 if skip is None else skip
-            res = (self._lengths[itraj] - skip - 1) // int(stride) + 1
-            assert res >= 0
+            res = max((self._lengths[itraj] - skip - 1) // int(stride) + 1, 0)
             return res
 
     def n_chunks(self, chunksize, stride=1, skip=0):
@@ -261,8 +267,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         skip
         """
         if chunksize != 0:
-            chunks = int(sum((ceil(l / float(chunksize))
-                          for l in self.trajectory_lengths(stride=stride, skip=skip))))
+            chunksize = float(chunksize)
+            chunks = int(sum((ceil(l / chunksize) for l in self.trajectory_lengths(stride=stride, skip=skip))))
         else:
             chunks = self.number_of_trajectories(stride)
         return chunks
@@ -289,7 +295,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
                                 for itraj in range(n)),
                                dtype=int, count=n)
         else:
-            return np.fromiter(((l - skip - 1) // stride + 1 for l in self._lengths),
+            return np.fromiter((self.trajectory_length(itraj, stride, skip)
+                                for itraj in range(n)),
                                dtype=int, count=n)
 
     def n_frames_total(self, stride=1, skip=0):
@@ -363,18 +370,17 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         with it:
             # allocate memory
             try:
-                # TODO: avoid having a copy here, if Y is already filled
-                trajs = [np.empty((l, ndim), dtype=self.output_type())
-                         for l in it.trajectory_lengths()]
+                from pyemma import config
+                if config.coordinates_check_output:
+                    trajs = [np.full((l, ndim), np.nan, dtype=self.output_type()) for l in it.trajectory_lengths()]
+                else:
+                    # TODO: avoid having a copy here, if Y is already filled
+                    trajs = [np.empty((l, ndim), dtype=self.output_type())
+                             for l in it.trajectory_lengths()]
             except MemoryError:
                 self.logger.exception("Could not allocate enough memory to map all data."
                                       " Consider using a larger stride.")
                 return
-
-            from pyemma import config
-            if config.coordinates_check_output:
-                for t in trajs:
-                    t[:] = np.nan
 
             if self._logger_is_active(self._loglevel_DEBUG):
                 self.logger.debug("get_output(): dimensions=%s" % str(dimensions))
@@ -385,17 +391,22 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             from pyemma._base.progress import ProgressReporter
             pg = ProgressReporter()
             pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
-            with pg.context():
+            with pg.context(), it:
                 for itraj, chunk in it:
-                    L = len(chunk)
-                    assert L
-                    trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
-                    # update progress
+                    i = slice(it.pos, it.pos + len(chunk))
+                    assert i.stop - i.start > 0
+                    trajs[itraj][i, :] = chunk[:, dimensions]
                     pg.update(1)
 
         if config.coordinates_check_output:
-            for t in trajs:
-                assert np.all(np.isfinite(t))
+            for i, t in enumerate(trajs):
+                finite = self._chunk_finite(t)
+                if not np.all(finite):
+                    # determine position
+                    frames = np.where(np.logical_not(finite))
+                    if not len(frames):
+                        raise RuntimeError('nothing got assigned for traj {}'.format(i))
+                    raise RuntimeError('unassigned sections in traj {i} in range [{frames}]'.format(frames=frames, i=i))
 
         return trajs
 
@@ -408,7 +419,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         ----------
         filename: str
             file name of output HDF5 file
-        group, str, default='/'
+        group: str, default='/'
             write all trajectories to this HDF5 group. The group name may not already exist in the file.
         data_set_prefix: str, default=None
             data set name prefix, will postfixed with the index of the trajectory.
@@ -585,6 +596,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         if f is not None:
             f.close()
 
+
 class IteratorState(object):
     """
     State class holding all the relevant information of an iterator's state.
@@ -592,12 +604,12 @@ class IteratorState(object):
 
     def __init__(self, skip=0, chunk=0, return_trajindex=False, ntraj=0, cols=None):
         self.skip = skip
-        self._chunk = chunk
+        self.chunk = chunk
         self.return_trajindex = return_trajindex
         self.itraj = 0
         self.ntraj = ntraj
         self.t = 0
-        self.pos = 0
+        self._pos = 0
         self.pos_adv = 0
         self.stride = None
         self.uniform_stride = False
@@ -608,12 +620,12 @@ class IteratorState(object):
         self.current_itraj = 0
 
     @property
-    def chunk(self):
-        return self._chunk
+    def pos(self):
+        return self._pos
 
-    @chunk.setter
-    def chunk(self, value):
-        self._chunk = value
+    @pos.setter
+    def pos(self, value):
+        self._pos = value
 
     def ra_indices_for_traj(self, traj):
         """
@@ -659,13 +671,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
                                    ntraj=self.number_of_trajectories(),
                                    cols=cols)
         self.__init_stride(stride)
-        self._pos = 0
         self._last_chunk_in_traj = False
-        if not isinstance(stride, np.ndarray) and skip > 0:
-            # skip over the trajectories that are smaller than skip
-            while self.state.itraj < self._data_source.ntraj \
-                    and self._data_source.trajectory_length(self.state.itraj, self.stride, 0) <= skip:
-                self.state.itraj += 1
+        # the currently selected itraj, used as a guard to avoid opening the same file multiple times.
+        self._selected_itraj = -1
+        self._skip_unselected_or_too_short_trajs()
         super(DataSourceIterator, self).__init__()
 
     def __init_stride(self, stride):
@@ -713,8 +722,10 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     def number_of_trajectories(self):
         return self._data_source.number_of_trajectories()
 
-    def trajectory_length(self):
-        return self._data_source.trajectory_length(self.current_trajindex, self.stride, self.skip)
+    def trajectory_length(self, itraj=None):
+        if itraj is None:
+            itraj = self.current_trajindex
+        return self._data_source.trajectory_length(itraj, self.stride, self.skip)
 
     def trajectory_lengths(self):
         return self._data_source.trajectory_lengths(self.stride, self.skip)
@@ -727,9 +738,26 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         """ closes the reader"""
         raise NotImplementedError()
 
+    @staticmethod
+    def _select_file_guard(datasource_method):
+        """ in case we call _select_file multiple times with the same value, we do not want to reopen file handles."""
+        from functools import wraps
+        @wraps(datasource_method)
+        def wrapper(self, itraj):
+            # itraj already selected, we're done.
+            if itraj == self._selected_itraj:
+                return
+            datasource_method(self, itraj)
+            self._itraj = self._selected_itraj = itraj
+        return wrapper
+
     @abstractmethod
     def _select_file(self, itraj):
         """ opens the next file defined by itraj.
+
+        Notes
+        -----
+        Should also set self._itraj and self._selected_itraj, if the opening was successful.
 
         Parameters
         ----------
@@ -747,7 +775,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     @property
     def pos(self):
         """
-        Gives the current position in the current trajectory.
+        Gives the current position in the current trajectory. The position is always referring to the index of the
+        first frame that got yielded.
+
         Returns
         -------
         int
@@ -805,6 +835,11 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.state.t = value
 
     @property
+    def _t_abs(self):
+        """ absolute time counter, includes skip and stride. """
+        return self.skip + self._t * self.stride
+
+    @property
     def _itraj(self):
         """
         Reader-internal property that tracks the upcoming trajectory index. Should not be used within iterator loop.
@@ -824,9 +859,26 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         value : int
             The upcoming trajectory index.
         """
-        if value > self.state.ntraj:  # we never want to increase this value larger than ntraj.
-            raise StopIteration("out of files bound")
-        self.state.itraj = value
+        if value != self._selected_itraj:
+            self.state.itraj = value
+            # TODO: this side effect is unexpected.
+            self.state.t = 0
+
+    def _skip_unselected_or_too_short_trajs(self):
+        value = self._itraj
+        if not self.uniform_stride:
+            # skip trajs not included in random access stride
+            while (value not in self.traj_keys or self._t >= self.ra_trajectory_length(value)) \
+                    and value < self.state.ntraj:
+                value += 1
+                self._t = 0
+        else:
+            while value < self.state.ntraj and self._t >= self.trajectory_length(value):
+                value += 1
+                self._t = 0
+        if value != self._itraj:
+            self._itraj = value
+            self.state.pos_adv = 0
 
     @skip.setter
     def skip(self, value):
@@ -963,59 +1015,60 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
     def _next_chunk(self):
         raise NotImplementedError()
 
-    def __next__(self):
-        return self.next()
-
     def _use_cols(self, X):
         if self.use_cols is not None:
             return X[:, self.use_cols]
         return X
 
-    def _it_next(self):
-        # first chunk at all, skip prepending trajectories that are not considered in random access
-        if self._t == 0 and self._itraj == 0 and not self.uniform_stride:
-            while (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-                    and self._itraj < self.number_of_trajectories():
-                self._itraj += 1
-            self._select_file(self._itraj)
-        # we have to obtain the current index before invoking next_chunk (which increments itraj)
-        self.state.current_itraj = self._itraj
+    def __next__(self):
+        # the position is the previous advanced position
         self.state.pos = self.state.pos_adv
+
+        # increase itraj, needed for RA stride
+        # TODO: figure out why, shouldn't ctor and post iteration skipping be sufficient?
+        self._skip_unselected_or_too_short_trajs()
+
+        if self._itraj >= self.state.ntraj:  # we never want to increase this value larger than ntraj.
+            self.close()
+            raise StopIteration('out of files bound')
+        # obtain the current trajectory index, before (potentially) incrementing it.
+        self.state.current_itraj = self._itraj
+        self._select_file(self._itraj)
         try:
             X = self._use_cols(self._next_chunk())
-        except StopIteration:
+            self._t += len(X)
+        except StopIteration as e:
             self._last_chunk_in_traj = True
             raise
+        # now increase itraj if needed, remember last time position, because the skip method resets _t
+        self._skip_unselected_or_too_short_trajs()
+
         if self.state.current_itraj != self._itraj:
-            self.state.pos_adv = 0
             self._last_chunk_in_traj = True
         else:
-            self.state.pos_adv += len(X)
             if self.uniform_stride:
                 length = self._data_source.trajectory_length(itraj=self.state.current_itraj,
                                                              stride=self.stride, skip=self.skip)
             else:
                 length = self.ra_trajectory_length(self.state.current_itraj)
-            self._last_chunk_in_traj = self.state.pos_adv >= length
+            self._last_chunk_in_traj = self.pos >= length
+
+        if config.coordinates_check_output:
+            finite = self._data_source._chunk_finite(X)
+            if not np.all(finite):
+                # determine position
+                frames = np.where(np.logical_not(finite))
+                msg = 'Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}] ' \
+                      'within frames {frames}.'.format(itraj=self.current_trajindex, start=self._t,
+                                                       stop=self._t + len(X), frames=frames)
+                raise InvalidDataInStreamException(msg)
+
+        self.state.pos_adv = self._t
         if self.return_traj_index:
             return self.state.current_itraj, X
         return X
 
-    def next(self):
-        X = self._it_next()
-        while X is not None and (
-                (not self.return_traj_index and len(X) == 0) or (self.return_traj_index and len(X[1]) == 0)
-        ):
-            X = self._it_next()
-        if config.coordinates_check_output:
-            array = X if not self.return_traj_index else X[1]
-            if not np.all(np.isfinite(array)):
-                # determine position
-                start = self.pos
-                msg = "Found invalid values in chunk in trajectory index {itraj} at chunk [{start}, {stop}]" \
-                    .format(itraj=self.current_trajindex, start=start, stop=start+len(array))
-                raise InvalidDataInStreamException(msg)
-        return X
+    next = __next__
 
     def __iter__(self):
         return self
@@ -1027,13 +1080,85 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.close()
         return False
 
-    def __repr__(self):
-        return "[{name} chunk={chunk}, stride={stride}, skip={skip}]".format(
+    def __str__(self):
+        return "[{name} itraj={itraj}, traj_len={traj_len}, curr_traj_ind={cur_ind}, chunk={chunk}," \
+               " stride={stride}, skip={skip}, t={t}, pos={pos}]".format(
             name=self.__class__.__name__,
             chunk=self.chunksize,
             stride=self.stride,
-            skip=self.skip
+            skip=self.skip,
+            t=self._t,
+            itraj=self._itraj,
+            cur_ind=self.current_trajindex,
+            pos=self.pos,
+            traj_len=self.trajectory_length()
         )
+
+
+class EncapsulatedIterator(DataSourceIterator):
+    """
+    Parameters
+    ----------
+    data_source
+    iterator
+    transform_function
+    skip
+    chunk
+    stride
+    return_trajindex
+    cols
+    """
+    def __init__(self, data_source, iterator=None, transform_function=None,
+                 skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
+        super(EncapsulatedIterator, self).__init__(data_source=data_source, skip=skip, chunk=chunk,
+                                                   stride=stride, return_trajindex=return_trajindex, cols=cols)
+        self._it = iterator
+        self.transform_function = transform_function
+        self._select_file(0)
+        assert self._it is not None
+        # map the reference of the real used iterator to this instance to avoid overriding every attribute.
+        if hasattr(self._it, 'state'):
+            self.state = self._it.state
+
+    @DataSourceIterator.chunksize.setter
+    def chunksize(self, value):
+        self.state.chunk = value
+        if hasattr(self._it, 'chunksize'):
+            self._it.chunksize = value
+
+    @DataSourceIterator.skip.setter
+    def skip(self, value):
+        self.state.skip = value
+        if hasattr(self._it, 'skip'):
+            self._it.skip = value
+
+    @property
+    def transform_function(self):
+        return self._transform_function
+
+    @transform_function.setter
+    def transform_function(self, value):
+        if value is not None and not callable(value):
+            raise ValueError('transform function has to be callable. Given value: {}'.format(value))
+        self._transform_function = value
+
+    @DataSourceIterator._select_file_guard
+    def _select_file(self, itraj):
+        self._it._select_file(itraj)
+
+    def close(self):
+        if self._it is not None and hasattr(self._it, 'close'):
+            self._it.close()
+
+    def _next_chunk(self):
+        if hasattr(self._it, '_next_chunk'):
+            x = self._it._next_chunk()
+        else:
+            x = next(self._it)
+        # We discard the trajectory index here for transformation
+        if self.transform_function is not None:
+            x = self.transform_function(x)
+        return x
 
 
 class InvalidDataInStreamException(Exception):

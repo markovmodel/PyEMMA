@@ -205,7 +205,8 @@ class TestDataInMemory(unittest.TestCase):
         for idx, (traj, input_traj) in enumerate(zip(trajs, data)):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(), err_msg="failed for traj=%s"%idx)
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(),
+                                    err_msg="failed for traj=%s"%idx)
 
         # lagged data
         for idx, (traj, input_traj) in enumerate(zip(lagged_trajs, data)):
@@ -270,6 +271,17 @@ class TestDataInMemory(unittest.TestCase):
         cols=(2, 0)
         for x in reader.iterator(chunk=0, return_trajindex=False, cols=cols):
             np.testing.assert_equal(x, self.d[:, cols])
+
+    def test_exception_getoutput_invalid_data(self):
+        """ensure we get a proper exception if invalid data is contained in the stream"""
+        from pyemma.util.contexts import settings
+        data = np.ones(10)
+        data[-1] = np.nan
+        reader = pyemma.coordinates.source(data)
+        from pyemma.coordinates.data._base.datasource import InvalidDataInStreamException
+        with settings(coordinates_check_output=True), self.assertRaises(InvalidDataInStreamException):
+            reader.get_output()
+
 
 if __name__ == "__main__":
     unittest.main()

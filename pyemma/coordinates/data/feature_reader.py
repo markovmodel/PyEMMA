@@ -22,7 +22,7 @@ import mdtraj
 import numpy as np
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource, EncapsulatedIterator
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer
 from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
@@ -113,7 +113,7 @@ class FeatureReader(DataSource, SerializableMixIn):
         # featurizer
         if topologyfile and featurizer:
             self.logger.warning("Both a topology file and a featurizer were given as arguments. "
-                                 "Only featurizer gets respected in this case.")
+                                "Only featurizer gets respected in this case.")
         if not featurizer:
             self.featurizer = MDFeaturizer(topologyfile)
         else:
@@ -138,8 +138,17 @@ class FeatureReader(DataSource, SerializableMixIn):
         return TrajInfo(ndim, length, offsets)
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
-        return FeatureReaderIterator(self, skip=skip, chunk=chunk, stride=stride,
-                                     return_trajindex=return_trajindex, cols=cols)
+
+        def transform(data):
+            # trigger to pass mdtraj.Trajectory objects to self.featurizer or not.
+            if self._return_traj_obj:
+                return data
+            else:
+                return self.featurizer.transform(data)
+
+        it = FeatureReaderIterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex,
+                                   cols=cols, transform_function=transform)
+        return it
 
     def describe(self):
         """
@@ -161,6 +170,26 @@ class FeatureReader(DataSource, SerializableMixIn):
         else:
             # general case
             return self.featurizer.dimension()
+
+    @staticmethod
+    def supports_format(file_name):
+        """
+        Static method that checks whether the extension of the input file name indicates a file type that can
+        potentially be read with a FeatureReader.
+
+        :param file_name: the file name or path
+        :return: True if the extension indicates a file type that could be read, otherwise False
+        """
+        import os
+        from mdtraj.formats.registry import FormatRegistry
+
+        if isinstance(file_name, str):
+            # ensure there is something to split
+            file_name = "/dummy" + file_name
+            suffix = os.path.splitext(file_name)[1]
+            return suffix in FormatRegistry.loaders.keys()
+
+        return False
 
     def _assert_toptraj_consistency(self):
         r""" Check if the topology and the filenames of the reader have the same n_atoms"""
@@ -303,118 +332,31 @@ class FeatureReaderLinearRandomAccessStrategy(RandomAccessStrategy):
         return data[frames_order]
 
 
-class FeatureReaderIterator(DataSourceIterator):
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
-        # TODO: optimize cols access (eg. omit features, before calculating em
-        super(FeatureReaderIterator, self).__init__(
-                data_source, skip=skip, chunk=chunk, stride=stride,
-                return_trajindex=return_trajindex,
-                cols=cols
-        )
-        # set chunksize prior selecting the first file, to ensure we have a sane value for mditer...
-        self.chunksize = chunk
-        self._selected_itraj = -1
+class FeatureReaderIterator(EncapsulatedIterator):
 
-    @property
-    def chunksize(self):
-        return self.state.chunk
-
-    @chunksize.setter
-    def chunksize(self, value):
-        self.state.chunk = value
-        if hasattr(self, '_mditer'):
-            self._mditer.chunksize = value
-
-    @property
-    def skip(self):
-        return self.state.skip
-
-    @skip.setter
-    def skip(self, value):
-        self.state.skip = value
-        if hasattr(self, '_mditer'):
-            self._mditer._skip = value
-
-    def close(self):
-        if hasattr(self, '_mditer') and self._mditer is not None:
-            self._mditer.close()
-
+    @EncapsulatedIterator._select_file_guard
     def _select_file(self, itraj):
         if itraj != self._selected_itraj:
             self.close()
-            self._t = 0
-            self._itraj = itraj
-            self._selected_itraj = itraj
-            self._create_mditer()
+            self._it = self._create_mditer(itraj)
+            self._itraj = self._selected_itraj = itraj
 
-    def _next_chunk(self):
-        """
-        gets the next chunk. If lag > 0, we open another iterator with same chunk
-        size and advance it by one, as soon as this method is called with a lag > 0.
+    def _create_mditer(self, itraj):
+        stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
+        _it = self._create_patched_iter(
+                        self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
+        )
+        return _it
 
-        :return: a feature mapped vector X, or (X, Y) if lag > 0
-        """
-        if not hasattr(self, '_mditer') or self._mditer is None:
-            self._select_file(self._itraj)
-        try:
-            chunk = next(self._mditer)
-        except StopIteration as si:
-            """ in case the underlying mdtraj iterator raises StopIteration (eg. seek failed),
-                we have to return an empty iterable, so that LaggedIterator will continue to process.
-            """
-            if si.args and "too short" in si.args[0] and self._itraj < self._data_source.ntraj - 1:
-                self._itraj += 1
-                self._select_file(self._itraj)
-                return ()
-            else:
-                raise
-
-        shape = chunk.xyz.shape
-
-        self._t += shape[0]
-
-        if self._t >= self.trajectory_length() and self._itraj < len(self._data_source.filenames) - 1:
-            self._itraj += 1
-            self._select_file(self._itraj)
-
-        if not self.uniform_stride:
-            traj_len = self.ra_trajectory_length(self._itraj)
-        else:
-            traj_len = self.trajectory_length()
-        if self._t >= traj_len and self._itraj == len(self._data_source.filenames) - 1:
-            self.close()
-
-        # 3 cases:
-        # --------
-        # 1. raw mdtraj.Trajectory objects
-        # 2. plain reshaped coordinates (done by featurizer)
-        # 3. extracted features
-        if self._data_source._return_traj_obj:
-            res = chunk
-        else:
-            # map data
-            res = self._data_source.featurizer.transform(chunk)
-        return res
-
-    def _create_mditer(self):
-        if not self.uniform_stride:
-            while self._itraj not in self.traj_keys and self._itraj < self.number_of_trajectories():
-                self._itraj += 1
-            if self._itraj < self._data_source.ntraj:
-                self._mditer = self._create_patched_iter(
-                        self._data_source.filenames[self._itraj], stride=self.ra_indices_for_traj(self._itraj)
-                )
-        else:
-            self._mditer = self._create_patched_iter(
-                    self._data_source.filenames[self._itraj], skip=self.skip, stride=self.stride
-            )
-        self._closed = False
-
-    def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):
+    def _create_patched_iter(self, filename, itraj, skip=0, stride=1, atom_indices=None):
         if self.is_uniform_stride(self.stride):
-            flen = self._data_source.trajectory_length(itraj=self._itraj, stride=self.stride, skip=self.skip)
+            flen = self._data_source.trajectory_length(itraj=itraj, stride=self.stride, skip=self.skip)
         else:
-            flen = self.ra_trajectory_length(self._itraj)
+            flen = self.ra_trajectory_length(itraj)
         return patches.iterload(filename, flen, chunk=self.chunksize, top=self._data_source.featurizer.topology,
                                 skip=skip, stride=stride, atom_indices=atom_indices)
 
+    @EncapsulatedIterator.chunksize.setter
+    def chunksize(self, value):
+        super(FeatureReaderIterator, self.__class__).chunksize.__set__(self, value)
+        self._it.chunksize = value
