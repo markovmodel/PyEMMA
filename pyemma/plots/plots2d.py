@@ -308,7 +308,7 @@ def plot_density(
         xall, yall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, logscale=False,
-        nbins=100, weights=None, avoid_zero_count=False,):
+        nbins=100, weights=None, avoid_zero_count=False):
     """Plot a two-dimensional density map using a histogram of
     scattered data.
 
