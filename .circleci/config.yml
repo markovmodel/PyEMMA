@@ -1,20 +1,22 @@
 
-defaults: &defaults
-  working_directory: ~/markovmodel/PyEMMA
-  docker:
-    - image: continuumio/miniconda3
+#defaults: &defaults
+#  working_directory: ~/markovmodel/PyEMMA
+#  docker:
+#    - image: continuumio/miniconda3
 
-inst_conda_bld: &inst_conda_bld
-  - run: conda config --add channels conda-forge
-  - run: conda config --set always_yes true
-  - run: conda config --set quiet true
-  - run: conda install conda-build
+#inst_conda_bld: &inst_conda_bld
+#  - run: conda config --add channels conda-forge
+#  - run: conda config --set always_yes true
+#  - run: conda config --set quiet true
+#  - run: conda install conda-build
 
 version: 2
 
 jobs:
   build:
-    <<: *defaults
+    working_directory: ~/markovmodel/PyEMMA
+    docker:
+      - image: continuumio/miniconda3
     parallelism: 1
     steps:
       - checkout
@@ -35,7 +37,9 @@ jobs:
 
 
   test:
-    <<: *defaults
+    working_directory: ~/markovmodel/PyEMMA
+    docker:
+      - image: continuumio/miniconda3
     parallelism: 4
     environment:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
