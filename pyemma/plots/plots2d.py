@@ -604,10 +604,11 @@ def plot_state_map(
         if requested, a matplotlib.Colorbar object 'cbar'.
 
     """
+    from matplotlib.cm import get_cmap
     nstates = _np.max(states) + 1
     n = _np.arange(nstates)
     f = float(nstates - 1) / float(nstates)
-    cmap_ = mpl.cm.get_cmap(cmap, nstates)
+    cmap_ = get_cmap(cmap, nstates)
     fig, ax, misc = plot_contour(
         xall, yall, states, ax=ax, cmap=cmap_,
         ncontours=ncontours, vmin=None, vmax=None, levels=None,
