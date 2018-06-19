@@ -44,6 +44,7 @@ User-API
    plot_density
    plot_free_energy
    plot_contour
+   plot_state_map
    scatter_contour
 
 **Network plots**
@@ -70,6 +71,7 @@ from .plots2d import contour, scatter_contour
 from .plots2d import plot_density
 from .plots2d import plot_free_energy
 from .plots2d import plot_contour
+from .plots2d import plot_state_map
 from .networks import plot_markov_model, plot_flux, plot_network, NetworkPlot
 from .markovtests import plot_cktest
 from .thermoplots import *

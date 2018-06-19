@@ -497,7 +497,7 @@ def plot_contour(
         xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, norm=None,
-        nbins=100, method='nearest'):
+        nbins=100, method='linear'):
     """Plot a two-dimensional contour map by interpolating
     scattered data on a grid.
 
@@ -561,3 +561,59 @@ def plot_contour(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=None, vmax=None, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
+
+
+def plot_state_map(
+        xall, yall, states, ax=None, cmap=None, ncontours=100,
+        cbar=True, cax=None, cbar_label='state', nbins=100):
+    """Plot a two-dimensional contour map of states by interpolating
+    labels of scattered data on a grid.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        Sample x-coordinates.
+    yall : ndarray(T)
+        Sample y-coordinates.
+    states : ndarray(T)
+        Sample state labels.
+    ax : matplotlib.Axes object, optional, default=None
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+    cmap : matplotlib colormap, optional, default=None
+        The color map to use.
+    ncontours : int, optional, default=100
+        Number of contour levels.
+    cbar : boolean, optional, default=True
+        Plot a color bar.
+    cax : matplotlib.Axes object, optional, default=None
+        Plot the colorbar into a custom axes object instead of
+        stealing space from ax.
+    cbar_label : str, optional, default='state'
+        Colorbar label string; use None to suppress it.
+    nbins : int, optional, default=100
+        Number of grid points used in each dimension.
+
+    Returns
+    -------
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the map was plotted.
+    misc : dict
+        Contains a matplotlib.contour.QuadContourSet 'mappable' and,
+        if requested, a matplotlib.Colorbar object 'cbar'.
+
+    """
+    nstates = _np.max(states) + 1
+    n = _np.arange(nstates)
+    f = float(nstates - 1) / float(nstates)
+    cmap_ = mpl.cm.get_cmap(cmap, nstates)
+    fig, ax, misc = plot_contour(
+        xall, yall, states, ax=ax, cmap=cmap_,
+        ncontours=ncontours, vmin=None, vmax=None, levels=None,
+        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
+        nbins=nbins, method='nearest')
+    if cbar:
+        misc['cbar'].set_ticks((n + 0.5) * f)
+        misc['cbar'].set_ticklabels(n)
+    return fig, ax, misc

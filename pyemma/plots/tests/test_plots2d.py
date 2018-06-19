@@ -24,6 +24,7 @@ from pyemma.plots.plots2d import contour, scatter_contour
 from pyemma.plots.plots2d import plot_density
 from pyemma.plots.plots2d import plot_free_energy
 from pyemma.plots.plots2d import plot_contour
+from pyemma.plots.plots2d import plot_state_map
 
 
 class TestPlots2d(unittest.TestCase):
@@ -41,7 +42,8 @@ class TestPlots2d(unittest.TestCase):
             zlim=(self.data[:, 0].min(), self.data[:, 0].max()))
 
     def test_scatter_contour(self):
-        scatter_contour(self.data[:,0], self.data[:,1], self.data[:,0])
+        scatter_contour(
+            self.data[:,0], self.data[:,1], self.data[:,0])
 
     def test_plot_density(self):
         plot_density(
@@ -62,7 +64,12 @@ class TestPlots2d(unittest.TestCase):
                 legacy=False, ncountours=42)
 
     def test_plot_contour(self):
-        plot_contour(self.data[:, 0], self.data[:, 1], self.data[:,0])
+        plot_contour(
+            self.data[:, 0], self.data[:, 1], self.data[:,0])
         plot_contour(
             self.data[:, 0], self.data[:, 1], self.data[:,0],
             levels='legacy')
+
+    def test_plot_state_map(self):
+        plot_state_map(
+            self.data[:, 0], self.data[:, 1], self.data[:,0])
