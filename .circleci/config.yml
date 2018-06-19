@@ -8,7 +8,7 @@ defaults: &defaults
 version: 2
 
 jobs:
-  "build":
+  build:
     <<: *defaults
     parallelism: 1
     steps:
@@ -32,7 +32,7 @@ jobs:
             - $(conda build devtools/conda-recipe --python=3.6 --output)
 
 
-  "test":
+  test:
     <<: *defaults
     parallelism: 4
     environment:
@@ -71,7 +71,7 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - "build"
-      - "test":
+      - build
+      - test:
         requires:
-          - "build"
+          - build
