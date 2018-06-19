@@ -2,33 +2,35 @@ version: 2
 
 workflows:
   version: 2
-  build:
+  build_and_test:
     jobs:
       - build
-      - test
+      - test:
+        requires:
+          - build
 
 jobs:
   build:
     working_directory: ~/markovmodel/PyEMMA
     parallelism: 1
     docker:
-    - image: continuumio/miniconda3
+      - image: continuumio/miniconda3
 
     steps:
-    - checkout
-    # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
-    # In many cases you can simplify this from what is generated here.
-    # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
-    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-    - run: git fetch --unshallow || true
-    - run: conda config --add channels conda-forge
-    - run: conda config --set always_yes true
-    - run: conda config --set quiet true
-    - run: conda install conda-build
-    - run: conda build devtools/conda-recipe --python=3.6 --no-test
-    - store_artifacts:
-        path: `conda build devtools/conda-recipe --python=3.6 --output`
-        destination: build.tar.bz2
+      - checkout
+      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+      # In many cases you can simplify this from what is generated here.
+      # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
+      - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+      - run: git fetch --unshallow || true
+      - run: conda config --add channels conda-forge
+      - run: conda config --set always_yes true
+      - run: conda config --set quiet true
+      - run: conda install conda-build
+      - run: conda build devtools/conda-recipe --python=3.6 --no-test
+      - store_artifacts:
+          path: $(conda build devtools/conda-recipe --python=3.6 --output)
+          destination: build.tar.bz2
 
   "test":
     working_directory: ~/markovmodel/PyEMMA
@@ -40,24 +42,24 @@ jobs:
       OMP_NUM_THREADS: 1
       PYEMMA_NJOBS: 1
     docker:
-    - image: continuumio/miniconda3
+      - image: continuumio/miniconda3
 
     steps:
-    - checkout
-    - run: conda config --add channels conda-forge
-    - run: conda config --set always_yes true
-    - run: conda config --set quiet true
-    - run: conda install conda-build
-    - run: wget https://circleci.com/api/v1.1/project/:vcs-type/:org/:repo/:build_num/artifacts/0/build.tar.bz2 -o `conda build devtools/conda-recipe --python=3.6 --output`
-    #- run: wget curl https://circleci.com/api/v1.1/project/:git/:CIRCLE_PROJECT_USERNAME/:$CIRCLE_PROJECT_REPONAME/:$CIRCLE_BUILD_NUM/artifacts?circle-token=$CIRCLE_TOKEN
-    - run: conda build devtools/conda-recipe --python=3.6 --test
-    # Teardown
-    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
-    # Save test results
-    - store_test_results:
-        path: /tmp/circleci-test-results
-    # Save artifacts
-    - store_artifacts:
-        path: /tmp/circleci-artifacts
-    - store_artifacts:
-        path: /tmp/circleci-test-results
+      - checkout
+      - run: conda config --add channels conda-forge
+      - run: conda config --set always_yes true
+      - run: conda config --set quiet true
+      - run: conda install conda-build
+      - run: wget https://circleci.com/api/v1.1/project/:vcs-type/:org/:repo/:build_num/artifacts/0/build.tar.bz2 -o `conda build devtools/conda-recipe --python=3.6 --output`
+      #- run: wget curl https://circleci.com/api/v1.1/project/:git/:CIRCLE_PROJECT_USERNAME/:$CIRCLE_PROJECT_REPONAME/:$CIRCLE_BUILD_NUM/artifacts?circle-token=$CIRCLE_TOKEN
+      - run: conda build devtools/conda-recipe --python=3.6 --test
+      # Teardown
+      #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
+      # Save test results
+      - store_test_results:
+          path: /tmp/circleci-test-results
+      # Save artifacts
+      - store_artifacts:
+          path: /tmp/circleci-artifacts
+      - store_artifacts:
+          path: /tmp/circleci-test-results
