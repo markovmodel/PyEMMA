@@ -271,8 +271,9 @@ def plot_map(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
-        (if requested) matplotlib.Colorbar object ['cbar'].
+    misc : dict
+        Contains a matplotlib.contour.QuadContourSet 'mappable' and,
+        if requested, a matplotlib.Colorbar object 'cbar'.
 
     """
     import matplotlib.pyplot as _plt
@@ -280,25 +281,20 @@ def plot_map(
         fig, ax = _plt.subplots()
     else:
         fig = ax.get_figure()
-    cs = ax.contourf(
+    mappable = ax.contourf(
         x, y, z, ncontours, norm=norm,
         vmin=vmin, vmax=vmax, cmap=cmap,
         levels=levels)
-    d = {}
+    misc = dict(mappable=mappable)
     if cbar:
         if cax is None:
-            cbar_ = fig.colorbar(cs, ax=ax)
+            cbar_ = fig.colorbar(mappable, ax=ax)
         else:
-            cbar_ = fig.colorbar(cs, cax=cax)
+            cbar_ = fig.colorbar(mappable, cax=cax)
         if cbar_label is not None:
             cbar_.set_label(cbar_label)
-
-        d['cbar'] = cbar_
-    else:
-        d['cbar'] = None
-    d['cs'] = cs
-
-    return fig, ax, d
+        misc.update(cbar=cbar_)
+    return fig, ax, misc
 
 
 # ######################################################################
@@ -358,34 +354,34 @@ def plot_density(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
-        (if requested) matplotlib.Colorbar object ['cbar'].
+    misc : dict
+        Contains a matplotlib.contour.QuadContourSet 'mappable' and,
+        if requested, a matplotlib.Colorbar object 'cbar'.
 
     """
     x, y, z = get_histogram(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     pi = _to_density(z.T) # transpose to match x/y-directions
+    pi = _np.ma.masked_where(pi <= 0, pi)
     if logscale:
         from matplotlib.colors import LogNorm
         norm = LogNorm(vmin=vmin, vmax=vmax)
-        pi = _np.ma.masked_where(pi <= 0, pi)
         if levels is None:
-            levels = _np.logspace(_np.floor(_np.log10(pi.min())),
-                                  _np.ceil(_np.log10(pi.max())),
-                                  ncontours + 1)
+            levels = _np.logspace(
+                _np.floor(_np.log10(pi.min())),
+                _np.ceil(_np.log10(pi.max())),
+                ncontours + 1)
     else:
         norm = None
-    fig, ax, d = plot_map(
+    fig, ax, misc = plot_map(
             x, y, pi, ax=ax, cmap=cmap,
             ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
             cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm)
-
     if cbar and logscale:
         from matplotlib.ticker import LogLocator
-        d['cbar'].set_ticks(LogLocator(base=10.0, subs=range(10)))
-
-    return fig, ax, d
+        misc['cbar'].set_ticks(LogLocator(base=10.0, subs=range(10)))
+    return fig, ax, misc
 
 
 def plot_free_energy(
@@ -453,10 +449,9 @@ def plot_free_energy(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    cbar : matplotlib.Colorbar object
-    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
-        (if requested) matplotlib.Colorbar object ['cbar']
-        (suppressed in legacy mode).
+    misc : dict
+        Contains a matplotlib.contour.QuadContourSet 'mappable' and,
+        if requested, a matplotlib.Colorbar object 'cbar'.
 
     """
     if legacy:
@@ -489,13 +484,13 @@ def plot_free_energy(
         xall, yall, nbins=nbins, weights=weights,
         avoid_zero_count=avoid_zero_count)
     f = _to_free_energy(z, minener_zero=minener_zero) * kT
-    fig, ax, d = plot_map(
+    fig, ax, misc = plot_map(
         x, y, f.T, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if legacy:
         return fig, ax
-    return fig, ax, d
+    return fig, ax, misc
 
 
 def plot_contour(
@@ -548,8 +543,9 @@ def plot_contour(
         The figure in which the used ax resides.
     ax : matplotlib.Axes object
         The ax in which the map was plotted.
-    return dictionary : matplotlib.contour.QuadContourSet mappable ['cs'] and
-        (if requested) matplotlib.Colorbar object ['cbar'].
+    misc : dict
+        Contains a matplotlib.contour.QuadContourSet 'mappable' and,
+        if requested, a matplotlib.Colorbar object 'cbar'.
 
     """
     x, y, z = get_grid_data(
