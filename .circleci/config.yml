@@ -24,7 +24,7 @@ jobs:
       - run: conda config --set quiet true
       - run: conda install conda-build
       - run: mkdir workspace
-      - run: conda build devtools/conda-recipe --python=3.6 --build-only --output-folder workspace
+      - run: conda build devtools/conda-recipe --python=3.6 --no-test --output-folder workspace
       - persist_to_workspace:
           root: workspace
           paths:
