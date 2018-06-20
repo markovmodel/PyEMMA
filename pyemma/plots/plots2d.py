@@ -564,8 +564,8 @@ def plot_contour(
 
 
 def plot_state_map(
-        xall, yall, states, ax=None, cmap=None, ncontours=100,
-        cbar=True, cax=None, cbar_label='state', nbins=100):
+        xall, yall, states, ax=None, cmap=None, cbar=True,
+        cax=None, cbar_label='state', nbins=100):
     """Plot a two-dimensional contour map of states by interpolating
     labels of scattered data on a grid.
 
@@ -581,8 +581,6 @@ def plot_state_map(
         The ax to plot to; if ax=None, a new ax (and fig) is created.
     cmap : matplotlib colormap, optional, default=None
         The color map to use.
-    ncontours : int, optional, default=100
-        Number of contour levels.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -603,6 +601,13 @@ def plot_state_map(
         Contains a matplotlib.contour.QuadContourSet 'mappable' and,
         if requested, a matplotlib.Colorbar object 'cbar'.
 
+    Notes
+    -----
+    Please note that this plot is an approximative visualization:
+    the underlying matplotlib.countourf function smoothes transitions
+    between different values and, thus, coloring at state boundaries might
+    be imprecise.
+
     """
     from matplotlib.cm import get_cmap
     x, y, z = get_grid_data(
@@ -611,15 +616,16 @@ def plot_state_map(
         xall, yall, nbins=nbins, weights=None,
         avoid_zero_count=None)
     z = _np.ma.masked_where(counts.T <= 0, z)
-    nstates = _np.max(states) + 1
-    n = _np.arange(nstates)
-    f = float(nstates - 1) / float(nstates)
+    nstates = int(_np.max(states) + 1)
     cmap_ = get_cmap(cmap, nstates)
     fig, ax, misc = plot_map(
         x, y, z, ax=ax, cmap=cmap_,
-        ncontours=ncontours, vmin=None, vmax=None, levels=None,
+        ncontours=nstates - 1, vmin=None, vmax=None, levels=None,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None)
     if cbar:
+        cmin, cmax = misc['mappable'].get_clim()
+        f = (cmax - cmin) / float(nstates)
+        n = _np.arange(nstates)
         misc['cbar'].set_ticks((n + 0.5) * f)
         misc['cbar'].set_ticklabels(n)
     return fig, ax, misc
