@@ -2,7 +2,8 @@
 defaults: &defaults
   working_directory: ~/markovmodel/PyEMMA
   docker:
-    - image: continuumio/miniconda3
+    #- image: continuumio/miniconda3
+    - image: conda-forge/linux-anvil
 
 inst_conda_bld: &inst_conda_bld
   - run: conda config --add channels conda-forge
@@ -19,10 +20,10 @@ jobs:
     steps:
       - checkout
       - run: git fetch --unshallow || true
-      - run: conda config --add channels conda-forge
-      - run: conda config --set always_yes true
-      - run: conda config --set quiet true
-      - run: conda install conda-build
+      #- run: conda config --add channels conda-forge
+      #- run: conda config --set always_yes true
+      #- run: conda config --set quiet true
+      #- run: conda install conda-build
       - run: mkdir workspace
       - run: conda build devtools/conda-recipe --python=3.6 --no-test --output-folder workspace
       - persist_to_workspace:
@@ -44,10 +45,10 @@ jobs:
       - checkout
 
       - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-      - run: conda config --add channels conda-forge
-      - run: conda config --set always_yes true
-      - run: conda config --set quiet true
-      - run: conda install conda-build
+      #- run: conda config --add channels conda-forge
+      #- run: conda config --set always_yes true
+      #- run: conda config --set quiet true
+      #- run: conda install conda-build
       - attach_workspace:
           at: workspace
       - run: conda build devtools/conda-recipe --python=3.6 --test --output-folder workspace
