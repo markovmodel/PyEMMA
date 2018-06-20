@@ -654,7 +654,7 @@ def plot_contour(
         xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, norm=None,
-        nbins=100, method='linear', mask=False, **kwargs):
+        nbins=100, method='nearest', mask=False, **kwargs):
     """Plot a two-dimensional contour map by interpolating
     scattered data on a grid.
 
