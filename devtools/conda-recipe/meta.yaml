@@ -22,7 +22,6 @@ requirements:
     - {{ compiler('cxx') }}
 
   host:
-    - binutils  # [linux]
     - cython
     - mdtraj
     # actually we could build with np18, but fastcluster (dep of mdtraj, we link against) is only avail for 1.9
@@ -32,10 +31,9 @@ requirements:
     - python
     - scipy
     - setuptools
-    #- toolchain
 
   run:
-    - bhmm >=0.6,<0.7
+    - bhmm >=0.6.3,<0.7
     - decorator >=4.0.0
     - h5py
     - matplotlib
