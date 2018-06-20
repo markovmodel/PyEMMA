@@ -50,6 +50,8 @@ class TestPlots2d(unittest.TestCase):
             self.data[:, 0], self.data[:, 1], logscale=True)
         plot_density(
             self.data[:, 0], self.data[:, 1], logscale=False)
+        plot_density(
+            self.data[:, 0], self.data[:, 1], alpha=True)
 
     def test_plot_free_energy(self):
         plot_free_energy(
