@@ -83,6 +83,10 @@ class TestPlots2d(unittest.TestCase):
             self.data[:, 0], self.data[:, 1], self.data[:,0],
             levels='legacy')
         plt.close(fig)
+        fig, ax, misc = plot_contour(
+            self.data[:, 0], self.data[:, 1], self.data[:,0],
+            mask=True)
+        plt.close(fig)
 
     def test_plot_state_map(self):
         fig, ax, misc = plot_state_map(

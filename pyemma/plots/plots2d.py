@@ -654,7 +654,7 @@ def plot_contour(
         xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label=None, norm=None,
-        nbins=100, method='linear', **kwargs):
+        nbins=100, method='linear', mask=False, **kwargs):
     """Plot a two-dimensional contour map by interpolating
     scattered data on a grid.
 
@@ -693,6 +693,8 @@ def plot_contour(
     method : str, optional, default='nearest'
         Assignment method; scipy.interpolate.griddata supports the
         methods 'nearest', 'linear', and 'cubic'.
+    mask : boolean, optional, default=False
+        Hide unsampled areas is True.
 
     Optional parameters
     -------------------
@@ -761,6 +763,11 @@ def plot_contour(
     if levels == 'legacy':
         eps = (vmax - vmin) / float(ncontours)
         levels = _np.linspace(vmin - eps, vmax + eps)
+    if mask:
+        _, _, counts = get_histogram(
+            xall, yall, nbins=nbins, weights=None,
+            avoid_zero_count=None)
+        z = _np.ma.masked_where(counts.T <= 0, z)
     return plot_map(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=None, vmax=None, levels=levels,
@@ -770,7 +777,8 @@ def plot_contour(
 
 def plot_state_map(
         xall, yall, states, ax=None, cmap=None, cbar=True,
-        cax=None, cbar_label='state', nbins=100, **kwargs):
+        cax=None, cbar_label='state', nbins=100, mask=True,
+        **kwargs):
     """Plot a two-dimensional contour map of states by interpolating
     labels of scattered data on a grid.
 
@@ -795,6 +803,8 @@ def plot_state_map(
         Colorbar label string; use None to suppress it.
     nbins : int, optional, default=100
         Number of grid points used in each dimension.
+    mask : boolean, optional, default=False
+        Hide unsampled areas is True.
 
     Optional parameters
     -------------------
@@ -862,19 +872,13 @@ def plot_state_map(
 
     """
     from matplotlib.cm import get_cmap
-    x, y, z = get_grid_data(
-        xall, yall, states, nbins=nbins, method='nearest')
-    _, _, counts = get_histogram(
-        xall, yall, nbins=nbins, weights=None,
-        avoid_zero_count=None)
-    z = _np.ma.masked_where(counts.T <= 0, z)
     nstates = int(_np.max(states) + 1)
     cmap_ = get_cmap(cmap, nstates)
-    fig, ax, misc = plot_map(
-        x, y, z, ax=ax, cmap=cmap_,
+    fig, ax, misc = plot_contour(
+        xall, yall, states, ax=ax, cmap=cmap_,
         ncontours=nstates - 1, vmin=None, vmax=None, levels=None,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
-        **kwargs)
+        nbins=nbins, method='nearest', mask=mask, **kwargs)
     if cbar:
         cmin, cmax = misc['mappable'].get_clim()
         f = (cmax - cmin) / float(nstates)
