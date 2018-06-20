@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 
 from pyemma.plots.plots2d import contour, scatter_contour
 from pyemma.plots.plots2d import plot_density
@@ -33,29 +34,38 @@ class TestPlots2d(unittest.TestCase):
         cls.data = np.random.binomial(10, 0.4, (100, 2))
 
     def test_free_energy(self):
-        plot_free_energy(self.data[:, 0], self.data[:, 1])
+        fig, ax = plot_free_energy(
+            self.data[:, 0], self.data[:, 1])
+        plt.close(fig)
 
     def test_contour(self):
-        contour(self.data[:,0], self.data[:,1], self.data[:,0])
-        contour(
+        ax = contour(self.data[:,0], self.data[:,1], self.data[:,0])
+        plt.close(ax.get_figure())
+        ax = contour(
             self.data[:,0], self.data[:,1], self.data[:,0],
             zlim=(self.data[:, 0].min(), self.data[:, 0].max()))
+        plt.close(ax.get_figure())
 
     def test_scatter_contour(self):
-        scatter_contour(
+        ax = scatter_contour(
             self.data[:,0], self.data[:,1], self.data[:,0])
+        plt.close(ax.get_figure())
 
     def test_plot_density(self):
-        plot_density(
+        fig, ax, misc = plot_density(
             self.data[:, 0], self.data[:, 1], logscale=True)
-        plot_density(
+        plt.close(fig)
+        fig, ax, misc = plot_density(
             self.data[:, 0], self.data[:, 1], logscale=False)
-        plot_density(
+        plt.close(fig)
+        fig, ax, misc = plot_density(
             self.data[:, 0], self.data[:, 1], alpha=True)
+        plt.close(fig)
 
     def test_plot_free_energy(self):
-        plot_free_energy(
+        fig, ax, misc = plot_free_energy(
             self.data[:, 0], self.data[:, 1], legacy=False)
+        plt.close(fig)
         with self.assertRaises(ValueError):
             plot_free_energy(
                 self.data[:, 0], self.data[:, 1],
@@ -66,12 +76,15 @@ class TestPlots2d(unittest.TestCase):
                 legacy=False, ncountours=42)
 
     def test_plot_contour(self):
-        plot_contour(
+        fig, ax, misc = plot_contour(
             self.data[:, 0], self.data[:, 1], self.data[:,0])
-        plot_contour(
+        plt.close(fig)
+        fig, ax, misc = plot_contour(
             self.data[:, 0], self.data[:, 1], self.data[:,0],
             levels='legacy')
+        plt.close(fig)
 
     def test_plot_state_map(self):
-        plot_state_map(
+        fig, ax, misc = plot_state_map(
             self.data[:, 0], self.data[:, 1], self.data[:,0])
+        plt.close(fig)
