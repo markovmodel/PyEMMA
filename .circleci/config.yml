@@ -1,22 +1,20 @@
 
-#defaults: &defaults
-#  working_directory: ~/markovmodel/PyEMMA
-#  docker:
-#    - image: continuumio/miniconda3
+defaults: &defaults
+  working_directory: ~/markovmodel/PyEMMA
+  docker:
+    - image: continuumio/miniconda3
 
-#inst_conda_bld: &inst_conda_bld
-#  - run: conda config --add channels conda-forge
-#  - run: conda config --set always_yes true
-#  - run: conda config --set quiet true
-#  - run: conda install conda-build
+inst_conda_bld: &inst_conda_bld
+  - run: conda config --add channels conda-forge
+  - run: conda config --set always_yes true
+  - run: conda config --set quiet true
+  - run: conda install conda-build
 
 version: 2
 
 jobs:
   build:
-    working_directory: ~/markovmodel/PyEMMA
-    docker:
-      - image: continuumio/miniconda3
+    <<: *defaults
     parallelism: 1
     steps:
       - checkout
@@ -25,21 +23,15 @@ jobs:
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
       - run: conda install conda-build
-      - run: conda build devtools/conda-recipe --python=3.6 --no-test
-      #- store_artifacts:
-      #    path: $(conda build devtools/conda-recipe --python=3.6 --output)
-      #    destination: build.tar.bz2
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
+      - run: mkdir workspace
+      - run: conda build devtools/conda-recipe --python=3.6 --build-only --output-folder workspace
       - persist_to_workspace:
-          root: $( dirname $(conda build devtools/conda-recipe --python=3.6 --output) )
+          root: workspace
           paths:
-            - $(conda build devtools/conda-recipe --python=3.6 --output)
-
+            - "*"
 
   test:
-    working_directory: ~/markovmodel/PyEMMA
-    docker:
-      - image: continuumio/miniconda3
+    <<: *defaults
     parallelism: 4
     environment:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
@@ -57,14 +49,8 @@ jobs:
       - run: conda config --set quiet true
       - run: conda install conda-build
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at:  $( dirname $(conda build devtools/conda-recipe --python=3.6 --output) )
-      #- run: wget https://circleci.com/api/v1.1/project/:vcs-type/:org/:repo/:build_num/artifacts/0/build.tar.bz2 -o `conda build devtools/conda-recipe --python=3.6 --output`
-      #- run: wget curl https://circleci.com/api/v1.1/project/:git/:CIRCLE_PROJECT_USERNAME/:$CIRCLE_PROJECT_REPONAME/:$CIRCLE_BUILD_NUM/artifacts?circle-token=$CIRCLE_TOKEN
-      - run: conda build devtools/conda-recipe --python=3.6 --test
-      # Teardown
-      #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
-      # Save test results
+          at: workspace
+      - run: conda build devtools/conda-recipe --python=3.6 --test --output-folder workspace
       - store_test_results:
           path: /tmp/circleci-test-results
       # Save artifacts
@@ -80,5 +66,5 @@ workflows:
     jobs:
       - build
       - test:
-        requires:
-          - build
+          requires:
+            - build
