@@ -43,7 +43,7 @@ def pytest_collection_modifyitems(session, config, items):
     for item in items:
         i = hash(item.name)
         if i % circle_node_total != circle_node_index:
-            deselected.append(i)
+            deselected.append(item)
     for item in deselected:
         items.remove(item)
 
