@@ -3,7 +3,7 @@ defaults: &defaults
   working_directory: ~/markovmodel/PyEMMA
   docker:
     #- image: continuumio/miniconda3
-    - image: conda-forge/linux-anvil
+    - image: condaforge/linux-anvil
 
 inst_conda_bld: &inst_conda_bld
   - run: conda config --add channels conda-forge
