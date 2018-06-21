@@ -17,6 +17,8 @@ jobs:
   build:
     <<: *defaults
     parallelism: 1
+    environment:
+      PATH: "/opt/conda/bin:${PATH}"
     steps:
       - checkout
       - run: git fetch --unshallow || true
@@ -41,6 +43,7 @@ jobs:
       PYTHONHASHSEED: 0
       OMP_NUM_THREADS: 1
       PYEMMA_NJOBS: 1
+      PATH: "/opt/conda/bin:${PATH}"
 
     steps:
       - checkout
