@@ -33,7 +33,9 @@ requirements:
     - python
     - scipy
     - setuptools
-    - toolchain
+    #- toolchain, can not use because of:
+    #gcc: error: unrecognized command line option ‘-fstack-protector-strong’
+    #gcc: error: unrecognized command line option ‘-fno-plt’
 
   run:
     - bhmm >=0.6.3,<0.7
