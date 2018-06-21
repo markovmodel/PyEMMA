@@ -6,7 +6,7 @@ Changelog
 
 **New features**:
 
--
+- plots: new functions plot_density(), plot_state_map(), and plot_contour() #1317
 
 **Fixes**:
 
@@ -16,6 +16,9 @@ Changelog
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
 - base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
 - plots: fixed minor bug in plot_network (state_labels=None would not work). #1306
+- plots: refactored plots2d to remove inappropriate pylab/gca() usage, allow more figure construction control #1317
+- plots: refactored plots1d to remove inappropriate pylab/gca() usage #1317
+
 
 2.5.2 (04-10-2018)
 ------------------

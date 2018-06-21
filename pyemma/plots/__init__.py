@@ -1,7 +1,7 @@
 
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2014-2018 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -41,7 +41,10 @@ User-API
 .. autosummary::
    :toctree: generated/
 
+   plot_density
    plot_free_energy
+   plot_contour
+   plot_state_map
    scatter_contour
 
 **Network plots**
@@ -64,7 +67,11 @@ Classes
 """
 from __future__ import absolute_import
 from .timescales import plot_implied_timescales
-from .plots2d import contour, scatter_contour, plot_free_energy
+from .plots2d import contour, scatter_contour
+from .plots2d import plot_density
+from .plots2d import plot_free_energy
+from .plots2d import plot_contour
+from .plots2d import plot_state_map
 from .networks import plot_markov_model, plot_flux, plot_network, NetworkPlot
 from .markovtests import plot_cktest
 from .thermoplots import *
