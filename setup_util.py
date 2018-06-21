@@ -89,13 +89,14 @@ def has_function(cc, funcname, headers):
         return True
 
 
-def detect_openmp():
+def detect_openmp(compiler):
     with stdchannel_redirected(sys.stderr, os.devnull), \
          stdchannel_redirected(sys.stdout, os.devnull):
-        compiler = new_compiler()
         has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
+        print('[OpenMP] compiler {} has builtin support'.format(compiler))
         needs_gomp = has_openmp
         if not has_openmp:
+            print('[OpenMP] compiler {} needs library support'.format(compiler))
             compiler.add_library('gomp')
             has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
             needs_gomp = has_openmp

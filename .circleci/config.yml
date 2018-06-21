@@ -1,36 +1,71 @@
+
+defaults: &defaults
+  working_directory: ~/markovmodel/PyEMMA
+  docker:
+    #- image: continuumio/miniconda3
+    - image: condaforge/linux-anvil
+
+inst_conda_bld: &inst_conda_bld
+  - run: conda config --add channels conda-forge
+  - run: conda config --set always_yes true
+  - run: conda config --set quiet true
+  - run: conda install conda-build
+
 version: 2
+
 jobs:
   build:
-    working_directory: ~/markovmodel/PyEMMA
+    <<: *defaults
     parallelism: 1
+    steps:
+      - checkout
+      - run:
+          name: Update PATH
+          command: |
+            echo 'export PATH=/opt/conda/bin:${PATH}' >> $BASH_ENV
+            source $BASH_ENV
+      - run: mkdir workspace
+      - run: conda build devtools/conda-recipe --python=3.6 --no-test --output-folder workspace
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - "*"
+
+  test:
+    <<: *defaults
+    parallelism: 4
     environment:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       PYTHONHASHSEED: 0
-      OMP_NUM_THREADS: 1
+      OMP_NUM_THREADS: 2
       PYEMMA_NJOBS: 1
-    docker:
-    - image: continuumio/miniconda3
 
     steps:
-    - checkout
-    # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
-    # In many cases you can simplify this from what is generated here.
-    # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
-    - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-    - run: git fetch --unshallow || true
-    - run: conda config --add channels conda-forge
-    - run: conda config --set always_yes true
-    - run: conda install conda-build
-    - run: conda build devtools/conda-recipe --python=3.6
+      - checkout
+      - run:
+          name: Update PATH
+          command: |
+            echo 'export PATH=/opt/conda/bin:${PATH}' >> $BASH_ENV
+            source $BASH_ENV
+      - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+      - attach_workspace:
+          at: workspace
+      - run: conda build devtools/conda-recipe --python=3.6 --test --output-folder workspace
+      - store_test_results:
+          path: /tmp/circleci-test-results
+      # Save artifacts
+      - store_artifacts:
+          path: /tmp/circleci-artifacts
+      - store_artifacts:
+          path: /tmp/circleci-test-results
 
-    # Teardown
-    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
-    # Save test results
-    - store_test_results:
-        path: /tmp/circleci-test-results
-    # Save artifacts
-    - store_artifacts:
-        path: /tmp/circleci-artifacts
-    - store_artifacts:
-        path: /tmp/circleci-test-results
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build

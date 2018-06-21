@@ -33,6 +33,7 @@ requirements:
     - python
     - scipy
     - setuptools
+    - toolchain
 
   run:
     - bhmm >=0.6.3,<0.7
