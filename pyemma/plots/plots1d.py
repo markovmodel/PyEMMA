@@ -34,17 +34,22 @@ def plot_feature_histograms(xyzall,
 
     Parameters
     ----------
-    xyzall : (Concatenated list of) input features; np.array containing time series data to be plotted.
-    feature_labels : Labels of histogrammed features, optional, default = None.
-                  Either list of strings or pyemma Featurizer object.
-    ax : matplotlib Axes object, optional, default = None
-        the axes to plot to. When set to None the default Axes object will be used.
-    ylog : If True, plot logarithm of histogram values.
-    n_bins : Number of bins the histogram uses.
-    outfile : If not None, saves plot to this file.
-    ignore_dim_warning : Enable plotting for more than 50 dimensions (on your own risk).
-    **kwargs: Will be passed to pyplot.fill_between when plotting the histograms.
-            See the doc of pyplot for more options.
+    xyzall : np.ndarray(T, d)
+        (Concatenated list of) input features; containing time series data to be plotted.
+        Array of T data points in d dimensions (features).
+    feature_labels : iterable of str or pyemma.Featurizer, optional, default=None
+        Labels of histogrammed features, defaults to feature index.
+    ax : matplotlib.Axes object, optional, default=None.
+        The ax to plot to; if ax=None, a new ax (and fig) is created.
+    ylog : boolean, default=False
+        If True, plot logarithm of histogram values.
+    n_bins : int, default=50
+        Number of bins the histogram uses.
+    outfile : str, default=None
+        If not None, saves plot to this file.
+    ignore_dim_warning : boolean, default=False
+        Enable plotting for more than 50 dimensions (on your own risk).
+    **kwargs: kwargs passed to pyplot.fill_between. See the doc of pyplot for options.
 
     Returns
     -------
@@ -57,7 +62,7 @@ def plot_feature_histograms(xyzall,
 
     if xyzall.shape[1] > 50 and not ignore_dim_warning:
         raise RuntimeError('This function is only useful for less than 50 dimensions. Turn-off this warning '
-                           'on your own risk with ignore_dim_warning=True.')
+                           'at your own risk with ignore_dim_warning=True.')
 
     if feature_labels is not None:
         if not isinstance(feature_labels, list):
@@ -65,7 +70,8 @@ def plot_feature_histograms(xyzall,
             if isinstance(feature_labels, _MDFeaturizer):
                 feature_labels = feature_labels.describe()
             else:
-                raise ValueError('feature_labels must be a list of feature labels or a pyemma featurizer object!')
+                raise ValueError('feature_labels must be a list of feature labels, '
+                                 'a pyemma featurizer object or None.')
         if not xyzall.shape[1] == len(feature_labels):
             raise ValueError('feature_labels must have the same dimension as the input data xyzall.')
 
@@ -78,10 +84,12 @@ def plot_feature_histograms(xyzall,
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
-        ax = _plt.gca()
+        fig, ax = _plt.subplots()
+    else:
+        fig = ax.get_figure()
 
     hist_offset = -.2
-    for h, coordinate in enumerate(xyzall.T):
+    for h, coordinate in enumerate(reversed(xyzall.T)):
         hist, edges = _np.histogram(coordinate, bins=n_bins)
         if not ylog:
             y = hist / hist.max()
@@ -92,16 +100,15 @@ def plot_feature_histograms(xyzall,
     ax.set_ylim(hist_offset, h + hist_offset + 1)
 
     # formatting
-    if feature_labels is not None:
-        ax.set_yticks(_np.array(range(len(feature_labels))) + .3)
-        ax.set_yticklabels(feature_labels)
-    else:
-        ax.set_yticks([])
-        ax.set_yticklabels([])
+    if feature_labels is None:
+        feature_labels = [str(n) for n in range(xyzall.shape[1])]
         ax.set_ylabel('Feature histograms')
+
+    ax.set_yticks(_np.array(range(len(feature_labels))) + .3)
+    ax.set_yticklabels(feature_labels[::-1])
     ax.set_xlabel('Feature values')
 
     # save
     if outfile is not None:
-        _plt.savefig(outfile)
-    return ax
+        fig.savefig(outfile)
+    return fig, ax

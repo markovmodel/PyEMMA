@@ -35,3 +35,6 @@ pyemma/setup.cfg
 
 # generated c-files:
 pyemma/_ext/variational/estimators/covar_c/covartools.c
+
+# pytest
+.pytest_cache
