@@ -18,6 +18,7 @@
 
 from __future__ import absolute_import
 import unittest
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -60,6 +61,10 @@ class TestPlots2d(unittest.TestCase):
         plt.close(fig)
         fig, ax, misc = plot_density(
             self.data[:, 0], self.data[:, 1], alpha=True)
+        plt.close(fig)
+        fig, ax, misc = plot_density(
+            self.data[:, 0], self.data[:, 1],
+            this_should_raise_a_UserWarning=True)
         plt.close(fig)
 
     def test_plot_free_energy(self):

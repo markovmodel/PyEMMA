@@ -233,12 +233,12 @@ def _prune_kwargs(kwargs):
     allowed_keys = [
         'corner_mask', 'alpha', 'locator', 'extend', 'xunits',
         'yunits', 'antialiased', 'nchunk', 'hatches']
-    for key in kwargs.keys():
-        if key not in allowed_keys:
-            _warn(
-                '{}={} is not an allowed optional parameter and will'
-                ' be ignored'.format(key, kwargs[key]))
-            kwargs.pop(key, None)
+    ignored = [key for key in kwargs.keys() if key not in allowed_keys]
+    for key in ignored:
+        _warn(
+            '{}={} is not an allowed optional parameter and will'
+            ' be ignored'.format(key, kwargs[key]))
+        kwargs.pop(key, None)
     return kwargs
 
 def plot_map(
