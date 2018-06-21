@@ -21,7 +21,7 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - libgomp # [osx]
+    - llvm-openmp # [osx]
 
   host:
     - cython
