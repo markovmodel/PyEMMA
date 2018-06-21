@@ -17,16 +17,13 @@ jobs:
   build:
     <<: *defaults
     parallelism: 1
-    environment:
-      PATH: "/opt/conda/bin:${PATH}"
     steps:
       - checkout
-      - run: git fetch --unshallow || true
-      - run: echo $PATH
-      #- run: conda config --add channels conda-forge
-      #- run: conda config --set always_yes true
-      #- run: conda config --set quiet true
-      #- run: conda install conda-build
+      - run:
+          name: Update PATH
+          command: |
+            echo 'export /opt/conda/bin:${PATH}' >> $BASH_ENV
+            source $BASH_ENV
       - run: mkdir workspace
       - run: conda build devtools/conda-recipe --python=3.6 --no-test --output-folder workspace
       - persist_to_workspace:
@@ -43,16 +40,15 @@ jobs:
       PYTHONHASHSEED: 0
       OMP_NUM_THREADS: 1
       PYEMMA_NJOBS: 1
-      PATH: "/opt/conda/bin:${PATH}"
 
     steps:
       - checkout
-
+      - run:
+          name: Update PATH
+          command: |
+            echo 'export /opt/conda/bin:${PATH}' >> $BASH_ENV
+            source $BASH_ENV
       - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
-      #- run: conda config --add channels conda-forge
-      #- run: conda config --set always_yes true
-      #- run: conda config --set quiet true
-      #- run: conda install conda-build
       - attach_workspace:
           at: workspace
       - run: conda build devtools/conda-recipe --python=3.6 --test --output-folder workspace
