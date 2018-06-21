@@ -236,7 +236,7 @@ def get_cmdclass():
                 opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
 
             # setup OpenMP support
-            openmp_enabled, needs_gomp = detect_openmp()
+            openmp_enabled, needs_gomp = detect_openmp(self.compiler)
             if openmp_enabled:
                 warnings.warn('enabled openmp')
                 omp_compiler_args = ['-fopenmp']
