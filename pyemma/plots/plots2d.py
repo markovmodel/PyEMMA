@@ -230,6 +230,14 @@ def _to_free_energy(z, minener_zero=False):
 
 
 def _prune_kwargs(kwargs):
+    """Remove non-allowed keys from a kwargs dictionary.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Named parameters to prune.
+
+    """
     allowed_keys = [
         'corner_mask', 'alpha', 'locator', 'extend', 'xunits',
         'yunits', 'antialiased', 'nchunk', 'hatches']
@@ -240,6 +248,7 @@ def _prune_kwargs(kwargs):
             ' be ignored'.format(key, kwargs[key]))
         kwargs.pop(key, None)
     return kwargs
+
 
 def plot_map(
         x, y, z, ax=None, cmap=None,
@@ -278,8 +287,8 @@ def plot_map(
     norm : matplotlib norm, optional, default=None
         Use a norm when coloring the contour plot.
 
-    Optional parameters
-    -------------------
+    Optional parameters for contourf (**kwargs)
+    -------------------------------------------
     corner_mask : boolean, optional
         Enable/disable corner masking, which only has an effect if
         z is a masked array. If False, any quad touching a masked
@@ -409,8 +418,8 @@ def plot_density(
         minimum value before computing the free energy. If False,
         zero histogram counts would yield infinity in the free energy.
 
-    Optional parameters
-    -------------------
+    Optional parameters for contourf (**kwargs)
+    -------------------------------------------
     corner_mask : boolean, optional
         Enable/disable corner masking, which only has an effect if
         z is a masked array. If False, any quad touching a masked
@@ -552,8 +561,8 @@ def plot_free_energy(
     ncountours : int, optional, default=None
         Legacy parameter (typo) for number of contour levels.
 
-    Optional parameters
-    -------------------
+    Optional parameters for contourf (**kwargs)
+    -------------------------------------------
     corner_mask : boolean, optional
         Enable/disable corner masking, which only has an effect if
         z is a masked array. If False, any quad touching a masked
@@ -696,8 +705,8 @@ def plot_contour(
     mask : boolean, optional, default=False
         Hide unsampled areas is True.
 
-    Optional parameters
-    -------------------
+    Optional parameters for contourf (**kwargs)
+    -------------------------------------------
     corner_mask : boolean, optional
         Enable/disable corner masking, which only has an effect if
         z is a masked array. If False, any quad touching a masked
@@ -806,8 +815,8 @@ def plot_state_map(
     mask : boolean, optional, default=False
         Hide unsampled areas is True.
 
-    Optional parameters
-    -------------------
+    Optional parameters for contourf (**kwargs)
+    -------------------------------------------
     corner_mask : boolean, optional
         Enable/disable corner masking, which only has an effect if
         z is a masked array. If False, any quad touching a masked
