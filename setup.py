@@ -236,11 +236,14 @@ def get_cmdclass():
                 opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
 
             # setup OpenMP support
-            openmp_enabled, needs_gomp = detect_openmp(self.compiler)
+            openmp_enabled, additional_libs = detect_openmp(self.compiler)
             if openmp_enabled:
                 warnings.warn('enabled openmp')
-                omp_compiler_args = ['-fopenmp']
-                omp_libraries = ['-lgomp'] if needs_gomp else []
+                if sys.platform == 'darwin':
+                    omp_compiler_args = ['-fopenmp=libiomp5']
+                else:
+                    omp_compiler_args = ['-fopenmp']
+                omp_libraries = additional_libs
                 omp_defines = [('USE_OPENMP', None)]
             # debug
             dbg_flag = ['-g0' if not self.debug else '-g']
