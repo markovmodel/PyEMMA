@@ -93,8 +93,9 @@ def detect_openmp(compiler):
     from distutils.log import info
     from copy import deepcopy
     compiler = deepcopy(compiler) # avoid side-effects
-    with stdchannel_redirected(sys.stderr, os.devnull), \
-         stdchannel_redirected(sys.stdout, os.devnull):
+    #with stdchannel_redirected(sys.stderr, os.devnull), \
+    #     stdchannel_redirected(sys.stdout, os.devnull):
+    if True:
         has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
         info('[OpenMP] compiler {} has builtin support'.format(compiler))
         additional_libs = []
