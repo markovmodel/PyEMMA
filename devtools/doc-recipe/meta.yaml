@@ -1,4 +1,4 @@
-{% set version = GIT_DESCRIBE_TAG[1:] + '+' + GIT_BUILD_STR %}
+{% set version = GIT_DESCRIBE_TAG[1:] + '+' + GIT_DESCRIBE_NUMBER + '.' + GIT_DESCRIBE_HASH %}
 
 package:
   name: pyemma-doc

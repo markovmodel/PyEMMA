@@ -30,6 +30,8 @@ from __future__ import print_function, absolute_import
 
 import sys
 import os
+from distutils.log import info
+
 import versioneer
 import warnings
 from io import open
@@ -222,8 +224,10 @@ def get_cmdclass():
                 compiler = os.path.basename(sysconfig.get_config_var("CC"))
                 if str(compiler).startswith('clang'):
                     self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-            # TODO: test
-            self.compiler.linker_so[0] = self.compiler.linker_exe[0]
+
+            # LDSHARED is not set by Anaconda 5.0 compilers, so we need to set it our self to avoid escaping the env.
+            if hasattr(self.compiler, 'linker_exe'):
+                self.compiler.linker_so[0] = self.compiler.linker_exe[0]
 
             ct = self.compiler.compiler_type
             opts = self.c_opts.get(ct, [])
@@ -236,11 +240,14 @@ def get_cmdclass():
                 opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
 
             # setup OpenMP support
-            openmp_enabled, needs_gomp = detect_openmp()
+            openmp_enabled, additional_libs = detect_openmp(self.compiler)
             if openmp_enabled:
                 warnings.warn('enabled openmp')
-                omp_compiler_args = ['-fopenmp']
-                omp_libraries = ['-lgomp'] if needs_gomp else []
+                if sys.platform == 'darwin':
+                    omp_compiler_args = ['-fopenmp=libiomp5']
+                else:
+                    omp_compiler_args = ['-fopenmp']
+                omp_libraries = ['-l%s' % l for l in additional_libs]
                 omp_defines = [('USE_OPENMP', None)]
             # debug
             dbg_flag = ['-g0' if not self.debug else '-g']

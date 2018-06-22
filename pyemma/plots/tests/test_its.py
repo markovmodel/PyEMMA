@@ -41,7 +41,7 @@ class TestItsPlot(unittest.TestCase):
                       ])
         # bogus its object
         lags = [1, 2, 3, 5, 10]
-        dtraj = generate_traj(P, 100)
+        dtraj = generate_traj(P, 1000)
         estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
         cls.its = ImpliedTimescales(estimator=estimator)
         cls.its.estimate(dtraj, lags=lags)

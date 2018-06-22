@@ -14,6 +14,20 @@ import pyemma.coordinates.tests.util as util
 from pyemma.coordinates.data import FragmentedTrajectoryReader
 
 
+def _skip_stride_handling_old_mdtraj():
+    # newer versions do not need multiplying n_frames with stride for certain formats.
+    from distutils.version import LooseVersion
+    from mdtraj import version as md_version
+
+    if LooseVersion(md_version.version) > LooseVersion('1.9.1'):
+        return False
+
+    return True
+
+
+skip_stride_handling_old_mdtraj = _skip_stride_handling_old_mdtraj()
+
+
 def max_chunksize_from_config(itemsize):
     from pyemma import config
     from pyemma.util.units import string_to_bytes
@@ -167,7 +181,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
 
     def _test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
         # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1:
+        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
             raise unittest.SkipTest('wait for mdtraj 2.0')
         trajs = self.test_trajs[file_format]
         reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
@@ -224,7 +238,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
         trajs = self.test_trajs[file_format]
 
         # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1:
+        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
             raise unittest.SkipTest('wait for mdtraj 2.0')
 
         reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
@@ -245,8 +259,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
             collected = np.vstack(collected)
             collected_lagged = np.vstack(collected_lagged)
             np.testing.assert_allclose(data[::stride][0:len(collected_lagged)], collected, atol=self.eps,
-                                                 err_msg="lag={}, stride={}, cs={}".format(
-                                                     lag, stride, chunksize
+                                                    err_msg="lag={}, stride={}, cs={}".format(lag, stride, chunksize
                                                  ))
             np.testing.assert_allclose(data[lag::stride], collected_lagged, atol=self.eps)
         else:
@@ -260,7 +273,7 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
 
     def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
         # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1:
+        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
             raise unittest.SkipTest('wait for mdtraj 2.0')
 
         trajs = self.test_trajs[file_format]

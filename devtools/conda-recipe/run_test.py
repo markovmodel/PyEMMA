@@ -13,7 +13,7 @@ target_dir = os.path.dirname(junit_xml)
 if not os.path.exists(target_dir):
     os.makedirs(target_dir)
 print('junit destination:', junit_xml)
-njobs_args = '-p no:xdist' if os.getenv('TRAVIS') else '-n2'
+njobs_args = '-p no:xdist' if os.getenv('TRAVIS') or os.getenv('CIRCLECI') else '-n2'
 
 pytest_args = ("-v --pyargs {test_pkg} "
                "--cov={cover_pkg} "
