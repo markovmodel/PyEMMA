@@ -26,6 +26,7 @@ requirements:
 
   host:
     - cython
+    - intel-openmp # [osx]
     - mdtraj
     # actually we could build with np18, but fastcluster (dep of mdtraj, we link against) is only avail for 1.9
     - numpy 1.9.*  # [not (win and (py35 or py36))]
@@ -34,7 +35,6 @@ requirements:
     - python
     - scipy
     - setuptools
-    - intel-openmp # [osx]
 
     #- toolchain, can not use because of:
     #gcc: error: unrecognized command line option ‘-fstack-protector-strong’
@@ -44,8 +44,9 @@ requirements:
     - bhmm >=0.6.3,<0.7
     - decorator >=4.0.0
     - h5py
+    - intel-openmp # [osx]
     - matplotlib
-    - mdtraj
+    - mdtraj >=1.8
     - mock # TODO: remove when py3k only.
     - msmtools >=1.2
     - numpy >=1.9  # [not (win and (py35 or py36))]
@@ -59,7 +60,7 @@ requirements:
     - setuptools
     - six >=1.10
     - thermotools >=0.2.6
-    - tqdm
+    - tqdm >=4.23
 
 test:
   source_files:
