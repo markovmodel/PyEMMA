@@ -25,21 +25,21 @@ Created on 13.03.2015
 from __future__ import absolute_import
 
 from collections import namedtuple
+from itertools import groupby
+from operator import itemgetter
 
 import numpy as np
-from mdtraj import FormatRegistry
-from mdtraj import Topology, Trajectory
+from mdtraj import Topology, Trajectory, version
+from mdtraj.core.trajectory import _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
-
-from itertools import groupby
-from operator import itemgetter, attrgetter
-
-from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
-
 
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
+
+# newer versions do not need multiplying n_frames with stride for certain formats.
+from distutils.version import LooseVersion
+_stride_handling = LooseVersion(version.version) > LooseVersion('1.9.1')
+del LooseVersion
 
 
 def _cache_mdtraj_topology(args):
@@ -224,7 +224,9 @@ class iterload(object):
                 n_frames = None  # read all frames
             else:
                 n_frames = self._chunksize
-                if self._extension != '.dcd':
+                # mdtraj > 1.9.1 handles stride for dcd, xtc and trr the right way.
+                if (not _stride_handling and self._extension != '.dcd') \
+                        or (_stride_handling and self._extension not in ('.xtc', '.trr', '.dcd')):
                     n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
