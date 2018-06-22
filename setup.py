@@ -245,7 +245,7 @@ def get_cmdclass():
                     omp_compiler_args = ['-fopenmp=libiomp5']
                 else:
                     omp_compiler_args = ['-fopenmp']
-                omp_libraries = additional_libs
+                omp_libraries = ['-l%s' % l for l in additional_libs]
                 assert isinstance(omp_libraries, list)
                 omp_defines = [('USE_OPENMP', None)]
             # debug
