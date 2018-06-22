@@ -30,6 +30,8 @@ from __future__ import print_function, absolute_import
 
 import sys
 import os
+from distutils.log import info
+
 import versioneer
 import warnings
 from io import open
@@ -257,6 +259,8 @@ def get_cmdclass():
                 if openmp_enabled:
                     ext.extra_compile_args += omp_compiler_args
                     ext.extra_link_args += omp_libraries
+                    info('extra link args: %s', ext.extra_link_args)
+                    info('extra compile args: %s', ext.extra_compile_args)
                     ext.define_macros += omp_defines
 
             build_ext.build_extensions(self)

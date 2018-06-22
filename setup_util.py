@@ -65,10 +65,11 @@ def stdchannel_redirected(stdchannel, dest_filename, fake=False):
 
 # From http://stackoverflow.com/questions/
 # 7018879/disabling-output-when-compiling-with-distutils
-def has_function(cc, funcname, headers):
+def has_function(compiler, funcname, headers):
     if not isinstance(headers, (tuple, list)):
         headers = [headers]
-    with TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir, stdchannel_redirected(sys.stderr, os.devnull), \
+             stdchannel_redirected(sys.stdout, os.devnull):
         try:
             fname = os.path.join(tmpdir, 'funcname.c')
             f = open(fname, 'w')
@@ -78,8 +79,8 @@ def has_function(cc, funcname, headers):
             f.write(' %s();\n' % funcname)
             f.write('return 0;}')
             f.close()
-            objects = cc.compile([fname], output_dir=tmpdir)
-            cc.link_executable(objects, os.path.join(tmpdir, 'a.out'))
+            objects = compiler.compile([fname], output_dir=tmpdir)
+            compiler.link_executable(objects, os.path.join(tmpdir, 'a.out'))
         except (setuptools.distutils.errors.CompileError, setuptools.distutils.errors.LinkError):
             return False
         except:
@@ -93,22 +94,19 @@ def detect_openmp(compiler):
     from distutils.log import info
     from copy import deepcopy
     compiler = deepcopy(compiler) # avoid side-effects
-    #with stdchannel_redirected(sys.stderr, os.devnull), \
-    #     stdchannel_redirected(sys.stdout, os.devnull):
-    if True:
+    has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
+    info('[OpenMP] compiler %s has builtin support', compiler)
+    additional_libs = []
+    if not has_openmp:
+        info('[OpenMP] compiler %s needs library support', compiler)
+        if sys.platform == 'darwin':
+            compiler.add_library('iomp5')
+        elif sys.platform == 'linux':
+            compiler.add_library('gomp')
         has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
-        info('[OpenMP] compiler {} has builtin support'.format(compiler))
-        additional_libs = []
-        if not has_openmp:
-            info('[OpenMP] compiler {} needs library support'.format(compiler))
-            if sys.platform == 'darwin':
-                compiler.add_library('iomp5')
-            elif sys.platform == 'linux':
-                compiler.add_library('gomp')
-            has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
-            if has_openmp:
-                additional_libs = [compiler.libraries[-1]]
-                info('[OpenMP] added library {}'.format(additional_libs))
+        if has_openmp:
+            additional_libs = [compiler.libraries[-1]]
+            info('[OpenMP] added library %s', additional_libs)
         return has_openmp, additional_libs
 
 
