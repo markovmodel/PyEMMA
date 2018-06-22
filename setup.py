@@ -224,7 +224,7 @@ def get_cmdclass():
                 compiler = os.path.basename(sysconfig.get_config_var("CC"))
                 if str(compiler).startswith('clang'):
                     self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-            # TODO: test
+            # LDSHARED is not set by Anaconda 5.0 compilers, so we need to set it our self to avoid escaping the env.
             self.compiler.linker_so[0] = self.compiler.linker_exe[0]
 
             ct = self.compiler.compiler_type
@@ -246,7 +246,6 @@ def get_cmdclass():
                 else:
                     omp_compiler_args = ['-fopenmp']
                 omp_libraries = ['-l%s' % l for l in additional_libs]
-                assert isinstance(omp_libraries, list)
                 omp_defines = [('USE_OPENMP', None)]
             # debug
             dbg_flag = ['-g0' if not self.debug else '-g']
@@ -259,8 +258,6 @@ def get_cmdclass():
                 if openmp_enabled:
                     ext.extra_compile_args += omp_compiler_args
                     ext.extra_link_args += omp_libraries
-                    info('extra link args: %s', ext.extra_link_args)
-                    info('extra compile args: %s', ext.extra_compile_args)
                     ext.define_macros += omp_defines
 
             build_ext.build_extensions(self)

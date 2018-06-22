@@ -91,14 +91,14 @@ def has_function(compiler, funcname, headers):
 
 
 def detect_openmp(compiler):
-    from distutils.log import info
+    from distutils.log import debug
     from copy import deepcopy
     compiler = deepcopy(compiler) # avoid side-effects
     has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
-    info('[OpenMP] compiler %s has builtin support', compiler)
+    debug('[OpenMP] compiler %s has builtin support', compiler)
     additional_libs = []
     if not has_openmp:
-        info('[OpenMP] compiler %s needs library support', compiler)
+        debug('[OpenMP] compiler %s needs library support', compiler)
         if sys.platform == 'darwin':
             compiler.add_library('iomp5')
         elif sys.platform == 'linux':
@@ -106,7 +106,7 @@ def detect_openmp(compiler):
         has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
         if has_openmp:
             additional_libs = [compiler.libraries[-1]]
-            info('[OpenMP] added library %s', additional_libs)
+            debug('[OpenMP] added library %s', additional_libs)
         return has_openmp, additional_libs
 
 
