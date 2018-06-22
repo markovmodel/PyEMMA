@@ -244,6 +244,7 @@ def get_cmdclass():
                 else:
                     omp_compiler_args = ['-fopenmp']
                 omp_libraries = additional_libs
+                assert isinstance(omp_libraries, list)
                 omp_defines = [('USE_OPENMP', None)]
             # debug
             dbg_flag = ['-g0' if not self.debug else '-g']
