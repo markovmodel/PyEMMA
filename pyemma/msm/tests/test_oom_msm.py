@@ -787,7 +787,7 @@ class TestMSMFiveState(unittest.TestCase):
             # first timescale is infinite
             assert (fp1[0][0] == np.inf)
             # next timescales are identical to timescales:
-            assert (np.allclose(fp1[0][1:], msm.timescales(4)))
+            np.testing.assert_allclose(fp1[0][1:], msm.timescales(4), atol=1E-02)
             # dynamical amplitudes should be near 0 because we are in equilibrium
             assert (np.max(np.abs(fp1[1][1:])) < 1e-10)
             # off-equilibrium relaxation
