@@ -1556,7 +1556,7 @@ class TestMSM_Incomplete(unittest.TestCase):
             # first timescale is infinite
             assert (fp2[0][0] == np.inf)
             # next timescales are identical to timescales:
-            assert (np.allclose(fp2[0][1:], msm.timescales(3)))
+            np.testing.assert_allclose(fp2[0][1:], msm.timescales(3), atol=1e-2)
             # check equality
             assert np.allclose(fp2[1], self.fing_rel)
         else:  # raise ValueError, because fingerprints are not defined for nonreversible
