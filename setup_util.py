@@ -107,7 +107,7 @@ def detect_openmp(compiler):
         if has_openmp:
             additional_libs = [compiler.libraries[-1]]
             debug('[OpenMP] added library %s', additional_libs)
-        return has_openmp, additional_libs
+    return has_openmp, additional_libs
 
 
 # has_flag and cpp_flag taken from https://github.com/pybind/python_example/blob/master/setup.py
