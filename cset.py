@@ -18,6 +18,7 @@
 r"""
 This module provides functions to deal with connected sets.
 """
+from __future__ import absolute_import
 
 __all__ = [
     'compute_csets_TRAM',
@@ -28,9 +29,9 @@ import numpy as _np
 import scipy as _sp
 import scipy.sparse as _sps
 import msmtools as _msmtools
-import bar as _bar
-import util as _util
-import collections as _collections
+import thermotools.bar as _bar
+import thermotools.util as _util
+
 
 def compute_csets_TRAM(
     connectivity, state_counts, count_matrices, equilibrium_state_counts=None,
