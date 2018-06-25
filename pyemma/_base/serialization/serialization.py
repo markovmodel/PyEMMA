@@ -243,7 +243,7 @@ class SerializableMixIn(object):
             raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
         from pyemma._base.serialization.h5file import H5File
         try:
-            with H5File(file_name=file_name) as f:
+            with H5File(file_name=file_name, mode='a') as f:
                 f.add_serializable(model_name, obj=self, overwrite=overwrite, save_streaming_chain=save_streaming_chain)
         except Exception as e:
             msg = ('During saving the object {obj}") '
