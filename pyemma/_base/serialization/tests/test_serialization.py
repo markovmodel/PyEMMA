@@ -24,6 +24,7 @@ import numpy as np
 import six
 
 import pyemma
+from pyemma._base.serialization.h5file import H5File
 from pyemma._base.serialization.serialization import ClassVersionException
 from pyemma._base.serialization.serialization import SerializableMixIn
 from ._test_classes import (test_cls_v1, test_cls_v2, test_cls_v3, _deleted_in_old_version, test_cls_with_old_locations,
@@ -224,8 +225,7 @@ class TestSerialisation(unittest.TestCase):
     def test_rename(self):
         inst = np_container(None)
         inst.save(self.fn, model_name='a')
-        from pyemma._base.serialization.h5file import H5File
-        with H5File(self.fn) as f:
+        with H5File(self.fn, mode='a') as f:
             f.rename('a', 'b')
             models = f.models_descriptive.keys()
         self.assertIn('b', models)
@@ -234,10 +234,16 @@ class TestSerialisation(unittest.TestCase):
     def test_delete(self):
         inst = np_container(None)
         inst.save(self.fn, model_name='a')
-        from pyemma._base.serialization.h5file import H5File
-        with H5File(self.fn) as f:
+        with H5File(self.fn, mode='a') as f:
             f.delete('a')
             self.assertNotIn('a', f.models_descriptive.keys())
+
+    def test_model_not_existant(self):
+        inst = np_container(None)
+        inst.save(self.fn, 'foo')
+        with self.assertRaises(ValueError) as cm:
+            f = H5File(self.fn, model_name='bar')
+        self.assertIn('"bar" not found', cm.exception.args[0])
 
 
 if __name__ == '__main__':

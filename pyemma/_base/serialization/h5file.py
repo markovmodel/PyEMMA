@@ -36,7 +36,7 @@ class H5File(object):
                          'digest',
                          )
 
-    def __init__(self, file_name, model_name=None, mode=None):
+    def __init__(self, file_name, model_name=None, mode='r'):
         import h5py
         self._file = h5py.File(file_name, mode=mode)
         self._parent = self._file.require_group('pyemma')
@@ -93,6 +93,10 @@ class H5File(object):
                     not all(attr in self._parent[model_name].attrs for attr in H5File.stored_attributes):
                 raise ValueError('already saved model does not contain desired attributes: {}. Contains only: {}'
                                  .format(H5File.stored_attributes, list(self._parent[model_name].attrs)))
+
+            # not existent and read only
+            if model_name not in self._parent and self._file.mode == 'r':
+                raise ValueError('model_name "{n}" not found in file {f}'.format(n=model_name, f=self._file.name))
             self.__group = self._parent.require_group(model_name)
 
     @_current_model_group.deleter
