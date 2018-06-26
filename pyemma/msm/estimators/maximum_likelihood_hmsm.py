@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from six.moves import range
 from pyemma.util.annotators import alias, aliased, fix_docs
 
 import numpy as _np
@@ -276,9 +275,9 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             states_subset = 'populous-strong'
 
         # return submodel (will return self if all None)
-        self._internal_submodel_call = True
         return self.submodel(states=states_subset, obs=observe_subset,
-                             mincount_connectivity=self.mincount_connectivity)
+                             mincount_connectivity=self.mincount_connectivity,
+                             inplace=True)
 
     @property
     def msm_init(self):
@@ -365,7 +364,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     # Submodel functions using estimation information (counts)
     ################################################################################
 
-    def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
+    def submodel(self, states=None, obs=None, mincount_connectivity='1/n', inplace=False):
         """Returns a HMM with restricted state space
 
         Parameters
@@ -388,6 +387,9 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             Counts lower than that will count zero in the connectivity check and
             may thus separate the resulting transition matrix. Default value:
             1/nstates.
+        inplace : Bool
+            if True, submodel is estimated in-place, overwriting the original
+            estimator and possibly discarding information. Default value: False
 
         Returns
         -------
@@ -410,13 +412,11 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         S = _tmatrix_disconnected.connected_sets(self.count_matrix,
                                                  mincount_connectivity=mincount_connectivity,
                                                  strong=True)
-        if hasattr(self, '_internal_submodel_call') and self._internal_submodel_call:
+        if inplace:
             submodel_estimator = self
         else:
             from copy import deepcopy
             submodel_estimator = deepcopy(self)
-
-        self._internal_submodel_call = False
 
         if len(S) > 1:
             # keep only non-negligible transitions
