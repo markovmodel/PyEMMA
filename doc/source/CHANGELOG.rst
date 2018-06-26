@@ -18,6 +18,7 @@ Changelog
 - plots: fixed minor bug in plot_network (state_labels=None would not work). #1306
 - plots: refactored plots2d to remove inappropriate pylab/gca() usage, allow more figure construction control #1317
 - plots: refactored plots1d to remove inappropriate pylab/gca() usage #1317
+- msm: fixed inconsistent submodel behavior in HMSM and BayesianHMSM. #1323
 
 
 2.5.2 (04-10-2018)
