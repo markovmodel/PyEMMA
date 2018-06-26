@@ -156,7 +156,10 @@ class MSM(_Model, SerializableMixIn):
         if id(self) == id(other):
             return True
         if self.P is not None and other.P is not None:
-            P_equal = _np.allclose(self.P, other.P)
+            if self.P.shape != other.P.shape:
+                P_equal = False
+            else:
+                P_equal = _np.allclose(self.P, other.P)
         else:
             P_equal = True
         return (P_equal and

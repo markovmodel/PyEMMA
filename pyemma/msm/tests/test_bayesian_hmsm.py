@@ -20,8 +20,7 @@ from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma.msm import bayesian_hidden_markov_model
-from os.path import abspath, join
-from os import pardir
+
 
 class TestBHMM(unittest.TestCase):
 
@@ -302,6 +301,23 @@ class TestBHMM(unittest.TestCase):
         # test consistency
         assert np.all(L <= mean)
         assert np.all(R >= mean)
+
+    def test_submodel_simple(self):
+        # sanity check for submodel;
+        # call should not alter self
+        from copy import deepcopy
+        dtrj = np.random.randint(0, 2, size=100)
+        dtrj[np.random.randint(0, dtrj.shape[0], 3)] = 2
+        h = bayesian_hidden_markov_model(dtrj, 3, 2)
+        h_original = deepcopy(h)
+
+        hs = h.submodel_largest(mincount_connectivity=5)
+
+        self.assertTrue(h == h_original)
+
+        self.assertEqual(hs.timescales().shape[0], 1)
+        self.assertEqual(hs.pi.shape[0], 2)
+        self.assertEqual(hs.transition_matrix.shape, (2, 2))
 
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
