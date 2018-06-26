@@ -10,7 +10,8 @@ source:
 
 requirements:
   build:
-    - pyemma-dev =={{ version }}
+    # there is a bug in conda-build 3.10.9 which does not allow our version number...
+    - pyemma-dev #=={{ version }}
     - nbconvert
     - sphinx
     - ipython
