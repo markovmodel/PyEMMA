@@ -1087,11 +1087,16 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             statdist_active = self.statdist_constraint[self.active_set]
             statdist_active /= statdist_active.sum()  # renormalize
 
+        opt_args = {}
+        # TODO: non-rev estimate of msmtools does not comply with its own api...
+        if statdist_active is None and self.reversible:
+            opt_args['return_statdist'] = True
+
         # Estimate transition matrix
         if self.connectivity == 'largest':
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
                                          mu=statdist_active, maxiter=self.maxiter,
-                                         maxerr=self.maxerr)
+                                         maxerr=self.maxerr, **opt_args)
         elif self.connectivity == 'none':
             # reversible mode only possible if active set is connected
             # - in this case all visited states are connected and thus
@@ -1101,7 +1106,17 @@ class MaximumLikelihoodMSM(_MSMEstimator):
                                  'because the set of all visited states is not reversibly connected')
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
                                          mu=statdist_active,
-                                         maxiter=self.maxiter, maxerr=self.maxerr)
+                                         maxiter=self.maxiter, maxerr=self.maxerr,
+                                         **opt_args
+                                         )
+        else:
+            raise NotImplementedError(
+                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
+
+        # msmtools returns a tuple for statdist_active = None.
+        if isinstance(P, tuple):
+            P, statdist_active = P
+
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
