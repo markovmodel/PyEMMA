@@ -72,7 +72,7 @@ def list_models(filename):
         {model_name: {'repr' : 'string representation, 'created': 'human readable date', ...}
     """
     from ._base.serialization.h5file import H5File
-    with H5File(filename) as f:
+    with H5File(filename, mode='r') as f:
         return f.models_descriptive
 
 
