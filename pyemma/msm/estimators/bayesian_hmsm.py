@@ -327,16 +327,20 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
         # return submodel (will return self if all None)
         return self.submodel(states=states_subset, obs=observe_subset,
-                             mincount_connectivity=self.mincount_connectivity)
+                             mincount_connectivity=self.mincount_connectivity,
+                             inplace=True)
 
-    def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
+    def submodel(self, states=None, obs=None, mincount_connectivity='1/n', inplace=False):
         # call submodel on MaximumLikelihoodHMSM
-        _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs, mincount_connectivity=mincount_connectivity)
+
+        submodel_estimator = _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs,
+                                                             mincount_connectivity=mincount_connectivity,
+                                                             inplace=inplace)
         # if samples set, also reduce them
         if hasattr(self, 'samples') and self.samples is not None:
-            subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
+            subsamples = [sample.submodel(states=submodel_estimator.active_set, obs=submodel_estimator.observable_set)
                           for sample in self.samples]
-            self.update_model_params(samples=subsamples)
+            submodel_estimator.update_model_params(samples=subsamples)
 
         # return
-        return self
+        return submodel_estimator
