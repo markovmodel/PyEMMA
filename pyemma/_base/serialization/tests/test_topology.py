@@ -36,7 +36,7 @@ class TestTopology(unittest.TestCase):
 
     def _load_cmp(self, pdb):
         top = mdtraj.load(pdb).top
-        with H5File(self.f) as fh:
+        with H5File(self.f, mode='a') as fh:
             fh.add_object('top', top)
             restored = fh.model
 
