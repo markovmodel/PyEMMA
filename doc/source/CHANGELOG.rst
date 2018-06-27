@@ -35,6 +35,8 @@ Changelog
 **Contributors**:
 
 - @chwehmeyer
+- @clonker
+- @jeiros
 - @marscher
 - @ppxasjsm
 - @thempel
