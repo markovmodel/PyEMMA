@@ -225,10 +225,6 @@ def get_cmdclass():
                 if str(compiler).startswith('clang'):
                     self.c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
 
-            # LDSHARED is not set by Anaconda 5.0 compilers, so we need to set it our self to avoid escaping the env.
-            if hasattr(self.compiler, 'linker_exe'):
-                self.compiler.linker_so[0] = self.compiler.linker_exe[0]
-
             ct = self.compiler.compiler_type
             opts = self.c_opts.get(ct, [])
             if ct == 'unix':

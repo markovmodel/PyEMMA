@@ -16,6 +16,8 @@ build:
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
   script: python setup.py install --single-version-externally-managed --record record.txt
+  # workaround for bpo-24935
+  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt # [osx or linux]
 
 requirements:
   build:
@@ -35,10 +37,8 @@ requirements:
     - python
     - scipy
     - setuptools
-
-    #- toolchain, can not use because of:
-    #gcc: error: unrecognized command line option ‘-fstack-protector-strong’
-    #gcc: error: unrecognized command line option ‘-fno-plt’
+    # use build flags (eg. CFLAGS etc) from conda-forge
+    - toolchain
 
   run:
     - bhmm >=0.6.3,<0.7
