@@ -38,7 +38,7 @@ requirements:
     - scipy
     - setuptools
     # use build flags (eg. CFLAGS etc) from conda-forge
-    - toolchain
+    #- toolchain
 
   run:
     - bhmm >=0.6.3,<0.7
