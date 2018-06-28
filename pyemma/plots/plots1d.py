@@ -38,7 +38,7 @@ def plot_feature_histograms(xyzall,
         (Concatenated list of) input features; containing time series data to be plotted.
         Array of T data points in d dimensions (features).
     feature_labels : iterable of str or pyemma.Featurizer, optional, default=None
-        Labels of histogrammed features, defaults to feature index.
+        Labels of histogramed features, defaults to feature index.
     ax : matplotlib.Axes object, optional, default=None.
         The ax to plot to; if ax=None, a new ax (and fig) is created.
     ylog : boolean, default=False
@@ -53,7 +53,10 @@ def plot_feature_histograms(xyzall,
 
     Returns
     -------
-    ax : Axes object containing the plot
+    fig : matplotlib.Figure object
+        The figure in which the used ax resides.
+    ax : matplotlib.Axes object
+        The ax in which the historams were plotted.
 
     """
 
