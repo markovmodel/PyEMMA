@@ -304,6 +304,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         progress_reporter._progress_register(len(estimators), stage=0,
                                              description="estimating %s" % str(estimator.__class__.__name__))
 
+    if n_jobs is None:
+        from pyemma._base.parallel import get_n_jobs
+        n_jobs = get_n_jobs(logger=getattr(estimators[0], 'logger', None))
+
     if n_jobs > 1 and os.name == 'posix':
         if hasattr(estimators[0], 'logger'):
             estimators[0].logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
