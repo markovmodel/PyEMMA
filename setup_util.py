@@ -101,7 +101,7 @@ def detect_openmp(compiler):
         debug('[OpenMP] compiler %s needs library support', compiler)
         if sys.platform == 'darwin':
             compiler.add_library('iomp5')
-        elif sys.platform == 'linux':
+        elif sys.platform.startswith('linux'):
             compiler.add_library('gomp')
         has_openmp = has_function(compiler, 'omp_get_num_threads', headers='omp.h')
         if has_openmp:

@@ -12,14 +12,35 @@ Changelog
 
 - base: restored VAMP estimators reset the diagonalization flag, which led to recomputing expensive
   operations. #1294
+- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
+- coordinates: fix closing progress bar of kmeans. #1315
+- coordinates: method output_type of DataSources now returns an instance instead of a class. #1315
+- coordinates: During processing the actual data is always being checked for invalid values like NaN and infinity. #1315
+- coordinates: Use IO-efficient time shifted iterator for chunksize 0 (whole trajectories). #1315
+- coordinates: fixed a bug in internal lengths calculation of FragmentedTrajectoryReader, which led to preliminary
+  stopping of iteration. This was only affected by very rare side-conditions. #1315
+- coordinates: fixed a bug in csv reader, which led to preliminary stopping of iteration. #1300, #1315
 - msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #1294
 - msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
-- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
+- msm: fixed inconsistent submodel behavior in HMSM and BayesianHMSM. #1323
+- msm: fixed missing "has_errors" attribute after deserialization. #1295, #1296
+- msm: use stationary distribution estimate of msmtools during MSM estimation. #1159
+- msm: reset eigenvalue decomposition, if a new transition matrix is encapsulated in the model. This led to weird
+  results in CK-test. #1301, #1302
 - plots: fixed minor bug in plot_network (state_labels=None would not work). #1306
 - plots: refactored plots2d to remove inappropriate pylab/gca() usage, allow more figure construction control #1317
 - plots: refactored plots1d to remove inappropriate pylab/gca() usage #1317
-- msm: fixed inconsistent submodel behavior in HMSM and BayesianHMSM. #1323
 
+
+**Contributors**:
+
+- @chwehmeyer
+- @clonker
+- @jeiros
+- @marscher
+- @ppxasjsm
+- @thempel
+- @yanhuaouyang
 
 2.5.2 (04-10-2018)
 ------------------
