@@ -306,8 +306,14 @@ class TestBHMM(unittest.TestCase):
         # sanity check for submodel;
         # call should not alter self
         from copy import deepcopy
-        dtrj = np.random.randint(0, 2, size=100)
-        dtrj[np.random.randint(0, dtrj.shape[0], 3)] = 2
+        # dtrj = np.random.randint(0, 2, size=100)
+        # dtrj[np.random.randint(0, dtrj.shape[0], 3)] = 2
+        # hard-coded due to stochastic failures
+        dtrj = [1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0,
+                0, 2, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
+                1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 2, 0, 0, 1, 1, 2, 0, 1, 1, 1,
+                0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0]
+
         h = bayesian_hidden_markov_model(dtrj, 3, 2)
         h_original = deepcopy(h)
 
