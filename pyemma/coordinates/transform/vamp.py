@@ -830,7 +830,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
                                        statistics_mean_free=statistics_mean_free,
                                        observables_mean_free=observables_mean_free)
 
-    def cktest(self, n_observables=None, observables='phi', statistics='psi', mlags=10, n_jobs=1, show_progress=True,
+    def cktest(self, n_observables=None, observables='phi', statistics='psi', mlags=10, n_jobs=None, show_progress=True,
                iterable=None):
         r"""Do the Chapman-Kolmogorov test by computing predictions for higher lag times and by performing estimations at higher lag times.
 
@@ -894,7 +894,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
             of these lag time multiples, e.g. the value 0 only make sense
             if model.expectation(lag_multiple=0) will work.
 
-        n_jobs : int, default=1
+        n_jobs : int, default=None
             how many jobs to use during calculation
 
         show_progress : bool, default=True
@@ -1005,7 +1005,7 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_fields = ('nsets', 'statistics', 'observables', 'observables_mean_free', 'statistics_mean_free')
 
     def __init__(self, test_model, test_estimator, observables, statistics, observables_mean_free, statistics_mean_free,
-                 mlags=10, n_jobs=1, show_progress=True):
+                 mlags=10, n_jobs=None, show_progress=True):
         r"""
          Note
          ----
@@ -1051,7 +1051,7 @@ class VAMPChapmanKolmogorovValidator(LaggedModelValidator):
              of these lag time multiples, e.g. the value 0 only make sense
              if model.expectation(lag_multiple=0) will work.
 
-         n_jobs : int, default=1
+         n_jobs : int, default=None
              how many jobs to use during calculation
 
          show_progress : bool, default=True

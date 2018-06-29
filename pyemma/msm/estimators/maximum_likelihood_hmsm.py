@@ -642,7 +642,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     # Model Validation
     ################################################################################
 
-    def cktest(self, mlags=10, conf=0.95, err_est=False, n_jobs=1, show_progress=True):
+    def cktest(self, mlags=10, conf=0.95, err_est=False, n_jobs=None, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -658,7 +658,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             compute errors also for all estimations (computationally expensive)
             If False, only the prediction will get error bars, which is often
             sufficient to validate a model.
-        n_jobs : int, default=1
+        n_jobs : int, default=None
             how many jobs to use during calculation
         show_progress : bool, default=True
             Show progressbars for calculation?
