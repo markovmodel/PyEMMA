@@ -307,8 +307,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if logger_available:
         logger = estimators[0].logger
     if progress_reporter is None:
-        from mock import Mock
-        ctx = progress_reporter = Mock()
+        from mock import MagicMock
+        ctx = progress_reporter = MagicMock()
         callback = None
     else:
         ctx = progress_reporter._progress_context('param-scan')
