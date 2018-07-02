@@ -1,6 +1,21 @@
 Changelog
 =========
 
+2.5.4 (??-??-???)
+-----------------
+
+**New features**:
+
+-
+
+**Fixes**:
+
+- plots: added missing parameter ncontours=100 to plot_state_map()
+
+**Contributors**:
+
+- @chwehmeyer
+
 2.5.3 (06-28-2018)
 ------------------
 
