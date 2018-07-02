@@ -785,8 +785,8 @@ def plot_contour(
 
 
 def plot_state_map(
-        xall, yall, states, ax=None, cmap=None, cbar=True,
-        cax=None, cbar_label='state', nbins=100, mask=True,
+        xall, yall, states, ax=None, ncontours=100, cmap=None,
+        cbar=True, cax=None, cbar_label='state', nbins=100, mask=True,
         **kwargs):
     """Plot a two-dimensional contour map of states by interpolating
     labels of scattered data on a grid.
@@ -803,6 +803,8 @@ def plot_state_map(
         The ax to plot to; if ax=None, a new ax (and fig) is created.
     cmap : matplotlib colormap, optional, default=None
         The color map to use.
+    ncontours : int, optional, default=100
+        Number of contour levels.
     cbar : boolean, optional, default=True
         Plot a color bar.
     cax : matplotlib.Axes object, optional, default=None
@@ -876,8 +878,8 @@ def plot_state_map(
     -----
     Please note that this plot is an approximative visualization:
     the underlying matplotlib.countourf function smoothes transitions
-    between different values and, thus, coloring at state boundaries might
-    be imprecise.
+    between different values and, thus, coloring at state boundaries
+    might be imprecise.
 
     """
     from matplotlib.cm import get_cmap
@@ -885,7 +887,7 @@ def plot_state_map(
     cmap_ = get_cmap(cmap, nstates)
     fig, ax, misc = plot_contour(
         xall, yall, states, ax=ax, cmap=cmap_,
-        ncontours=nstates - 1, vmin=None, vmax=None, levels=None,
+        ncontours=ncontours, vmin=None, vmax=None, levels=None,
         cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
         nbins=nbins, method='nearest', mask=mask, **kwargs)
     if cbar:
