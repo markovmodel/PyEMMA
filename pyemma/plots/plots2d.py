@@ -884,7 +884,6 @@ def plot_state_map(
     """
     from matplotlib.cm import get_cmap
     nstates = int(_np.max(states) + 1)
-    print(nstates)
     cmap_ = get_cmap(cmap, nstates)
     fig, ax, misc = plot_contour(
         xall, yall, states, ax=ax, cmap=cmap_,
@@ -893,7 +892,6 @@ def plot_state_map(
         nbins=nbins, method='nearest', mask=mask, **kwargs)
     if cbar:
         cmin, cmax = misc['mappable'].get_clim()
-        print(cmin, cmax)
         f = (cmax - cmin) / float(nstates)
         n = _np.arange(nstates)
         misc['cbar'].set_ticks((n + 0.5) * f)
