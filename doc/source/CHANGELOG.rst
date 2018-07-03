@@ -10,11 +10,14 @@ Changelog
 
 **Fixes**:
 
-- plots: added missing parameter ncontours=100 to plot_state_map()
+- plots: added missing parameter ncontours=100 to plot_state_map() #1331
+- msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
 
 **Contributors**:
 
 - @chwehmeyer
+- @marscher
+
 
 2.5.3 (06-28-2018)
 ------------------

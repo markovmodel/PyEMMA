@@ -22,6 +22,7 @@ from six.moves import range
 import math
 import numpy as np
 
+from pyemma._base.parallel import NJobsMixIn
 from pyemma._base.serialization.serialization import SerializableMixIn, Modifications
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
@@ -37,7 +38,7 @@ def _serial_fix_lagged_model_validatior_version_1(state):
     return state
 
 
-class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
+class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn, NJobsMixIn):
     r""" Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
 
@@ -66,7 +67,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
         errors for each tau estimate. This option can be computationally
         expensive.
 
-    n_jobs : int, default=1
+    n_jobs : int, default=None
         how many jobs to use during calculation
 
     show_progress : bool, default=True
@@ -84,7 +85,7 @@ class LaggedModelValidator(Estimator, ProgressReporterMixin, SerializableMixIn):
                                      }
 
     def __init__(self, test_model, test_estimator, mlags=None, conf=0.95, err_est=False,
-                 n_jobs=1, show_progress=True):
+                 n_jobs=None, show_progress=True):
 
         # set model and estimator
         # copy the test model, since the estimation of cktest modifies the model.
@@ -374,19 +375,48 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
     __serialize_version = 1
     __serialize_fields = ('nstates', 'nsets', 'active_set', '_full2active', 'P0')
 
+    r""" Validates a model estimated at lag time tau by testing its predictions
+    for longer lag times
+
+    Parameters
+    ----------
+    test_model : Model
+        Model to be tested
+
+    test_estimator : Estimator
+        Parametrized Estimator that has produced the model
+
+    memberships : ndarray(n, m)
+        Set memberships to calculate set probabilities. n must be equal to
+        the number of active states in model. m is the number of sets.
+        memberships must be a row-stochastic matrix (the rows must sum up
+        to 1).
+
+    mlags : int or int-array, default=10
+        multiples of lag times for testing the Model, e.g. range(10).
+        A single int will trigger a range, i.e. mlags=10 maps to
+        mlags=range(10). The setting None will choose mlags automatically
+        according to the longest available trajectory
+        Note that you need to be able to do a model prediction for each
+        of these lag time multiples, e.g. the value 0 only make sense
+        if _predict_observables(0) will work.
+
+    conf : float, default = 0.95
+        confidence interval for errors
+
+    err_est : bool, default=False
+        if the Estimator is capable of error calculation, will compute
+        errors for each tau estimate. This option can be computationally
+        expensive.
+
+    n_jobs : int, default=None
+        how many jobs to use during calculation
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
+    """
     def __init__(self, test_model, test_estimator, memberships, mlags=None, conf=0.95,
-                 err_est=False, n_jobs=1, show_progress=True):
-        """
-
-        Parameters
-        ----------
-        memberships : ndarray(n, m)
-            Set memberships to calculate set probabilities. n must be equal to
-            the number of active states in model. m is the number of sets.
-            memberships must be a row-stochastic matrix (the rows must sum up
-            to 1).
-
-        """
+                 err_est=False, n_jobs=None, show_progress=True):
         self.memberships = memberships
         LaggedModelValidator.__init__(self, test_model, test_estimator, mlags=mlags,
                                       conf=conf, n_jobs=n_jobs,

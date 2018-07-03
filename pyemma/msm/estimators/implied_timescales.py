@@ -108,7 +108,7 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
         how many subprocesses to start to estimate the models for each lag time.
 
     """
-    def __init__(self, estimator, lags=None, nits=None, n_jobs=1,
+    def __init__(self, estimator, lags=None, nits=None, n_jobs=None,
                  show_progress=True):
         # initialize
         self.estimator = get_estimator(estimator)

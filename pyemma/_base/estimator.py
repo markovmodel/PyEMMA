@@ -279,6 +279,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if hasattr(estimator, 'show_progress'):
         estimator.show_progress = show_progress
 
+    if n_jobs is None:
+        from pyemma._base.parallel import get_n_jobs
+        n_jobs = get_n_jobs(logger=getattr(estimator, 'logger', None))
+
     # if we want to return estimators, make clones. Otherwise just copy references.
     # For parallel processing we always need clones.
     # Also if the Estimator is its own Model, we have to clone.
@@ -299,18 +303,24 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    show_progress = progress_reporter is not None and show_progress
-    if show_progress:
-        progress_reporter._progress_register(len(estimators), stage=0,
-                                             description="estimating %s" % str(estimator.__class__.__name__))
+    logger_available = hasattr(estimators[0], 'logger')
+    if logger_available:
+        logger = estimators[0].logger
+    if progress_reporter is None:
+        from mock import MagicMock
+        ctx = progress_reporter = MagicMock()
+        callback = None
+    else:
+        ctx = progress_reporter._progress_context('param-scan')
+        callback = lambda _: progress_reporter._progress_update(1, stage='param-scan')
 
-    if n_jobs is None:
-        from pyemma._base.parallel import get_n_jobs
-        n_jobs = get_n_jobs(logger=getattr(estimators[0], 'logger', None))
+    progress_reporter._progress_register(len(estimators), stage='param-scan',
+                                         description="estimating %s" % str(estimator.__class__.__name__))
 
-    if n_jobs > 1 and os.name == 'posix':
-        if hasattr(estimators[0], 'logger'):
-            estimators[0].logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
+    # TODO: test on win, osx
+    if n_jobs > 1:  #and os.name == 'posix':
+        if logger_available:
+            logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
         # iterate over parameter settings
         task_iter = ((estimator,
                       param_set, X,
@@ -325,51 +335,40 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         if show_progress:
             from pyemma._base.model import SampledModel
             for a in args:
-                if isinstance(a[0], SampledModel):
-                    a[0].show_progress = False
-
-            def callback(_):
-                progress_reporter._progress_update(1, stage=0)
-        else:
-            callback = None
+                if isinstance(a, SampledModel):
+                    a.show_progress = False
 
         import six
+        from contextlib import closing
+        opt_args = {}
         if six.PY3:
             def error_callback(*args, **kw):
                 if failfast:
+                    # TODO: can we be specific here? eg. obtain the stack of the actual process or is this the master proc?
                     raise Exception('something failed')
+            opt_args['error_callback'] = error_callback
 
-            with pool:
-                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
-                                              error_callback=error_callback) for a in args]
-                res = [x.get() for x in res_async]
-        else:
-            try:
-                res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback) for a in args]
-                res = [x.get() for x in res_async]
-            finally:
-                pool.close()
+        with closing(pool), ctx:
+            res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
+                                          **opt_args) for a in args]
+            res = [x.get() for x in res_async]
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
-        if hasattr(estimators[0], 'logger'):
-            estimators[0].logger.debug('estimating %s with n_jobs=1 because of the setting or '
-                                       'you not have a POSIX system', estimator)
+        if logger_available:
+            logger.debug('estimating %s with n_jobs=1 because of the setting or '
+                         'you not have a POSIX system', estimator)
         res = []
         if show_progress:
             from pyemma._base.model import SampledModel
             if isinstance(estimator, SampledModel):
                 for e in estimators:
                     e.show_progress = False
-
-        for estimator, param_set in zip(estimators, param_sets):
-            res.append(_estimate_param_scan_worker(estimator, param_set, X,
-                                                   evaluate, evaluate_args, failfast, return_exceptions))
-            if show_progress:
-                progress_reporter._progress_update(1, stage=0)
-
-    if show_progress:
-        progress_reporter._progress_force_finish(0)
+        with ctx:
+            for estimator, param_set in zip(estimators, param_sets):
+                res.append(_estimate_param_scan_worker(estimator, param_set, X,
+                                                       evaluate, evaluate_args, failfast, return_exceptions))
+                progress_reporter._progress_update(1, stage='param-scan')
 
     # done
     if return_estimators:

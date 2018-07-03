@@ -61,7 +61,7 @@ __all__ = ['markov_model',
 # TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
-                   errors=None, nsamples=50, n_jobs=1, show_progress=True, mincount_connectivity='1/n'):
+                   errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n'):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
@@ -825,7 +825,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
 def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stationary=False,
                     connectivity=None, mincount_connectivity='1/n', separate=None, errors=None, nsamples=100,
-                    stride=None, n_jobs=1, show_progress=True):
+                    stride=None, n_jobs=None, show_progress=True):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
     Warning: this can be slow!
@@ -882,7 +882,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
     nsamples : int
         Number of approximately independent HMSM samples generated for each lag
         time for uncertainty quantification. Only used if errors is not None.
-    n_jobs = 1 : int
+    n_jobs : int
         how many subprocesses to start to estimate the models for each lag time.
     show_progress : bool, default=True
         Show progressbars for calculation?
