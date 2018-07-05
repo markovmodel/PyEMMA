@@ -26,7 +26,7 @@ build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - "%CMD_IN_ENV% conda build -q devtools/conda-recipe"
+  - "%CMD_IN_ENV% conda build -q devtools/conda-recipe --numpy %CONDA_NPY%"
 
 on_finish:
   # upload test results to AppVeyor
