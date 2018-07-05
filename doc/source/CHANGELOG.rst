@@ -6,11 +6,13 @@ Changelog
 
 **New features**:
 
+- plots: allow zorder parameter via **kwargs in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map()
 -
 
 **Fixes**:
 
 - plots: added missing parameter ncontours=100 to plot_state_map()
+-
 
 **Contributors**:
 
