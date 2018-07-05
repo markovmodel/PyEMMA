@@ -25,7 +25,7 @@ from pyemma._base.estimator import param_grid, estimate_param_scan, Estimator
 
 class TestCK_MSM(unittest.TestCase):
 
-    @unittest.skipIf(os.name == 'win32', 'known to be broken on win')
+    @unittest.skipIf(os.name == 'nt', 'known to be broken on win')
     def test_failfast_true(self):
         """ test that exception is thrown for failfast=True"""
         from pyemma._base.estimator import _estimate_param_scan_worker
