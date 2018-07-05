@@ -157,20 +157,14 @@ class NetworkPlot(object):
         # number of nodes
         n = len(self.pos)
         # get bounds and pad figure
-        if self.ax is None:
-            xmin = _np.min(self.pos[:, 0])
-            xmax = _np.max(self.pos[:, 0])
-        else:
-            xmin, xmax = self.ax.get_xlim()
+        xmin = _np.min(self.pos[:, 0])
+        xmax = _np.max(self.pos[:, 0])
         Dx = xmax - xmin
         xmin -= Dx * figpadding
         xmax += Dx * figpadding
         Dx *= 1 + figpadding
-        if self.ax is None:
-            ymin = _np.min(self.pos[:, 1])
-            ymax = _np.max(self.pos[:, 1])
-        else:
-            ymin, ymax = self.ax.get_ylim()
+        ymin = _np.min(self.pos[:, 1])
+        ymax = _np.max(self.pos[:, 1])
         Dy = ymax - ymin
         ymin -= Dy * figpadding
         ymax += Dy * figpadding
@@ -192,9 +186,10 @@ class NetworkPlot(object):
             figsize = (Dx / Dy * max_height, max_height)
         if self.ax is None:
             logger.debug("creating new figure")
-            fig, self.ax = _plt.subplots(figsize=figsize)
+            fig = _plt.figure(None, figsize=figsize)
+            self.ax = fig.add_subplot(111)
         else:
-            fig = self.ax.get_figure()
+            fig = self.ax.figure
             window_extend = self.ax.get_window_extent()
             axes_ratio = window_extend.height / window_extend.width
             data_ratio = (ymax - ymin) / (xmax - xmin)
@@ -584,7 +579,7 @@ def plot_network(
     weights, pos=None, xpos=None, ypos=None, state_sizes=None, state_scale=1.0,
     state_colors='#ff5500', state_labels='auto', arrow_scale=1.0, arrow_curvature=1.0,
     arrow_labels='weights', arrow_label_format='%2.e', max_width=12, max_height=12, figpadding=0.2,
-    show_frame=False, xticks=False, yticks=False, ax=None,
+    attribute_to_plot='net_flux', show_frame=False, xticks=False, yticks=False, ax=None,
     **textkwargs):
     r"""Network representation of given matrix
 
