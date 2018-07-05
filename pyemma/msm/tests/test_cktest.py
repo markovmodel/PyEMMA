@@ -318,10 +318,6 @@ class TestCK_AllEstimators(unittest.TestCase):
         assert np.allclose(self.ck.predictions[0], predLref, rtol=0.1, atol=10.0)
         assert np.allclose(self.ck.predictions[1], predRref, rtol=0.1, atol=10.0)
 
-    def test_ck_bmsm_njobs(self):
-        dtraj = self.double_well_data.generate_traj(100)
-        bmsm = pyemma.msm.bayesian_markov_model(dtraj, lag=1, nsamples=2)
-        self.ck = bmsm.cktest(2, n_jobs=None)
 
 if __name__ == "__main__":
     unittest.main()
