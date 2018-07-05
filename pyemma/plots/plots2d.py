@@ -240,7 +240,7 @@ def _prune_kwargs(kwargs):
     """
     allowed_keys = [
         'corner_mask', 'alpha', 'locator', 'extend', 'xunits',
-        'yunits', 'antialiased', 'nchunk', 'hatches']
+        'yunits', 'antialiased', 'nchunk', 'hatches', 'zorder']
     ignored = [key for key in kwargs.keys() if key not in allowed_keys]
     for key in ignored:
         _warn(
@@ -333,6 +333,9 @@ def plot_map(
         If None, no hatching will be added to the contour. Hatching
         is supported in the PostScript, PDF, SVG and Agg backends
         only.
+    zorder : float
+        Set the zorder for the artist. Artists with lower zorder
+        values are drawn first.
 
     Returns
     -------
@@ -464,6 +467,9 @@ def plot_density(
         If None, no hatching will be added to the contour. Hatching
         is supported in the PostScript, PDF, SVG and Agg backends
         only.
+    zorder : float
+        Set the zorder for the artist. Artists with lower zorder
+        values are drawn first.
 
     Returns
     -------
@@ -607,6 +613,9 @@ def plot_free_energy(
         If None, no hatching will be added to the contour. Hatching
         is supported in the PostScript, PDF, SVG and Agg backends
         only.
+    zorder : float
+        Set the zorder for the artist. Artists with lower zorder
+        values are drawn first.
 
     Returns
     -------
@@ -751,6 +760,9 @@ def plot_contour(
         If None, no hatching will be added to the contour. Hatching
         is supported in the PostScript, PDF, SVG and Agg backends
         only.
+    zorder : float
+        Set the zorder for the artist. Artists with lower zorder
+        values are drawn first.
 
     Returns
     -------
@@ -863,6 +875,9 @@ def plot_state_map(
         If None, no hatching will be added to the contour. Hatching
         is supported in the PostScript, PDF, SVG and Agg backends
         only.
+    zorder : float
+        Set the zorder for the artist. Artists with lower zorder
+        values are drawn first.
 
     Returns
     -------

@@ -62,6 +62,9 @@ class TestPlots2d(unittest.TestCase):
             self.data[:, 0], self.data[:, 1], alpha=True)
         plt.close(fig)
         fig, ax, misc = plot_density(
+            self.data[:, 0], self.data[:, 1], zorder=-1)
+        plt.close(fig)
+        fig, ax, misc = plot_density(
             self.data[:, 0], self.data[:, 1],
             this_should_raise_a_UserWarning=True)
         plt.close(fig)
@@ -95,4 +98,8 @@ class TestPlots2d(unittest.TestCase):
     def test_plot_state_map(self):
         fig, ax, misc = plot_state_map(
             self.data[:, 0], self.data[:, 1], self.data[:,0])
+        plt.close(fig)
+        fig, ax, misc = plot_state_map(
+            self.data[:, 0], self.data[:, 1], self.data[:,0],
+            zorder=0.5)
         plt.close(fig)

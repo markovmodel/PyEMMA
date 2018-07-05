@@ -6,12 +6,14 @@ Changelog
 
 **New features**:
 
+- plots: allow zorder parameter via **kwargs in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() #1336
 -
 
 **Fixes**:
 
 - plots: added missing parameter ncontours=100 to plot_state_map() #1331
 - msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
+-
 
 **Contributors**:
 
