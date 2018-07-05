@@ -7,10 +7,10 @@ environment:
     PYTHONHASHSEED: "0"
 
   matrix:
-    - MINICONDA_PYTHON: "C:\\Miniconda35"
+    - MINICONDA_PYTHON: "C:\\Miniconda36"
       CONDA_PY: "35"
 
-    - MINICONDA_PYTHON: "C:\\Miniconda35-x64"
+    - MINICONDA_PYTHON: "C:\\Miniconda36-x64"
       CONDA_PY: "35"
       ARCH: "64"
 
