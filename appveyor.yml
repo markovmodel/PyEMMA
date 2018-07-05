@@ -5,18 +5,15 @@ environment:
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
     PYTHONHASHSEED: "0"
+    MINICONDA_PYTHON: "C:\\Miniconda36-x64"
 
   matrix:
-    - MINICONDA_PYTHON: "C:\\Miniconda36"
-      CONDA_PY: "35"
+# TODO: this would involve building c++ with a recent compiler
+#    - CONDA_PY: "27"
 
-    - MINICONDA_PYTHON: "C:\\Miniconda36-x64"
-      CONDA_PY: "35"
-      ARCH: "64"
-
-    - MINICONDA_PYTHON: "C:\\Miniconda36-x64"
-      CONDA_PY: "36"
-      ARCH: "64"
+    - CONDA_PY: "35"
+      CONDA_NPY: "112" # "old" numpy
+    - CONDA_PY: "36"
 
 install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
