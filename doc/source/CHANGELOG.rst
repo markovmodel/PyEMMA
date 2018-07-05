@@ -13,13 +13,14 @@ Changelog
 
 - plots: added missing parameter ncontours=100 to plot_state_map() #1331
 - msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
+- plots: fixed ill-scaled circles in plot_flux #1336
 -
 
 **Contributors**:
 
 - @chwehmeyer
 - @marscher
-
+- @thempel
 
 2.5.3 (06-28-2018)
 ------------------
