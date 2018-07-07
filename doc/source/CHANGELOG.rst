@@ -7,7 +7,7 @@ Changelog
 **New features**:
 
 - plots: allow zorder parameter via **kwargs in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() #1336
--
+- plots: allow colorbar orientation via the cbar_orientation parameter in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() #1338
 
 **Fixes**:
 
