@@ -103,3 +103,11 @@ class TestPlots2d(unittest.TestCase):
             self.data[:, 0], self.data[:, 1], self.data[:,0],
             zorder=0.5)
         plt.close(fig)
+        fig, ax, misc = plot_state_map(
+            self.data[:, 0], self.data[:, 1], self.data[:,0],
+            cbar_orientation='horizontal', cbar_label=None)
+        plt.close(fig)
+        with self.assertRaises(ValueError):
+            fig, ax, misc = plot_state_map(
+                self.data[:, 0], self.data[:, 1], self.data[:,0],
+                cbar_orientation='INVALID')

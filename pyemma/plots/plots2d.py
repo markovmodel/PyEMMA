@@ -253,7 +253,8 @@ def _prune_kwargs(kwargs):
 def plot_map(
         x, y, z, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, norm=None,
+        cbar=True, cax=None, cbar_label=None,
+        cbar_orientation='vertical', norm=None,
         **kwargs):
     """Plot a two-dimensional map from data on a grid.
 
@@ -284,6 +285,8 @@ def plot_map(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
+    cbar_orientation : str, optional, default='vertical'
+        Colorbar orientation; choose 'vertical' or 'horizontal'.
     norm : matplotlib norm, optional, default=None
         Use a norm when coloring the contour plot.
 
@@ -358,11 +361,16 @@ def plot_map(
         vmin=vmin, vmax=vmax, cmap=cmap,
         levels=levels, **_prune_kwargs(kwargs))
     misc = dict(mappable=mappable)
+    if cbar_orientation not in ('horizontal', 'vertical'):
+        raise ValueError(
+            'cbar_orientation must be "horizontal" or "vertical"')
     if cbar:
         if cax is None:
-            cbar_ = fig.colorbar(mappable, ax=ax)
+            cbar_ = fig.colorbar(
+                mappable, ax=ax, orientation=cbar_orientation)
         else:
-            cbar_ = fig.colorbar(mappable, cax=cax)
+            cbar_ = fig.colorbar(
+                mappable, cax=cax, orientation=cbar_orientation)
         if cbar_label is not None:
             cbar_.set_label(cbar_label)
         misc.update(cbar=cbar_)
@@ -380,8 +388,8 @@ def plot_density(
         xall, yall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
         cbar=True, cax=None, cbar_label='sample density',
-        logscale=False, nbins=100, weights=None,
-        avoid_zero_count=False, **kwargs):
+        cbar_orientation='vertical', logscale=False, nbins=100,
+        weights=None, avoid_zero_count=False, **kwargs):
     """Plot a two-dimensional density map using a histogram of
     scattered data.
 
@@ -410,6 +418,8 @@ def plot_density(
         stealing space from ax.
     cbar_label : str, optional, default='sample density'
         Colorbar label string; use None to suppress it.
+    cbar_orientation : str, optional, default='vertical'
+        Colorbar orientation; choose 'vertical' or 'horizontal'.
     logscale : boolean, optional, default=False
         Plot the z-values in logscale.
     nbins : int, optional, default=100
@@ -498,10 +508,11 @@ def plot_density(
     else:
         norm = None
     fig, ax, misc = plot_map(
-            x, y, pi, ax=ax, cmap=cmap,
-            ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-            cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm,
-            **kwargs)
+        x, y, pi, ax=ax, cmap=cmap,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
+        cbar=cbar, cax=cax, cbar_label=cbar_label,
+        cbar_orientation=cbar_orientation, norm=norm,
+        **kwargs)
     if cbar and logscale:
         from matplotlib.ticker import LogLocator
         misc['cbar'].set_ticks(LogLocator(base=10.0, subs=range(10)))
@@ -513,7 +524,8 @@ def plot_free_energy(
         offset=-1, avoid_zero_count=False, minener_zero=True, kT=1.0,
         vmin=None, vmax=None, cmap='nipy_spectral', cbar=True,
         cbar_label='free energy / kT', cax=None, levels=None,
-        legacy=True, ncountours=None, **kwargs):
+        legacy=True, ncountours=None, cbar_orientation='vertical',
+        **kwargs):
     """Plot a two-dimensional free energy map using a histogram of
     scattered data.
 
@@ -566,6 +578,8 @@ def plot_free_energy(
         Switch to use the function in legacy mode (deprecated).
     ncountours : int, optional, default=None
         Legacy parameter (typo) for number of contour levels.
+    cbar_orientation : str, optional, default='vertical'
+        Colorbar orientation; choose 'vertical' or 'horizontal'.
 
     Optional parameters for contourf (**kwargs)
     -------------------------------------------
@@ -661,7 +675,8 @@ def plot_free_energy(
     fig, ax, misc = plot_map(
         x, y, f, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
+        cbar=cbar, cax=cax, cbar_label=cbar_label,
+        cbar_orientation=cbar_orientation, norm=None,
         **kwargs)
     if legacy:
         return fig, ax
@@ -671,8 +686,9 @@ def plot_free_energy(
 def plot_contour(
         xall, yall, zall, ax=None, cmap=None,
         ncontours=100, vmin=None, vmax=None, levels=None,
-        cbar=True, cax=None, cbar_label=None, norm=None,
-        nbins=100, method='nearest', mask=False, **kwargs):
+        cbar=True, cax=None, cbar_label=None,
+        cbar_orientation='vertical', norm=None, nbins=100,
+        method='nearest', mask=False, **kwargs):
     """Plot a two-dimensional contour map by interpolating
     scattered data on a grid.
 
@@ -704,6 +720,8 @@ def plot_contour(
         stealing space from ax.
     cbar_label : str, optional, default=None
         Colorbar label string; use None to suppress it.
+    cbar_orientation : str, optional, default='vertical'
+        Colorbar orientation; choose 'vertical' or 'horizontal'.
     norm : matplotlib norm, optional, default=None
         Use a norm when coloring the contour plot.
     nbins : int, optional, default=100
@@ -792,13 +810,15 @@ def plot_contour(
     return plot_map(
         x, y, z, ax=ax, cmap=cmap,
         ncontours=ncontours, vmin=None, vmax=None, levels=levels,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=norm,
+        cbar=cbar, cax=cax, cbar_label=cbar_label,
+        cbar_orientation=cbar_orientation, norm=norm,
         **kwargs)
 
 
 def plot_state_map(
         xall, yall, states, ax=None, ncontours=100, cmap=None,
-        cbar=True, cax=None, cbar_label='state', nbins=100, mask=True,
+        cbar=True, cax=None, cbar_label='state',
+        cbar_orientation='vertical', nbins=100, mask=True,
         **kwargs):
     """Plot a two-dimensional contour map of states by interpolating
     labels of scattered data on a grid.
@@ -824,6 +844,8 @@ def plot_state_map(
         stealing space from ax.
     cbar_label : str, optional, default='state'
         Colorbar label string; use None to suppress it.
+    cbar_orientation : str, optional, default='vertical'
+        Colorbar orientation; choose 'vertical' or 'horizontal'.
     nbins : int, optional, default=100
         Number of grid points used in each dimension.
     mask : boolean, optional, default=False
@@ -903,8 +925,9 @@ def plot_state_map(
     fig, ax, misc = plot_contour(
         xall, yall, states, ax=ax, cmap=cmap_,
         ncontours=ncontours, vmin=None, vmax=None, levels=None,
-        cbar=cbar, cax=cax, cbar_label=cbar_label, norm=None,
-        nbins=nbins, method='nearest', mask=mask, **kwargs)
+        cbar=cbar, cax=cax, cbar_label=cbar_label,
+        cbar_orientation=cbar_orientation, norm=None, nbins=nbins,
+        method='nearest', mask=mask, **kwargs)
     if cbar:
         cmin, cmax = misc['mappable'].get_clim()
         f = (cmax - cmin) / float(nstates)
