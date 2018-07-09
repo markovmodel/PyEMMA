@@ -368,9 +368,6 @@ def plot_map(
         else:
             cbar_ = fig.colorbar(
                 mappable, cax=cax, orientation=cbar_orientation)
-        if cbar_orientation == 'horizontal':
-            cbar_.ax.xaxis.set_ticks_position('top')
-            cbar_.ax.xaxis.set_label_position('top')
         if cbar_label is not None:
             cbar_.set_label(cbar_label)
         misc.update(cbar=cbar_)
