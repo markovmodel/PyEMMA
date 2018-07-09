@@ -361,6 +361,9 @@ def plot_map(
         vmin=vmin, vmax=vmax, cmap=cmap,
         levels=levels, **_prune_kwargs(kwargs))
     misc = dict(mappable=mappable)
+    if cbar_orientation not in ('horizontal', 'vertical'):
+        raise ValueError(
+            'cbar_orientation must be "horizontal" or "vertical"')
     if cbar:
         if cax is None:
             cbar_ = fig.colorbar(
