@@ -47,6 +47,7 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 def _dummy():
     yield
 
+
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
@@ -279,9 +280,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self.logger.info("The number of cluster centers was not specified, "
-                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+                             "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        if not isinstance(self, MiniBatchKmeansClustering) and not self._source_from_memory(self.data_producer):
             n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
             self._progress_register(n_chunks, description="creating data array", stage='data')
 
@@ -334,9 +334,11 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
-            self._progress_update(1, stage='data')
+        if 'data' in self._prog_rep_progressbars:
+            if first_chunk and last_chunk:
+                self._progress_force_finish(stage='data')
+            else:
+                self._progress_update(1, stage='data')
 
         if last_chunk:
             self._in_memory_chunks_set = True

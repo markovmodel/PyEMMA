@@ -13,7 +13,7 @@ Changelog
 
 - plots: added missing parameter ncontours=100 to plot_state_map() #1331
 - msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
--
+- coordinates: do not show a progress bar for creating the data array, if data comes from memmory. #1339
 
 **Contributors**:
 
