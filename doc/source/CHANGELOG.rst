@@ -13,6 +13,7 @@ Changelog
 
 - plots: added missing parameter ncontours=100 to plot_state_map() #1331
 - msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
+- plots: maks zero-counts in logscale feature histograms. #1340
 -
 
 **Contributors**:
