@@ -123,13 +123,13 @@ class Capturing(list):
     ['hello world']
 
     To extend the list, just pass it again:
-    >>> with Capturing(output, which='stdout') as output:
+    >>> with Capturing(append=output, which='stdout') as output:
     ...    print('hello again')
     >>> print(output)
     ['hello world', 'hello again']
     """
-    def __init__(self, *args, which='stdout'):
-        super(Capturing, self).__init__(*args)
+    def __init__(self, which='stdout', append=()):
+        super(Capturing, self).__init__(append)
         self._which = which
 
     def __enter__(self):
