@@ -1,3 +1,4 @@
+# encoding: utf-8
 
 # This file is part of PyEMMA.
 #
