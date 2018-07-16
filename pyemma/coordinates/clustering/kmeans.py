@@ -169,7 +169,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # check if we need to allocate memory.
         if hasattr(self, '_in_memory_chunks') and self._in_memory_chunks.size == size:
             assert hasattr(self, '_in_memory_chunks')
-            self.logger.info("re-use in memory data.")
+            self.logger.debug("re-use in memory data.")
             return
         elif self._check_resume_iteration() and not self._in_memory_chunks_set and not self.keep_data:
             self.logger.warning('Resuming kmeans iteration without the setting "keep_data=True", will re-create'
@@ -244,9 +244,9 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                                                             callback)
             if code == 0:
                 self._converged = True
-                self.logger.info("Cluster centers converged after %i steps.", iterations + 1)
+                self.logger.debug("Cluster centers converged after %i steps.", iterations + 1)
             else:
-                self.logger.info("Algorithm did not reach convergence criterion"
+                self.logger.warn("Algorithm did not reach convergence criterion"
                                  " of %g in %i iterations. Consider increasing max_iter.",
                                  self.tolerance, self.max_iter)
 
@@ -334,11 +334,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
-        if 'data' in self._prog_rep_progressbars:
-            if first_chunk and last_chunk:
-                self._progress_force_finish(stage='data')
-            else:
-                self._progress_update(1, stage='data')
+        if 'data' in self._progress_registered_stages:
+            self._progress_update(1, stage='data')
 
         if last_chunk:
             self._in_memory_chunks_set = True
