@@ -3,10 +3,11 @@ Created on 04.01.2016
 
 @author: marscher
 '''
+from __future__ import print_function
+
 import random
 import sys
 from contextlib import contextmanager
-from io import StringIO
 
 import numpy as np
 
@@ -134,6 +135,10 @@ class Capturing(list):
 
     def __enter__(self):
         self._stream = getattr(sys, self._which)
+        if sys.version_info[0] == 2:
+            from StringIO import StringIO
+        else:
+            from io import StringIO
         self._stringio = StringIO()
         setattr(sys, self._which, self._stringio)
         return self
