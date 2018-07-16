@@ -213,6 +213,15 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             return np.isfinite(data.xyz)
         return True
 
+    def _source_from_memory(self, data_producer=None):
+        from pyemma.coordinates.data import DataInMemory
+        if data_producer is None:
+            data_producer = self
+        while data_producer is not data_producer.data_producer:
+            if isinstance(data_producer, DataInMemory): return True
+            data_producer = data_producer.data_producer
+        return isinstance(data_producer, DataInMemory)
+
     def number_of_trajectories(self, stride=None):
         r""" Returns the number of trajectories.
 

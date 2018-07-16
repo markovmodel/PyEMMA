@@ -3,8 +3,11 @@ Created on 04.01.2016
 
 @author: marscher
 '''
-from contextlib import contextmanager
+from __future__ import print_function
+
 import random
+import sys
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -105,3 +108,42 @@ def named_temporary_file(mode='w+b', prefix='', suffix='', dir=None):
             os.unlink(ntf.name)
         except OSError:
             pass
+
+
+class Capturing(list):
+    """ captures specified stream lines in this wrapped list
+    >>> with Capturing() as output:
+    ...    print('hello world')
+    >>> print(output)
+    ['hello world']
+
+    To capture stderr:
+    >>> with Capturing(which='stderr') as output:
+    ...    print('hello world', file=sys.stderr)
+    >>> print(output)
+    ['hello world']
+
+    To extend the list, just pass it again:
+    >>> with Capturing(append=output, which='stdout') as output:
+    ...    print('hello again')
+    >>> print(output)
+    ['hello world', 'hello again']
+    """
+    def __init__(self, which='stdout', append=()):
+        super(Capturing, self).__init__(append)
+        self._which = which
+
+    def __enter__(self):
+        self._stream = getattr(sys, self._which)
+        if sys.version_info[0] == 2:
+            from StringIO import StringIO
+        else:
+            from io import StringIO
+        self._stringio = StringIO()
+        setattr(sys, self._which, self._stringio)
+        return self
+
+    def __exit__(self, *args):
+        self.extend(self._stringio.getvalue().splitlines())
+        del self._stringio  # free up some memory
+        setattr(sys, self._which, self._stream)

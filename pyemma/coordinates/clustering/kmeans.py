@@ -47,6 +47,7 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 def _dummy():
     yield
 
+
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
@@ -168,7 +169,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # check if we need to allocate memory.
         if hasattr(self, '_in_memory_chunks') and self._in_memory_chunks.size == size:
             assert hasattr(self, '_in_memory_chunks')
-            self.logger.info("re-use in memory data.")
+            self.logger.debug("re-use in memory data.")
             return
         elif self._check_resume_iteration() and not self._in_memory_chunks_set and not self.keep_data:
             self.logger.warning('Resuming kmeans iteration without the setting "keep_data=True", will re-create'
@@ -243,9 +244,9 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                                                             callback)
             if code == 0:
                 self._converged = True
-                self.logger.info("Cluster centers converged after %i steps.", iterations + 1)
+                self.logger.debug("Cluster centers converged after %i steps.", iterations + 1)
             else:
-                self.logger.info("Algorithm did not reach convergence criterion"
+                self.logger.warn("Algorithm did not reach convergence criterion"
                                  " of %g in %i iterations. Consider increasing max_iter.",
                                  self.tolerance, self.max_iter)
 
@@ -279,9 +280,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self.logger.info("The number of cluster centers was not specified, "
-                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+                             "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        if not isinstance(self, MiniBatchKmeansClustering) and not self._source_from_memory(self.data_producer):
             n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
             self._progress_register(n_chunks, description="creating data array", stage='data')
 
@@ -334,8 +334,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+        if 'data' in self._progress_registered_stages:
             self._progress_update(1, stage='data')
 
         if last_chunk:

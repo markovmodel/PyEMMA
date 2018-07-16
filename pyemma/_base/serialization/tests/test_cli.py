@@ -24,21 +24,6 @@ import six
 from pyemma._base.serialization.cli import main
 from pyemma.coordinates import source, tica, cluster_kmeans
 
-import sys
-from io import StringIO
-from contextlib import contextmanager
-
-
-@contextmanager
-def capture(command, *args, **kwargs):
-    out, sys.stdout = sys.stdout, StringIO()
-    try:
-        command(*args, **kwargs)
-        sys.stdout.seek(0)
-        yield sys.stdout.read()
-    finally:
-        sys.stdout = out
-
 
 @unittest.skipIf(six.PY2, 'only py3')
 class TestListModelCLI(unittest.TestCase):
@@ -62,8 +47,15 @@ class TestListModelCLI(unittest.TestCase):
         os.unlink(cls.model_file)
 
     def test_recursive(self):
-        with capture(main, ['--recursive', self.model_file]) as out:
-            assert out
+        """ check the whole chain has been printed"""
+        from pyemma.util.contexts import Capturing
+        with Capturing() as out:
+            main(['--recursive', self.model_file])
+        assert out
+        all_out = '\n'.join(out)
+        self.assertIn('FeatureReader', all_out)
+        self.assertIn('TICA', all_out)
+        self.assertIn('Kmeans', all_out)
 
 
 if __name__ == '__main__':
