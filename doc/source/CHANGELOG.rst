@@ -1,6 +1,24 @@
 Changelog
 =========
 
+2.5.5 (??-??-????)
+------------------
+
+**New features**:
+
+-
+
+**Fixes:
+
+- msm: fix connected sets for Bayesian MSMs in case the mincount connectivity (ergodic cutoff) parameter truncated
+  the count matrix. #1343
+
+
+**Contributors**:
+
+- @marscher
+
+
 2.5.4 (07-20-2018)
 ------------------
 
