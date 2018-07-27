@@ -191,7 +191,7 @@ class DiscreteTrajectoryStats(object):
         S = msmest.connected_sets(Cconn, directed=strong)
         return S
 
-    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n'):
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -214,6 +214,8 @@ class DiscreteTrajectoryStats(object):
               at time indexes
               .. math:: (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
 
+        show_progress: bool, default=True
+            show the progress for the expensive effective count mode computation.
 
         """
         # store lag time
@@ -226,7 +228,23 @@ class DiscreteTrajectoryStats(object):
         elif count_mode == 'sample':
             self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
         elif count_mode == 'effective':
-            self._C = msmest.effective_count_matrix(self._dtrajs, lag)
+            from pyemma.util.reflection import getargspec_no_self
+            argspec = getargspec_no_self(msmest.effective_count_matrix)
+            kw = {}
+            if show_progress and 'callback' in argspec.args:
+                from pyemma._base.progress import ProgressReporter
+                from pyemma._base.parallel import get_n_jobs
+
+                pg = ProgressReporter()
+                # this is a fast operation
+                C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+                pg.register(C_temp.nnz, 'compute statistical inefficiencies')
+                del C_temp
+                callback = lambda: pg.update(1)
+                kw['callback'] = callback
+                kw['n_jobs'] = get_n_jobs()
+
+            self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
         else:
             raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
@@ -260,7 +278,7 @@ class DiscreteTrajectoryStats(object):
 
         # mapping from full to lcs
         self._full2lcs = -1 * np.ones((self._nstates), dtype=int)
-        self._full2lcs[self._lcs] = np.array(list(range(len(self._lcs))), dtype=int)
+        self._full2lcs[self._lcs] = np.arange(len(self._lcs))
 
         # remember that this function was called
         self._counted_at_lag = True
