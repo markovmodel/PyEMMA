@@ -1015,9 +1015,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         npi = pi.shape[0]
         # pi has to be defined on all states visited by the trajectories
         if nC > npi:
-            errstr = """There are visited states for which no stationary
-            probability is given"""
-            raise ValueError(errstr)
+            raise ValueError('There are visited states for which no stationary probability is given')
         # Reduce pi to the visited set
         pi_visited = pi[0:nC]
         # Find visited states with positive stationary probabilities"""
@@ -1120,7 +1118,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
-        self._connected_sets = msmest.connected_sets(self._C_full)
+        self._connected_sets = dtrajstats.connected_sets
         self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
