@@ -81,7 +81,7 @@ def spd_eig(W, epsilon=1e-10, method='QR', canonical_signs=False):
     # so we select the truncation threshold such that everything that is negative vanishes
     evmin = _np.min(s)
     if evmin < 0:
-        epsilon = max(epsilon, -evmin + 1e-16)
+        epsilon = max(epsilon, -evmin + 1e-14)
 
     # determine effective rank m and perform low-rank approximations.
     evnorms = _np.abs(s)
