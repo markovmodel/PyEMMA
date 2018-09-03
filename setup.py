@@ -246,7 +246,10 @@ def get_cmdclass():
                 omp_libraries = ['-l%s' % l for l in additional_libs]
                 omp_defines = [('USE_OPENMP', None)]
             # debug
-            dbg_flag = ['-g0' if not self.debug else '-g']
+            if self.debug:
+                dbg_flag = ['-g']
+            else:
+                dbg_flag = ['-g0', '-DNDEBUG']
 
             for ext in self.extensions:
                 if ext.language == 'c++':
