@@ -6,7 +6,7 @@ Changelog
 
 **New features**:
 
--
+- msm: for Bayesian MSMs we show an optional progress bar for the counting computation. #1344
 
 **Fixes:
 

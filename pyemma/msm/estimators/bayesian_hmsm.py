@@ -227,8 +227,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
                 if _np.setxor1d(_np.concatenate(dtrajs_lagged_strided),
                                  _np.concatenate(self.init_hmsm._dtrajs_lagged)).size != 0:
-                    raise UserWarning('Choice of stride has excluded a different set of microstates than in ' +
-                                      'init_hmsm. Set of observed microstates in time-lagged strided trajectories ' +
+                    raise UserWarning('Choice of stride has excluded a different set of microstates than in '
+                                      'init_hmsm. Set of observed microstates in time-lagged strided trajectories '
                                       'must match to the one used for init_hmsm estimation.')
 
                 self._dtrajs_full = dtrajs
@@ -255,11 +255,12 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         # check if we have a valid initial model
         import msmtools.estimation as msmest
         if self.reversible and not msmest.is_connected(self.count_matrix):
-            raise NotImplementedError('Encountered disconnected count matrix:\n ' + str(self.count_matrix)
-                                      + 'with reversible Bayesian HMM sampler using lag=' + str(self.lag)
-                                      + ' and stride=' + str(self.stride) + '. Consider using shorter lag, '
-                                      + 'or shorter stride (to use more of the data), '
-                                      + 'or using a lower value for mincount_connectivity.')
+            raise NotImplementedError('Encountered disconnected count matrix:\n{count_matrix} '
+                                      'with reversible Bayesian HMM sampler using lag={lag}'
+                                      ' and stride={stride}. Consider using shorter lag, '
+                                      'or shorter stride (to use more of the data), '
+                                      'or using a lower value for mincount_connectivity.'
+                                      .format(count_matrix=self.count_matrix, lag=self.lag, stride=self.stride))
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler. This is just an initialization.
