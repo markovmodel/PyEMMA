@@ -340,7 +340,7 @@ else:
 
         # init submodules
         import subprocess
-        modules = ['pybind11', ]
+        modules = []
         cmd = "git submodule update --init {mod}"
         for m in modules:
             subprocess.check_call(cmd.format(mod=m).split(' '))
