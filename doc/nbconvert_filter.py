@@ -8,31 +8,31 @@ class RemoveWidgetNotice(Preprocessor):
     # If this preprocessor finds such a thing in the output, we just clear it.
 
     def preprocess_cell(self, cell, resources, index):
-        """
-        Override if you want to apply some preprocessing to each cell.
-        Must return modified cell and resource dictionary.
-
-        Parameters
-        ----------
-        cell : NotebookNode cell
-            Notebook cell being processed
-        resources : dictionary
-            Additional resources used in the conversion process.  Allows
-            preprocessors to pass variables into the Jinja engine.
-        index : int
-            Index of the cell being processed
-        """
         if 'outputs' in cell:
-            outputs = cell['outputs']  # list
-            to_delete = []
-            for i, o in enumerate(outputs):
-                #print(o)
-                if 'data' in o:
-                    data = o['data']
-                    if 'application/vnd.jupyter.widget-view+json' in data:
-                        to_delete.append(o)
-            for o in to_delete:
-                #print('removing: ', o)
-                outputs.remove(o)
+            outputs_ = [o for o in cell['outputs']  # list of dicts
+                        if ('data' in o and 'application/vnd.jupyter.widget-view+json' not in o['data'])
+                       ]
+            cell['outputs'] = outputs_
 
+        return cell, resources
+
+
+class RemoveSolutionStubs(Preprocessor):
+    """For rendering executed versions of the notebooks, we do not want to have the solution stubs."""
+    enabled = True  # enable by default, because we use it as a default preprocessor, which should be executed prior ExecutePreprocessor.
+
+    def preprocess(self, nb, resources):
+        filtered_cells = [
+            cell for cell in nb['cells']
+            if not cell['metadata'].get('solution2_first', False)
+        ]
+        nb['cells'] = filtered_cells
+        return nb, resources
+
+
+class RewriteNotebookLinks(Preprocessor):
+
+    def preprocess_cell(self, cell, resources, index):
+        new_input = cell.source.replace('.ipynb', '.html')
+        cell.source = new_input
         return cell, resources
