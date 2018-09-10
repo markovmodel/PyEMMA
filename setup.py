@@ -104,8 +104,8 @@ def extensions():
     import mdtraj
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
-
-    pybind_inc = os.path.join(os.path.dirname(__file__), 'pybind11', 'include')
+    import pybind11
+    pybind_inc = pybind11.get_include()
     assert os.path.exists(pybind_inc)
 
     exts = []
@@ -322,6 +322,7 @@ else:
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'scipy',
                                   'mdtraj>=1.7.0',
+                                  'pybind11',
                                   ]
 
     metadata['package_data'] = {
