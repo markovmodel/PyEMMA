@@ -2,8 +2,6 @@
 #
 
 SHELL := /bin/bash
-PYVER = 2.7
-PYTHON = python$(PYVER)
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -j8 -v
@@ -40,14 +38,13 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in build/html."
 
-source/generated:
+out_dir:
 	mkdir -p source/generated
 
-ipython-rst: source/generated
-	@$(eval notebooks:= $$(shell python grep_active_notebooks.py))
+ipython-rst: out_dir
 	cd source/generated
 	pwd
-	set -x; for nb in $(notebooks); do $(NBCONVERT_CMD) $$nb || true; done
+	exec $(NBCONVERT_CMD)
 	@echo "Conversion finished."
 
 latex:

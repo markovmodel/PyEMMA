@@ -1,4 +1,8 @@
 # Configuration file for jupyter-nbconvert.
+from glob import glob
+
+from doc import grep_active_notebooks
+
 c = get_config()
 #------------------------------------------------------------------------------
 # Configurable configuration
@@ -72,9 +76,10 @@ c.NbConvertApp.export_format = 'rst'
 # read a single notebook from stdin.
 # c.NbConvertApp.from_stdin = False
 
-# List of notebooks to convert. Wildcards are supported. Filenames passed
+# List of _notebooks to convert. Wildcards are supported. Filenames passed
 # positionally will be added to the list.
-# c.NbConvertApp.notebooks = []
+c.NbConvertApp.notebooks = grep_active_notebooks.notebooks_paths
+print('notebooks in nbconvert config:', c.NbConvertApp.notebooks)
 
 # overwrite base name use for output files. can only be used when converting one
 # notebook at a time.
@@ -118,12 +123,15 @@ c.NbConvertApp.export_format = 'rst'
 # List of preprocessors available by default, by name, namespace,  instance, or
 # type.
 # c.Exporter.default_preprocessors = ['nbconvert.preprocessors.ClearOutputPreprocessor', 'nbconvert.preprocessors.ExecutePreprocessor', 'nbconvert.preprocessors.coalesce_streams', 'nbconvert.preprocessors.SVG2PDFPreprocessor', 'nbconvert.preprocessors.CSSHTMLHeaderPreprocessor', 'nbconvert.preprocessors.LatexPreprocessor', 'nbconvert.preprocessors.HighlightMagicsPreprocessor', 'nbconvert.preprocessors.ExtractOutputPreprocessor']
+# we need to make sure this filter is executed first, to avoid SyntaxError exceptions due to solution stubs.
+c.Exporter.default_preprocessors.insert(0, 'nbconvert_filter.RemoveSolutionStubs')
 
 # Extension of the file that should be written to disk
 # c.Exporter.file_extension = '.txt'
 
 # List of preprocessors, by name or namespace, to enable.
-c.Exporter.preprocessors = ['nbconvert_filter.RemoveWidgetNotice']
+c.Exporter.preprocessors = ['nbconvert_filter.RewriteNotebookLinks',
+                            'nbconvert_filter.RemoveWidgetNotice']
 
 #------------------------------------------------------------------------------
 # TemplateExporter configuration
@@ -389,7 +397,8 @@ c.ExecutePreprocessor.timeout = -1
 
 # List of the files that the notebook references.  Files will be  included with
 # written output.
-# c.WriterBase.files = []
+c.WriterBase.files = []
+c.WriterBase.files += glob('tutorials/_notebooks/static/*')
 
 #------------------------------------------------------------------------------
 # DebugWriter configuration

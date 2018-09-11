@@ -1,10 +1,10 @@
- .. _ref-notebooks:
+ .. _ref-notebooks_legacy:
 
-==========================
-Jupyter Notebook Tutorials
-==========================
 
-These Jupyter (http://jupyter.org), former IPython notebooks show the usage of
+Legacy Jupyter Notebook Tutorials
+=================================
+
+These Jupyter (http://jupyter.org) notebooks show the usage of
 the PyEMMA API in action and also describe the workflow of Markov model
 building.
 
