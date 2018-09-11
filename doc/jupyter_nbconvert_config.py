@@ -1,7 +1,7 @@
 # Configuration file for jupyter-nbconvert.
 from glob import glob
 
-from doc import grep_active_notebooks
+import grep_active_notebooks
 
 c = get_config()
 #------------------------------------------------------------------------------
