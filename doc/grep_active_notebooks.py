@@ -23,7 +23,6 @@ tutorial_nbs =  sorted(glob('tutorials/notebooks/*.ipynb'))
 assert tutorial_nbs
 
 notebooks_paths += tutorial_nbs
-notebooks_paths = [notebooks_paths[12]]
 
 if __name__ == '__main__':
     #assert len(_notebooks) == len(notebooks_paths)
