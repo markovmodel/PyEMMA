@@ -39,6 +39,7 @@ requirements:
     - setuptools
     # use build flags (eg. CFLAGS etc) from conda-forge
     - toolchain
+    - pybind11
 
   run:
     - bhmm >=0.6.3,<0.7
