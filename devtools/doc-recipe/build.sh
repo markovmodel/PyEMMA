@@ -11,14 +11,14 @@ python -c "import pyemma; pyemma.config.show_progress_bars=False; pyemma.config.
 # print new config
 python -c "import pyemma; print(pyemma.config)"
 
-# install requirements, which are not available in conda
-cd doc
-pip install -r requirements-build-doc.txt
-
 # if we have the fu-berlin file system, we copy the unpublished data (bpti)
 if [[ -d /group/ag_cmb/pyemma_performance/unpublished ]]; then
     cp /group/ag_cmb/pyemma_performance/unpublished ./pyemma-ipython -vuR
 fi
+
+# install requirements, which are not available in conda
+cd doc
+pip install -r requirements-build-doc.txt
 
 make clean
 make ipython-rst
