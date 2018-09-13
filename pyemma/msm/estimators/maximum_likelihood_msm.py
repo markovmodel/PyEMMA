@@ -411,7 +411,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @connectivity.setter
     def connectivity(self, value):
-        value = str(value).lower()
         if value == 'largest':
             pass  # this is the current default. no need to do anything
         elif value == 'all':
@@ -419,7 +418,7 @@ class _MSMEstimator(_Estimator, _MSM):
         elif value == 'none':
             raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
         else:
-            raise ValueError('connectivity mode {} is unknown.'.format(value))
+            raise ValueError('connectivity mode {} is unknown. Currently only "largest" is implemented'.format(value))
         self._connectivity = value
 
     @property
