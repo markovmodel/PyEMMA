@@ -22,7 +22,6 @@ import six
 
 from pyemma._base.loggable import Loggable
 from pyemma.coordinates.data._base._in_memory_mixin import InMemoryMixin
-from pyemma.util.contexts import attribute
 from pyemma.util.types import is_int
 
 
@@ -233,21 +232,28 @@ class _LaggedIterator(object):
         self._it.reset()
 
     def __next__(self):
-        with attribute(self._it, 'chunksize', self._max_size if self.chunksize == 0 else self.chunksize):
+        chunksize_old = self._it.chunksize
+        try:
+            self._it.chunksize = self._max_size if self.chunksize == 0 else self.chunksize
             changed = _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
             if changed:
                 self._overlap = None
 
             if self._overlap is None:
-                with attribute(self._it, 'chunksize', self._lag):
+                chunksize_old2 = self._it.chunksize
+                try:
+                    self._it.chunksize = self._lag
                     _, self._overlap = next(self._it)
                     assert len(self._overlap) <= self._lag, 'len(overlap) > lag... %s>%s' % (len(self._overlap), self._lag)
                     self._overlap = self._overlap[::self._actual_stride]
+                finally:
+                    self._it.chunksize = chunksize_old2
 
-            with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
-
+            chunksize_old3 = self._it.chunksize
+            try:
+                self._it.chunksize = self._it.chunksize * self._actual_stride
                 itraj, data_lagged = next(self._it)
-                assert len(data_lagged) <= self._it.chunksize * self._actual_stride if self._it.chunksize > 0 else float('inf')
+                assert len(data_lagged) <= self._it.chunksize * self._actual_stride
                 frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
                 data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
                                                            % self._actual_stride::self._actual_stride]), axis=0)
@@ -256,6 +262,8 @@ class _LaggedIterator(object):
                 self._overlap = data_lagged[offset::self._actual_stride, :]
 
                 data_lagged = data_lagged[::self._actual_stride]
+            finally:
+                self._it.chunksize = chunksize_old3
 
             if self._it.last_chunk_in_traj:
                 self._overlap = None
@@ -270,6 +278,8 @@ class _LaggedIterator(object):
             if self._return_trajindex:
                 return itraj, data, data_lagged
             return data, data_lagged
+        finally:
+            self._it.chunksize = chunksize_old
 
     next = __next__
 
