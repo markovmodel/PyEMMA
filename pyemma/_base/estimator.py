@@ -294,6 +294,11 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     else:
         estimators = [estimator for _ in param_sets]
 
+    # only show progress of parameter study.
+    if hasattr(estimators[0], 'show_progress'):
+        for e in estimators:
+            e.show_progress = False
+
     # if we evaluate, make sure we have a list of functions to evaluate
     if _types.is_string(evaluate):
         evaluate = [evaluate]
@@ -318,7 +323,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                                          description="estimating %s" % str(estimator.__class__.__name__))
 
     # TODO: test on win, osx
-    if n_jobs > 1:  #and os.name == 'posix':
+    if n_jobs > 1 and os.name == 'posix':
         if logger_available:
             logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
         # iterate over parameter settings
@@ -329,14 +334,9 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                       failfast, return_exceptions)
                      for estimator, param_set in zip(estimators, param_sets))
 
-        from pathos.multiprocessing import Pool as Parallel
-        pool = Parallel(processes=n_jobs)
+        from pathos.multiprocessing import Pool
+        pool = Pool(processes=n_jobs)
         args = list(task_iter)
-        if show_progress:
-            from pyemma._base.model import SampledModel
-            for a in args:
-                if isinstance(a, SampledModel):
-                    a.show_progress = False
 
         import six
         from contextlib import closing
@@ -359,11 +359,6 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             logger.debug('estimating %s with n_jobs=1 because of the setting or '
                          'you not have a POSIX system', estimator)
         res = []
-        if show_progress:
-            from pyemma._base.model import SampledModel
-            if isinstance(estimator, SampledModel):
-                for e in estimators:
-                    e.show_progress = False
         with ctx:
             for estimator, param_set in zip(estimators, param_sets):
                 res.append(_estimate_param_scan_worker(estimator, param_set, X,
