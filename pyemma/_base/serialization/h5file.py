@@ -72,7 +72,7 @@ class H5File(object):
         # used during saving.
         if name in self._parent:
             if overwrite:
-                logger.info('overwriting model "%s" in file %s', name, self._file.name)
+                logger.info('overwriting model "%s" in file %s', name, self._file.filename)
                 self.__group = self._parent[name]
                 del self._current_model_group
             else:
@@ -96,7 +96,7 @@ class H5File(object):
 
             # not existent and read only
             if model_name not in self._parent and self._file.mode == 'r':
-                raise ValueError('model_name "{n}" not found in file {f}'.format(n=model_name, f=self._file.name))
+                raise ValueError('model_name "{n}" not found in file {f}'.format(n=model_name, f=self._file.filename))
             self.__group = self._parent.require_group(model_name)
 
     @_current_model_group.deleter
