@@ -151,8 +151,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 self._fixed_seed = random.randint(0, 2**32-1)
         elif types.is_int(val):
             if val < 0 or val > 2**32-1:
-                self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
-                                 " Seed will be chosen randomly.")
+                self.logger.warning("seed has to be positive (or smaller than 2**32-1)."
+                                    " Seed will be chosen randomly.")
                 self.fixed_seed = False
             else:
                 self._fixed_seed = val
@@ -246,9 +246,9 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 self._converged = True
                 self.logger.debug("Cluster centers converged after %i steps.", iterations + 1)
             else:
-                self.logger.warn("Algorithm did not reach convergence criterion"
-                                 " of %g in %i iterations. Consider increasing max_iter.",
-                                 self.tolerance, self.max_iter)
+                self.logger.warning("Algorithm did not reach convergence criterion"
+                                    " of %g in %i iterations. Consider increasing max_iter.",
+                                    self.tolerance, self.max_iter)
 
         return self
 

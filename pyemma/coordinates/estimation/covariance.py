@@ -110,7 +110,7 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
             raise ValueError('Computing only parts of the diagonal is not supported.')
         if diag_only and sparse_mode is not 'dense':
             if sparse_mode is 'sparse':
-                self.logger.warn('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
+                self.logger.warning('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
             sparse_mode = 'dense'
         self.set_params(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
@@ -175,7 +175,7 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
 
         if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
             if partial_fit:
-                self.logger.warn("Could not use data passed to partial_fit(), "
+                self.logger.warning("Could not use data passed to partial_fit(), "
                                  "because no single data set [longest=%i] is longer than lag+skip [%i]",
                                  max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip)
                 return self

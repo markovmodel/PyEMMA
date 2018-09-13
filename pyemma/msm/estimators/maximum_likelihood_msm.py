@@ -1838,7 +1838,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             if not _np.all(self._pihat > 0):
                 self._pihat = pihat_old.copy()
                 die = True
-                self.logger.warn("pihat does not have a finite probability for all states, terminating")
+                self.logger.warning("pihat does not have a finite probability for all states, terminating")
             self._update_mhat()
             self._update_Q()
             if i > 1:
@@ -1846,7 +1846,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 self._update_X_and_pi()
                 if _np.any(self.X[self._nz] < 0) and i > 0:
                     die = True
-                    self.logger.warn(
+                    self.logger.warning(
                         "Warning: new X is not proportional to C... reverting to previous step and terminating")
                     self.X = X_old.copy()
 
