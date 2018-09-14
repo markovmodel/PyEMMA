@@ -106,7 +106,6 @@ def extensions():
     np_inc = _np_inc()
 
     pybind_inc = get_pybind_include()
-    assert os.path.exists(os.path.join(pybind_inc, 'pybind11', 'pybind11.h'))
 
     exts = []
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
