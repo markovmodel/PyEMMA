@@ -153,3 +153,62 @@ class lazy_cythonize(list):
         for e in self.c_list(): yield e
     def __getitem__(self, ii): return self.c_list()[ii]
     def __len__(self): return len(self.c_list())
+
+
+class get_pybind_include(object):
+    """Helper class to determine the pybind11 include path
+
+    The purpose of this class is to postpone importing pybind11
+    until it is actually installed, so that the ``get_include()``
+    method can be invoked. """
+
+    def __init__(self, user=False):
+        self.user = user
+
+    def search_pybind11_headers(self):
+        import pybind11
+
+        def recommended():
+            return pybind11.get_include(self.user)
+
+        def setuptools_temp_egg():
+            # If users of setuptools drag in pybind11 only as a setup_require(ment), the pkg will be placed
+            # temporarily into .eggs, but we can not use the headers directly. So we have to
+            # link non-installed header files to correct subdirectory, so they can be used during compilation
+            found = False
+            for p in pybind11.__path__:
+                if '.egg' in p:
+                    found = True
+            if not found:
+                return ''
+
+            header_src = os.path.abspath(os.path.join(pybind11.__path__[0], '..'))
+            hdrs = []
+
+            for _, _, filenames in os.walk(header_src):
+                hdrs += [f for f in filenames if f.endswith('.h')]
+            for h in sorted(hdrs):
+                if 'detail' in h:
+                    sub = 'detail'
+                else:
+                    sub = ''
+                dest = os.path.join(pybind11.__path__[0], sub, os.path.basename(h))
+                try:
+                    os.link(h, dest)
+                except OSError:
+                    pass
+            return header_src
+
+        methods = (recommended(),
+                   setuptools_temp_egg(),
+                   )
+        for m in methods:
+            if os.path.exists(os.path.join(m, 'pybind11', 'pybind11.h')):
+                return m
+        return ''
+
+    def __str__(self):
+        result = self.search_pybind11_headers()
+        if not result:
+            raise RuntimeError()
+        return result
