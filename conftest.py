@@ -34,7 +34,11 @@ def session_fixture():
     import tempfile, time
     org = tempfile.gettempdir()
     tempfile.tempdir = os.path.join(org, 'pyemma_test-{}'.format(time.time()))
-    os.makedirs(tempfile.tempdir, exist_ok=True)
+    try:
+        os.mkdir(tempfile.tempdir)
+    except OSError as ose:
+        if 'exists'  not in ose.strerror.lower():
+            raise
     yield
     import shutil
     shutil.rmtree(tempfile.tempdir)
