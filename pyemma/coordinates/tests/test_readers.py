@@ -180,9 +180,6 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
         shutil.rmtree(cls.tempdir, ignore_errors=True)
 
     def _test_lagged_reader(self, file_format, stride, skip, chunksize, lag):
-        # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
-            raise unittest.SkipTest('wait for mdtraj 2.0')
         trajs = self.test_trajs[file_format]
         reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
@@ -237,10 +234,6 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
     def _test_fragment_reader(self, file_format, stride, lag, chunksize):
         trajs = self.test_trajs[file_format]
 
-        # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
-            raise unittest.SkipTest('wait for mdtraj 2.0')
-
         reader = coor.source([trajs], top=self.pdb_file, chunksize=chunksize)
         assert isinstance(reader, FragmentedTrajectoryReader)
 
@@ -272,10 +265,6 @@ class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
             assert itraj == 0 # only one trajectory
 
     def _test_base_reader(self, file_format, stride, skip, chunksize, transform):
-        # TODO: remove this, when mdtraj-2.0 is released.
-        if file_format == 'dcd' and stride > 1 and skip_stride_handling_old_mdtraj:
-            raise unittest.SkipTest('wait for mdtraj 2.0')
-
         trajs = self.test_trajs[file_format]
         reader = coor.source(trajs, top=self.pdb_file, chunksize=chunksize)
 
