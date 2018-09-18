@@ -1635,7 +1635,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             return self._Rs[k % self._slicesz]
 
     def _update_pihat(self):
-        """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """
+        r""" Update stationary distribution estimate of Augmented Markov model (\hat pi) """
         expons = _np.einsum('i,ji->j', self.lagrange, self.E_active)
         # expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
