@@ -30,10 +30,11 @@ def session_fixture():
     setup_pyemma_config()
     add_np()
 
-    # redirect tempdir to a subdir called pyemma-test-$timestamp to clean all temporary files after testing.
-    import tempfile, time
+    # redirect tempdir to a subdir called pyemma-test-$random to clean all temporary files after testing.
+    import tempfile, uuid
     org = tempfile.gettempdir()
-    tempfile.tempdir = os.path.join(org, 'pyemma_test-{}'.format(time.time()))
+    tempfile.tempdir = os.path.join(org, 'pyemma_test-{}'.format(uuid.uuid4()))
+    print('session temporary dir:', tempfile.tempdir)
     try:
         os.mkdir(tempfile.tempdir)
     except OSError as ose:
