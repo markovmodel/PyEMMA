@@ -42,7 +42,7 @@ def session_fixture():
             raise
     yield
     import shutil
-    shutil.rmtree(tempfile.tempdir)
+    shutil.rmtree(tempfile.tempdir, ignore_errors=True)
 
 
 def pytest_collection_modifyitems(session, config, items):
