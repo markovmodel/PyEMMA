@@ -35,3 +35,8 @@ on_finish:
      $wc = New-Object 'System.Net.WebClient';
      $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", "C:/Users/appveyor/reports/junit.xml")
 
+after_test:
+  - ps: |
+      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+      bash codecov.sh -f "$HOME\coverage.xml" -t YourUploadToken
