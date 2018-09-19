@@ -6,19 +6,16 @@ import os
 assert 'pyemma' not in sys.modules
 
 
-@pytest.fixture(scope='session')
-def no_progress_bars():
-    """ disables progress bars during testing """
+def setup_pyemma_config():
+    """ set config flags for testing """
     if 'pyemma' in sys.modules:
         pyemma = sys.modules['pyemma']
         pyemma.config.show_progress_bars = False
         pyemma.config.coordinates_check_output = True
         pyemma.config.use_trajectory_lengths_cache = False
-    yield
 
 
-@pytest.fixture(autouse=True)
-def add_np(doctest_namespace):
+def add_np():
     # we enforce legacy string formatting of numpy arrays, because the output format changed in version 1.14,
     # leading to failing doctests.
     import numpy as np
@@ -28,13 +25,24 @@ def add_np(doctest_namespace):
         pass
 
 
-@pytest.fixture(autouse=True)
-def filter_warnings():
-    import warnings
-    old_filters = warnings.filters[:]
-    warnings.filterwarnings('ignore', message='You have not selected any features. Returning plain coordinates.')
+@pytest.fixture('session')
+def session_fixture():
+    setup_pyemma_config()
+    add_np()
+
+    # redirect tempdir to a subdir called pyemma-test-$random to clean all temporary files after testing.
+    import tempfile, uuid
+    org = tempfile.gettempdir()
+    tempfile.tempdir = os.path.join(org, 'pyemma_test-{}'.format(uuid.uuid4()))
+    print('session temporary dir:', tempfile.tempdir)
+    try:
+        os.mkdir(tempfile.tempdir)
+    except OSError as ose:
+        if 'exists'  not in ose.strerror.lower():
+            raise
     yield
-    warnings.filters = old_filters
+    import shutil
+    shutil.rmtree(tempfile.tempdir, ignore_errors=True)
 
 
 def pytest_collection_modifyitems(session, config, items):

@@ -431,7 +431,7 @@ class SerializableMixIn(object):
                    % self.__class__.__name__)
             warnings.warn(msg, category=UserWarning)
             if hasattr(self, 'logger'):
-                self.logger.warn(msg)
+                self.logger.warning(msg)
             for k, v in state.items():
                 setattr(self, k, v)
             return

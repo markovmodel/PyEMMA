@@ -36,7 +36,7 @@ import versioneer
 import warnings
 from io import open
 
-from setup_util import lazy_cythonize
+from setup_util import lazy_cythonize, get_pybind_include
 
 try:
     from setuptools import setup, Extension, find_packages
@@ -104,9 +104,8 @@ def extensions():
     import mdtraj
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
-    import pybind11
-    pybind_inc = pybind11.get_include()
-    assert os.path.exists(pybind_inc)
+
+    pybind_inc = get_pybind_include()
 
     exts = []
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''

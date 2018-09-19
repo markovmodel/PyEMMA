@@ -86,16 +86,6 @@ def settings(**kwargs):
 
 
 @contextmanager
-def attribute(obj, attr, val):
-    previous = getattr(obj, attr)
-    setattr(obj, attr, val)
-    try:
-        yield
-    finally:
-        setattr(obj, attr, previous)
-
-
-@contextmanager
 def named_temporary_file(mode='w+b', prefix='', suffix='', dir=None):
     from tempfile import NamedTemporaryFile
     ntf = NamedTemporaryFile(mode=mode, suffix=suffix, prefix=prefix, dir=dir, delete=False)

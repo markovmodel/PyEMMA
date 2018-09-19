@@ -9,7 +9,7 @@ __author__ = 'noe'
 class Moments(object):
 
     def __init__(self, w, sx, sy, Mxy):
-        """
+        r"""
         Parameters
         ----------
         w : float

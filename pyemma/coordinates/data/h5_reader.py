@@ -1,5 +1,4 @@
 import numpy as np
-from pyemma.util.contexts import attribute
 
 from pyemma._base.serialization.serialization import SerializableMixIn
 
@@ -195,8 +194,9 @@ class H5Iterator(DataSourceIterator):
         self._fh = self.data.file
 
     def _next_chunk(self):
-        cs = np.iinfo(np.int64).max if self.chunksize == 0 else self.chunksize
-        with attribute(self, 'chunksize', cs):
+        old_cs = self.chunksize
+        self.chunksize = np.iinfo(np.int64).max if self.chunksize == 0 else self.chunksize
+        try:
             if not self.uniform_stride:
                 # h5py does not allow duplicated indices, so we need to filter, and re-apply them.
                 ids = self.ra_indices_for_traj(self._itraj)[self._t:min(
@@ -212,5 +212,7 @@ class H5Iterator(DataSourceIterator):
                 t_next = self._t_abs + self.chunksize * self.stride
                 slice_x = slice(self._t_abs, t_next, self.stride)
                 chunk = self.data[slice_x]
+        finally:
+            self.chunksize = old_cs
         chunk, _ = self._data_source._reshape(chunk)
         return chunk

@@ -411,7 +411,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
     @connectivity.setter
     def connectivity(self, value):
-        value = str(value).lower()
         if value == 'largest':
             pass  # this is the current default. no need to do anything
         elif value == 'all':
@@ -419,7 +418,7 @@ class _MSMEstimator(_Estimator, _MSM):
         elif value == 'none':
             raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
         else:
-            raise ValueError('connectivity mode {} is unknown.'.format(value))
+            raise ValueError('connectivity mode {} is unknown. Currently only "largest" is implemented'.format(value))
         self._connectivity = value
 
     @property
@@ -1636,7 +1635,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             return self._Rs[k % self._slicesz]
 
     def _update_pihat(self):
-        """ Update stationary distribution estimate of Augmented Markov model (\hat pi) """
+        r""" Update stationary distribution estimate of Augmented Markov model (\hat pi) """
         expons = _np.einsum('i,ji->j', self.lagrange, self.E_active)
         # expons = (self.lagrange[:, None]*self.E_active.T).sum(axis=0)
         expons = expons - expons.max()
@@ -1838,7 +1837,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             if not _np.all(self._pihat > 0):
                 self._pihat = pihat_old.copy()
                 die = True
-                self.logger.warn("pihat does not have a finite probability for all states, terminating")
+                self.logger.warning("pihat does not have a finite probability for all states, terminating")
             self._update_mhat()
             self._update_Q()
             if i > 1:
@@ -1846,7 +1845,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                 self._update_X_and_pi()
                 if _np.any(self.X[self._nz] < 0) and i > 0:
                     die = True
-                    self.logger.warn(
+                    self.logger.warning(
                         "Warning: new X is not proportional to C... reverting to previous step and terminating")
                     self.X = X_old.copy()
 

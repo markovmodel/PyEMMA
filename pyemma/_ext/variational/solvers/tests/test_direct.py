@@ -16,10 +16,6 @@ def sort_by_norm_and_imag_sign(evals, evecs):
 
 class TestDirect(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        pass
-
     def test_spd_inv_split(self):
         W = np.array([[1.0, 0.3, 0.2],
                       [0.3, 0.8, 0.5],
@@ -57,13 +53,23 @@ class TestDirect(unittest.TestCase):
                 # Test correctness
                 v, R = direct.eig_corr(C0, Ct, method=method)
                 v, R = sort_by_norm_and_imag_sign(v, R)
-                np.testing.assert_allclose(v0, v)  # eigenvalues equal?
+                try:
+                    np.testing.assert_allclose(v0, v, err_msg='eig vals not equal for method %s' % method)  # eigenvalues equal?
+                except AssertionError:  # check conjugate pair
+                    np.testing.assert_allclose(v0, v.conj())
                 # eigenvectors equivalent?
                 for i in range(R0.shape[1]):
-                    np.testing.assert_allclose(R0[:, i] / R0[0, i], R[:, i] / R[0, i])
+                    try:
+                        np.testing.assert_allclose(R0[:, i] / R0[0, i], R[:, i] / R[0, i],
+                                                   err_msg='eig vecs not equal for method %s' % method)
+                    except AssertionError:  # check conjugate pair
+                        np.testing.assert_allclose((R0[:, i] / R0[0, i]).conj(), R[:, i] / R[0, i],
+                                                   err_msg='eig vecs not equal for method %s' % method)
+
                 # Test if eigenpair diagonalizes the Koopman matrix
                 K = np.dot(np.linalg.inv(C0), Ct)
-                np.testing.assert_allclose(K, R.dot(np.diag(v)).dot(np.linalg.inv(R)))
+                np.testing.assert_allclose(K, R.dot(np.diag(v)).dot(np.linalg.inv(R)),
+                                           err_msg='eigenpair does not diagonlize K. Method=%s' % method)
 
 
 if __name__ == "__main__":
