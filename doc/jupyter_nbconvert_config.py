@@ -313,7 +313,7 @@ c.Exporter.preprocessors = ['nbconvert_filter.RewriteNotebookLinks',
 # and a `CellExecutionError` is raised. If `True`, execution errors are ignored
 # and the execution is continued until the end of the notebook. Output from
 # exceptions is included in the cell output in both cases.
-# c.ExecutePreprocessor.allow_errors = False
+c.ExecutePreprocessor.allow_errors = True
 
 # If execution of a cell times out, interrupt the kernel and continue executing
 # other cells rather than throwing an error and stopping.
