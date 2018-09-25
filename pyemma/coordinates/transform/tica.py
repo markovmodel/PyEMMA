@@ -152,9 +152,13 @@ class TICA(TICABase, SerializableMixIn):
 
         # handle deprecation
         if var_cutoff != None:
+            var_cutoff = float(var_cutoff)
             warnings.warn('passed deprecated setting "var_cutoff", '
                           'will override passed "dim" ({dim}) parameter with {var_cutoff}'
                           .format(dim=dim, var_cutoff=var_cutoff))
+            if var_cutoff != self._DEFAULT_VARIANCE_CUTOFF and dim != -1 and var_cutoff != 1.0:
+                raise ValueError('Trying to set both the number of dimension and the subspace variance. '
+                                 'Use either one or the other.')
             self.dim = var_cutoff
         if isinstance(kinetic_map, bool) and kinetic_map:
             assert scaling == 'kinetic_map'
