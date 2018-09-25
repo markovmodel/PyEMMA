@@ -105,11 +105,8 @@ class TICAModelBase(Model, SerializableMixIn):
         if dim is None or (isinstance(dim, float) and dim == 1.0):
             return rank
         if isinstance(dim, float):
-            dim_ = min(dim, np.searchsorted(TICAModelBase._cumvar(eigenvalues), dim) + 1)
-
-            dim2 =np.count_nonzero(TICAModelBase._cumvar(eigenvalues) >= dim)
-
-            return dim2
+            # subspace_variance, reduce the output dimension if needed
+            return min(len(eigenvalues), np.searchsorted(TICAModelBase._cumvar(eigenvalues), dim) + 1)
         else:
             return np.min([rank, dim])
 
