@@ -223,7 +223,7 @@ def spd_inv_split(W, epsilon=1e-10, method='QR', canonical_signs=False):
     return L
 
 
-def eig_corr(C0, Ct, epsilon=1e-10, method='QR', sign_maxelement=False):
+def eig_corr(C0, Ct, epsilon=1e-10, method='QR', sign_maxelement=False, return_rank=False):
     r""" Solve generalized eigenvalue problem with correlation matrices C0 and Ct
 
     Numerically robust solution of a generalized Hermitian (symmetric) eigenvalue
@@ -259,7 +259,8 @@ def eig_corr(C0, Ct, epsilon=1e-10, method='QR', sign_maxelement=False):
     sign_maxelement : bool
         If True, re-scale each eigenvector such that its entry with maximal absolute value
         is positive.
-
+    return_rank : bool, default=False
+        If True, return the rank of generalized eigenvalue problem.
 
     Returns
     -------
@@ -292,5 +293,7 @@ def eig_corr(C0, Ct, epsilon=1e-10, method='QR', sign_maxelement=False):
             imax = _np.argmax(_np.abs(R[:, j]))
             R[:, j] *= _np.sign(R[imax, j])
 
-    # return result
+    if return_rank:
+        return l, R, L.shape[1] if L.ndim == 2 else 1
+
     return l, R
