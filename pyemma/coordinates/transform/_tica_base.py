@@ -174,12 +174,12 @@ class TICABase(StreamingEstimationTransformer):
         if not (kinetic_map is None and commute_map is None):
             if kinetic_map and commute_map:
                 raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-            elif kinetic_map:
+            if kinetic_map and not commute_map:
                 scaling = 'kinetic_map'
-            elif not kinetic_map:
+            if commute_map and not kinetic_map:
+                scaling = 'commute_map'
+            if not kinetic_map and not kinetic_map:
                 scaling = None
-            elif not commute_map:
-                raise
             if (kinetic_map or commute_map) and not reversible:
                 warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
                               "False.")
