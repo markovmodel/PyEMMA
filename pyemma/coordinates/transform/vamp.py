@@ -253,7 +253,6 @@ class VAMPModel(Model, SerializableMixIn):
                 R[:, 0] = statistics.T.dot(m_0)
             R[:, 1:] = statistics.T.dot(self.C00).dot(U)
 
-        if statistics is not None:
             # compute lagged covariance
             return Q.dot(P).dot(R.T)
             # TODO: discuss whether we want to return this or the transpose

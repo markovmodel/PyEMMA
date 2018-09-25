@@ -359,7 +359,7 @@ class DiscreteTrajectoryStats(object):
         return self._lag
 
     def count_matrix(self, connected_set=None, subset=None, effective=False):
-        """The count matrix
+        r"""The count matrix
 
         Parameters
         ----------
