@@ -124,19 +124,7 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             params.update(output_params)
 
             tica_obj = tica(**params)
-            tica_obj.partial_fit(reader_output[0])
-            assert not tica_obj._estimated
-            # acccess eigenvectors to force diagonalization
-            tica_obj.eigenvectors
-            assert tica_obj._estimated
-
-            tica_obj.partial_fit(reader_output[1])
-            assert not tica_obj._estimated
-
-            tica_obj.eigenvalues
-            assert tica_obj._estimated
-
-            for traj in reader_output[2:]:
+            for traj in reader_output:
                 tica_obj.partial_fit(traj)
 
             # reference
