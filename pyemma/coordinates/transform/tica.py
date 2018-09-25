@@ -122,50 +122,11 @@ class TICA(TICABase, SerializableMixIn):
            for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
         """
-        super(TICA, self).__init__()
-
-        self.epsilon = epsilon
-        self.lag = lag
-        self.reversible = reversible
-        self.stride = stride
-        self.skip = skip
-        self.weights = weights
-        self.ncov_max = ncov_max
-        self.dim = dim
-
-        #### old
-        if not (kinetic_map is None and commute_map is None):
-            if kinetic_map and commute_map:
-                raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-            elif kinetic_map:
-                scaling = 'kinetic_map'
-            elif not kinetic_map:
-                scaling = None
-            elif not commute_map:
-                raise
-            if (kinetic_map or commute_map) and not reversible:
-                warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
-                              "False.")
-                scaling = None
-
-        ########
-
-        # handle deprecation
-        if var_cutoff != None:
-            var_cutoff = float(var_cutoff)
-            warnings.warn('passed deprecated setting "var_cutoff", '
-                          'will override passed "dim" ({dim}) parameter with {var_cutoff}'
-                          .format(dim=dim, var_cutoff=var_cutoff))
-            if var_cutoff != self._DEFAULT_VARIANCE_CUTOFF and dim != -1 and var_cutoff != 1.0:
-                raise ValueError('Trying to set both the number of dimension and the subspace variance. '
-                                 'Use either one or the other.')
-            self.dim = var_cutoff
-        if isinstance(kinetic_map, bool) and kinetic_map:
-            assert scaling == 'kinetic_map'
-        assert self.dim >= 0
-
-        self.scaling = scaling
-
+        super(TICA, self).__init__(dim=dim, epsilon=epsilon, lag=lag,
+                                   weights=weights, reversible=reversible,
+                                   stride=stride, skip=skip, ncov_max=ncov_max,
+                                   # deprecated:
+                                   commute_map=commute_map, kinetic_map=kinetic_map, var_cutoff=var_cutoff)
         # this instance will be set by partial fit.
         self._covar = None
 

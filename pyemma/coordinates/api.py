@@ -1420,7 +1420,7 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
 
 
 def tica_nystroem(max_columns, data=None, lag=10,
-                  dim=-1, var_cutoff=0.95, epsilon=1e-6,
+                  dim=0.95, var_cutoff=None, epsilon=1e-6,
                   stride=1, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None,
                   initial_columns=None, nsel=1, neig=None):
     r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.

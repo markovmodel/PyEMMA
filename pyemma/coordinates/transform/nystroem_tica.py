@@ -41,11 +41,27 @@ __author__ = 'litzinger'
 class NystroemTICAModel(TICAModelBase):
     __serialize_version = 0
 
-    def set_model_params(self, mean, cov, cov_tau, diag, column_indices, cumvar=None):
-        super(NystroemTICAModel, self).set_model_params(mean=mean, cov=cov, cov_tau=cov_tau)
-        self.cumvar = cumvar
+    def __init__(self, mean=None, cov=None, cov_tau=None, dim=None, epsilon=1e-6, scaling=None, lag=0,
+                 column_indices=None, diag=None, Wk=None):
+        self.set_model_params(mean=mean, cov=cov, cov_tau=cov_tau, dim=dim, epsilon=epsilon,
+                              scaling=scaling, lag=lag, column_indices=column_indices, diag=diag, Wk=Wk)
+
+    def set_model_params(self, mean, cov, cov_tau, diag, column_indices,
+                         dim=None, epsilon=1e-6, scaling=None, lag=0, Wk=None):
+        super(NystroemTICAModel, self).set_model_params(mean=mean, cov=cov, cov_tau=cov_tau,
+                                                        dim=dim, epsilon=epsilon, scaling=scaling, lag=0)
         self.diag = diag
         self.column_indices = column_indices
+        self.Wk = Wk
+
+    def _compute_diag(self):
+        Wktau = self.cov_tau[self.column_indices, :]
+        try:
+            eigenvalues, eigenvectors, rank = eig_corr(self.Wk, Wktau, self.epsilon, sign_maxelement=True, return_rank=True)
+        except ZeroRankError:
+            raise ZeroRankError('All input features are constant in all time steps. '
+                                'No dimension would be left after dimension reduction.')
+        return eigenvalues, eigenvectors, rank
 
 
 @fix_docs
@@ -54,10 +70,9 @@ class NystroemTICA(TICABase, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ()
 
-    def __init__(self, lag, max_columns,
-                 dim=-1, var_cutoff=TICABase._DEFAULT_VARIANCE_CUTOFF, epsilon=1e-6,
-                 stride=1, skip=0, reversible=True, ncov_max=float('inf'),
-                 initial_columns=None, nsel=1, selection_strategy='spectral-oasis', neig=None):
+    def __init__(self, lag, max_columns, dim=TICABase._DEFAULT_VARIANCE_CUTOFF, var_cutoff=None, epsilon=1e-6, stride=1,
+                 skip=0, reversible=True, ncov_max=float('inf'), initial_columns=None, nsel=1,
+                 selection_strategy='spectral-oasis', neig=None):
         r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
 
         Parameters
@@ -140,22 +155,22 @@ class NystroemTICA(TICABase, SerializableMixIn):
            arXiv: 1505.05208 [stat.ML].
 
         """
-        super(NystroemTICA, self).__init__()
-
+        super(NystroemTICA, self).__init__(dim=dim, epsilon=epsilon, lag=lag,
+                                   reversible=reversible,
+                                   stride=stride, skip=skip, ncov_max=ncov_max,
+                                   # deprecated:
+                                   var_cutoff=var_cutoff)
         self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
                                        lag=lag, bessel=False, stride=stride, skip=skip, ncov_max=ncov_max)
         self._diag = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
                                       lag=lag, bessel=False, stride=stride, skip=skip, ncov_max=ncov_max,
                                       diag_only=True)
         self._oasis = None
-
-        self.dim = dim
-        self.var_cutoff = var_cutoff
-
-        self.set_params(lag=lag, max_columns=max_columns,
-                        epsilon=epsilon, reversible=reversible, stride=stride, skip=skip,
-                        ncov_max=ncov_max,
-                        initial_columns=initial_columns, nsel=nsel, selection_strategy=selection_strategy, neig=neig)
+        self.initial_columns = initial_columns
+        self.nsel = nsel
+        self.selection_strategy = selection_strategy
+        self.neig = neig
+        self.max_columns=max_columns
 
     @property
     def model(self):
@@ -206,7 +221,7 @@ class NystroemTICA(TICABase, SerializableMixIn):
                                 'Depending on your setup, this might be inefficient.')
 
         indim = iterable.dimension()
-        if not self.dim <= indim:
+        if isinstance(self.dim, int) and not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
 
@@ -238,10 +253,11 @@ class NystroemTICA(TICABase, SerializableMixIn):
                 self.model.update_model_params(cov_tau=np.concatenate((self._model.cov_tau, added_columns), axis=1))
 
         self.model.update_model_params(mean=self._covar.mean,
-                                        diag=self._diag.C00_,
-                                        cov=self._oasis.Ck,
-                                        column_indices=self._oasis.column_indices)
-        self._diagonalize()
+                                       diag=self._diag.C00_,
+                                       cov=self._oasis.Ck,
+                                       Wk=self._oasis.Wk,
+                                       column_indices=self._oasis.column_indices)
+        self.model._diagonalize()
 
         return self.model
 
@@ -342,7 +358,7 @@ class oASIS_Nystroem(object):
     """
 
     def __init__(self, d, C_k, columns):
-        """
+        r"""
         Initializes the oASIS_Nystroem method.
 
         Parameters
@@ -571,7 +587,7 @@ class oASIS_Nystroem(object):
         return np.dot(self._C_k, self._R_k)
 
     def approximate_column(self, i):
-        """ Computes the Nystroem approximation of column :math:`i` of matrix $A \in \mathbb{R}^{n \times n}$.
+        r""" Computes the Nystroem approximation of column :math:`i` of matrix $A \in \mathbb{R}^{n \times n}$.
 
         """
         return np.dot(self._C_k, self._R_k[:, i])
