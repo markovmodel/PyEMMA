@@ -1,7 +1,8 @@
 from abc import abstractproperty
 
 import numpy as np
-from decorator import decorator
+from pyemma.util.annotators import deprecated
+
 from pyemma._base.model import Model
 from pyemma._base.serialization.serialization import SerializableMixIn
 
@@ -10,24 +11,143 @@ from pyemma.coordinates.data._base.transformer import StreamingEstimationTransfo
 __author__ = 'marscher'
 
 
-@decorator
-def _lazy_estimation(func, *args, **kw):
-    assert isinstance(args[0], TICABase)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
-    return func(*args, **kw)
-
-
 class TICAModelBase(Model, SerializableMixIn):
-    __serialize_version = 0
+    __serialize_version = 1
+    # TODO: provide patch for versino 0!
+
+    _DEFAULT_VARIANCE_CUTOFF = 0.95
+
+    def __init__(self, mean=None, cov=None, cov_tau=None, dim=None, epsilon=1e-6, scaling=None, lag=0):
+        self.set_model_params(mean=mean, cov=cov, cov_tau=cov_tau, dim=dim, epsilon=epsilon, scaling=scaling, lag=lag)
 
     def set_model_params(self, mean=None, cov_tau=None, cov=None,
-                         cumvar=None, eigenvalues=None, eigenvectors=None):
-        self.update_model_params(cov=cov, cov_tau=cov_tau,
-                                 mean=mean, cumvar=cumvar,
-                                 eigenvalues=eigenvalues,
-                                 eigenvectors=eigenvectors)
+                         # deprecated since 2.5.5
+                         cumvar=None, eigenvalues=None, eigenvectors=None,
+                         # new since version 2.5.5
+                         dim=_DEFAULT_VARIANCE_CUTOFF,
+                         epsilon=1e-6,
+                         scaling='kinetic_map',
+                         lag=0,
+                         ):
+        self.cov = cov
+        self.cov_tau = cov_tau
+        self.mean = mean
+        if cumvar is not None:
+            raise
+        if eigenvalues is not None:
+            raise
+        if eigenvectors is not None:
+            raise
+        # new since 2.5.5
+        self.dim = dim
+        self.epsilon = epsilon
+        self.lag = lag
+        self.scaling = scaling
+
+        self._diagonalized = False
+
+    @property
+    def scaling(self):
+        return self._scaling
+
+    @scaling.setter
+    def scaling(self, value):
+        valid = ('kinetic_map', 'commute_map', None)
+        if value not in valid:
+            raise ValueError('Valid settings for scaling are one of {valid}, but was {invalid}'
+                             .format(valid=valid, invalid=value))
+        self._scaling = value
+
+    @property
+    def cov(self):
+        return self._cov
+
+    @cov.setter
+    def cov(self, value):
+        self._diagonalized = False
+        self._cov = value
+
+    @property
+    def cov_tau(self):
+        return self._cov_tau
+
+    @cov_tau.setter
+    def cov_tau(self, value):
+        self._diagonalized = False
+        self._cov_tau = value
+
+    @property
+    def eigenvectors(self):
+        if not self._diagonalized:
+            self._diagonalize()
+        return self._eigenvectors
+
+    @property
+    def eigenvalues(self):
+        if not self._diagonalized:
+            self._diagonalize()
+        return self._eigenvalues
+
+    @staticmethod
+    def _cumvar(eigenvalues):
+        cumvar = np.cumsum(eigenvalues ** 2)
+        cumvar /= cumvar[-1]
+        return cumvar
+
+    @property
+    def cumvar(self):
+        """ cumulative kinetic variance """
+        return TICAModelBase._cumvar(self.eigenvalues)
+
+    @staticmethod
+    def _dimension(rank, dim, eigenvalues):
+        """ output dimension """
+        if dim is None or (isinstance(dim, float) and dim == 1.0):
+            return rank
+        if isinstance(dim, float):
+            dim_ = min(dim, np.searchsorted(TICAModelBase._cumvar(eigenvalues), dim) + 1)
+
+            dim2 =np.count_nonzero(TICAModelBase._cumvar(eigenvalues) >= dim)
+
+            return dim2
+        else:
+            return np.min([rank, dim])
+
+    def dimension(self):
+        """ output dimension """
+        if self.cov is None:  # no data yet
+            if isinstance(self.dim, int):  # return user choice
+                import warnings
+                warnings.warn('Returning user-input for dimension, since this model has not yet been estimated.')
+                return self.dim
+            raise RuntimeError('Please call set_model_params prior using this method.')
+
+        if not self._diagonalized:
+            self._diagonalize()
+        return self._dimension(self._rank, self.dim, self.eigenvalues)
+
+    def _diagonalize(self):
+        # diagonalize with low rank approximation
+        from pyemma._ext.variational.util import ZeroRankError
+        from pyemma._ext.variational import eig_corr
+        try:
+            eigenvalues, eigenvectors, self._rank = eig_corr(self.cov, self.cov_tau, self.epsilon,
+                                                             sign_maxelement=True, return_rank=True)
+        except ZeroRankError:
+            raise ZeroRankError('All input features are constant in all time steps. '
+                                'No dimension would be left after dimension reduction.')
+        if self.scaling == 'kinetic_map':  # scale by eigenvalues
+            eigenvectors *= eigenvalues[None, :]
+        elif self.scaling == 'commute_map':  # scale by (regularized) timescales
+            timescales = 1-self.lag / np.log(np.abs(eigenvalues))
+            # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
+            regularized_timescales = 0.5 * timescales * np.maximum(np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1), 0)
+
+            eigenvectors *= np.sqrt(regularized_timescales / 2)
+
+        self._eigenvalues = eigenvalues
+        self._eigenvectors = eigenvectors
+        self._diagonalized = True
 
 
 class TICABase(StreamingEstimationTransformer):
@@ -37,50 +157,11 @@ class TICABase(StreamingEstimationTransformer):
     @property
     def lag(self):
         """ lag time of correlation matrix :math:`C_{\tau}` """
-        return self._lag
+        return self.model.lag
 
     @lag.setter
     def lag(self, new_tau):
-        self._lag = new_tau
-
-    @property
-    def dim(self):
-        """output dimension (input parameter).
-
-        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-        Setting dim to a positive value is exclusive with var_cutoff.
-        """
-        return self._dim
-
-    @dim.setter
-    def dim(self, value):
-        if int(value) > -1:
-            self._var_cutoff = 1.0
-        self._dim = int(value)
-
-    @property
-    def var_cutoff(self):
-        """ Kinetic variance cutoff
-
-        Should be given in terms of a percentage between (0, 1.0].
-        Can only be applied if dim is not set explicitly.
-        """
-        return self._var_cutoff
-
-    @var_cutoff.setter
-    def var_cutoff(self, value):
-        v = float(value)
-        if not hasattr(self, '_dim'):
-            raise RuntimeError('need to set dim before var_cutoff')
-
-        if not (0 < v <= 1.0):
-            raise ValueError('variance cutoff has to be in interval (0, 1.0]')
-
-        if v != TICABase._DEFAULT_VARIANCE_CUTOFF and self.dim != -1 and v != 1.0:
-            raise ValueError('Trying to set both the number of dimension and the subspace variance. '
-                             'Use either one or the other.')
-        self._var_cutoff = v
+        self.model.lag = new_tau
 
     @abstractproperty
     def model(self):
@@ -97,22 +178,7 @@ class TICABase(StreamingEstimationTransformer):
 
     def dimension(self):
         """ output dimension """
-        if self.dim > -1:
-            return self.dim
-        d = None
-        if self.dim != -1 and not self._estimated:  # fixed parametrization
-            d = self.dim
-        elif self._estimated:  # parametrization finished. Dimension is known
-            dim = len(self.eigenvalues)
-            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff) + 1)
-            d = dim
-        elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
-            d = self.data_producer.dimension()
-        else:  # We know nothing. Give up
-            raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                               'transformer has not yet been estimated. Call estimate() before.')
-        return d
+        return self.model.dimension()
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
@@ -133,7 +199,6 @@ class TICABase(StreamingEstimationTransformer):
         return Y.astype(self.output_type())
 
     @property
-    @_lazy_estimation
     def eigenvalues(self):
         r""" Eigenvalues of the TICA problem (usually denoted :math:`\lambda`)
 
@@ -144,7 +209,6 @@ class TICABase(StreamingEstimationTransformer):
         return self.model.eigenvalues
 
     @property
-    @_lazy_estimation
     def eigenvectors(self):
         r""" Eigenvectors of the TICA problem, columnwise
 
@@ -155,7 +219,6 @@ class TICABase(StreamingEstimationTransformer):
         return self.model.eigenvectors
 
     @property
-    @_lazy_estimation
     def cumvar(self):
         r""" Cumulative sum of the the TICA eigenvalues
 
@@ -174,7 +237,6 @@ class TICABase(StreamingEstimationTransformer):
             return np.complex64
 
     @property
-    @_lazy_estimation
     def timescales(self):
         r"""Implied timescales of the TICA transformation
 
@@ -197,7 +259,6 @@ class TICABase(StreamingEstimationTransformer):
         return -self.lag / np.log(np.abs(self.eigenvalues))
 
     @property
-    @_lazy_estimation
     def feature_TIC_correlation(self):
         r"""Instantaneous correlation matrix between mean-free input features and TICs
 
@@ -237,3 +298,48 @@ class TICABase(StreamingEstimationTransformer):
     @cov_tau.setter
     def cov_tau(self, value):
         self.model.cov_tau = value
+
+    @property
+    def dim(self):
+        """output dimension (input parameter).
+
+        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
+        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+        """
+        return self.model.dim
+
+    @dim.setter
+    def dim(self, value):
+        self.model.dim = value
+
+    @property
+    @deprecated('use dim property with a floating point value.')
+    def var_cutoff(self):
+        """ Kinetic variance cutoff. Deprecated, use dim property with a floating point value.
+
+        Should be given in terms of a percentage between (0, 1.0].
+        Can only be applied if dim is not set explicitly.
+        """
+        return self.model.dim
+
+    @var_cutoff.setter
+    @deprecated('use dim property with a floating point value.')
+    def var_cutoff(self, value):
+        self.model.dim = value
+
+    @property
+    def scaling(self):
+        return self.model.scaling
+
+    @scaling.setter
+    def scaling(self, value):
+        self.model.scaling = value
+
+    @property
+    def epsilon(self):
+        return self.model.epsilon
+
+    @epsilon.setter
+    def epsilon(self, value):
+        self.model.epsilon = value

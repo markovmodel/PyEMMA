@@ -1025,8 +1025,9 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunksi
     return res
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
-         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None, **kwargs):
+def tica(data=None, lag=10, dim=0.95, var_cutoff=None, kinetic_map=None, commute_map=None, weights='empirical',
+         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None, scaling='kinetic_map',
+         **kwargs):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1259,7 +1260,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             category=_PyEMMA_DeprecationWarning)
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip, stride=stride,
-               weights=weights, reversible=reversible, ncov_max=ncov_max)
+               weights=weights, reversible=reversible, ncov_max=ncov_max, scaling=scaling)
     if data is not None:
         res.estimate(data, chunksize=cs)
     else:

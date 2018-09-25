@@ -40,8 +40,12 @@ class TICA(TICABase, SerializableMixIn):
     r""" Time-lagged independent component analysis (TICA)"""
     __serialize_version = 0
 
-    def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
-                 stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):
+    def __init__(self, lag,
+                 dim=TICAModelBase._DEFAULT_VARIANCE_CUTOFF,
+                 var_cutoff=None, kinetic_map=None, commute_map=None,
+                 epsilon=1e-6,
+                 stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf'),
+                 scaling='kinetic_map'):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -119,22 +123,47 @@ class TICA(TICABase, SerializableMixIn):
 
         """
         super(TICA, self).__init__()
-        if kinetic_map and commute_map:
-            raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-        if (kinetic_map or commute_map) and not reversible:
-            kinetic_map = False
-            commute_map = False
-            warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
-                          "False.")
+
+        self.epsilon = epsilon
+        self.lag = lag
+        self.reversible = reversible
+        self.stride = stride
+        self.skip = skip
+        self.weights = weights
+        self.ncov_max = ncov_max
+        self.dim = dim
+
+        #### old
+        if not (kinetic_map is None and commute_map is None):
+            if kinetic_map and commute_map:
+                raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
+            elif kinetic_map:
+                scaling = 'kinetic_map'
+            elif not kinetic_map:
+                scaling = None
+            elif not commute_map:
+                raise
+            if (kinetic_map or commute_map) and not reversible:
+                warnings.warn("Cannot use kinetic_map or commute_map for non-reversible processes, both will be set to"
+                              "False.")
+                scaling = None
+
+        ########
+
+        # handle deprecation
+        if var_cutoff != None:
+            warnings.warn('passed deprecated setting "var_cutoff", '
+                          'will override passed "dim" ({dim}) parameter with {var_cutoff}'
+                          .format(dim=dim, var_cutoff=var_cutoff))
+            self.dim = var_cutoff
+        if isinstance(kinetic_map, bool) and kinetic_map:
+            assert scaling == 'kinetic_map'
+        assert self.dim >= 0
+
+        self.scaling = scaling
 
         # this instance will be set by partial fit.
         self._covar = None
-
-        self.dim = dim
-        self.var_cutoff = var_cutoff
-
-        self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-                        epsilon=epsilon, reversible=reversible, stride=stride, skip=skip, weights=weights, ncov_max=ncov_max)
 
     @property
     def model(self):
@@ -147,7 +176,7 @@ class TICA(TICABase, SerializableMixIn):
             dim = self.dimension()
         except RuntimeError:
             dim = self.dim
-        return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
+        return "[TICA, lag = %i; max. output dim. = %i]" % (self.lag, dim)
 
     def estimate(self, X, **kwargs):
         r"""
@@ -196,46 +225,16 @@ class TICA(TICABase, SerializableMixIn):
                                  weights=self.weights, ncov_max=self.ncov_max)
         indim = iterable.dimension()
 
-        if not self.dim <= indim:
+        if isinstance(self.dim, int) and not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
 
-        if self._logger_is_active(self._loglevel_DEBUG):
-            self.logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                              " with dimension (%i, %i)", self._lag, indim, indim)
         covar.estimate(iterable, chunksize=self.chunksize, **kw)
+
         self.model.update_model_params(mean=covar.mean,
-                                        cov=covar.C00_,
-                                        cov_tau=covar.C0t_)
-        self._diagonalize()
+                                       cov=covar.C00_,
+                                       cov_tau=covar.C0t_)
+        self.model._diagonalize()
 
         return self.model
 
-    def _diagonalize(self):
-        # diagonalize with low rank approximation
-        self.logger.debug("diagonalize Cov and Cov_tau.")
-        try:
-            eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon, sign_maxelement=True)
-        except ZeroRankError:
-            raise ZeroRankError('All input features are constant in all time steps. No dimension would be left after dimension reduction.')
-        if self.kinetic_map and self.commute_map:
-            raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-        if self.kinetic_map:  # scale by eigenvalues
-            eigenvectors *= eigenvalues[None, :]
-        if self.commute_map:  # scale by (regularized) timescales
-            timescales = 1-self.lag / np.log(np.abs(eigenvalues))
-            # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
-            regularized_timescales = 0.5 * timescales * np.maximum(np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1), 0)
-
-            eigenvectors *= np.sqrt(regularized_timescales / 2)
-        self.logger.debug("finished diagonalisation.")
-
-        # compute cumulative variance
-        cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
-        cumvar /= cumvar[-1]
-
-        self.model.update_model_params(cumvar=cumvar,
-                                       eigenvalues=eigenvalues,
-                                       eigenvectors=eigenvectors)
-
-        self._estimated = True
