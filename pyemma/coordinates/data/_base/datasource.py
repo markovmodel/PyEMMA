@@ -34,7 +34,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
     data it holds. The difference to Iterable is that DataSource is specialized for trajectories, whereas the concept
     of trajectories is generally unknown for Iterable.
     """
-    _serialize_version = 0
+    __serialize_version = 0
     __serialize_fields = ('_is_reader', ) # other private fields are not needed, because they are set by child impl ctors.
 
     def __init__(self, chunksize=None):

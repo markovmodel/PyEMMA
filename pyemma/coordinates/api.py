@@ -1025,8 +1025,11 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunksi
     return res
 
 
-def tica(data=None, lag=10, dim=0.95, var_cutoff=None, kinetic_map=None, commute_map=None, weights='empirical',
-         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None, scaling='kinetic_map',
+def tica(data=None, lag=10, dim=0.95,
+         var_cutoff=None, kinetic_map=None, commute_map=None,  # deprecated
+         weights='empirical',
+         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None,
+         scaling='kinetic_map',
          **kwargs):
     r""" Time-lagged independent component analysis (TICA).
 
@@ -1056,30 +1059,27 @@ def tica(data=None, lag=10, dim=0.95, var_cutoff=None, kinetic_map=None, commute
     lag : int, optional, default = 10
         the lag time, in multiples of the input time step
 
-    dim : int, optional, default -1
+    dim : int, optional, default 0.95
         the number of dimensions (independent components) to project onto. A
-        call to the :func:`map <pyemma.coordinates.transform.TICA.map>` function
+        call to the :func:`transform <pyemma.coordinates.transform.TICA.transform>` function
         reduces the d-dimensional input to only dim dimensions such that the
         data preserves the maximum possible autocorrelation amongst
-        dim-dimensional linear projections. -1 means all numerically available
-        dimensions will be used unless reduced by var_cutoff.
-        Setting dim to a positive value is exclusive with var_cutoff.
+        dim-dimensional linear projections.
 
-    var_cutoff : float in the range [0,1], optional, default 0.95
-        Determines the number of output dimensions by including dimensions
-        until their cumulative kinetic variance exceeds the fraction
-        subspace_variance. var_cutoff=1.0 means all numerically available
-        dimensions (see epsilon) will be used, unless set by dim. Setting
-        var_cutoff smaller than 1.0 is exclusive with dim
+            * If an integer is passed, we use a fixed number of dimensions.
+            * If a float in the range of [0, 1.0) is passed, it will determine the number of output dimensions
+              by including dimensions until their cumulative kinetic variance exceeds the fraction subspace_variance.
+              dim=1.0 means all numerically available dimensions (see epsilon) will be used.
+            * None is equivalent to dim=0.95
 
-    kinetic_map : bool, optional, default True
-        Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
-        distances in the transformed data approximate kinetic distances [4]_.
-        This is a good choice when the data is further processed by clustering.
+    var_cutoff : None
+        deprecated
 
-    commute_map : bool, optional, default False
-        Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result, Euclidean distances in the transformed
-        data will approximate commute distances [5]_.
+    kinetic_map : bool, optional, default True, deprecated
+        use scaling='kinetic_map'
+
+    commute_map : bool, optional, default False, deprecated
+        use scaling='commute_map'
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this
@@ -1091,12 +1091,12 @@ def tica(data=None, lag=10, dim=0.95, var_cutoff=None, kinetic_map=None, commute
         still map all frames through the transformer.
 
     weights : optional, default="empirical"
-             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
-                * "empirical":  no re-weighting
-                * "koopman":    use re-weighting procedure from [6]_
-                * weights:      An object that allows to compute re-weighting factors. It must possess a method
-                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
-                                re-weighting factors (np.ndarray(T,)).
+        Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+            * "empirical":  no re-weighting
+            * "koopman":    use re-weighting procedure from [6]_
+            * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                            weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                            re-weighting factors (np.ndarray(T,)).
 
     remove_mean: bool, optional, default True
         remove mean during covariance estimation. Should not be turned off.
@@ -1116,6 +1116,13 @@ def tica(data=None, lag=10, dim=0.95, var_cutoff=None, kinetic_map=None, commute
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
         disable chunking at all.
+
+    scaling: str or None, default='kinetic_map'
+        * 'kinetic_map': Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
+          distances in the transformed data approximate kinetic distances [4]_.
+          This is a good choice when the data is further processed by clustering.
+        * 'commute_map': Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result,
+          Euclidean distances in the transformed data will approximate commute distances [5]_.
 
     Returns
     -------

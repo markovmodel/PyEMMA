@@ -23,13 +23,13 @@ Created on 19.01.2015
 from __future__ import absolute_import
 
 import numpy as np
-from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma._base.serialization.serialization import SerializableMixIn, Modifications
 
 from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma._ext.variational.util import ZeroRankError
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
-from pyemma.coordinates.transform._tica_base import TICABase, TICAModelBase
-from pyemma.util.annotators import fix_docs
+from pyemma.coordinates.transform._tica_base import TICABase, TICAModelBase, _handle_deprecated_args_version_0
+from pyemma.util.annotators import fix_docs, deprecated
 import warnings
 
 __all__ = ['TICA']
@@ -38,7 +38,8 @@ __all__ = ['TICA']
 @fix_docs
 class TICA(TICABase, SerializableMixIn):
     r""" Time-lagged independent component analysis (TICA)"""
-    __serialize_version = 0
+    __serialize_modifications_map = {0: Modifications().transform(_handle_deprecated_args_version_0).list()}
+    __serialize_version = 1
 
     def __init__(self, lag,
                  dim=TICAModelBase._DEFAULT_VARIANCE_CUTOFF,
@@ -52,24 +53,22 @@ class TICA(TICABase, SerializableMixIn):
         ----------
         lag : int
             lag time
-        dim : int, optional, default -1
-            Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-            all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-            Setting dim to a positive value is exclusive with var_cutoff.
-        var_cutoff : float in the range [0,1], optional, default 0.95
-            Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-            exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-            (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
-        kinetic_map : bool, optional, default True
-            Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
-            approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
-        commute_map : bool, optional, default False
-            Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result, Euclidean distances in the transformed
-            data will approximate commute distances [5]_.
+        dim : int or float, optional, default 0.95
+            Maximum number of significant independent components to use to reduce dimension of input data.
+            * If an integer is passed, we use a fixed number of dimensions.
+            * If a float in the range of (0, 1.0] is passed, it will determine the number of output dimensions
+              by including dimensions until their cumulative kinetic variance exceeds the fraction subspace_variance.
+              dim=1.0 means all numerically available dimensions (see epsilon) will be used,
+            * None is equivalent to dim=0.95
+        var_cutoff: None, deprecated
+            use dim with a float in range (0, 1]
+        kinetic_map : bool, optional, default True, deprecated
+            use scaling='kinetic_map'
+        commute_map : bool, optional, default False, deprecated
+            use scaling='commute_map'
         epsilon : float
             eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-            cut off. The remaining number of eigenvalues define the size
-            of the output.
+            cut off. The remaining number of eigenvalues define the size of the output.
         stride: int, optional, default = 1
             Use only every stride-th time step. By default, every time step is used.
         skip : int, default=0
@@ -81,6 +80,12 @@ class TICA(TICABase, SerializableMixIn):
               off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
               trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)).
             * A list of ndarrays (ndim=1) specifies the weights for each frame of each trajectory.
+        scaling: str or None, default='kinetic_map'
+            * 'kinetic_map': Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
+              distances in the transformed data approximate kinetic distances [4]_.
+              This is a good choice when the data is further processed by clustering.
+            * 'commute_map': Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result,
+              Euclidean distances in the transformed data will approximate commute distances [5]_.
 
         Notes
         -----
@@ -124,11 +129,21 @@ class TICA(TICABase, SerializableMixIn):
         """
         super(TICA, self).__init__(dim=dim, epsilon=epsilon, lag=lag,
                                    weights=weights, reversible=reversible,
-                                   stride=stride, skip=skip, ncov_max=ncov_max,
+                                   stride=stride, skip=skip, ncov_max=ncov_max, scaling=scaling,
                                    # deprecated:
                                    commute_map=commute_map, kinetic_map=kinetic_map, var_cutoff=var_cutoff)
         # this instance will be set by partial fit.
         self._covar = None
+
+    @property
+    @deprecated('use scaling property')
+    def commute_map(self):
+        return self.model.commute_map
+
+    @property
+    @deprecated('use scaling property')
+    def kinetic_map(self):
+        return self.model.kinetic_map
 
     @property
     def model(self):

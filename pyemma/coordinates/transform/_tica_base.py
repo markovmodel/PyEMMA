@@ -1,3 +1,4 @@
+import warnings
 from abc import abstractproperty
 
 import numpy as np
@@ -7,13 +8,37 @@ from pyemma._base.model import Model
 from pyemma._base.serialization.serialization import SerializableMixIn
 
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 
 __author__ = 'marscher'
 
 
+def _handle_deprecated_args_version_0(state):
+    km = state.pop('kinetic_map', False)
+    cm = state.pop('commute_map', None)
+    scaling = None
+    if km:
+        scaling = 'kinetic_map'
+        assert cm is not True, 'should not happen'
+    elif cm:
+        scaling = 'commute_map'
+    else:
+        raise ValueError
+    state['scaling'] = scaling
+
+    # handle dim
+    d = state['dim']
+    var_cutoff = state.pop('var_cutoff')#, TICAModelBase._DEFAULT_VARIANCE_CUTOFF)
+    if d == -1:
+        d = var_cutoff
+    else:
+        assert var_cutoff == 0.95, 'old default value is not present, while having a fixed dim'
+    state['dim'] = d
+
+
 class TICAModelBase(Model, SerializableMixIn):
     __serialize_version = 1
-    # TODO: provide patch for versino 0!
+    __serialize_fields = ('_diagonalized', '_eigenvalues', '_eigenvectors')
 
     _DEFAULT_VARIANCE_CUTOFF = 0.95
 
@@ -32,13 +57,21 @@ class TICAModelBase(Model, SerializableMixIn):
         self.cov = cov
         self.cov_tau = cov_tau
         self.mean = mean
-        if cumvar is not None:
-            raise
         if eigenvalues is not None:
-            raise
+            warnings.warn('Eigenvalues are computed inside the model and are not needed any more.',
+                          category=PyEMMA_DeprecationWarning)
+            self._eigenvalues = eigenvalues
         if eigenvectors is not None:
-            raise
+            warnings.warn('Eigenvectors are computed inside the model and are not needed any more.',
+                          category=PyEMMA_DeprecationWarning)
+            self._eigenvectors = eigenvectors
+        if cumvar is not None:
+            warnings.warn('Cumulative variance is computed inside the model and is not needed any more.',
+                          category=PyEMMA_DeprecationWarning)
+
         # new since 2.5.5
+        if dim == -1:  # -1 indicates to use default variance cutoff in versions prior 2.5.5
+            dim = self._DEFAULT_VARIANCE_CUTOFF
         self.dim = dim
         self.epsilon = epsilon
         self.lag = lag
@@ -57,6 +90,16 @@ class TICAModelBase(Model, SerializableMixIn):
             raise ValueError('Valid settings for scaling are one of {valid}, but was {invalid}'
                              .format(valid=valid, invalid=value))
         self._scaling = value
+
+    @property
+    @deprecated('use scaling property')
+    def commute_map(self):
+        return self._scaling == 'commute_map'
+
+    @property
+    @deprecated('use scaling property')
+    def kinetic_map(self):
+        return self._scaling == 'kinetic_map'
 
     @property
     def cov(self):
@@ -128,7 +171,7 @@ class TICAModelBase(Model, SerializableMixIn):
         from pyemma._ext.variational import eig_corr
         try:
             eigenvalues, eigenvectors, rank = eig_corr(self.cov, self.cov_tau, self.epsilon,
-                                                             sign_maxelement=True, return_rank=True)
+                                                       sign_maxelement=True, return_rank=True)
         except ZeroRankError:
             raise ZeroRankError('All input features are constant in all time steps. '
                                 'No dimension would be left after dimension reduction.')
@@ -152,6 +195,7 @@ class TICAModelBase(Model, SerializableMixIn):
 
 
 class TICABase(StreamingEstimationTransformer):
+    __serialize_version = 0
 
     _DEFAULT_VARIANCE_CUTOFF = 0.95
 
@@ -367,7 +411,13 @@ class TICABase(StreamingEstimationTransformer):
         Should be given in terms of a percentage between (0, 1.0].
         Can only be applied if dim is not set explicitly.
         """
-        return self.model.dim
+        d = self.model.dim
+        if isinstance(d, int):
+            if d > -1:
+                return 1.0
+            else:
+                return self._DEFAULT_VARIANCE_CUTOFF
+        return d
 
     @var_cutoff.setter
     @deprecated('use dim property with a floating point value.')

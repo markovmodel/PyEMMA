@@ -81,14 +81,15 @@ class NystroemTICA(TICABase, SerializableMixIn):
             lag time
         max_columns : int
             Maximum number of columns (features) to use in the approximation.
-        dim : int, optional, default -1
-            Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-            all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-            Setting dim to a positive value is exclusive with var_cutoff.
-        var_cutoff : float in the range [0,1], optional, default 0.95
-            Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-            exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-            (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim.
+        dim : int or float, optional, default 0.95
+            Maximum number of significant independent components to use to reduce dimension of input data.
+            * If an integer is passed, we use a fixed number of dimensions.
+            * If a float in the range of (0, 1.0] is passed, it will determine the number of output dimensions
+              by including dimensions until their cumulative kinetic variance exceeds the fraction subspace_variance.
+              dim=1.0 means all numerically available dimensions (see epsilon) will be used,
+            * None is equivalent to dim=0.95
+        var_cutoff : None, deprecated
+            use dim with a float in range (0, 1].
         epsilon : float, optional, default 1e-6
             Eigenvalue norm cutoff. Eigenvalues of :math:`C_0` with norms <= epsilon will be
             cut off. The remaining number of eigenvalues define the size
@@ -113,7 +114,12 @@ class NystroemTICA(TICABase, SerializableMixIn):
         neig : int or None, optional, default None
             Number of eigenvalues to be optimized by the selection process.
             If None, use the whole available eigenspace
-
+        scaling: str or None, default='kinetic_map'
+            * 'kinetic_map': Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
+              distances in the transformed data approximate kinetic distances [7]_.
+              This is a good choice when the data is further processed by clustering.
+            * 'commute_map': Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result,
+              Euclidean distances in the transformed data will approximate commute distances [8]_.
         Notes
         -----
         Perform a sparse approximation of time-lagged independent component analysis (TICA)
@@ -153,7 +159,10 @@ class NystroemTICA(TICABase, SerializableMixIn):
         .. [6] Raajen Patel, Thomas A. Goldstein, Eva L. Dyer, Azalia Mirhoseini, Richard G. Baraniuk.
            oASIS: Adaptive Column Sampling for Kernel Matrix Approximation.
            arXiv: 1505.05208 [stat.ML].
-
+        .. [7] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+            J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+        .. [8] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
+           for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
         """
         super(NystroemTICA, self).__init__(dim=dim, epsilon=epsilon, lag=lag,
                                    reversible=reversible,
