@@ -268,6 +268,8 @@ def eig_corr(C0, Ct, epsilon=1e-10, method='QR', sign_maxelement=False, return_r
         The first m generalized eigenvalues, sorted by descending norm
     R : ndarray (n,m)
         The first m generalized eigenvectors, as a column matrix.
+    rank: int
+        Rank of :math:`C0^{-0.5}`, if return_rank is True.
 
     """
     L = spd_inv_split(C0, epsilon=epsilon, method=method, canonical_signs=True)
