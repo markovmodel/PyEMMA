@@ -82,12 +82,17 @@ class NystroemTICA(TICABase, SerializableMixIn):
         max_columns : int
             Maximum number of columns (features) to use in the approximation.
         dim : int or float, optional, default 0.95
-            Maximum number of significant independent components to use to reduce dimension of input data.
-            * If an integer is passed, we use a fixed number of dimensions.
-            * If a float in the range of (0, 1.0] is passed, it will determine the number of output dimensions
-              by including dimensions until their cumulative kinetic variance exceeds the fraction subspace_variance.
-              dim=1.0 means all numerically available dimensions (see epsilon) will be used,
-            * None is equivalent to dim=0.95
+            Number of dimensions (independent components) to project onto.
+
+          * if dim is not set (None) all available ranks are kept:
+              `n_components == min(n_samples, n_uncorrelated_features)`
+          * if dim is an integer >= 1, this number specifies the number
+            of dimensions to keep.
+          * if dim is a float with ``0 < dim < 1``, select the number
+            of dimensions such that the amount of kinetic variance
+            that needs to be explained is greater than the percentage
+            specified by dim.
+          * if dim is -1, we preserve 95% of kinetic variance. [backward compatibility]
         var_cutoff : None, deprecated
             use dim with a float in range (0, 1].
         epsilon : float, optional, default 1e-6

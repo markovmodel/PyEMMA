@@ -1060,20 +1060,20 @@ def tica(data=None, lag=10, dim=0.95,
         the lag time, in multiples of the input time step
 
     dim : int, optional, default 0.95
-        the number of dimensions (independent components) to project onto. A
-        call to the :func:`transform <pyemma.coordinates.transform.TICA.transform>` function
-        reduces the d-dimensional input to only dim dimensions such that the
-        data preserves the maximum possible autocorrelation amongst
-        dim-dimensional linear projections.
+        Number of dimensions (independent components) to project onto.
 
-            * If an integer is passed, we use a fixed number of dimensions.
-            * If a float in the range of [0, 1.0) is passed, it will determine the number of output dimensions
-              by including dimensions until their cumulative kinetic variance exceeds the fraction subspace_variance.
-              dim=1.0 means all numerically available dimensions (see epsilon) will be used.
-            * None is equivalent to dim=0.95
+          * if dim is not set (None) all available ranks are kept:
+              `n_components == min(n_samples, n_uncorrelated_features)`
+          * if dim is an integer >= 1, this number specifies the number
+            of dimensions to keep.
+          * if dim is a float with ``0 < dim < 1``, select the number
+            of dimensions such that the amount of kinetic variance
+            that needs to be explained is greater than the percentage
+            specified by dim.
+          * if dim is -1, we preserve 95% of kinetic variance. [backward compatibility]
 
-    var_cutoff : None
-        deprecated
+    var_cutoff : None, deprecated
+        use dim parameter.
 
     kinetic_map : bool, optional, default True, deprecated
         use scaling='kinetic_map'
@@ -1441,14 +1441,20 @@ def tica_nystroem(max_columns, data=None, lag=10,
         transformation is immediately computed and can be used to transform data.
     lag : int, optional, default 10
         lag time
-    dim : int, optional, default -1
-        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-        Setting dim to a positive value is exclusive with var_cutoff.
-    var_cutoff : float in the range [0,1], optional, default 0.95
-        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim.
+    dim : int, optional, default 0.95
+        Number of dimensions (independent components) to project onto.
+
+          * if dim is not set (None) all available ranks are kept:
+              `n_components == min(n_samples, n_uncorrelated_features)`
+          * if dim is an integer >= 1, this number specifies the number
+            of dimensions to keep.
+          * if dim is a float with ``0 < dim < 1``, select the number
+            of dimensions such that the amount of kinetic variance
+            that needs to be explained is greater than the percentage
+            specified by dim.
+          * if dim is -1, we preserve 95% of kinetic variance. [backward compatibility]
+    var_cutoff : None, deprecated
+        use dim parameter.
     epsilon : float, optional, default 1e-6
         Eigenvalue norm cutoff. Eigenvalues of :math:`C_0` with norms <= epsilon will be
         cut off. The remaining number of eigenvalues define the size
