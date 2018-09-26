@@ -65,6 +65,12 @@ class TICAModelBase(Model, SerializableMixIn):
             warnings.warn('Eigenvectors are computed inside the model and are not needed any more.',
                           category=PyEMMA_DeprecationWarning)
             self._eigenvectors = eigenvectors
+        if eigenvectors is not None and eigenvalues is not None:
+            self._rank = np.count_nonzero(self._eigenvalues)
+            self._diagonalized = True
+        else:
+            self._diagonalized = False
+
         if cumvar is not None:
             warnings.warn('Cumulative variance is computed inside the model and is not needed any more.',
                           category=PyEMMA_DeprecationWarning)
@@ -76,8 +82,6 @@ class TICAModelBase(Model, SerializableMixIn):
         self.epsilon = epsilon
         self.lag = lag
         self.scaling = scaling
-
-        self._diagonalized = False
 
     @property
     def scaling(self):
