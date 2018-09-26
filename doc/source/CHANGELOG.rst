@@ -9,6 +9,7 @@ Changelog
 - msm: for Bayesian MSMs we show an optional progress bar for the counting computation. :pr:`1344`
 - msm: ImpliedTimescales allow to only store timescales and its samples for the purpose of saving memory. :pr:`1377`
 - double_well_discrete: allows the setting of a random seed :pr:`1388`
+- coordinates: TICA and NystroemTICA behave the same way as VAMP for dimension handling and scaling eigenvectors. :pr:`1390`
 
 
 **Fixes**:
