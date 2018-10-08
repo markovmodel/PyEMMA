@@ -40,7 +40,7 @@ before_install:
 - source devtools/ci/travis/install_miniconda.sh
 
 script:
-- conda build -q devtools/conda-recipe
+- conda build -q devtools/conda-recipe -c conda-forge
 
 after_script:
 - bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY
