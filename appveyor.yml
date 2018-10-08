@@ -20,14 +20,13 @@ install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
   - conda config --set always_yes true
-  - conda config --add channels conda-forge
   - conda install -q conda-build=3
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - "%CMD_IN_ENV% conda build -q devtools/conda-recipe %CONDA_NPY%"
+  - "%CMD_IN_ENV% conda build -c conda-forge -q devtools/conda-recipe %CONDA_NPY%"
 
 on_finish:
   # upload test results to AppVeyor

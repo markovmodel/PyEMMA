@@ -20,7 +20,6 @@ from __future__ import absolute_import
 from pyemma.util.annotators import alias, aliased, fix_docs
 
 import numpy as _np
-import msmtools.estimation as msmest
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 
 from pyemma._base.estimator import Estimator as _Estimator
@@ -257,6 +256,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # TODO: it can happen that we loose states due to striding. Should we lift the output probabilities afterwards?
         # parametrize self
+        import msmtools.estimation as msmest
         self._dtrajs_full = dtrajs
         self._dtrajs_lagged = dtrajs_lagged_strided
         self._nstates_obs_full = msmest.number_of_states(dtrajs)

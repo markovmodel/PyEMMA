@@ -192,7 +192,7 @@ class _FragmentedTrajectoryIterator(object):
         assert ifrag < len(self._readers)
         offset = self._cumulative_lengths[ifrag - 1] if ifrag > 0 else 0
         frag_inds = fragment_indices[ifrag]
-        ra = self.ra_indices[frag_inds] - offset
+        ra = self.ra_indices[tuple(frag_inds)] - offset
         indices = np.zeros((len(ra), 2), dtype=int)
         indices[:, 1] = ra.squeeze()
         return indices
