@@ -26,8 +26,6 @@ import warnings
 from pyemma.util.files import mkdir_p
 from pyemma.util.exceptions import ConfigDirectoryException
 
-import pkg_resources
-
 
 # indicate error during reading
 class ReadConfigException(Exception):
@@ -183,12 +181,15 @@ class Config(object):
     @property
     def default_config_file(self):
         """ default config file living in PyEMMA package """
-        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_CONFIG_FILE_NAME)
-
+        import os.path as p
+        import pyemma
+        return p.join(pyemma.__path__[0], Config.DEFAULT_CONFIG_FILE_NAME)
     @property
     def default_logging_file(self):
         """ default logging configuration"""
-        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_LOGGING_FILE_NAME)
+        import os.path as p
+        import pyemma
+        return p.join(pyemma.__path__[0], Config.DEFAULT_LOGGING_FILE_NAME)
 
     def keys(self):
         """ valid configuration keys"""
