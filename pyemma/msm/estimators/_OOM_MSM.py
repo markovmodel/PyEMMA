@@ -2,7 +2,6 @@ import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
 from pyemma.util.linalg import _sort_by_norm
-import msmtools.estimation as me
 
 __all__ = ['bootstrapping_count_matrix', 'bootstrapping_dtrajs', 'twostep_count_matrix', 'rank_decision',
            'oom_components', 'equilibrium_transition_matrix']
@@ -213,6 +212,7 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     l : ndarray(M,)
         eigenvalues from OOM
     """
+    import msmtools.estimation as me
     # Decompose count matrix by SVD:
     if lcc is not None:
         Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
