@@ -287,6 +287,8 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True, return_lcc=
     lcc : ndarray(M,)
         the largest connected set of the transition matrix.
     """
+    import msmtools.estimation as me
+
     # Compute equilibrium transition matrix:
     Ct_Eq = np.einsum('j,jkl,lmn,n->km', omega, Xi, Xi, sigma)
     # Remove negative entries:
