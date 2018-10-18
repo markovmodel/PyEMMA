@@ -191,7 +191,7 @@ class DiscreteTrajectoryStats(object):
         S = msmest.connected_sets(Cconn, directed=strong)
         return S
 
-    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True):
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True, n_jobs=None):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -217,6 +217,8 @@ class DiscreteTrajectoryStats(object):
         show_progress: bool, default=True
             show the progress for the expensive effective count mode computation.
 
+        n_jobs: int or None
+
         """
         # store lag time
         self._lag = lag
@@ -231,20 +233,24 @@ class DiscreteTrajectoryStats(object):
             from pyemma.util.reflection import getargspec_no_self
             argspec = getargspec_no_self(msmest.effective_count_matrix)
             kw = {}
-            if show_progress and 'callback' in argspec.args:
+            from pyemma.util.contexts import nullcontext
+            ctx = nullcontext()
+            if 'callback' in argspec.args:  # msmtools effective cmatrix ready for multiprocessing?
                 from pyemma._base.progress import ProgressReporter
                 from pyemma._base.parallel import get_n_jobs
 
-                pg = ProgressReporter()
-                # this is a fast operation
-                C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
-                pg.register(C_temp.nnz, 'compute statistical inefficiencies')
-                del C_temp
-                callback = lambda: pg.update(1)
-                kw['callback'] = callback
-                kw['n_jobs'] = get_n_jobs()
+                kw['n_jobs'] = get_n_jobs() if n_jobs is None else n_jobs
 
-            self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
+                if show_progress:
+                    pg = ProgressReporter()
+                    # this is a fast operation
+                    C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+                    pg.register(C_temp.nnz, 'compute stat. inefficiencies', stage=0)
+                    del C_temp
+                    kw['callback'] = pg.update
+                    ctx = pg.context(stage=0)
+            with ctx:
+                self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
         else:
             raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
