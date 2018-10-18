@@ -16,7 +16,6 @@ __author__ = 'marscher'
 def _handle_deprecated_args_version_0(state):
     km = state.pop('kinetic_map', False)
     cm = state.pop('commute_map', None)
-    scaling = None
     if km:
         scaling = 'kinetic_map'
         assert cm is not True, 'should not happen'
@@ -28,7 +27,7 @@ def _handle_deprecated_args_version_0(state):
 
     # handle dim
     d = state['dim']
-    var_cutoff = state.pop('var_cutoff')#, TICAModelBase._DEFAULT_VARIANCE_CUTOFF)
+    var_cutoff = state.pop('var_cutoff')
     if d == -1:
         d = var_cutoff
     else:
@@ -66,7 +65,7 @@ class TICAModelBase(Model, SerializableMixIn):
                           category=PyEMMA_DeprecationWarning)
             self._eigenvectors = eigenvectors
         if eigenvectors is not None and eigenvalues is not None:
-            self._rank = np.count_nonzero(self._eigenvalues)
+            self._rank = np.count_nonzero(self._eigenvalues) # TODO: check this
             self._diagonalized = True
         else:
             self._diagonalized = False
@@ -82,6 +81,15 @@ class TICAModelBase(Model, SerializableMixIn):
         self.epsilon = epsilon
         self.lag = lag
         self.scaling = scaling
+
+    @classmethod
+    def _get_model_param_names(cls):
+        # we need to avoid getting these deprecated model parameters, since they trigger diagonalization during serialization.
+        def no(name):
+            if name in ('eigenvectors', 'eigenvalues', 'cumvar'):
+                return False
+            return True
+        return tuple(filter(no, super(TICAModelBase, cls)._get_model_param_names()))
 
     @property
     def scaling(self):
@@ -233,7 +241,7 @@ class TICABase(StreamingEstimationTransformer):
                               "False.")
                 scaling = None
 
-        if var_cutoff != None:
+        if var_cutoff is not None:
             var_cutoff = float(var_cutoff)
             warnings.warn('passed deprecated setting "var_cutoff", '
                           'will override passed "dim" ({dim}) parameter with {var_cutoff}'
@@ -426,7 +434,10 @@ class TICABase(StreamingEstimationTransformer):
     @var_cutoff.setter
     @deprecated('use dim property with a floating point value.')
     def var_cutoff(self, value):
-        self.model.dim = value
+        if value == 1.0 and isinstance(self.model.dim, int):
+            self.logger.info('passed variance cutoff of 100%, but fixed dimension is desired')
+        else:
+            self.model.dim = value
 
     @property
     def scaling(self):

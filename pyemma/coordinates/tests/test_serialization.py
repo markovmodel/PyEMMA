@@ -115,8 +115,7 @@ class TestSerializationCoordinates(unittest.TestCase):
         params = {'lag': 10, 'dim': 3, 'kinetic_map': True,
                   'stride': 2}
         t = pyemma.coordinates.tica(data=self.data, **params)
-
-        assert t._estimated
+        assert t.cov is not None
         params['cov'] = t.cov
         params['cov_tau'] = t.cov_tau
         params['eigenvalues'] = t.eigenvalues

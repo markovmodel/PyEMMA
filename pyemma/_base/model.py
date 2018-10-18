@@ -49,7 +49,8 @@ class Model(object):
             for c in filter(lambda c: hasattr(c, '_get_model_param_names'), self.__class__.__mro__):
                 # TODO: actually we would desire to pop from state, but this can't be done because of ThermoMSM (would pop pi twice)
                 params_for_c = {k: state.get(k) for k in c._get_model_param_names()}
-                c.set_model_params(self, **params_for_c)
+                if params_for_c:
+                    c.set_model_params(self, **params_for_c)
 
     @classmethod
     def _get_model_param_names(cls):
@@ -164,7 +165,7 @@ class SampledModel(Model):
         args : arguments
             Non-keyword arguments to be passed to the method in each call
 
-        kwargs : keyword-argments
+        kwargs : keyword-arguments
             Keyword arguments to be passed to the method in each call
 
         Returns
@@ -189,7 +190,7 @@ class SampledModel(Model):
             Model method to be evaluated for each model sample
         args : arguments
             Non-keyword arguments to be passed to the method in each call
-        kwargs : keyword-argments
+        kwargs : keyword-arguments
             Keyword arguments to be passed to the method in each call
 
         Returns
@@ -213,7 +214,7 @@ class SampledModel(Model):
             Model method to be evaluated for each model sample
         args : arguments
             Non-keyword arguments to be passed to the method in each call
-        kwargs : keyword-argments
+        kwargs : keyword-arguments
             Keyword arguments to be passed to the method in each call
 
         Returns
@@ -238,7 +239,7 @@ class SampledModel(Model):
             Model method to be evaluated for each model sample
         args : arguments
             Non-keyword arguments to be passed to the method in each call
-        kwargs : keyword-argments
+        kwargs : keyword-arguments
             Keyword arguments to be passed to the method in each call
 
         Returns

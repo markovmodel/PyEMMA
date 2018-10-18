@@ -210,7 +210,7 @@ def spd_inv_split(W, epsilon=1e-10, method='QR', canonical_signs=False):
         Matrix :math:`L` from the decomposition :math:`W^{-1} = L L^T`.
 
     """
-    if (_np.shape(W)[0] == 1):
+    if _np.shape(W)[0] == 1:
         if W[0,0] < epsilon:
             raise _ZeroRankError(
                 'All eigenvalues are smaller than %g, rank reduction would discard all dimensions.' % epsilon)

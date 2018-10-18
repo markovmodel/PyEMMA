@@ -85,6 +85,7 @@ class TICA(TICABase, SerializableMixIn):
               trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)).
             * A list of ndarrays (ndim=1) specifies the weights for each frame of each trajectory.
         scaling: str or None, default='kinetic_map'
+            * None: unscaled.
             * 'kinetic_map': Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
               distances in the transformed data approximate kinetic distances [4]_.
               This is a good choice when the data is further processed by clustering.
@@ -142,12 +143,22 @@ class TICA(TICABase, SerializableMixIn):
     @property
     @deprecated('use scaling property')
     def commute_map(self):
-        return self.model.commute_map
+        return self.model.scaling == 'commute_map'
+
+    @commute_map.setter
+    def commute_map(self, value):
+        if value:
+            self.model.scaling = 'commute_map'
 
     @property
     @deprecated('use scaling property')
     def kinetic_map(self):
-        return self.model.kinetic_map
+        return self.model.scaling == 'kinetic_map'
+
+    @kinetic_map.setter
+    def kinetic_map(self, value):
+        if value:
+            self.model.scaling = 'kinetic_map'
 
     @property
     def model(self):
