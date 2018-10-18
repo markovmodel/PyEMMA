@@ -192,11 +192,18 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
             tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
                                        mu=statdist_active, nsteps=self.nsteps)
 
-        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True)
+        if self.show_progress and self.nstates >= 1000:
+            self._progress_register(self.nsamples, 'Sampling MSMs', stage=0)
+            call_back = lambda: self._progress_update(1)
+        else:
+            call_back = None
+
+        with self._progress_context(stage='all'):
+            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, call_back=call_back)
         # construct sampled MSMs
         samples = []
-        for i, sample in enumerate(sample_Ps):
-            samples.append(_MSM(sample, pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
+        for P, pi in zip(sample_Ps, sample_mus):
+            samples.append(_MSM(P, pi=pi, reversible=self.reversible, dt_model=self.dt_model))
 
         # update self model
         self.update_model_params(samples=samples)
