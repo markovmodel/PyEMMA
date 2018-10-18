@@ -442,17 +442,20 @@ class SerializableMixIn(object):
             to_inspect = self._get_classes_to_inspect()
             for klass in to_inspect:
                 self.__interpolate(state, klass)
-            from pyemma._base.estimator import Estimator
-            if isinstance(self, Estimator):
-                Estimator.__my_setstate__(self, state)
+            import warnings
+            with warnings.catch_warnings(record=True) as cm:
+                warnings.filterwarnings('always', category=PyEMMA_DeprecationWarning)
+                from pyemma._base.estimator import Estimator
+                if isinstance(self, Estimator):
+                    Estimator.__my_setstate__(self, state)
 
-            from pyemma._base.model import Model
-            if isinstance(self, Model):
-                Model.__my_setstate__(self, state)
+                from pyemma._base.model import Model
+                if isinstance(self, Model):
+                    Model.__my_setstate__(self, state)
 
             for klass in to_inspect:
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
-
+            logger.warning('warnings during restoring attributes: %s', cm)
             if hasattr(self, 'data_producer') and 'data_producer' in state:
                 self.data_producer = state['data_producer']
 
