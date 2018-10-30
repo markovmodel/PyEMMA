@@ -400,7 +400,7 @@ else:
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],
-                                'pyemma.coordinates.tests': ['data/*'],
+                                'pyemma.coordinates.tests': ['data/*', 'data/serialization/*'],
                                 'pyemma.msm.tests': ['data/*'],
                                 'pyemma.datasets': ['*.npz'],
                                 'pyemma.util.tests': ['data/*'],

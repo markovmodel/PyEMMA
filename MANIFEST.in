@@ -6,7 +6,7 @@ include LICENSE.txt
 #recursive-include pyemma/msm/io/tests
 #recursive-include pyemma/msm/io/matrix/testfiles
 
-recursive-include pyemma tests/* tests/data/*
+recursive-include pyemma tests/* tests/data/* tests/data/serialization/*
 recursive-include pyemma testfiles/*
 
 
