@@ -18,9 +18,8 @@
 
 from __future__ import absolute_import
 
-
-
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.parallel import NJobsMixIn as _NJobsMixIn
+from pyemma._base.progress import ProgressReporterMixin as _ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
@@ -31,7 +30,7 @@ __author__ = 'noe'
 
 
 @fix_docs
-class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
+class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
     r"""Bayesian Markov state model estimator"""
     __serialize_version = 0
 
@@ -192,8 +191,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
             tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
                                        mu=statdist_active, nsteps=self.nsteps)
 
-        if self.show_progress and self.nstates >= 1000:
-            self._progress_register(self.nsamples, 'Sampling MSMs', stage=0)
+        if self.show_progress: #and self.nstates >= 1000:
+            self._progress_register(self.nsamples, '{}: Sampling MSMs'.format(self.name), stage=0)
             call_back = lambda: self._progress_update(1)
         else:
             call_back = None

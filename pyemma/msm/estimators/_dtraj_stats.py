@@ -191,7 +191,7 @@ class DiscreteTrajectoryStats(object):
         S = msmest.connected_sets(Cconn, directed=strong)
         return S
 
-    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True, n_jobs=None):
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True, n_jobs=None, name=''):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -245,7 +245,7 @@ class DiscreteTrajectoryStats(object):
                     pg = ProgressReporter()
                     # this is a fast operation
                     C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
-                    pg.register(C_temp.nnz, 'compute stat. inefficiencies', stage=0)
+                    pg.register(C_temp.nnz, '{}: compute stat. inefficiencies'.format(name), stage=0)
                     del C_temp
                     kw['callback'] = pg.update
                     ctx = pg.context(stage=0)
