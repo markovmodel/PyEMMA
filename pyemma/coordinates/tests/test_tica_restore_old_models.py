@@ -1,3 +1,4 @@
+import sys
 import warnings
 from contextlib import contextmanager
 
@@ -23,6 +24,7 @@ def supress_deprecation_warning():
     warnings.filters = old_filters
 
 
+@unittest.skipIf(sys.version_info[0] < 3, 'py3 only')
 class TestTICARestorePriorVersions(unittest.TestCase):
 
     def test_default_values(self):
