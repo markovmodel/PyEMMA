@@ -810,7 +810,7 @@ def plot_contour(
         z = _np.ma.masked_where(counts.T <= 0, z)
     return plot_map(
         x, y, z, ax=ax, cmap=cmap,
-        ncontours=ncontours, vmin=None, vmax=None, levels=levels,
+        ncontours=ncontours, vmin=vmin, vmax=vmax, levels=levels,
         cbar=cbar, cax=cax, cbar_label=cbar_label,
         cbar_orientation=cbar_orientation, norm=norm,
         **kwargs)
