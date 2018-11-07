@@ -61,7 +61,8 @@ __all__ = ['markov_model',
 # TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
-                   errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n'):
+                   errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n',
+                   only_timescales=False):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
@@ -124,6 +125,11 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         Counts lower than that will count zero in the connectivity check and
         may thus separate the resulting transition matrix. The default
         evaluates to 1/nstates.
+
+    only_timescales: bool, default=False
+        If you are only interested in the timescales and its samples,
+        you can consider turning this on in order to save memory. This can be
+        useful to avoid blowing up memory with BayesianMSM and lots of samples.
 
     Returns
     -------
@@ -218,13 +224,13 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity,
                                nsamples=nsamples, show_progress=show_progress)
     else:
-        raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
+        raise NotImplementedError('Error estimation method {errors} currently not implemented'.format(errors=errors))
 
     if hasattr(estimator, 'mincount_connectivity'):
         estimator.mincount_connectivity = mincount_connectivity
     # go
     itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs,
-                                show_progress=show_progress)
+                                show_progress=show_progress, only_timescales=only_timescales)
     itsobj.estimate(dtrajs)
     return itsobj
 
