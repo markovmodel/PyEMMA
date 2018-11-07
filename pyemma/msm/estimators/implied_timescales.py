@@ -219,12 +219,23 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
         param_sets = tuple(param_grid({'lag': lags}))
 
         # run estimation on all lag times
-        pg = ProgressReporter()
-        with pg.context():
+        if hasattr(self.estimator, 'show_progress'):
+            self.estimator.show_progress = False
+        if self.show_progress:
+            pg = ProgressReporter()
+            ctx = pg.context()
+        else:
+            pg = None
+            # TODO: replace with nullcontext from util once merged.
+            from contextlib import contextmanager
+            @contextmanager
+            def dummy():yield
+            ctx = dummy()
+        with ctx:
             if not self.only_timescales:
                 models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
-                                                     return_estimators=True, n_jobs=self.n_jobs,
-                                                     progress_reporter=pg, return_exceptions=True)
+                                                         return_estimators=True, n_jobs=self.n_jobs,
+                                                         progress_reporter=pg, return_exceptions=True)
                 self._estimators = estimators
             else:
                 evaluate = ['timescales']
