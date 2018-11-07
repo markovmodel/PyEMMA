@@ -12,6 +12,8 @@ Changelog
 
 - msm: fix connected sets for Bayesian MSMs in case the mincount connectivity (ergodic cutoff) parameter truncated
   the count matrix. #1343
+- plots: fix vmin, vmax keyword arguments for plot_contour(). #1376
+
 
 
 **Contributors**:
