@@ -29,6 +29,8 @@ import unittest
 import numpy as np
 from pyemma import msm
 from msmtools.analysis import timescales
+
+from pyemma.msm import ImpliedTimescales
 from pyemma.msm.api import timescales_msm
 
 
@@ -215,6 +217,33 @@ class TestITS_MSM(unittest.TestCase):
         with self.assertRaises(RuntimeError) as e:
             timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
         self.assertIn('negative row index', e.exception.args[0])
+
+    def test_no_return_estimators_samples(self):
+        lags = [1, 2, 3, 10, 20]
+        nstates = 10
+        nits = 3
+        its = timescales_msm(dtrajs=np.random.randint(0, nstates, size=1000), lags=lags,
+                             only_timescales=True, nits=nits, nsamples=2, errors='bayes')
+        with self.assertRaises(RuntimeError):
+            its.estimators
+        with self.assertRaises(RuntimeError):
+            its.models
+        assert isinstance(its.timescales, np.ndarray)
+        assert its.timescales.shape == (len(lags), nstates - 1 if nstates == nits else nits)
+        assert its.samples_available
+
+    def test_no_return_estimators(self):
+        lags = [1, 2, 3, 10, 20]
+        nstates = 10
+        nits = 3
+        its = timescales_msm(dtrajs=np.random.randint(0, nstates, size=1000), lags=lags,
+                             only_timescales=True, nits=nits)
+        with self.assertRaises(RuntimeError):
+            its.estimators
+        with self.assertRaises(RuntimeError):
+            its.models
+        assert isinstance(its.timescales, np.ndarray)
+        assert its.timescales.shape == (len(lags), nstates - 1 if nstates == nits else nits)
 
 
 class TestITS_AllEstimators(unittest.TestCase):

@@ -313,14 +313,15 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         logger = estimators[0].logger
     if progress_reporter is None:
         from mock import MagicMock
+        # TODO: replace with nullcontext from util once merged
         ctx = progress_reporter = MagicMock()
         callback = None
     else:
         ctx = progress_reporter._progress_context('param-scan')
         callback = lambda _: progress_reporter._progress_update(1, stage='param-scan')
 
-    progress_reporter._progress_register(len(estimators), stage='param-scan',
-                                         description="estimating %s" % str(estimator.__class__.__name__))
+        progress_reporter._progress_register(len(estimators), stage='param-scan',
+                                             description="estimating %s" % str(estimator.__class__.__name__))
 
     # TODO: test on win, osx
     if n_jobs > 1 and os.name == 'posix':
@@ -363,7 +364,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
             for estimator, param_set in zip(estimators, param_sets):
                 res.append(_estimate_param_scan_worker(estimator, param_set, X,
                                                        evaluate, evaluate_args, failfast, return_exceptions))
-                progress_reporter._progress_update(1, stage='param-scan')
+                if progress_reporter is not None:
+                    progress_reporter._progress_update(1, stage='param-scan')
 
     # done
     if return_estimators:
