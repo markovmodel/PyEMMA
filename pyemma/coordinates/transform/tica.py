@@ -163,11 +163,7 @@ class TICA(TICABase, SerializableMixIn):
         return self._model
 
     def describe(self):
-        try:
-            dim = self.dimension()
-        except RuntimeError:
-            dim = self.dim
-        return "[TICA, lag = %i; max. output dim. = %i]" % (self.lag, dim)
+        return str(self)
 
     def estimate(self, X, **kwargs):
         r"""

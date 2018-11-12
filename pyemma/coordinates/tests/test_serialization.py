@@ -106,13 +106,13 @@ class TestSerializationCoordinates(unittest.TestCase):
         self.compare(cl, params)
 
     def test_tica(self):
-        params = {'lag': 10, 'dim': 3, 'kinetic_map': True,
+        params = {'lag': 10, 'dim': 3, 'scaling': 'kinetic_map',
                   'stride': 2}
         cl = pyemma.coordinates.tica(**params)
         self.compare(cl, params)
 
     def test_tica_estimated(self):
-        params = {'lag': 10, 'dim': 3, 'kinetic_map': True,
+        params = {'lag': 10, 'dim': 3, 'scaling': 'kinetic_map',
                   'stride': 2}
         t = pyemma.coordinates.tica(data=self.data, **params)
         assert t.cov is not None
