@@ -68,7 +68,6 @@ class NystroemTICAModel(TICAModelBase):
 class NystroemTICA(TICABase, SerializableMixIn):
     r""" Sparse sampling implementation of time-lagged independent component analysis (TICA)"""
     __serialize_version = 0
-    __serialize_fields = ()
 
     def __init__(self, lag, max_columns, dim=TICABase._DEFAULT_VARIANCE_CUTOFF, var_cutoff=None, epsilon=1e-6, stride=1,
                  skip=0, reversible=True, ncov_max=float('inf'), initial_columns=None, nsel=1,

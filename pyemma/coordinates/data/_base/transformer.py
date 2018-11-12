@@ -28,7 +28,9 @@ from pyemma.coordinates.data._base.datasource import DataSource, EncapsulatedIte
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 
-__all__ = ['Transformer', 'StreamingTransformer']
+__all__ = ['Transformer', 'StreamingTransformer',
+           'StreamingEstimationTransformer',  'StreamingTransformerRandomAccessStrategy',
+           ]
 __author__ = 'noe, marscher'
 
 

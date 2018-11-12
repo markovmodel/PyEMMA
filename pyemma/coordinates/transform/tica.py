@@ -22,15 +22,11 @@ Created on 19.01.2015
 
 from __future__ import absolute_import
 
-import numpy as np
 from pyemma._base.serialization.serialization import SerializableMixIn, Modifications
 
-from pyemma._ext.variational.solvers.direct import eig_corr
-from pyemma._ext.variational.util import ZeroRankError
 from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.transform._tica_base import TICABase, TICAModelBase, _handle_deprecated_args_version_0
 from pyemma.util.annotators import fix_docs, deprecated
-import warnings
 
 __all__ = ['TICA']
 

@@ -123,6 +123,28 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         self.compare(t, params)
 
+    def test_tica_estimated2(self):
+        params = {'lag': 10, 'dim': 0.85, 'scaling': 'kinetic_map',
+                  'stride': 2}
+        t = pyemma.coordinates.tica(data=self.data, **params)
+        assert t.cov is not None
+        params['cov'] = t.cov
+        params['cov_tau'] = t.cov_tau
+        params['eigenvalues'] = t.eigenvalues
+        params['eigenvectors'] = t.eigenvectors
+
+        self.compare(t, params)
+
+    def test_nystroem_tica(self):
+        params = {}
+        t = pyemma.coordinates.tica_nystroem(2, data=self.data, **params)
+        assert t.cov is not None
+        params['cov'] = t.cov
+        params['cov_tau'] = t.cov_tau
+        params['eigenvalues'] = t.eigenvalues
+        params['eigenvectors'] = t.eigenvectors
+        self.compare(t, params)
+
     def test_pca(self):
         params = {'dim': 3,
                   'stride': 2}
