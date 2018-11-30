@@ -22,7 +22,7 @@ import mdtraj
 import numpy as np
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource, EncapsulatedIterator
+from pyemma.coordinates.data._base.datasource import DataSource, EncapsulatedIterator
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer
 from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
@@ -133,7 +133,7 @@ class FeatureReader(DataSource, SerializableMixIn):
             length = len(fh)
             frame = fh.read(1)[0]
             ndim = np.shape(frame)[1]
-            offsets = fh.offsets if hasattr(fh, 'offsets') else []
+            offsets = fh.offsets if hasattr(fh, 'offsets') else ()
 
         return TrajInfo(ndim, length, offsets)
 
