@@ -187,9 +187,11 @@ class _MSMEstimator(_Estimator, _MSM):
                                     'Consider using sparse=True.'.format(nstates=dtrajstats.nstates))
 
         # count lagged
-        show_progress = getattr(self, 'show_progress', False)
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
-                                mincount_connectivity=self.mincount_connectivity, show_progress=show_progress)
+                                mincount_connectivity=self.mincount_connectivity,
+                                n_jobs=getattr(self, 'n_jobs', None),
+                                show_progress=getattr(self, 'show_progress', False),
+                                name=self.name)
 
         # for other statistics
         return dtrajstats
