@@ -30,10 +30,7 @@ requirements:
     - cython
     - intel-openmp # [osx]
     - mdtraj
-    # actually we could build with np18, but fastcluster (dep of mdtraj, we link against) is only avail for 1.9
-    - numpy 1.9.*  # [not (win and (py35 or py36))]
-    - numpy 1.9.*  # [win and py35]
-    - numpy 1.11.*  # [win and py36]
+    - numpy
     - python
     - scipy
     - setuptools
@@ -50,9 +47,7 @@ requirements:
     - mdtraj >=1.8
     - mock # TODO: remove when py3k only.
     - msmtools >=1.2
-    - numpy >=1.9  # [not (win and (py35 or py36))]
-    - numpy >=1.9  # [win and py35]
-    - numpy >=1.11 # [win and py36]
+    - {{ pin_compatible('numpy') }}
     - pathos
     - psutil >3.1
     - python
@@ -60,8 +55,7 @@ requirements:
     - scipy
     - setuptools
     - six >=1.10
-    - thermotools >=0.2.6
-    - tqdm >=4.23
+    - progress_reporter >=2
 
 test:
   source_files:
