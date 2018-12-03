@@ -27,10 +27,8 @@ from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCall
 
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 
-from thermotools import dtram as _dtram
-from thermotools import wham as _wham
-from thermotools import util as _util
-from thermotools import cset as _cset
+from pyemma.thermo.extensions import (dtram as _dtram, wham as _wham, util as _util)
+from pyemma.thermo import cset as _cset
 
 __author__ = 'noe, wehmeyer'
 

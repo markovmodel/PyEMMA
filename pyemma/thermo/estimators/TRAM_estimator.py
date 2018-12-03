@@ -24,18 +24,20 @@ from pyemma.thermo import MEMM as _MEMM
 from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
-from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.thermo.estimators._callback import _IterationProgressIndicatorCallBack
 
-from thermotools import tram as _tram
-from thermotools import tram_direct as _tram_direct
-from thermotools import trammbar as _trammbar
-from thermotools import trammbar_direct as _trammbar_direct
-from thermotools import mbar as _mbar
-from thermotools import mbar_direct as _mbar_direct
-from thermotools import util as _util
-from thermotools import cset as _cset
+
+from pyemma.thermo.extensions import (
+ tram as _tram,
+ tram_direct as _tram_direct,
+ trammbar as _trammbar,
+ trammbar_direct as _trammbar_direct,
+ mbar as _mbar,
+ mbar_direct as _mbar_direct,
+ util as _util,
+ cset as _cset,
+)
 
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 
