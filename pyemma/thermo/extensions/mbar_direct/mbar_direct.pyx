@@ -25,7 +25,7 @@ cimport numpy as _np
 from warnings import warn as _warn
 from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
 
-from thermotools import mbar as _mbar
+from . import mbar as _mbar
 from .callback import CallbackInterrupt
 
 __all__ = [

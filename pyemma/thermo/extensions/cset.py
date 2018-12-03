@@ -29,8 +29,7 @@ import numpy as _np
 import scipy as _sp
 import scipy.sparse as _sps
 import msmtools as _msmtools
-import thermotools.bar as _bar
-import thermotools.util as _util
+from . import bar as _bar, util as _util
 
 
 def compute_csets_TRAM(

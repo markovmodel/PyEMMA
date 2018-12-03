@@ -21,12 +21,11 @@ Python interface to the TRAM estimator's lowlevel functions.
 
 import numpy as _np
 cimport numpy as _np
-import sys
-from thermotools import tram as _tram
+from . import tram as _tram
 
 from warnings import warn as _warn
 from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
-from thermotools.tram import get_pointwise_unbiased_free_energies, estimate_transition_matrix, estimate_transition_matrices
+from .tram import get_pointwise_unbiased_free_energies, estimate_transition_matrix, estimate_transition_matrices
 
 from .callback import CallbackInterrupt
 
