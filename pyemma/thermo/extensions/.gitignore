@@ -1,0 +1,12 @@
+# auto-generated c files from Cython
+
+wham/wham.c
+mbar/mbar.c
+mbar_direct/mbar_direct.c
+tram/tram.c
+tram_direct/tram_direct.c
+dtram/dtram.c
+bar/bar.c
+util/util.c
+trammbar/trammbar.c
+trammbar_direct/trammbar_direct.c
