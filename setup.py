@@ -107,7 +107,6 @@ def extensions():
 
     pybind_inc = get_pybind_include()
 
-    exts = []
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
     common_cflags = ['-O3', ]
 
@@ -147,11 +146,95 @@ def extensions():
                   include_dirs=[np_inc],
                   extra_compile_args=['-std=c99'] + common_cflags)
 
-    exts += [clustering_module,
+    extra_compile_args = ["-O3", "-std=c99"]
+    ext_bar = Extension(
+        "pyemma.thermo.extensions.bar",
+        sources=["pyemma/thermo/extensions/bar/bar.pyx",
+                 "pyemma/thermo/extensions/bar/_bar.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_wham = Extension(
+        "pyemma.thermo.extensions.wham",
+        sources=["pyemma/thermo/extensions/wham/wham.pyx",
+                 "pyemma/thermo/extensions/wham/_wham.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_mbar = Extension(
+        "pyemma.thermo.extensions.mbar",
+        sources=["pyemma/thermo/extensions/mbar/mbar.pyx",
+                 "pyemma/thermo/extensions/mbar/_mbar.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_tram = Extension(
+        "pyemma.thermo.extensions.tram",
+        sources=["pyemma/thermo/extensions/tram/tram.pyx",
+                 "pyemma/thermo/extensions/tram/_tram.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_dtram = Extension(
+        "pyemma.thermo.extensions.dtram",
+        sources=["pyemma/thermo/extensions/dtram/dtram.pyx",
+                 "pyemma/thermo/extensions/dtram/_dtram.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_trammbar = Extension(
+        "pyemma.thermo.extensions.trammbar",
+        sources=["pyemma/thermo/extensions/trammbar/trammbar.pyx",
+                 "pyemma/thermo/extensions/tram/_tram.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args + ["-DTRAMMBAR"])
+    ext_mbar_direct = Extension(
+        "pyemma.thermo.extensions.mbar_direct",
+        sources=["pyemma/thermo/extensions/mbar_direct/mbar_direct.pyx", 
+                 "pyemma/thermo/extensions/mbar_direct/_mbar_direct.c",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_tram_direct = Extension(
+        "pyemma.thermo.extensions.tram_direct",
+        sources=["pyemma/thermo/extensions/tram_direct/tram_direct.pyx", 
+                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c", 
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+    ext_trammbar_direct = Extension(
+        "pyemma.thermo.extensions.trammbar_direct",
+        sources=["pyemma/thermo/extensions/trammbar_direct/trammbar_direct.pyx",
+                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c", 
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args + ["-DTRAMMBAR"])
+    ext_util = Extension(
+        "pyemma.thermo.extensions.util",
+        sources=["pyemma/thermo/extensions/util/util.pyx",
+                 "pyemma/thermo/extensions/util/_util.c"],
+        include_dirs=[np_inc],
+        extra_compile_args=extra_compile_args)
+
+    exts_thermo = [
+        ext_bar,
+        ext_wham,
+        ext_mbar,
+        ext_tram,
+        ext_dtram,
+        ext_trammbar,
+        ext_mbar_direct,
+        ext_tram_direct,
+        ext_trammbar_direct,
+        ext_util]
+
+    exts = [clustering_module,
              covar_module,
              eig_qr_module,
              orderedset
              ]
+    exts += exts_thermo
 
     if not USE_CYTHON:
         # replace pyx files by their pre generated c code.
