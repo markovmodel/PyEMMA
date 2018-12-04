@@ -102,6 +102,7 @@ def extensions():
 
 
     import mdtraj
+    # Note, that we add numpy include to every extension after declaration.
     from numpy import get_include as _np_inc
     np_inc = _np_inc()
 
@@ -115,7 +116,6 @@ def extensions():
                   sources=['pyemma/coordinates/clustering/src/clustering_module.cpp'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
-                      np_inc,
                       pybind_inc,
                       'pyemma/coordinates/clustering/include',
                   ],
@@ -128,7 +128,6 @@ def extensions():
         Extension('pyemma._ext.variational.estimators.covar_c._covartools',
                   sources=['pyemma/_ext/variational/estimators/covar_c/covartools.cpp'],
                   include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
-                                np_inc,
                                 pybind_inc,
                                 ],
                   language='c++',
@@ -143,7 +142,6 @@ def extensions():
     orderedset = \
         Extension('pyemma._ext.orderedset._orderedset',
                   sources=['pyemma/_ext/orderedset/_orderedset.pyx'],
-                  include_dirs=[np_inc],
                   extra_compile_args=['-std=c99'] + common_cflags)
 
     extra_compile_args = ["-O3", "-std=c99"]
@@ -152,69 +150,59 @@ def extensions():
         sources=["pyemma/thermo/extensions/bar/bar.pyx",
                  "pyemma/thermo/extensions/bar/_bar.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_wham = Extension(
         "pyemma.thermo.extensions.wham",
         sources=["pyemma/thermo/extensions/wham/wham.pyx",
                  "pyemma/thermo/extensions/wham/_wham.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_mbar = Extension(
         "pyemma.thermo.extensions.mbar",
         sources=["pyemma/thermo/extensions/mbar/mbar.pyx",
                  "pyemma/thermo/extensions/mbar/_mbar.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_tram = Extension(
         "pyemma.thermo.extensions.tram",
         sources=["pyemma/thermo/extensions/tram/tram.pyx",
                  "pyemma/thermo/extensions/tram/_tram.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_dtram = Extension(
         "pyemma.thermo.extensions.dtram",
         sources=["pyemma/thermo/extensions/dtram/dtram.pyx",
                  "pyemma/thermo/extensions/dtram/_dtram.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_trammbar = Extension(
         "pyemma.thermo.extensions.trammbar",
         sources=["pyemma/thermo/extensions/trammbar/trammbar.pyx",
                  "pyemma/thermo/extensions/tram/_tram.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args + ["-DTRAMMBAR"])
     ext_mbar_direct = Extension(
         "pyemma.thermo.extensions.mbar_direct",
-        sources=["pyemma/thermo/extensions/mbar_direct/mbar_direct.pyx", 
+        sources=["pyemma/thermo/extensions/mbar_direct/mbar_direct.pyx",
                  "pyemma/thermo/extensions/mbar_direct/_mbar_direct.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_tram_direct = Extension(
         "pyemma.thermo.extensions.tram_direct",
-        sources=["pyemma/thermo/extensions/tram_direct/tram_direct.pyx", 
-                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c", 
+        sources=["pyemma/thermo/extensions/tram_direct/tram_direct.pyx",
+                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
     ext_trammbar_direct = Extension(
         "pyemma.thermo.extensions.trammbar_direct",
         sources=["pyemma/thermo/extensions/trammbar_direct/trammbar_direct.pyx",
-                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c", 
+                 "pyemma/thermo/extensions/tram_direct/_tram_direct.c",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args + ["-DTRAMMBAR"])
     ext_util = Extension(
         "pyemma.thermo.extensions.util",
         sources=["pyemma/thermo/extensions/util/util.pyx",
                  "pyemma/thermo/extensions/util/_util.c"],
-        include_dirs=[np_inc],
         extra_compile_args=extra_compile_args)
 
     exts_thermo = [
@@ -236,6 +224,9 @@ def extensions():
              ]
     exts += exts_thermo
 
+    for e in exts:
+        e.include_dirs.append(np_inc)
+
     if not USE_CYTHON:
         # replace pyx files by their pre generated c code.
         for e in exts:
@@ -244,7 +235,7 @@ def extensions():
                 new_src.append(s.replace('.pyx', '.c'))
             e.sources = new_src
     else:
-        exts = cythonize(exts)
+        exts = cythonize(exts, language_level=sys.version_info[0])
 
     return exts
 
