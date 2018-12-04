@@ -137,7 +137,7 @@ class TRAM(_Estimator, _MEMM, ThermoBase):
               The connected set is then computed by summing the count matrices over
               all thermodynamic states and taking it's largest strongly connected set.
               Not recommended!
-            For more details see :func:`thermotools.cset.compute_csets_TRAM`.
+            For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_TRAM`.
         nstates_full : int, optional, default=None
             Number of cluster centers, i.e., the size of the full set of states.
         equilibrium : list of booleans, optional

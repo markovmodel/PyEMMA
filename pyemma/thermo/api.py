@@ -552,7 +552,7 @@ def tram(
           The connected set is then computed by summing the count matrices over
           all thermodynamic states and taking it's largest strongly connected set.
           Not recommended!
-        For more details see :func:`thermotools.cset.compute_csets_TRAM`.
+        For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_TRAM`.
     connectivity_factor : float, optional, default=1.0
         Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Values
         greater than 1.0 weaken the connectivity conditions. For 'post_hoc_RE'
@@ -759,7 +759,7 @@ def dtram(
           all thermodynamic states and taking it's largest strongly connected set.
           Not recommended!
         * None : assume that everything is connected. For debugging.
-        For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
+        For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_dTRAM`.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15

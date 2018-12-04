@@ -96,7 +96,7 @@ class DTRAM(_Estimator, _MEMM, ThermoBase):
               all thermodynamic states and taking it's largest strongly connected set.
               Not recommended!
             * None : assume that everything is connected. For debugging.
-            For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
+            For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_dTRAM`.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15
