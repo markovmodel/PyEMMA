@@ -484,14 +484,17 @@ def pipeline(stages, run=True, stride=1, chunksize=None):
     >>> from pyemma.coordinates import source, tica, assign_to_centers, pipeline
 
     Create some random data and cluster centers:
+
     >>> data = np.random.random((1000, 3))
     >>> centers = data[np.random.choice(1000, 10)]
     >>> reader = source(data)
 
     Define a TICA transformation with lag time 10:
+
     >>> tica_obj = tica(lag=10)
 
     Assign any input to given centers:
+
     >>> assign = assign_to_centers(centers=centers)
     >>> pipe = pipeline([reader, tica_obj, assign])
     >>> pipe.parametrize()
