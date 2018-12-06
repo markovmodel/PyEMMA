@@ -36,7 +36,7 @@ def eig_qr(A):
     # Transform to tridiagonal shape:
     scc.dsytrd(&uplo, &n, &B[0, 0], &lda, &D[0], &E[0], &Tau[0], &Work[0], &lwork, &info)
     assert info == 0, info
-    lwork = np.int(Work[0])
+    lwork = <int>Work[0]
     cdef double[:] Work2 = np.zeros(lwork, **array_args)
     scc.dsytrd(&uplo, &n, &B[0, 0], &lda, &D[0], &E[0], &Tau[0], &Work2[0], &lwork, &info)
     assert info == 0, info
@@ -46,7 +46,7 @@ def eig_qr(A):
     lwork = -1
     scc.dorgtr(&uplo, &n, &B[0, 0], &lda, &Tau[0], &Work[0], &lwork, &info)
     assert info == 0, info
-    lwork = np.int(Work[0])
+    lwork = <int>Work[0]
     cdef double[:] Work3 = np.zeros(lwork, **array_args)
     scc.dorgtr(&uplo, &n, &B[0, 0], &lda, &Tau[0], &Work3[0], &lwork, &info)
     assert info == 0, info
