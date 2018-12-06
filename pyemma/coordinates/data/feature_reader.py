@@ -130,9 +130,18 @@ class FeatureReader(DataSource, SerializableMixIn):
 
     def _get_traj_info(self, filename):
         with mdtraj.open(filename, mode='r') as fh:
-            length = len(fh)
-            frame = fh.read(1)[0]
-            ndim = np.shape(frame)[1]
+            try:
+                length = len(fh)
+            # certain formats like txt based ones (.gro, .lammpstrj) do not implement len()
+            except (NotImplementedError, TypeError):
+                frame = fh.read(1)[0]
+                ndim = np.shape(frame)[1]
+                _ = fh.read()
+                length = fh.tell()
+            else:
+                frame = fh.read(1)[0]
+                ndim = np.shape(frame)[1]
+
             offsets = fh.offsets if hasattr(fh, 'offsets') else ()
 
         return TrajInfo(ndim, length, offsets)

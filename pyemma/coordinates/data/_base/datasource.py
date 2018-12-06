@@ -163,6 +163,9 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             # propagate this until we finally have a a reader
             self.data_producer.filenames = filename_list
 
+    def _get_traj_info(self, filename):
+        raise NotImplementedError
+
     @property
     def is_reader(self):
         """
