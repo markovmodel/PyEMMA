@@ -161,7 +161,7 @@ def extensions():
                 new_src.append(s.replace('.pyx', '.c'))
             e.sources = new_src
     else:
-        exts = cythonize(exts)
+        exts = cythonize(exts, language_level=sys.version_info[0])
 
     return exts
 
