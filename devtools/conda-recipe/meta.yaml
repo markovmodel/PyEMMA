@@ -55,6 +55,7 @@ requirements:
     - scipy
     - setuptools
     - six >=1.10
+    - tqdm
     - progress_reporter >=2
 
 test:
