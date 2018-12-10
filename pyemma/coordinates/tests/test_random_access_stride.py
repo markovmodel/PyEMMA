@@ -385,14 +385,13 @@ class TestRandomAccessStride(TestCase):
     def test_feature_reader_random_access_xyz(self):
         _test_ra_with_format('.xyz', self.stride)
 
-    @unittest.skip("gro has no len()")
+    @unittest.skip("gro has no seek support")
     def test_feature_reader_random_access_gro(self):
         _test_ra_with_format('.gro', self.stride)
 
     def test_feature_reader_random_access_netcdf(self):
         _test_ra_with_format('.nc', self.stride)
 
-    @unittest.skip("lammpstrj has no len()")
     def test_feature_reader_random_access_lampstr(self):
         _test_ra_with_format('.lammpstrj', self.stride)
 

@@ -29,7 +29,23 @@ import pyemma.coordinates.api as api
 import pyemma.util.types as types
 import pkg_resources
 
+from pyemma.util.files import TemporaryDirectory
+
 logger = getLogger('pyemma.'+'TestReaderUtils')
+
+
+def convert_traj(file, format, top, dir=None):
+    import subprocess
+    from mdtraj.scripts import mdconvert
+    if dir is not None:
+        outname = os.path.basename(file)
+    else:
+        outname = file
+    out = '{dir}{name}.{format}'.format(format=format, name=outname, dir=dir if dir is not None else '')
+    import sys
+    subprocess.check_call([sys.executable, '-m', 'mdtraj.scripts.mdconvert', file, '-o', out, '-t', top])
+    #subprocess.check_call(['env'], env=os.environ)
+    return out
 
 
 class TestSource(unittest.TestCase):
@@ -40,9 +56,6 @@ class TestSource(unittest.TestCase):
             os.path.join(path, 'bpti_001-033.xtc'),
             os.path.join(path, 'bpti_067-100.xtc')
         ]
-
-    def tearDown(self):
-        pass
 
     def test_read_multiple_files_topology_file(self):
         reader = api.source(self.traj_files, top=self.pdb_file)
@@ -103,6 +116,22 @@ class TestSource(unittest.TestCase):
         # input file is directory
         root_dir = os.path.abspath(os.sep)
         self.assertRaises(ValueError, api.source, root_dir, None, self.pdb_file)
+
+    def test_h5_mdtraj_vs_plain(self):
+        with TemporaryDirectory() as td:
+            f = convert_traj(self.traj_files[0], format='h5', dir=td, top=self.pdb_file)
+            r = api.source(f, top=self.pdb_file)
+            from pyemma.coordinates.data import FeatureReader
+            self.assertIsInstance(r, FeatureReader)
+
+            import h5py
+            from pyemma.coordinates.data.h5_reader import H5Reader
+            plain_h5_file = os.path.join(td, 'f.h5')
+            with h5py.File(plain_h5_file) as fh:
+                fh.create_dataset('test', data=np.random.random((100, 3)))
+            r = api.source(plain_h5_file)
+            self.assertIsInstance(r, H5Reader)
+
 
 class TestSourceCallAll(unittest.TestCase):
 

@@ -891,7 +891,7 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
     w : float
         statistical weight of this estimation
     s : [ndarray (M), ndarray (M)]
-        list of two elements with s[0]=sx and s[0]=sy
+        list of two elements with s[0]=sx and s[1]=sy
     C : [[ndarray(M,M), ndarray(M,N)], [ndarray(N,M),ndarray(N,N)]]
         list of two lists with two elements.
         C[0,0] = Cxx, C[0,1] = Cxy, C[1,0] = Cyx, C[1,1] = Cyy
@@ -971,7 +971,7 @@ def moments_block(X, Y, remove_mean=False, modify_data=False,
                   xsum=sy_centered, xconst=yconst, ysum=sy_centered, yconst=yconst,
                   diag_only=diag_only)
 
-    return w, [sx, sy], [[Cxx, Cxy], [Cyx, Cyy]]
+    return w, (sx, sy), ((Cxx, Cxy), (Cyx, Cyy))
 
 
 def covar(X, remove_mean=False, modify_data=False, weights=None, sparse_mode='auto', sparse_tol=0.0):
