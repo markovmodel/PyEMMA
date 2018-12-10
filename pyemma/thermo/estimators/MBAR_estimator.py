@@ -26,9 +26,7 @@ from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
 
-from thermotools import mbar as _mbar
-from thermotools import mbar_direct as _mbar_direct
-from thermotools import util as _util
+from pyemma.thermo.extensions import (mbar as _mbar, mbar_direct as _mbar_direct, util as _util)
 
 __author__ = 'wehmeyer'
 

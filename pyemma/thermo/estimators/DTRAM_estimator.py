@@ -27,10 +27,12 @@ from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCall
 
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 
-from thermotools import dtram as _dtram
-from thermotools import wham as _wham
-from thermotools import util as _util
-from thermotools import cset as _cset
+from pyemma.thermo.extensions import (
+    dtram as _dtram,
+    wham as _wham,
+    util as _util,
+    cset as _cset
+)
 
 __author__ = 'noe, wehmeyer'
 
@@ -94,7 +96,7 @@ class DTRAM(_Estimator, _MEMM, ThermoBase):
               all thermodynamic states and taking it's largest strongly connected set.
               Not recommended!
             * None : assume that everything is connected. For debugging.
-            For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
+            For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_dTRAM`.
         maxiter : int, optional, default=10000
             The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
         maxerr : float, optional, default=1.0E-15

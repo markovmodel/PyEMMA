@@ -20,7 +20,7 @@ import numpy as np
 import numpy.testing as npt
 from pyemma.thermo import estimate_umbrella_sampling, estimate_multi_temperature
 from pyemma.coordinates import cluster_regspace, assign_to_centers
-from thermotools.util import logsumexp
+from pyemma.thermo.extensions.util import logsumexp
 
 # ==================================================================================================
 # helper functions

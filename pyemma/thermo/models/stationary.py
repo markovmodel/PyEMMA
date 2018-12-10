@@ -25,7 +25,7 @@ from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util import types as _types
 from pyemma.util.annotators import aliased as _aliased, alias as _alias
 
-from thermotools.util import logsumexp as _logsumexp
+from pyemma.thermo.extensions.util import logsumexp as _logsumexp
 
 __author__ = 'noe'
 

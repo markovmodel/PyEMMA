@@ -52,8 +52,8 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
         bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
         at thermodynamic state j.
     """
-    from thermotools.util import logsumexp as _logsumexp
-    from thermotools.util import logsumexp_pair as _logsumexp_pair
+    from pyemma.thermo.extensions.util import (logsumexp as _logsumexp, logsumexp_pair as _logsumexp_pair)
+
     nmax = int(_np.max([dtraj.max() for dtraj in dtrajs]))
     if nstates is None:
         nstates = nmax + 1
@@ -186,7 +186,7 @@ def _get_umbrella_sampling_parameters(
     return ttrajs, umbrella_centers, force_constants, unbiased_state
 
 def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants, width):
-    from thermotools.util import get_umbrella_bias as _get_umbrella_bias
+    from pyemma.thermo.extensions.util import get_umbrella_bias as _get_umbrella_bias
     bias_sequences = []
     if not isinstance(umbrella_centers, _np.ndarray):
         raise TypeError("umbrella_centers is not a numpy.ndarray: " + str(type(umbrella_centers)))
