@@ -14,20 +14,6 @@ import pyemma.coordinates.tests.util as util
 from pyemma.coordinates.data import FragmentedTrajectoryReader
 
 
-def _skip_stride_handling_old_mdtraj():
-    # newer versions do not need multiplying n_frames with stride for certain formats.
-    from distutils.version import LooseVersion
-    from mdtraj import version as md_version
-
-    if LooseVersion(md_version.version) > LooseVersion('1.9.1'):
-        return False
-
-    return True
-
-
-skip_stride_handling_old_mdtraj = _skip_stride_handling_old_mdtraj()
-
-
 def max_chunksize_from_config(itemsize):
     from pyemma import config
     from pyemma.util.units import string_to_bytes
