@@ -1021,7 +1021,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
                                                    sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
                                                    score_method=score_method, score_k=score_k,
-                                                   mincount_connectivity=mincount_connectivity)
+                                                   mincount_connectivity=mincount_connectivity, core_set=core_set)
 
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize
