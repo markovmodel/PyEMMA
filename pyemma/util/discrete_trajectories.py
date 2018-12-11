@@ -351,7 +351,7 @@ def _apply_offsets_to_samples(indices, offsets):
     Parameters
     ----------
     indices :  list of ndarray( (N, 2) )
-        trajectory and correspoding frame indices of original input
+        trajectory and corresponding frame indices of original input
     offsets: dict {itraj, offset}
 
     """
