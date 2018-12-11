@@ -55,7 +55,7 @@ def _MilestoneCountingDecorator(cls):
 @decorator
 def _remap_indices_coring(func, self, *args, **kwargs):
     """Since milestone counting sometimes has to truncate the discrete trajectories (eg. outliers),
-    it becomes mission crucial to maintain the mapping to of the indices to the original input trajectories.
+    it becomes mission crucial to maintain the mapping of the current indices to the original input trajectories.
     """
     indices = func(self, *args, **kwargs)
     if hasattr(self, _OFFSETS_ATTR_NAME) and any(getattr(self, _OFFSETS_ATTR_NAME)):  # need to remap indices?
