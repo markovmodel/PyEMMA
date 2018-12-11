@@ -286,6 +286,9 @@ def milestone_counting(dtrajs, core_set, in_place=False):
 
     n_cores = len(core_set)
 
+    if not n_cores:
+        return dtrajs, None, None
+
     if not in_place:
         dtrajs = copy.deepcopy(dtrajs)
 
