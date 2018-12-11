@@ -1,3 +1,4 @@
+
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -18,7 +19,9 @@
 import numpy as _np
 import warnings
 from msmtools import estimation as msmest
+import scipy.sparse as scs
 
+from pyemma.msm.estimators._milestone_counting_decorator import _MilestoneCountingDecorator, _remap_indices_coring
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -45,7 +48,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
-                 mincount_connectivity='1/n'):
+                 mincount_connectivity='1/n', core_set=None):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -159,6 +162,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         # connectivity
         self.mincount_connectivity = mincount_connectivity
+        self.core_set = core_set
 
     ################################################################################
     # Generic functions
@@ -452,6 +456,18 @@ class _MSMEstimator(_Estimator, _MSM):
         return self._connected_sets
 
     @property
+    def core_set(self):
+        """ list of states which are defined to lie within the core set.
+
+        If not defined manually, the default behaviour is to remap the state -1 to the previous core state,
+        the trajectory came from. """
+        return self._core_set
+
+    @core_set.setter
+    def core_set(self, value):
+        self._core_set = _types.ensure_int_vector(value) if value is not None else None
+
+    @property
     @alias('dtrajs_full')
     def discrete_trajectories_full(self):
         """
@@ -551,6 +567,7 @@ class _MSMEstimator(_Estimator, _MSM):
             self._active_state_indexes = index_states(self.discrete_trajectories_active)
         return self._active_state_indexes
 
+    @_remap_indices_coring
     def generate_traj(self, N, start=None, stop=None, stride=1):
         """Generates a synthetic discrete trajectory of length N and simulation time stride * lag time * N
 
@@ -601,13 +618,14 @@ class _MSMEstimator(_Estimator, _MSM):
 
         return sample_indexes_by_sequence(self.active_state_indexes, syntraj)
 
+    @_remap_indices_coring
     def sample_by_state(self, nsample, subset=None, replace=True):
         """Generates samples of the connected states.
 
         For each state in the active set of states, generates nsample samples with trajectory/time indexes.
         This information can be used in order to generate a trajectory of length nsample * nconnected using
         :func:`pyemma.coordinates.save_traj` or nconnected trajectories of length nsample each using
-        :func:`pyemma.coordinates.save_traj`
+        :func:`pyemma.coordinates.save_trajs`
 
         Parameters
         ----------
@@ -621,7 +639,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         Returns
         -------
-        indexes : list of ndarray( (N, 2) )
+        indexes : list of ndarray( (nsample, 2) )
             list of trajectory/time index arrays with an array for each state.
             Within each index array, each row consist of a tuple (i, t), where i is
             the index of the trajectory and t is the time index within the trajectory.
@@ -641,6 +659,7 @@ class _MSMEstimator(_Estimator, _MSM):
         return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
 
     # TODO: add sample_metastable() for sampling from metastable (pcca or hmm) states.
+    @_remap_indices_coring
     def sample_by_distributions(self, distributions, nsample):
         """Generates samples according to given probability distributions
 
@@ -669,6 +688,7 @@ class _MSMEstimator(_Estimator, _MSM):
     ################################################################################
     # For general statistics
     ################################################################################
+
     def trajectory_weights(self):
         r"""Uses the MSM to assign a probability weight to each trajectory frame.
 
@@ -871,6 +891,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
 @fix_docs
 @aliased
+@_MilestoneCountingDecorator
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
     __serialize_fields = ('_C_active', '_C_full',
@@ -883,7 +904,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
                  count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', maxiter=1000000,
                  maxerr=1e-8, score_method='VAMP2', score_k=10,
-                 mincount_connectivity='1/n'):
+                 mincount_connectivity='1/n', core_set=None):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -1161,7 +1182,9 @@ class OOMReweightedMSM(_MSMEstimator):
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
                  dt_traj='1 step', nbs=10000, rank_Ct='bootstrap_counts', tol_rank=10.0,
                  score_method='VAMP2', score_k=10,
-                 mincount_connectivity='1/n'):
+                 mincount_connectivity='1/n',
+                 core_set=None,
+        ):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -1274,7 +1297,8 @@ class OOMReweightedMSM(_MSMEstimator):
         super(OOMReweightedMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                                                connectivity=connectivity, dt_traj=dt_traj,
                                                score_method=score_method, score_k=score_k,
-                                               mincount_connectivity=mincount_connectivity)
+                                               mincount_connectivity=mincount_connectivity,
+                                               core_set=core_set)
         self.nbs = nbs
         self.tol_rank = tol_rank
         self.rank_Ct = rank_Ct

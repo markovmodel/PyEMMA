@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import unittest
 
 import numpy as np
+import pyemma
 import scipy.sparse
 import warnings
 
@@ -223,7 +224,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # NONREVERSIBLE
         assert self.msmrev.is_reversible
         assert self.msmrevpi.is_reversible
-        assert (self.msmrev_sparse.is_reversible)
+        assert self.msmrev_sparse.is_reversible
         assert self.msmrevpi_sparse.is_reversible
         # REVERSIBLE
         assert not self.msm.is_reversible
@@ -250,9 +251,9 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_set(self, msm):
         # should always be <= full set
-        assert (len(msm.active_set) <= self.msm.nstates_full)
+        self.assertLessEqual(len(msm.active_set), self.msm.nstates_full)
         # should be length of nstates
-        assert (len(msm.active_set) == self.msm.nstates)
+        self.assertEqual(len(msm.active_set), self.msm.nstates)
 
     def test_active_set(self):
         self._active_set(self.msmrev)
@@ -768,7 +769,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     def _expectation(self, msm):
         e = msm.expectation(list(range(msm.nstates)))
         # approximately equal for both
-        assert (np.abs(e - 31.73) < 0.01)
+        self.assertLess(np.abs(e - 31.73), 0.01)
 
     def test_expectation(self):
         self._expectation(self.msmrev)
@@ -825,7 +826,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # should relax
         assert (len(times) == maxtime / msm.lagtime)
         assert (len(rel2) == maxtime / msm.lagtime)
-        assert (rel2[0] < rel2[-1])
+        self.assertLess(rel2[0], rel2[-1], msm)
 
     def test_relaxation(self):
         self._relaxation(self.msmrev)
@@ -980,7 +981,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             assert (np.all(samples.shape == (nsample, 2)))
             for row in samples:
                 assert (row[0] == 0)  # right trajectory
-                assert (dtraj_active[row[1]] == i)
+                self.assertEqual(dtraj_active[row[1]], i)
 
     def test_sample_by_state(self):
         self._sample_by_state(self.msmrev)
@@ -1035,7 +1036,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # therefore underestimate rates
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
-        assert (np.abs(k2 - ksum) < eps)
+        self.assertLess(np.abs(k2 - ksum), eps)
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)
@@ -1093,6 +1094,42 @@ IndexError: index 0 is out of bounds for axis 1 with size 0
         from pyemma.msm import timescales_msm
         its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
         assert its.estimator.mincount_connectivity == 0
+
+
+class TestCoreMSM(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from pyemma import datasets
+        cls.dtraj = datasets.load_2well_discrete().dtraj_T100K_dt10
+
+    def test_core(self):
+        core_set = [15, 16, 17, 45, 46, 47]
+        msm = pyemma.msm.estimate_markov_model(self.dtraj, lag=1, core_set=core_set)
+        np.testing.assert_equal(msm.core_set, core_set)
+
+        self.assertEqual(msm.n_cores, len(core_set))
+        # check we only have core set states in the stored discrete trajectories.
+        for d in msm.dtrajs_full:
+            uniq = np.unique(d)
+            assert len(np.setdiff1d(uniq, core_set)) == 0
+
+    def test_indices_remapping(self):
+        dtrajs = [[-1, -1, 1, 0, 0, 1], [-1, 1, 0, 1, 3], [0, 1, 2, 3]]
+        desired_offsets = [2, 1, 0]
+        # implicit core_set (omit -1)
+        msm = pyemma.msm.estimate_markov_model(dtrajs, lag=1)
+        np.testing.assert_equal(msm.dtrajs_milestone_counting_offsets, desired_offsets)
+
+        # sampling
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(10):
+            samples_states = msm.sample_by_state(1)
+            #syn_traj = msm.generate_traj(N=20)
+        # the first trajectory is shifted by two frames. Third remains constant.
+        np.testing.assert_equal(samples_states, [np.array([[0, 4]]), np.array([[2, 1]])])
+        msm.pcca(2)
+        samples = msm.sample_by_distributions(msm.metastable_distributions, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

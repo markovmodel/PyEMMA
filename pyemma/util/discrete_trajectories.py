@@ -25,6 +25,8 @@ We store them either as single column ascii files or as ndarrays of shape (n,) i
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
 
 """
+from functools import reduce
+import warnings
 import numpy as np
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 from pyemma.util.annotators import shortcut
@@ -200,7 +202,7 @@ def number_of_states(dtrajs, only_used = False):
 
     Parameters
     ----------
-    dtraj : array_like or list of array_like
+    dtrajs : array_like or list of array_like
         Discretized trajectory or list of discretized trajectories
     only_used = False : boolean
         If False, will return max+1, where max is the largest index used.
@@ -222,6 +224,160 @@ def number_of_states(dtrajs, only_used = False):
 # indexing
 ################################################################################
 
+def milestone_counting(dtrajs, core_set, in_place=False):
+    r""" Perform milestone counting in given discrete trajectories between core sets.
+
+    The given discrete trajectories are rewritten such, that only transitions between core sets
+    are left in the result.
+
+    Examples
+    --------
+    Lets assume we want to restrict the core sets to 1, 2 and 3:
+
+    >>> import numpy as np
+    >>> dtrajs = [np.array([5, 4, 1, 3, 4, 4, 5, 3, 0, 1]),
+    ...           np.array([4, 4, 4, 5]),
+    ...           np.array([4, 4, 5, 1, 2, 3])]
+    >>> dtraj_core, offsets, n_cores = milestone_counting(dtrajs, core_set=[0, 1, 3])
+    >>> print(dtraj_core)
+    [array([1, 3, 3, 3, 3, 3, 0, 1]), array([1, 1, 3])]
+
+    We reach the first mile stone in the first trajectory after two steps, after four in the second and so on:
+    >>> print(offsets)
+    [2, None, 3]
+
+    Since the second trajectory never visited a core set, it will be removed and marked as such in the offsets
+    lists by a 'None'. Each entry corresponds to one entry in the input list.
+
+    Parameters
+    ----------
+    dtrajs: array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories.
+
+    core_set: None or ndarray(dtype=int) or list of ndarrays(dtype=int)
+        * If None is given, all indices except -1 are considered to be core sets.
+        * Pass an array of micro-states to define the core sets.
+
+    in_place: boolean, default=False
+        if True, replace the current dtrajs
+        if False, return a copy
+
+    Returns
+    -------
+    dtrajs, offsets: list of ndarray(dtype=int), list
+
+    """
+    import copy
+    from pyemma.util import types
+
+    dtrajs = types.ensure_dtraj_list(dtrajs)
+
+    if isinstance(core_set, (list, tuple)):
+        core_set = list(map(types.ensure_int_vector, core_set))
+        core_set = np.unique(np.concatenate(core_set))
+    elif core_set is None:
+        union = reduce(np.union1d, dtrajs)
+        unique = np.unique(union)
+        if unique[0] == -1:
+            unique = unique[1:]
+        core_set = unique
+    else:
+        core_set = np.unique(types.ensure_int_vector(core_set))
+
+    n_cores = len(core_set)
+
+    if not in_place:
+        dtrajs = copy.deepcopy(dtrajs)
+
+    # build a boolean expression to create a mask of indices within the core set.
+    expr = ['(d == {i})'.format(i=i) for i in core_set]
+    expr = '|'.join(expr)
+
+    def to_ranges(a):
+        # return a list of consecutive ranges in array a.
+        cons = np.split(a, np.where(np.diff(a) != 1)[0] + 1)
+        ranges = [(np.min(x), np.max(x) + 1) if len(x) > 1
+                  else (x[0], x[0] + 1) for x in cons]
+        return ranges
+
+    # if we have no state definition at the beginning of a trajectory, we store the offset to the first milestone.
+    offsets = [0]*len(dtrajs)
+
+    for i, d in enumerate(dtrajs):
+        within_core_set = eval(expr)
+        outside_core_set = np.logical_not(within_core_set)
+        if not np.any(outside_core_set):
+            continue
+        inds_outside_set = np.where(outside_core_set)[0]
+        # determine ranges to update, which lies outside the core set.
+        ranges = to_ranges(inds_outside_set)
+
+        for start, stop in ranges:
+            # if the first state is not contained in any core set, we set it to -1.
+            # Note that subsequent states not in any core set will also be set to -1.
+            core_set = d[start - 1] if start > 0 else -1
+            d[start:stop] = core_set
+
+        # only the beginning should contain one or more -1
+        mask = d == -1
+        where_minus_one = np.where(mask)[0]
+        offsets[i] = where_minus_one.max() + 1 if len(where_minus_one) > 0 else 0
+        # traj never reached a core set?
+        if offsets[i] == len(d):
+            offsets[i] = None  # mark as missing
+            warnings.warn('The entire trajectory with index {i} never visited a core set!'.format(i=i))
+        elif offsets[i] > 0:
+            warnings.warn('The trajectory with index {i} had to be truncated for not starting in a core.'.format(i=i))
+
+        # cut -1 states again
+        dtrajs[i] = d[~mask]
+
+    # filter empty dtrajs
+    dtrajs = list(filter(lambda d: len(d) > 0, dtrajs))
+
+    return dtrajs, offsets, n_cores
+
+
+def _apply_offsets_to_samples(indices, offsets):
+    r""" This private function applies the given offsets returned by the milestone_counting function to
+    the results of the sample_indexes_by_* functions.
+
+    This is necessary in order to obtain the right order in the input files.
+
+    Notes
+    -----
+    Operates in place.
+
+    Parameters
+    ----------
+    indices :  list of ndarray( (N, 2) )
+        trajectory and correspoding frame indices of original input
+    offsets: dict {itraj, offset}
+
+    """
+    from pyemma.util import types
+    assert types.is_int_matrix(indices)
+    assert isinstance(offsets, list), offsets
+
+    # 1. restore itraj indices (the mapping is relative to the original oder)
+    last_valid = None
+    n_missing = 0
+    for itraj, offset in enumerate(offsets):
+        if offset is None:  # this itraj is missing
+            n_missing += 1
+        else:
+            if n_missing > 0:
+                # shift subsequent indices by n_missing
+                indices[indices[:, 0] > last_valid, 0] += n_missing
+            last_valid = itraj
+            n_missing = 0
+
+    # 2. restore frame indices (relative to org order)
+    for itraj, offset in enumerate(offsets):
+        if offset is None:
+            continue
+        indices[indices[:, 0] == itraj, 1] += offset
+
 
 def index_states(dtrajs, subset=None):
     """Generates a trajectory/time indexes for the given list of states
@@ -237,7 +393,7 @@ def index_states(dtrajs, subset=None):
     -------
     indexes : list of ndarray( (N_i, 2) )
         For each state, all trajectory and time indexes where this state occurs.
-        Each matrix has a number of rows equal to the number of occurances of the corresponding state,
+        Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
         with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
         within the trajectory.
 
@@ -352,7 +508,7 @@ def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
         m_available = indexes[s].shape[0]
         # do we have no indexes for this state? Then insert empty array.
         if m_available == 0:
-            res[i] = np.zeros((0,2), dtype=int)
+            res[i] = np.zeros((0, 2), dtype=int)
         elif replace:
             I = np.random.choice(m_available, nsample, replace=True)
             res[i] = indexes[s][I,:]

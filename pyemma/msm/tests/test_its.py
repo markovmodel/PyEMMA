@@ -301,6 +301,19 @@ class TestITS_AllEstimators(unittest.TestCase):
         np.testing.assert_array_less(L, estimator.timescales)
         np.testing.assert_array_less(estimator.timescales, R)
 
+    def test_its_cmsm_defined_core(self):
+        # core states, left and right well
+        core_set = [0, 5]
+        estimator = msm.estimators.MaximumLikelihoodMSM(core_set=core_set)
+        its = msm.ImpliedTimescales(estimator, lags=[1, 10, 100, 1000])
+        its.estimate([self.double_well_data.dtraj_T100K_dt10_n6good], n_jobs=1)
+        assert its.models[0].n_cores == 2
+        ref = np.array([[339.22244263],
+                        [334.56862305],
+                        [325.35442195],
+                        [343.53679359]])
+        # rough agreement with the first four timescales of MLE
+        np.testing.assert_allclose(its.timescales, ref, rtol=0.1, atol=10.0)
 
 if __name__ == "__main__":
     unittest.main()

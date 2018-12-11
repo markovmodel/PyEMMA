@@ -210,7 +210,8 @@ def ensure_int_vector(I, require_order = False):
             if is_list_of_int(lI):
                 return np.array(lI)
     else:
-        raise TypeError('Argument is not of a type that is convertible to an array of integers.')
+        raise TypeError('Argument is not of a type that is convertible to an array of integers. '
+                        'Argument was {}'.format(I))
 
 def ensure_int_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats

@@ -37,7 +37,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95,
-                 show_progress=True, mincount_connectivity='1/n'):
+                 show_progress=True, mincount_connectivity='1/n', core_set=None):
         r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -132,6 +132,10 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+	 core_set : None (default) or array like, dtype=int
+		    * If set to None, replaces the state -1 and performs a milestone counting. If no state is
+		    * If set to an array/list of states, only transitions between these states are taken into account.
+
         References
         ----------
         .. [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
@@ -143,7 +147,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
                         statdist_constraint=statdist_constraint,
                         count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj,
-                        mincount_connectivity=mincount_connectivity)
+                        mincount_connectivity=mincount_connectivity,
+                        core_set=core_set)
         self.nsamples = nsamples
         self.nsteps = nsteps
         self.conf = conf

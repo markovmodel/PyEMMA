@@ -322,7 +322,9 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           count_mode='sliding', weights='empirical',
                           sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
-                          score_method='VAMP2', score_k=10, mincount_connectivity='1/n'):
+                          score_method='VAMP2', score_k=10, mincount_connectivity='1/n',
+                          core_set=None,
+    ):
     r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodMSM` that
@@ -609,7 +611,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                         sparse=sparse, connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter,
                         maxerr=maxerr, score_method=score_method, score_k=score_k,
-                        mincount_connectivity=mincount_connectivity)
+                        mincount_connectivity=mincount_connectivity, core_set=core_set)
         # estimate and return
         return mlmsm.estimate(dtrajs)
     elif weights == 'oom':
@@ -619,7 +621,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
                            sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
                            score_method=score_method, score_k=score_k,
-                           mincount_connectivity=mincount_connectivity)
+                           mincount_connectivity=mincount_connectivity, core_set=core_set)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 
@@ -628,7 +630,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
                           count_mode='effective',
                           nsamples=100, conf=0.95, dt_traj='1 step',
-                          show_progress=True, mincount_connectivity='1/n'):
+                          show_progress=True, mincount_connectivity='1/n', core_set=None):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianMSM` that contains the
@@ -820,7 +822,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
     bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
                                 count_mode=count_mode, sparse=sparse, connectivity=connectivity,
                                 dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress,
-                                mincount_connectivity=mincount_connectivity)
+                                mincount_connectivity=mincount_connectivity,
+                                core_set=core_set)
     return bmsm_estimator.estimate(dtrajs)
 
 
