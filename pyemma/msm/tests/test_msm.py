@@ -1126,7 +1126,9 @@ class TestCoreMSM(unittest.TestCase):
             samples_states = msm.sample_by_state(1)
             #syn_traj = msm.generate_traj(N=20)
         # the first trajectory is shifted by two frames. Third remains constant.
-        np.testing.assert_equal(samples_states, [np.array([[0, 4]]), np.array([[2, 1]])])
+        np.testing.assert_equal(samples_states[0], [[0, 4]])
+        np.testing.assert_equal(samples_states[1], [[2, 1]])
+
         msm.pcca(2)
         samples = msm.sample_by_distributions(msm.metastable_distributions, 3)
 
