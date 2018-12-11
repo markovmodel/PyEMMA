@@ -317,7 +317,7 @@ class DiscreteTrajectoryStats(object):
         return self._lag
 
     def count_matrix(self, connected_set=None, subset=None, effective=False):
-        """The count matrix
+        r"""The count matrix
 
         Parameters
         ----------
@@ -334,7 +334,7 @@ class DiscreteTrajectoryStats(object):
 
             The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
             can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-            :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
+            :math:`(s_1,\:s_{\tau+1},\:...),\:(s_2,\:t_{\tau+2},\:...),` etc. This geometrical average converges to the
             correct likelihood in the statistical limit [1]_.
 
         References
