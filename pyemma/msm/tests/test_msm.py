@@ -1132,6 +1132,27 @@ class TestCoreMSM(unittest.TestCase):
         msm.pcca(2)
         samples = msm.sample_by_distributions(msm.metastable_distributions, 3)
 
+    def test_compare2hmm(self):
+        """test if estimated core set MSM is comparable to 2-state HMM; double-well"""
+
+        cmsm = pyemma.msm.estimate_markov_model(self.dtraj, lag=5, core_set=[34, 65])
+        hmm = pyemma.msm.estimate_hidden_markov_model(self.dtraj, nstates=2, lag=5)
+
+        np.testing.assert_allclose(hmm.transition_matrix, cmsm.transition_matrix, rtol=.1, atol=1e-3)
+        np.testing.assert_allclose(hmm.timescales()[0], cmsm.timescales()[0], rtol=.1)
+        np.testing.assert_allclose(hmm.mfpt([0], [1]), cmsm.mfpt([0], [1]), rtol=.1)
+
+    def test_compare2hmm_bayes(self):
+        """test core set MSM with Bayesian sampling, compare ITS to 2-state BHMM; double-well"""
+
+        cmsm = pyemma.msm.bayesian_markov_model(self.dtraj, lag=5, core_set=[34, 65], nsamples=20)
+        hmm = pyemma.msm.bayesian_hidden_markov_model(self.dtraj, 2, lag=5, nsamples=20)
+
+        has_overlap = not (np.all(cmsm.sample_conf('timescales') < hmm.sample_conf('timescales')[0]) or
+                           np.all(cmsm.sample_conf('timescales') > hmm.sample_conf('timescales')[1]))
+
+        self.assertTrue(has_overlap, msg='Bayesian distributions of HMM and CMSM implied timescales have no overlap.')
+
 
 if __name__ == "__main__":
     unittest.main()
