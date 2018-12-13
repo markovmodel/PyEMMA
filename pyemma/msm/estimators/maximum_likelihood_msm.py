@@ -15,13 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import numpy as _np
-import warnings
+from decorator import decorator as _decorator
+import warnings as _warnings
 from msmtools import estimation as msmest
-import scipy.sparse as scs
 
-from pyemma.msm.estimators._milestone_counting_decorator import _MilestoneCountingDecorator, _remap_indices_coring
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
@@ -33,15 +31,39 @@ from pyemma.msm.estimators._OOM_MSM import *
 from pyemma.util.statistics import confidence_interval as _ci
 
 
+@_decorator
+def _remap_indices_coring(func, self, *args, **kwargs):
+    """Since milestone counting sometimes has to truncate the discrete trajectories (eg. outliers),
+    it becomes mission crucial to maintain the mapping of the current indices to the original input trajectories.
+    """
+    indices = func(self, *args, **kwargs)
+    dtraj_offsets = self.dtrajs_milestone_counting_offsets
+    if any(dtraj_offsets):  # need to remap indices?
+        import numpy as np
+        from pyemma.util.discrete_trajectories import _apply_offsets_to_samples
+        # we handle 1d and 2d indices
+        if isinstance(indices, np.ndarray) and indices.dtype == np.int_:
+            _apply_offsets_to_samples(indices, dtraj_offsets)
+        elif isinstance(indices, list) or (isinstance(indices, np.ndarray) and indices.dtype == np.object_):
+            for s in indices:
+                _apply_offsets_to_samples(s, dtraj_offsets)
+        else:
+            raise TypeError('Indices "{}" not supported.'.format(indices))
+
+    return indices
+
+
 @fix_docs
 @aliased
 class _MSMEstimator(_Estimator, _MSM):
     r"""Base class for different MSM estimators given discrete trajectory statistics"""
     # version for serialization
-    __serialize_version = 0
+    __serialize_version = 1
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
     __serialize_fields = ('_active_set', '_active_state_indexes',
                           '_dtrajs_full',  # we don't want _dtraj_active, since it is recomputed every time...
+                          '_dtrajs_orginal',
+                          '_dtrajs_milestone_counting_offsets',
                           '_nstates_full',
                           '_is_estimated',
                           )
@@ -136,6 +158,9 @@ class _MSMEstimator(_Estimator, _MSM):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            If set to None, replaces state -1 (if applicable) and performs milestone counting.
+            No effect for Voronoi-discretized trajectories (default).
         """
         self.lag = lag
 
@@ -180,10 +205,21 @@ class _MSMEstimator(_Estimator, _MSM):
         """
         # harvest discrete statistics
         if isinstance(dtrajs, _DiscreteTrajectoryStats):
+            # TODO: reassign dtrajs needed?
             dtrajstats = dtrajs
         else:
+            self._dtrajs_orginal = dtrajs
+            # check for -1 in dtrajs and possibly rewrite to core_set
+            from pyemma.util.discrete_trajectories import milestone_counting
+            self._dtrajs_full, self._dtrajs_milestone_counting_offsets, self.n_cores = \
+                milestone_counting(dtrajs, core_set=self.core_set, in_place=False)
+
+            sum(d.size for d in dtrajs)
+            sum(d.size for d in self._dtrajs_full)
+
+
             # compute and store discrete trajectory statistics
-            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
+            dtrajstats = _DiscreteTrajectoryStats(self._dtrajs_full)
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
                 self.logger.warning('Building a dense MSM with {nstates} states. This can be '
@@ -196,7 +232,6 @@ class _MSMEstimator(_Estimator, _MSM):
                                 n_jobs=getattr(self, 'n_jobs', None),
                                 show_progress=getattr(self, 'show_progress', False),
                                 name=self.name)
-
         # for other statistics
         return dtrajstats
 
@@ -459,6 +494,8 @@ class _MSMEstimator(_Estimator, _MSM):
     def core_set(self):
         """ list of states which are defined to lie within the core set.
 
+        Transitions will only be considered between cores.
+
         If not defined manually, the default behaviour is to remap the state -1 to the previous core state,
         the trajectory came from. """
         return self._core_set
@@ -471,8 +508,7 @@ class _MSMEstimator(_Estimator, _MSM):
     @alias('dtrajs_full')
     def discrete_trajectories_full(self):
         """
-        A list of integer arrays with the original (unmapped) discrete trajectories:
-
+        A list of integer arrays with the original (unmapped) discrete trajectories.
         """
         self._check_is_estimated()
         return self._dtrajs_full
@@ -492,6 +528,29 @@ class _MSMEstimator(_Estimator, _MSM):
             self._dtrajs_active.append(self._full2active[dtraj])
 
         return self._dtrajs_active
+
+    @property
+    @alias('dtrajs_unmodified')
+    def discrete_trajectories_unmodified(self):
+        """
+        A list of integer arrays with the original and not modified discrete trajectories.
+        """
+        self._check_is_estimated()
+        return self._dtrajs_orginal
+
+    @property
+    def dtrajs_milestone_counting_offsets(self):
+        """ Offsets for milestone counted trajectories for each input discrete trajectory.
+
+        In case a trajectory does not start in a core, we need to shift it towards the first core state visited.
+
+        Returns
+        -------
+        offsets: list of int (or None, indicating a trajectory never visits a core
+        """
+        if not hasattr(self, '_dtrajs_milestone_counting_offsets'):
+            self._dtrajs_milestone_counting_offsets = ()
+        return self._dtrajs_milestone_counting_offsets
 
     @property
     def count_matrix_active(self):
@@ -891,7 +950,6 @@ class _MSMEstimator(_Estimator, _MSM):
 
 @fix_docs
 @aliased
-@_MilestoneCountingDecorator
 class MaximumLikelihoodMSM(_MSMEstimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
     __serialize_fields = ('_C_active', '_C_full',
@@ -1012,6 +1070,10 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            If set to None, replaces state -1 (if applicable) and performs milestone counting.
+            No effect for Voronoi-discretized trajectories (default).
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1057,7 +1119,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
     def _estimate(self, dtrajs):
         """ Estimates the MSM """
-        # get trajectory counts. This sets _C_full and _nstates_full
+        # get trajectory counts.
         dtrajstats = self._get_dtraj_stats(dtrajs)
         self._C_full = dtrajstats.count_matrix()  # full count matrix
         self._nstates_full = self._C_full.shape[0]  # number of states
@@ -1140,7 +1202,6 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        self._dtrajs_full = dtrajs
         self._connected_sets = dtrajstats.connected_sets
         self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
@@ -1281,6 +1342,10 @@ class OOMReweightedMSM(_MSMEstimator):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            If set to None, replaces state -1 (if applicable) and performs milestone counting.
+            No effect for Voronoi-discretized trajectories (default).
+
         References
         ----------
         .. [1] H. Wu and F. Noe: Variational approach for learning Markov processes from time series data
@@ -1303,13 +1368,19 @@ class OOMReweightedMSM(_MSMEstimator):
         self.tol_rank = tol_rank
         self.rank_Ct = rank_Ct
 
+    def connectivity(self, value):
+        if value != 'largest':
+            raise NotImplementedError('OOM based MSM estimation is only implemented for connectivity=\'largest\'.')
+        self._connectivity = value
+
     def _estimate(self, dtrajs):
         """ Estimate MSM """
         # remove last lag steps from dtrajs:
         dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
 
-        # get trajectory counts. This sets _C_full and _nstates_full
+        # get trajectory counts.
         dtrajstats = self._get_dtraj_stats(dtrajs_lag)
+        self._dtrajs_orginal = dtrajs
         self._C_full = dtrajstats.count_matrix()  # full count matrix
         self._nstates_full = self._C_full.shape[0]  # number of states
 
@@ -1366,7 +1437,7 @@ class OOMReweightedMSM(_MSMEstimator):
             self._nstates = self._C_active.shape[0]
             self._full2active = -1 * _np.ones(dtrajstats.nstates, dtype=int)
             self._full2active[self.active_set] = _np.arange(len(self.active_set))
-            warnings.warn("Caution: Re-estimation of count matrix resulted in reduction of the active set.")
+            _warnings.warn("Caution: Re-estimation of count matrix resulted in reduction of the active set.")
 
         # continue sparse or dense?
         if not self.sparse:
@@ -1378,7 +1449,6 @@ class OOMReweightedMSM(_MSMEstimator):
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
-        self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
         self._Xi = Xi
         self._omega = omega
@@ -1760,9 +1830,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         if _np.size(self.active_set) == 0:
             raise RuntimeError('Active set is empty. Cannot estimate AMM.')
 
-        from pyemma.util.discrete_trajectories import index_states
-        self._active_state_indexes = index_states(dtrajs, subset=self.active_set)
-
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
@@ -1905,7 +1972,6 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         _P = msmest.tmatrix(self._C_active, reversible=True, mu=self._pihat)
 
-        self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
         self.set_model_params(P=_P, pi=self._pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
