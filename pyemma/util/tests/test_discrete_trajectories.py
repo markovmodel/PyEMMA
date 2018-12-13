@@ -27,6 +27,7 @@ from __future__ import absolute_import
 
 import sys
 import os
+import sys
 import unittest
 import pkg_resources
 import numpy as np
@@ -235,7 +236,7 @@ class TestMilestoneCounting(unittest.TestCase):
 
     def test_core_set_all_non_negative(self):
         dtrajs = [np.array([-1, 2, -1, 0, 0, 1, -1, 0, 1, 0, 2, -1])]
-        expected =   [np.array([2,  2, 0, 0, 1,  1, 0, 1, 0, 2, 2])]
+        expected = [np.array([2,  2, 0, 0, 1,  1, 0, 1, 0, 2, 2])]
         dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=None)
         np.testing.assert_equal(offsets, [1])
         np.testing.assert_equal(n_cores, 3)
@@ -259,10 +260,12 @@ class TestMilestoneCounting(unittest.TestCase):
             assert "never visited a core set" in str(w[1].message)
 
     def test_realistic_random(self):
-        n_states = 10
+        n_states = 50
         n_traj = 10
+        n_cores = 30
         dtrajs = [np.random.randint(0, n_states, size=1000) for _ in range(n_traj)]
-        core_set = np.random.randint(0, n_states, size=30)
+        core_set = np.random.choice(np.arange(0, n_states), size=n_cores, replace=False)
+        assert np.unique(core_set).size == n_cores
         dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set)
 
         def naive(dtrajs, core_set):
