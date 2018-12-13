@@ -132,9 +132,9 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
-	 core_set : None (default) or array like, dtype=int
-		    * If set to None, replaces the state -1 and performs a milestone counting. If no state is
-		    * If set to an array/list of states, only transitions between these states are taken into account.
+        core_set : None (default) or array like, dtype=int
+            If set to None, replaces state -1 (if applicable) and performs milestone counting.
+            No effect for Voronoi-discretized trajectories (default).
 
         References
         ----------
@@ -175,8 +175,6 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
         return super(BayesianMSM, self).estimate(dtrajs, **kw)
 
     def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
         # conduct MLE estimation (superclass) first
         _MLMSM._estimate(self, dtrajs)
 
