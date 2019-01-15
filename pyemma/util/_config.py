@@ -339,15 +339,19 @@ class Config(object):
         self._conf_values.set('pyemma', 'show_config_notification', str(val))
 
     @property
-    @_cached
     def coordinates_check_output(self):
-        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates """
-        return self._conf_values.getboolean('pyemma', 'coordinates_check_output')
+        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates.
+
+        Notes
+        -----
+        This setting is on by default by PyEMMA version 2.5.5
+        """
+        return True
 
     @coordinates_check_output.setter
-    @_invalidate_cache
-    def coordinates_check_output(self, val):
-        self._conf_values.set('pyemma', 'coordinates_check_output', str(val))
+    def coordinates_check_output(self, _):
+        import warnings
+        warnings.warn('{d} disabling output checking has been disabled for very good reasons. {d}'.format(d=u'\U00002620'))
 
     @property
     @_cached
