@@ -350,8 +350,9 @@ class Config(object):
 
     @coordinates_check_output.setter
     def coordinates_check_output(self, _):
-        import warnings
-        warnings.warn('{d} disabling output checking has been disabled for very good reasons. {d}'.format(d=u'\U00002620'))
+        import warnings, sys
+        warnings.warn('{d}Changing the setting for output checking has been disabled for very good reasons.{d}'
+                      .format(d=u' \U00002620 ' if sys.version_info[0] == 3 else ''))
 
     @property
     @_cached
