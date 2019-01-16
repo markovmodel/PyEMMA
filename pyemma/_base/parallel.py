@@ -22,9 +22,9 @@ def get_n_jobs(logger=None):
     pyemma_njobs = _from_env('PYEMMA_NJOBS')
 
     if slurm_njobs and pyemma_njobs:
-        import warning
-        warning.warn('two settings for n_jobs from environment: PYEMMA_NJOBS and SLURM_CPUS_ON_NODE. '
-                     'Respecting the SLURM setting to avoid overprovisioning resources.')
+        import warnings
+        warnings.warn('two settings for n_jobs from environment: PYEMMA_NJOBS and SLURM_CPUS_ON_NODE. '
+                      'Respecting the SLURM setting to avoid overprovisioning resources.')
 
     # slurm njobs will be used preferably.
     val = slurm_njobs or pyemma_njobs
