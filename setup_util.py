@@ -210,5 +210,5 @@ class get_pybind_include(object):
     def __str__(self):
         result = self.search_pybind11_headers()
         if not result:
-            raise RuntimeError()
+            raise RuntimeError('pybind11 headers not found')
         return result
