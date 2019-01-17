@@ -6,22 +6,22 @@ Changelog
 
 **New features**:
 
-- msm: for Bayesian MSMs we show an optional progress bar for the counting computation. #1344
-- msm: ImpliedTimescales allow to only store timescales and its samples for the purpose of saving memory. #1377
+- msm: for Bayesian MSMs we show an optional progress bar for the counting computation. :pr:`1344`
+- msm: ImpliedTimescales allow to only store timescales and its samples for the purpose of saving memory. :pr:`1377`
 
 
 **Fixes**:
 
 - msm: fix connected sets for Bayesian MSMs in case the mincount connectivity (ergodic cutoff) parameter truncated
-  the count matrix. #1343
-- plots: fix vmin, vmax keyword arguments for plot_contour(). #1376
-- coordinates: forcefully enable checking of coordinates data streaming for invalid (not initialized) data. #1384
+  the count matrix. :pr:`1343`
+- plots: fix vmin, vmax keyword arguments for plot_contour(). :pr:`1376`
+- coordinates: forcefully enable checking of coordinates data streaming for invalid (not initialized) data. :pr:`1384`
 
 
 
 **Contributors**:
 
-- @marscher
+- :user:`marscher`
 
 
 2.5.4 (07-20-2018)
@@ -29,21 +29,21 @@ Changelog
 
 **New features**:
 
-- plots: allow zorder parameter via **kwargs in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() #1336
-- plots: allow colorbar orientation via the cbar_orientation parameter in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() #1338
+- plots: allow zorder parameter via **kwargs in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() :pr:`1336`
+- plots: allow colorbar orientation via the cbar_orientation parameter in plot_density(), plot_free_energy(), plot_contour(), and plot_state_map() :pr:`1338`
 
 **Fixes**:
 
-- plots: added missing parameter ncontours=100 to plot_state_map() #1331
-- msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. #1330
-- coordinates: do not show a progress bar for creating the data array, if data comes from memmory. #1339
-- plots: maks zero-counts in logscale feature histograms. #1340
+- plots: added missing parameter ncontours=100 to plot_state_map() :pr:`1331`
+- msm: Chapman Kolmogorov tests (CK-tests) are now computed using multiple processes by default. :pr:`1330`
+- coordinates: do not show a progress bar for creating the data array, if data comes from memmory. :pr:`1339`
+- plots: maks zero-counts in logscale feature histograms. :pr:`1340`
 
 
 **Contributors**:
 
-- @chwehmeyer
-- @marscher
+- :user:`cwehmeyer`
+- :user:`marscher`
 
 
 2.5.3 (06-28-2018)
@@ -51,55 +51,55 @@ Changelog
 
 **New features**:
 
-- plots: new functions plot_density(), plot_state_map(), and plot_contour() #1317
+- plots: new functions plot_density(), plot_state_map(), and plot_contour() :pr:`1317`
 
 **Fixes**:
 
 - base: restored VAMP estimators reset the diagonalization flag, which led to recomputing expensive
-  operations. #1294
-- base: require at least tqdm >= 4.23, because of an API change. #1292, #1293
-- coordinates: fix closing progress bar of kmeans. #1315
-- coordinates: method output_type of DataSources now returns an instance instead of a class. #1315
-- coordinates: During processing the actual data is always being checked for invalid values like NaN and infinity. #1315
-- coordinates: Use IO-efficient time shifted iterator for chunksize 0 (whole trajectories). #1315
+  operations. :pr:`1294`
+- base: require at least tqdm >= 4.23, because of an API change. :pr:`1292,1293`
+- coordinates: fix closing progress bar of kmeans. :pr:`1315`
+- coordinates: method output_type of DataSources now returns an instance instead of a class. :pr:`1315`
+- coordinates: During processing the actual data is always being checked for invalid values like NaN and infinity. :pr:`1315`
+- coordinates: Use IO-efficient time shifted iterator for chunksize 0 (whole trajectories). :pr:`1315`
 - coordinates: fixed a bug in internal lengths calculation of FragmentedTrajectoryReader, which led to preliminary
-  stopping of iteration. This was only affected by very rare side-conditions. #1315
-- coordinates: fixed a bug in csv reader, which led to preliminary stopping of iteration. #1300, #1315
-- msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. #1294
-- msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. #1283
-- msm: fixed inconsistent submodel behavior in HMSM and BayesianHMSM. #1323
-- msm: fixed missing "has_errors" attribute after deserialization. #1295, #1296
-- msm: use stationary distribution estimate of msmtools during MSM estimation. #1159
+  stopping of iteration. This was only affected by very rare side-conditions. :pr:`1315`
+- coordinates: fixed a bug in csv reader, which led to preliminary stopping of iteration. :pr:`1300,1315`
+- msm: fixed minor bug in ImpliedTimescales, where all models got recomputed for extended lag time array. :pr:`1294`
+- msm: fixed serialization of BayesianHMSM, if initialized with a ML-HMSM. :pr:`1283`
+- msm: fixed inconsistent submodel behavior in HMSM and BayesianHMSM. :pr:`1323`
+- msm: fixed missing "has_errors" attribute after deserialization. :pr:`1295,1296`
+- msm: use stationary distribution estimate of msmtools during MSM estimation. :pr:`1159`
 - msm: reset eigenvalue decomposition, if a new transition matrix is encapsulated in the model. This led to weird
-  results in CK-test. #1301, #1302
-- plots: fixed minor bug in plot_network (state_labels=None would not work). #1306
-- plots: refactored plots2d to remove inappropriate pylab/gca() usage, allow more figure construction control #1317
-- plots: refactored plots1d to remove inappropriate pylab/gca() usage #1317
+  results in CK-test. :pr:`1301,1302`
+- plots: fixed minor bug in plot_network (state_labels=None would not work). :pr:`1306`
+- plots: refactored plots2d to remove inappropriate pylab/gca() usage, allow more figure construction control :pr:`1317`
+- plots: refactored plots1d to remove inappropriate pylab/gca() usage :pr:`1317`
 
 
 **Contributors**:
 
-- @chwehmeyer
-- @clonker
-- @jeiros
-- @marscher
-- @ppxasjsm
-- @thempel
-- @yanhuaouyang
+- :user:`chwehmeyer`
+- :user:`clonker`
+- :user:`jeiros`
+- :user:`marscher`
+- :user:`ppxasjsm`
+- :user:`thempel`
+- :user:`yanhuaouyang`
 
 2.5.2 (04-10-2018)
 ------------------
 
 **New features**:
 
-- coordinates: added Nystroem-TICA, which uses sparse sampling to approximate the input space. #1261, #1273
-- plots: added multi-dimensional stacked histogram plot function. #1264
+- coordinates: added Nystroem-TICA, which uses sparse sampling to approximate the input space. :pr:`1261,1273`
+- plots: added multi-dimensional stacked histogram plot function. :pr:`1264`
 
 **Fixes**:
 
-- msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. #1255
-- datasets: Fix default values for kT to ensure integrator produces sane values. #1272, #1275
-- coordinates: fixed fixed handling of default chunksize. #1284
+- msm: Chapman Kolmogorov validator ensures there are no side effects on the tested model. :pr:`1255`
+- datasets: Fix default values for kT to ensure integrator produces sane values. :pr:`1272,1275`
+- coordinates: fixed fixed handling of default chunksize. :pr:`1284`
 
 
 2.5.1 (02-17-2018)
@@ -109,9 +109,9 @@ Quick fix release to repair chunking in the coordinates package.
 
 **Fixes**:
 
-- msm: fix bug in ImpliedTimescales, which happened when an estimation failed for a given lag time. #1248
-- coordinates: fixed handling of default chunksize. #1247, #1251, #1252
-- base: updated pybind to 2.2.2. #1249
+- msm: fix bug in ImpliedTimescales, which happened when an estimation failed for a given lag time. :pr:`1248`
+- coordinates: fixed handling of default chunksize. :pr:`1247,1251`, :pr:`1252`
+- base: updated pybind to 2.2.2. :pr:`1249`
 
 
 2.5 (02-09-2018)
@@ -123,18 +123,18 @@ your Python installation to at least version 3.5 to catch future updates.
 **New features**:
 
 - base: most Estimators and Models in msm, thermo and coordinates packages can be saved to disk now.
-  Multiple models/estimators can be stored in the same file, which uses HDF5 as backend. #849, 867, #1155, #1200, #1205
+  Multiple models/estimators can be stored in the same file, which uses HDF5 as backend. :pr:`849, 867, 1155, 1200, 1205`
 - msm: Added Augmented Markov Models. A way to include averaged experimental
-  data into estimation of Markov models from molecular simulations. The method is described in [1]. #1111
+  data into estimation of Markov models from molecular simulations. The method is described in [1]. :pr:`1111`
 - msm: Added mincount_connectivity argument to MSM estimators. This option enables to omit counts below
-  a given threshold. #1106
-- coordinates: selection based features allow alignment to a reference structure. #1184
+  a given threshold. :pr:`1106`
+- coordinates: selection based features allow alignment to a reference structure. :pr:`1184`
 - coordinates: two new center of mass features: ResidueCOMFeature() and GroupCOMFeature()
 - coordinates: new configuration variable 'default_chunksize' can be set to limit the size of a fragmented
-  extracted per iteration from a data source. This is invariant to the dimension of data sets. #1190
-- datasets: added Prinz potential (quadwell). #1226
-- coordinates: added VAMP estimator. #1237
-- coordinates: added method 'write_to_hdf5' for easy exporting streams to HDF5. #1242
+  extracted per iteration from a data source. This is invariant to the dimension of data sets. :pr:`1190`
+- datasets: added Prinz potential (quadwell). :pr:`1226`
+- coordinates: added VAMP estimator. :pr:`1237`
+- coordinates: added method 'write_to_hdf5' for easy exporting streams to HDF5. :pr:`1242`
 
 - References:
 
@@ -143,20 +143,20 @@ your Python installation to at least version 3.5 to catch future updates.
 
 **Fixes**:
 
-- datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. #1102
-- coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. #1112
-- coordinates: made TrajectoryInfoCache more fail-safe in case of concurrent processes. #1122
+- datasets: fixed get_multi_temperature_data and get_umbrella_sampling_data for Python 3. :pr:`1102`
+- coordinates: fixed StreamingTransformers (TICA, Kmeans, etc.) not respecting the in_memory flag. :pr:`1112`
+- coordinates: made TrajectoryInfoCache more fail-safe in case of concurrent processes. :pr:`1122`
 - msm: fix setting of dt_model for BayesianMSM. This bug led to wrongly scaled time units for mean first passage times,
-  correlation and relaxation times as well for timescales for this estimator. #1116
-- coordinates: Added the covariance property of time-lagged to CovarianceLagged. #1125
-- coordinates: clustering code modernized in C++ with pybind11 interface. #1142
-- variational: covartools code modernized in C++ with pybind11 interface. #1147
+  correlation and relaxation times as well for timescales for this estimator. :pr:`1116`
+- coordinates: Added the covariance property of time-lagged to CovarianceLagged. :pr:`1125`
+- coordinates: clustering code modernized in C++ with pybind11 interface. :pr:`1142`
+- variational: covartools code modernized in C++ with pybind11 interface. :pr:`1147`
 - estimators: n_jobs setting does not look for OMP_NUM_THREADS, but for PYEMMA_NJOBS and SLURM_CPUS_ON_NODE to avoid
   multiplying OpenMP threads with PyEMMA processes. On SLURM the number of allocated cores is used.
   If nothing is set, the physical cpu count is considered.
-- msm: calling score_cv does not modify the object anymore. #1178
-- base:estimator: fixed signature of fit function for compatability with scikit-learn. #1193
-- coordinates: assign_to_centers now handles stride argument again. #1190
+- msm: calling score_cv does not modify the object anymore. :pr:`1178`
+- base:estimator: fixed signature of fit function for compatability with scikit-learn. :pr:`1193`
+- coordinates: assign_to_centers now handles stride argument again. :pr:`1190`
 
 
 2.4 (05-19-2017)
@@ -170,7 +170,7 @@ your Python installation to at least version 3.5 to catch future updates.
   generalizations are available. The scores are implemented in the `score` method of the MSM
   estimators `MaximumLikelihoodMSM` and `OOMReweightedMSM`. Rudimentary support for Cross-validation
   similar as suggested in [4] is implemented in the `score_cv` method, however this is currently
-  inefficient and will be improved in future versions. #1093
+  inefficient and will be improved in future versions. :pr:`1093`
 
 - config: Added a lot of documentation and added `mute` option to silence PyEMMA (almost completely).
 
@@ -186,26 +186,26 @@ your Python installation to at least version 3.5 to catch future updates.
 
 - coordinates:
    - kmeans: allow the random seed used for initializing the centers to be passed. The prior behaviour
-     was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. #1091
+     was to init the generator by time, if fixed_seed=False. Now bool and int can be passed. :pr:`1091`
 
 - datasets:
-   - added a multi-ensemble data generator for the 1D asymmetric double well. #1097
+   - added a multi-ensemble data generator for the 1D asymmetric double well. :pr:`1097`
 
 **Fixes**:
 
 - coordinates:
   - StreamingEstimators: If an exception occurred during flipping the `in_memory` property,
-    the state is not updated. #1096
-  - Removed deprecated method parametrize. Use estimate or fit for now. #1088
-  - Readers: nice error messages for file handling errors (which file caused the error). #1085
-  - TICA: raise ZeroRankError, if the input data contained only constant features. #1055
-  - KMeans: Added progress bar for collecting the data in pre-clustering phase. #1084
+    the state is not updated. :pr:`1096`
+  - Removed deprecated method parametrize. Use estimate or fit for now. :pr:`1088`
+  - Readers: nice error messages for file handling errors (which file caused the error). :pr:`1085`
+  - TICA: raise ZeroRankError, if the input data contained only constant features. :pr:`1055`
+  - KMeans: Added progress bar for collecting the data in pre-clustering phase. :pr:`1084`
 
 - msm:
-  - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). #1079
+  - ImpliedTimescales estimation can be interrupted (strg+c, stop button in Jupyter notebooks). :pr:`1079`
 
 - general:
-  - config: better documentation of the configuration parameters. #1095
+  - config: better documentation of the configuration parameters. :pr:`1095`
 
 
 2.3.2 (2-19-2017)
@@ -223,7 +223,7 @@ thermo:
 
 coordinates:
 
-- [TICA] fixed regularization of timescales for the non-default feature **commute_map**. #1037, #1038
+- [TICA] fixed regularization of timescales for the non-default feature **commute_map**. :pr:`1037,1038`
 
 2.3.1 (2-6-2017)
 ----------------
@@ -232,12 +232,12 @@ coordinates:
 
 - msm:
    - ImpliedTimescales: enable insertion/removal of lag times.
-     Avoid recomputing existing models. #1030
+     Avoid recomputing existing models. :pr:`1030`
 
 **Fixes**:
 
 - coordinates:
-   - If Estimators supporting streaming are used directly, restore previous behaviour. #1034
+   - If Estimators supporting streaming are used directly, restore previous behaviour. :pr:`1034`
      Note that estimators used directly from the API were not affected.
 
 
@@ -251,22 +251,22 @@ coordinates:
      or "koopman", which uses the re-weighting procedure from [1] to compute equi-
      librium covariance matrices. The user can also supply his own re-weighting me-
      thod. This must be an object that possesses a function weights(X), that assigns
-     a weight to every time-step in a trajectory X. #1007
+     a weight to every time-step in a trajectory X. :pr:`1007`
    - covariance_lagged: This new method can be used to compute covariance matrices
      and time-lagged covariance matrices between time-series. It is also possible
      to use the re-weighting method from [1] to compute covariance matrices in equi-
      librium. This can be triggered by the option "weights", which has the same spe-
-     cifications as in tica. #1007
+     cifications as in tica. :pr:`1007`
 
 - msm:
    - estimate_markov_model: New option "weights". Can be empirical, which does the
      same as before, or "oom", which triggers a transition matrix estimator based
      on OOM theory to compute an equilibrium transition matrix from possibly non-
-     equilibrium data. See Ref. [2] for details. #1012, #1016
-   - timescales_msm: The same change as in estimate_markov_model. #1012, #1016
-   - TPT: if user provided sets A and B do not overlap (no need to split), preserve order of user states. #1005
+     equilibrium data. See Ref. [2] for details. :pr:`1012,1016`
+   - timescales_msm: The same change as in estimate_markov_model. :pr:`1012,1016`
+   - TPT: if user provided sets A and B do not overlap (no need to split), preserve order of user states. :pr:`1005`
 
-- general: Added an automatic check for new releases upon import. #986
+- general: Added an automatic check for new releases upon import. :pr:`986`
 
 - References:
    [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2017. Bias reduced variational
@@ -280,10 +280,10 @@ coordinates:
 **Fixes**:
 
 - coordinates:
-   - kmeans: fixed a rare bug, which led to a segfault, if NaN is contained in input data. #1010
-   - Featurizer: fix reshaping of AnglesFeature. #1018. Thanks @RobertArbon
+   - kmeans: fixed a rare bug, which led to a segfault, if NaN is contained in input data. :pr:`1010`
+   - Featurizer: fix reshaping of AnglesFeature. :pr:`1018`. Thanks :user:`RobertArbon`
 
-- plots: Fix drawing into existing figures for network plots. #1020
+- plots: Fix drawing into existing figures for network plots. :pr:`1020`
 
 
 2.2.7 (10-21-16)
@@ -292,20 +292,20 @@ coordinates:
 **New features**:
 
 - coordinates:
-   - for lag < chunksize improved speed (50%) for TICA. #960
+   - for lag < chunksize improved speed (50%) for TICA. :pr:`960`
    - new config variable "coordinates_check_output" to test for "NaN" and "inf" values in
      iterator output for every chunk. The option is disabled by default. It gives insight
-     during debugging where faulty values are introduced into the pipeline. #967
+     during debugging where faulty values are introduced into the pipeline. :pr:`967`
 
 
 **Fixes**:
 
 - coordinates:
-   - save_trajs, frames_from_files: fix input indices checking. #958
+   - save_trajs, frames_from_files: fix input indices checking. :pr:`958`
    - FeatureReader: fix random access iterator unitcell_lengths scaling.
      This lead to an error in conjunction with distance calculations, where
-     frames are collected in a random access pattern. #968
-- msm: low-level api removed (use msmtools for now, if you really need it). #550
+     frames are collected in a random access pattern. :pr:`968`
+- msm: low-level api removed (use msmtools for now, if you really need it). :pr:`550`
 
 2.2.6 (9-23-16)
 ---------------
@@ -315,15 +315,15 @@ coordinates:
 - msm: restored old behaviour of updating MSM parameters (only update if not set yet).
   Note that this bug was introduced in 2.2.4 and leads to strange bugs, eg. if the MSM estimator
   is passed to the Chapman Kolmogorov validator, the reversible property got overwritten.
-- coordinates/TICA: Cast the output of the transformation to float. Used to be double. #941
-- coordinates/TICA: fixed a VisibleDeprecationWarning. #941. Thanks @stefdoerr
+- coordinates/TICA: Cast the output of the transformation to float. Used to be double. :pr:`941`
+- coordinates/TICA: fixed a VisibleDeprecationWarning. :pr:`941`. Thanks :user:`stefdoerr`
 
 2.2.5 (9-21-16)
 ---------------
 
 **Fixes**:
 
-- msm: fixed setting of 'reversible' attribute. #935
+- msm: fixed setting of 'reversible' attribute. :pr:`935`
 
 2.2.4 (9-20-16)
 ---------------
@@ -340,13 +340,13 @@ coordinates:
 **Fixes**:
 
 - coordinates: MiniBatchKmeans with MD-data is now memory efficient
-  and successfully converges. It used to only one batch during iteration. #887 #890
-- coordinates: source and load function accept mdtraj.Trajectory objects to extract topology. #922. Thanks @jeiros
+  and successfully converges. It used to only one batch during iteration. :pr:`887` :pr:`890`
+- coordinates: source and load function accept mdtraj.Trajectory objects to extract topology. :pr:`922`. Thanks :user:`jeiros`
 - base: fix progress bars for modern joblib versions.
-- plots: fix regression in plot_markov_model with newer NumPy versions #907. Thanks @ghoti687.
+- plots: fix regression in plot_markov_model with newer NumPy versions :pr:`907`. Thanks :user:`ghoti687.`
 - estimation: for n_jobs=1 no multi-processing is used.
 - msm: scale transition path times by time unit of MSM object in order to get
-  physical time scales. #929
+  physical time scales. :pr:`929`
 
 2.2.3 (7-28-16)
 ---------------
@@ -358,7 +358,7 @@ coordinates:
 **Fixes**:
 
 - coordinates: In case a configuration directory has not been created yet, the LRU cache
-  of the TrajInfo database was failed to be created. #882
+  of the TrajInfo database was failed to be created. :pr:`882`
 
 
 2.2.2 (7-14-16)
@@ -369,20 +369,20 @@ coordinates:
 - coordinates: SQLite backend for trajectory info data. This enables fast access to this data
   on parallel filesystems where multiple processes are writing to the database. This greatly
   speeds ups reader construction and enables fast random access for formats which usually do not
-  support it. #798
+  support it. :pr:`798`
 - plots: new optional parameter **arrow_label_size** for network plotting functions to use a custom
   font size for the arrow labels; the default state and arrow label sizes are now determined by the
-  matplotlib default. #858
+  matplotlib default. :pr:`858`
 - coordinates: save_trajs takes optional parameter "image_molecules" to correct for broken
-  molecules across periodic boundary conditions. #841
+  molecules across periodic boundary conditions. :pr:`841`
 
 **Fixes**:
 
-- coordinates: set chunksize correctly. #846
+- coordinates: set chunksize correctly. :pr:`846`
 - coordinates: For angle features it was possible to use both cossin=True and deg=True, which
-  makes not sense. #857
-- coordinates: fixed a memory error in kmeans clustering which affected large data sets (>=64GB). #839
-- base: fixed a bug in ProgressReporter (_progress_force_finish in stack trace). #869
+  makes not sense. :pr:`857`
+- coordinates: fixed a memory error in kmeans clustering which affected large data sets (>=64GB). :pr:`839`
+- base: fixed a bug in ProgressReporter (_progress_force_finish in stack trace). :pr:`869`
 - docs: fixed a lot of docstrings for inherited classes both in coordinates and msm package.
 
 
@@ -393,9 +393,9 @@ coordinates:
 
 - clustering: fixed serious bug in **minRMSD** distance calculation, which led to
   lots of empty clusters. The bug was introduced in version 2.1. If you used
-  this metric, please re-assign your trajectories. #825
-- clustering: fixed KMeans with minRMSD metric. #814
-- thermo: made estimate_umbrella_sampling more robust w.r.t. input and fixed doumentation. #812 #827
+  this metric, please re-assign your trajectories. :pr:`825`
+- clustering: fixed KMeans with minRMSD metric. :pr:`814`
+- thermo: made estimate_umbrella_sampling more robust w.r.t. input and fixed doumentation. :pr:`812` :pr:`827`
 - msm: low-level api usage deprecation warnings only show up when actually used.
 
 2.2 (5-17-16)
@@ -412,12 +412,12 @@ coordinates:
 
 - clustering: fix parallel cluster assignment with minRMSD metric.
 - base: during estimation the model was accessed in an inappropriate way,
-  which led to the crash "AttributeError: object has no attribute '_model'" #764.
+  which led to the crash "AttributeError: object has no attribute '_model'" :pr:`764`.
 - coordinates.io: fixed a bug when trying to pyemma.coordinates.load certain MD formats.
-  The iterator could have returned None in some cases #790.
+  The iterator could have returned None in some cases :pr:`790`.
 - coordiantes.save_traj(s): use new backend introduced in 2.1, speed up for non random
   accessible trajectory formats like XTC. Avoids reading trajectory info for files not
-  being indexed by the input mapping. Fixes #788.
+  being indexed by the input mapping. Fixes :pr:`788`.
 
 
 2.1.1 (4-18-2016)
@@ -480,9 +480,9 @@ Service release. Fixes some
     labels - in this case no indexing or relabelling with respect to the
     original clustered data is needed.
   - Hidden Markov Model provides estimator results (Viterbi hidden
-    trajectories, convergence information, hidden count matrix). Fixes #528
+    trajectories, convergence information, hidden count matrix). Fixes :pr:`528`
   - BayesianHMSM object now accepts Dirichlet priors for transition matrix and
-    initial distribution. Fixes #640 (general, not only for HMMs) by allowing
+    initial distribution. Fixes :pr:`640` (general, not only for HMMs) by allowing
     estimates at individual lag times to fail in an ImpliedTimescales run
     (reported as Warnings).
 
@@ -502,7 +502,7 @@ Service release. Fixes some
 
 **Fixes**:
 
-- HMM Chapman Kolmogorov test for large datasets #636.
+- HMM Chapman Kolmogorov test for large datasets :pr:`636`.
 - Progressbars now auto-hide, when work is done.
 
 
@@ -633,7 +633,7 @@ reorganization of the code.
 1.2.1 (5-28-2015)
 -----------------
 - general: Time consuming algorithms now display progressbars (optional).
-- general: removed scikit-learn dependency (due to new kmeans impl. Thanks @clonker)
+- general: removed scikit-learn dependency (due to new kmeans impl. Thanks :user:`clonker)`
 - coordinates package: new and faster implementation of Kmeans (10x faster than scikit-learn).
 - coordinates package: allow metrics to be passed to cluster algorithms.
 - coordinates package: cache trajectory lengths by default
