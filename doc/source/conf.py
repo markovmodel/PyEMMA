@@ -20,11 +20,11 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-#    'sphinxcontrib.issuetracker',
+    'sphinx_issues',
 ]
 
-issuetracker = 'github'
-issuetracker_project = 'markovmodel/PyEMMA'
+# Github repo
+issues_github_path = 'markovmodel/PyEMMA'
 
 # Add any paths that contain templates here, relative to this directory.
 #templates_path = ['_templates']
@@ -40,7 +40,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'PyEMMA'
-copyright = u'2015, 2016 CMB-group'
+copyright = u'2015-2019 CMB-group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -307,7 +307,7 @@ def setup(app):
                 items = []
                 for name in dir(obj):
                     try:
-                        documenter = get_documenter(safe_getattr(obj, name), obj)
+                        documenter = get_documenter(app, safe_getattr(obj, name), obj)
                     except AttributeError:
                         continue
                     if documenter.objtype == typ:
