@@ -18,6 +18,7 @@
 
 
 import numpy as np
+import mdtraj
 
 
 def topology_to_numpy(top):
@@ -77,7 +78,6 @@ def topology_from_numpy(atoms, bonds=None):
     if "segmentID" not in atoms.dtype.names:
         atoms["segmentID"] = ""
 
-    import mdtraj
     from mdtraj.core.topology import Atom
     from mdtraj.core import element as elem
     out = mdtraj.Topology()

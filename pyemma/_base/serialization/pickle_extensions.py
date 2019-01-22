@@ -15,14 +15,46 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import sys
 
 from pickle import Pickler, Unpickler, UnpicklingError
 
 import numpy as np
-
+import logging
+logger = logging.getLogger(__name__)
 
 __author__ = 'marscher'
+
+
+def _reload_for_blosc_support():
+    import importlib
+    __import__('tables')
+    import h5py
+    importlib.reload(h5py)
+
+
+if sys.version_info[0] >= 3:
+    try:
+        _reload_for_blosc_support()
+    except ImportError:
+        logger.error('PyEMMA depends on PyTables for serialization support. Please install it.')
+        raise
+
+
+def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
+    shuffle = 2 if shuffle == 'bit' else 1 if shuffle else 0
+    compressors = ['blosclz', 'lz4', 'lz4hc', 'snappy', 'zlib', 'zstd']
+    complib = ['blosc:' + c for c in compressors].index(complib)
+    args = {
+        'compression': 32001,
+        'compression_opts': (0, 0, 0, 0, complevel, shuffle, complib)
+    }
+    if shuffle:
+        args['shuffle'] = False
+    return args
+
+
+_DEFAULT_BLOSC_OPTIONS = _blosc_opts()
 
 
 class HDF5PersistentPickler(Pickler):
@@ -49,7 +81,8 @@ class HDF5PersistentPickler(Pickler):
             return id_
         self._seen_ids.add(id_)
         self.group.create_dataset(name=key, data=array,
-                                  chunks=array.shape, compression='lzf', shuffle=True, fletcher32=True)
+                                  chunks=True,
+                                  **_DEFAULT_BLOSC_OPTIONS)
         return id_
 
     def persistent_id(self, obj):
