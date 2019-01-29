@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys
 
 from pickle import Pickler, Unpickler, UnpicklingError
 
@@ -24,21 +23,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 __author__ = 'marscher'
-
-
-def _reload_for_blosc_support():
-    import importlib
-    __import__('tables')
-    import h5py
-    importlib.reload(h5py)
-
-
-if sys.version_info[0] >= 3:
-    try:
-        _reload_for_blosc_support()
-    except ImportError:
-        logger.error('PyEMMA depends on PyTables for serialization support. Please install it.')
-        raise
 
 
 def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
@@ -54,7 +38,27 @@ def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
     return args
 
 
-_DEFAULT_BLOSC_OPTIONS = _blosc_opts()
+def _check_blosc_avail():
+    import tempfile, h5py
+    blosc_opts = _blosc_opts()
+    with tempfile.NamedTemporaryFile() as ntf:
+        with h5py.File(ntf.name) as h5f:
+            try:
+                h5f.create_dataset('test', shape=(1,1), **blosc_opts)
+            except ValueError as ve:
+                if 'Unknown compression filter' in str(ve):
+                    import warnings
+                    warnings.warn('BLOSC compression filter unavailable. '
+                                  'Your resulting file may be large and not optimal to process.')
+                    return {}
+                else:  # unknown exception
+                    raise
+            else:
+                return blosc_opts
+
+
+# we cache this during runtime
+_DEFAULT_BLOSC_OPTIONS = _check_blosc_avail()
 
 
 class HDF5PersistentPickler(Pickler):
@@ -81,8 +85,7 @@ class HDF5PersistentPickler(Pickler):
             return id_
         self._seen_ids.add(id_)
         self.group.create_dataset(name=key, data=array,
-                                  chunks=True,
-                                  **_DEFAULT_BLOSC_OPTIONS)
+                                  chunks=True, **_DEFAULT_BLOSC_OPTIONS)
         return id_
 
     def persistent_id(self, obj):
