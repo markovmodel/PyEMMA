@@ -439,7 +439,8 @@ class SerializableMixIn(object):
                 self._model = state.pop('model')
 
             # handle field renames, deletion, transformations etc.
-            for klass in self._get_classes_to_inspect():
+            to_inspect = self._get_classes_to_inspect()
+            for klass in to_inspect:
                 self.__interpolate(state, klass)
             from pyemma._base.estimator import Estimator
             if isinstance(self, Estimator):
@@ -449,7 +450,7 @@ class SerializableMixIn(object):
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
 
-            for klass in self._get_classes_to_inspect():
+            for klass in to_inspect:
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
             if hasattr(self, 'data_producer') and 'data_producer' in state:
@@ -467,11 +468,11 @@ class SerializableMixIn(object):
          1. have custom fields: __serialize_fields
          2. provide a modifications map
         """
-        return filter(lambda c:
+        return tuple(filter(lambda c:
                       SerializableMixIn._get_version(c, require=False) or
                       (SerializableMixIn._get_serialize_fields(c) or
                        SerializableMixIn._get_interpolation_map(c)),
-                      self.__class__.__mro__)
+                      self.__class__.__mro__))
 
     def __init_subclass__(cls, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
