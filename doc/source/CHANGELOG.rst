@@ -8,6 +8,7 @@ Changelog
 
 - msm: for Bayesian MSMs we show an optional progress bar for the counting computation. :pr:`1344`
 - msm: ImpliedTimescales allow to only store timescales and its samples for the purpose of saving memory. :pr:`1377`
+- double_well_discrete: allows the setting of a random seed
 
 
 **Fixes**:
