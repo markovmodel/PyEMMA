@@ -57,7 +57,7 @@ use the API functions above.
    BayesianHMSM
 
 
-**Models** of the kinetics or stationary properties of the data. 
+**Models** of the kinetics or stationary properties of the data.
 If you are not an expert user, use the API functions above.
 
 .. autosummary::
@@ -85,14 +85,14 @@ from msmtools.analysis.dense.pcca import PCCA
 
 #####################################################
 # Estimators and models
+from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
+
 from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
-from .estimators import OOMReweightedMSM
-from .estimators import AugmentedMarkovModel 
+from .estimators import AugmentedMarkovModel, OOMReweightedMSM
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 
-from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
 
 # high-level api
 from .api import *

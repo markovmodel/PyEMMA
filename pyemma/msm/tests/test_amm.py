@@ -31,10 +31,10 @@ import warnings
 import six
 from msmtools.generation import generate_traj
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_augmented_markov_model, AugmentedMarkovModel
+from pyemma.msm import estimate_augmented_markov_model
+from pyemma.msm.estimators import AugmentedMarkovModel
 from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
 from pyemma.util.numeric import assert_allclose
-
 
 
 class TestAMMSimple(unittest.TestCase):

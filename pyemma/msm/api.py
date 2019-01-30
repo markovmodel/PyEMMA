@@ -21,15 +21,16 @@ r"""User API for the pyemma.msm package
 """
 
 from __future__ import absolute_import
-from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
-from .estimators import BayesianMSM as _Bayes_MSM
-from .estimators import BayesianHMSM as _Bayes_HMSM
-from .estimators import MaximumLikelihoodMSM as _ML_MSM
-from .estimators import AugmentedMarkovModel as _ML_AMM
-from .estimators import OOMReweightedMSM as _OOM_MSM
-from .estimators import ImpliedTimescales as _ImpliedTimescales
+from .estimators import (MaximumLikelihoodHMSM as _ML_HMSM,
+                         BayesianMSM as _Bayes_MSM,
+                         BayesianHMSM as _Bayes_HMSM,
+                         MaximumLikelihoodMSM as _ML_MSM,
+                         AugmentedMarkovModel as _ML_AMM,
+                         OOMReweightedMSM as _OOM_MSM,
+                         ImpliedTimescales as _ImpliedTimescales
+                         )
 
-from .models import MSM
+
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
@@ -315,6 +316,7 @@ def markov_model(P, dt_model='1 step'):
 
 
     """
+    from .models import MSM
     return MSM(P, dt_model=dt_model)
 
 
