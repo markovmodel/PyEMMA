@@ -36,11 +36,6 @@ from mdtraj.utils.validation import cast_indices
 
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
-# newer versions do not need multiplying n_frames with stride for certain formats.
-from distutils.version import LooseVersion
-_stride_handling = LooseVersion(version.version) > LooseVersion('1.9.1')
-del LooseVersion
-
 
 def _cache_mdtraj_topology(args):
     import hashlib
@@ -224,9 +219,7 @@ class iterload(object):
                 n_frames = None  # read all frames
             else:
                 n_frames = self._chunksize
-                # mdtraj > 1.9.1 handles stride for dcd, xtc and trr the right way.
-                if (not _stride_handling and self._extension != '.dcd') \
-                        or (_stride_handling and self._extension not in ('.xtc', '.trr', '.dcd')):
+                if self._extension not in ('.dcd', '.xtc', '.trr'):
                     n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
