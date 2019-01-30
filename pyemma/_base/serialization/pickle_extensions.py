@@ -41,20 +41,19 @@ def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
 def _check_blosc_avail():
     import tempfile, h5py
     blosc_opts = _blosc_opts()
-    with tempfile.NamedTemporaryFile() as ntf:
-        with h5py.File(ntf.name) as h5f:
-            try:
-                h5f.create_dataset('test', shape=(1,1), **blosc_opts)
-            except ValueError as ve:
-                if 'Unknown compression filter' in str(ve):
-                    import warnings
-                    warnings.warn('BLOSC compression filter unavailable. '
-                                  'Your resulting file may be large and not optimal to process.')
-                    return {}
-                else:  # unknown exception
-                    raise
-            else:
-                return blosc_opts
+    with tempfile.NamedTemporaryFile() as ntf, h5py.File(ntf) as h5f:
+        try:
+            h5f.create_dataset('test', shape=(1,1), **blosc_opts)
+        except ValueError as ve:
+            if 'Unknown compression filter' in str(ve):
+                import warnings
+                warnings.warn('BLOSC compression filter unavailable. '
+                              'Your resulting file may be large and not optimal to process.')
+                return {}
+            else:  # unknown exception
+                raise
+        else:
+            return blosc_opts
 
 
 # we cache this during runtime
