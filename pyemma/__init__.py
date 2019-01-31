@@ -100,5 +100,6 @@ def _version_check(current, testing=False):
             logging.getLogger('pyemma').debug("error during version check", exc_info=True)
     return threading.Thread(target=_impl)
 
+
 # start check in background
 _version_check(version).start()

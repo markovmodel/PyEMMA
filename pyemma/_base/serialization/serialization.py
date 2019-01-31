@@ -256,7 +256,7 @@ class SerializableMixIn(object):
 
     @classmethod
     def load(cls, file_name, model_name='default'):
-        """ loads a previously saved object of this class from a file.
+        """ Loads a previously saved PyEMMA object from disk.
 
         Parameters
         ----------
@@ -264,7 +264,7 @@ class SerializableMixIn(object):
             The file like object tried to be read for a serialized object.
         model_name: str, default='default'
             if multiple models are contained in the file, these can be accessed by
-            their name. Use func:`pyemma.list_models` to get a representation of all stored models.
+            their name. Use :func:`pyemma.list_models` to get a representation of all stored models.
 
         Returns
         -------
@@ -477,4 +477,5 @@ class SerializableMixIn(object):
 
     def __init_subclass__(cls, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
-        SerializableMixIn._get_version(cls)
+        SerializableMixIn._get_version(cls, require=True)
+
