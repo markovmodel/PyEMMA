@@ -41,9 +41,9 @@ def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
 def _check_blosc_avail():
     import tempfile, h5py
     blosc_opts = _blosc_opts()
-    f = tempfile.mkstemp()
+    fid, name = tempfile.mkstemp()
     try:
-        with h5py.File(f) as h5f:
+        with h5py.File(name) as h5f:
             try:
                 h5f.create_dataset('test', shape=(1,1), **blosc_opts)
             except ValueError as ve:
@@ -59,7 +59,7 @@ def _check_blosc_avail():
     finally:
         try:
             import os
-            os.unlink(f)
+            os.unlink(name)
         except:
             pass
 
