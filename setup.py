@@ -365,7 +365,7 @@ metadata = dict(
         'decorator>=4.0.0',
         'h5py>=2.7.1',
         'matplotlib',
-        'mdtraj>=1.8.0',
+        'mdtraj>=1.9.2',
         'msmtools>=1.2',
         'numpy>=1.8.0',
         'pathos',
