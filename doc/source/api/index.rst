@@ -21,3 +21,10 @@ Plotting functions for aiding in the scientific analysis are found here:
    :maxdepth: 2
 
    index_plots
+
+For saving and loading in PyEMMA take a brief look here:
+
+.. toctree::
+   :maxdepth: 1
+
+   index_serialization
