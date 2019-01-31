@@ -21,7 +21,7 @@
 #define THERMOTOOLS_UTIL
 
 /***************************************************************************************************
-*   C99 compatibility for macros INFINITY and NAN 
+*   C99 compatibility for macros INFINITY and NAN
 ***************************************************************************************************/
 
 #include <math.h>
@@ -44,37 +44,37 @@
 *   sorting
 ***************************************************************************************************/
 
-extern void _mixed_sort(double *array, int L, int R);
+void _mixed_sort(double *array, int L, int R);
 
 /***************************************************************************************************
 *   direct summation schemes
 ***************************************************************************************************/
 
-extern void _kahan_summation_step(
+void _kahan_summation_step(
     double new_value, double *sum, double *err, double *loc, double *tmp);
-extern double _kahan_summation(double *array, int size);
+double _kahan_summation(double *array, int size);
 
 /***************************************************************************************************
 *   logspace summation schemes
 ***************************************************************************************************/
 
-extern double _logsumexp(double *array, int size, double array_max);
-extern double _logsumexp_kahan_inplace(double *array, int size, double array_max);
-extern double _logsumexp_sort_inplace(double *array, int size);
-extern double _logsumexp_sort_kahan_inplace(double *array, int size);
-extern double _logsumexp_pair(double a, double b);
+double _logsumexp(double *array, int size, double array_max);
+double _logsumexp_kahan_inplace(double *array, int size, double array_max);
+double _logsumexp_sort_inplace(double *array, int size);
+double _logsumexp_sort_kahan_inplace(double *array, int size);
+double _logsumexp_pair(double a, double b);
 
 /***************************************************************************************************
 *   counting states and transitions
 ***************************************************************************************************/
 
-extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points);
+int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points);
 
 /***************************************************************************************************
 *   bias calculation tools
 ***************************************************************************************************/
 
-extern void _get_umbrella_bias(
+void _get_umbrella_bias(
     double *traj, double *umbrella_centers, double *force_constants,
     double *width, double *half_width,
     int nsamples, int nthermo, int ndim, double *bias);
@@ -83,6 +83,6 @@ extern void _get_umbrella_bias(
 *   transition matrix renormalization
 ***************************************************************************************************/
 
-extern void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M);
+void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M);
 
 #endif

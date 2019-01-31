@@ -111,7 +111,7 @@ class H5File(object):
     def model(self):
         # restore pickled object.
         g = self._current_model_group
-        inp = g['model'].value
+        inp = g['model'][()]
         from .pickle_extensions import HDF5PersistentUnpickler
         from io import BytesIO
         file = BytesIO(inp)

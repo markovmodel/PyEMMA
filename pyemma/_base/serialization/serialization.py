@@ -19,6 +19,7 @@ import logging
 
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.util import _importable_name
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 
 logger = logging.getLogger(__name__)
 _debug = False
@@ -178,12 +179,16 @@ class SerializableMixIn(object):
         return res
 
     @staticmethod
+    def _get_private_field(cls, name, default=None):
+        cls_str = cls.__name__
+        if cls_str.startswith('_'):
+            cls_str = cls_str[1:]
+        attr = '_{n}__{attr}'.format(n=cls_str, attr=name)
+        return getattr(cls, attr, default)
+
+    @staticmethod
     def _get_version(cls, require=True):
-        name = cls.__name__
-        if name.startswith('_'):
-            name = name[1:]
-        attr = '_%s__serialize_version' % name
-        version = getattr(cls, attr, None)
+        version = SerializableMixIn._get_private_field(cls, 'serialize_version', None)
         if require:
             if issubclass(cls, SerializableMixIn):
                 if version is None:
@@ -195,21 +200,13 @@ class SerializableMixIn(object):
 
     @staticmethod
     def _get_serialize_fields(cls):
-        name = cls.__name__
-        if name.startswith('_'):
-            name = name[1:]
-        attr = '_%s__serialize_fields' % name
-        fields = getattr(cls, attr, ())
+        fields = SerializableMixIn._get_private_field(cls, 'serialize_fields', ())
         assert all(isinstance(f, str) for f in fields)
         return fields
 
     @staticmethod
     def _get_interpolation_map(cls):
-        name = cls.__name__
-        if name.startswith('_'):
-            name = name[1:]
-        attr = '_%s__serialize_modifications_map' % name
-        map = getattr(cls, attr, {})
+        map = SerializableMixIn._get_private_field(cls, 'serialize_modifications_map', {})
         return map
 
     def save(self, file_name, model_name='default', overwrite=False, save_streaming_chain=False):
@@ -292,7 +289,8 @@ class SerializableMixIn(object):
         if (value and
                 hasattr(self, 'data_producer') and self.data_producer and self.data_producer is not self):
             # ensure the data_producer is serializable
-            if not hasattr(self.data_producer.__class__, '_serialize_version'):
+            if (SerializableMixIn._get_private_field(self.data_producer.__class__, 'serialize_version',
+                                                     NotImplemented) == NotImplemented):
                 raise RuntimeError('class in chain is not serializable: {}'.format(self.data_producer.__class__))
             self.data_producer._save_data_producer = value
 
@@ -341,9 +339,9 @@ class SerializableMixIn(object):
             logger.debug("interpolated state: %s", state)
 
     @staticmethod
-    def  _get_version_for_class_from_state(state, klass):
+    def _get_version_for_class_from_state(state, klass):
         """ retrieves the version of the current klass from the state mapping from old locations to new ones. """
-        # klass may have renamed, so we have to look this up in the class rename registry.
+        # klass may have been renamed, so we have to look this up in the class rename registry.
         names = [_importable_name(klass)]
         # lookup old names, handled by current klass.
         from .util import class_rename_registry
@@ -355,15 +353,13 @@ class SerializableMixIn(object):
                 continue
         # if we did not find a suitable version number return infinity.
         if _debug:
-            logger.debug('unable to obtain a _serialize_version for class %s', klass)
+            logger.debug('unable to obtain a __serialize_version for class %s', klass)
         return float('inf')
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass.__serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s", klass)
-        # handle field renames, deletion, transformations etc.
-        SerializableMixIn.__interpolate(state, klass)
 
         for field in SerializableMixIn._get_serialize_fields(klass):
             if field in state:
@@ -440,8 +436,12 @@ class SerializableMixIn(object):
             # we need to set the model prior extra fields from _serializable_fields, because the model often contains
             # the details needed in the parent estimator.
             if 'model' in state:
-                self._model = state['model']
+                self._model = state.pop('model')
 
+            # handle field renames, deletion, transformations etc.
+            to_inspect = self._get_classes_to_inspect()
+            for klass in to_inspect:
+                self.__interpolate(state, klass)
             from pyemma._base.estimator import Estimator
             if isinstance(self, Estimator):
                 Estimator.__my_setstate__(self, state)
@@ -450,7 +450,7 @@ class SerializableMixIn(object):
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
 
-            for klass in self._get_classes_to_inspect():
+            for klass in to_inspect:
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
             if hasattr(self, 'data_producer') and 'data_producer' in state:
@@ -467,13 +467,12 @@ class SerializableMixIn(object):
         """ gets classes self derives from which
          1. have custom fields: __serialize_fields
          2. provide a modifications map
-         """
-        res = list(filter(lambda c:
-                          SerializableMixIn._get_version(c, require=False) or
-                          (SerializableMixIn._get_serialize_fields(c)
-                            or SerializableMixIn._get_interpolation_map(c)),
-                          self.__class__.__mro__))
-        return res
+        """
+        return tuple(filter(lambda c:
+                      SerializableMixIn._get_version(c, require=False) or
+                      (SerializableMixIn._get_serialize_fields(c) or
+                       SerializableMixIn._get_interpolation_map(c)),
+                      self.__class__.__mro__))
 
     def __init_subclass__(cls, *args, **kwargs):
         # ensure, that if this is subclasses, we have a proper class version.
