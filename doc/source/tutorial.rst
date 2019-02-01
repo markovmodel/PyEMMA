@@ -3,9 +3,9 @@ Learn PyEMMA
 ============
 
 We provide two major sources of learning materials to master PyEMMA, our collection of Jupyter notebook tutorials and
-videos of talks given at our annually workshop.
+videos of talks given at our annual workshop.
 
-The notebook are a collection of complete application walk throughs capturing the most important aspects in building and
+The notebooks are a collection of complete application walk-throughs capturing the most important aspects of building and
 analyzing a Markov state model.
 
 
@@ -20,16 +20,15 @@ By means of three different application examples, these notebooks give an overvi
    * Time-lagged independent component analysis (TICA)
    * Clustering
    * Markov state model (MSM) estimation and validation
-   * Computing Metastable states and structures, coarse-grained MSMs
+   * Computing metastable states and structures, coarse-grained MSMs
    * Hidden Markov Models (HMM)
    * Transition Path Theory (TPT)
 
-These tutorials are part of a LiveCOMS journal article and are up to date with the state of the
-released version of PyEMMA.
+These tutorials are part of a LiveCOMS journal article and are up to date with the current PyEMMA release.
 
-You can find the article right `here <https://www.livecomsjournal.org/article/5965-introduction-to-markov-state-modeling-with-the-pyemma-software-article-v1-0>`_.
+You can find the article `here <https://www.livecomsjournal.org/article/5965-introduction-to-markov-state-modeling-with-the-pyemma-software-article-v1-0>`_.
 
-If you should find a mistake or have suggestions improving parts of the tutorial, you can file issues and pull requests
+If you find a mistake or have suggestions for improving parts of the tutorial, you can file issues and pull requests
 for the contents of both the article and the jupyter notebooks `here <https://github.com/markovmodel/PyEMMA_tutorials>`_.
 
 .. toctree::
@@ -54,12 +53,12 @@ Workshop video tutorials
 
 On our Youtube channel you will find lectures and talks about:
 
-  * Markov model state theory
+  * Markov state model theory
   * Hidden Markov state models
   * Transition path theory
   * Enhanced sampling
-  * dealing with multi-ensemble molecular dynamics simulations in PyEMMA
-  * useful hints about practical issues...
+  * Dealing with multi-ensemble molecular dynamics simulations in PyEMMA
+  * Useful hints about practical issues...
 
 2019 Workshop
 ^^^^^^^^^^^^^
