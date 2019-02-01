@@ -1,7 +1,7 @@
 """
 Interfacing functions and classing to Serialization.
 
-Derive from SerializableMixIn, to make your class serializable. If you need to patch an old version of your class,
+Derive from SerializableMixIn to make your class serializable. If you need to patch an old version of your class,
 you need the Modifications class.
 
 """
