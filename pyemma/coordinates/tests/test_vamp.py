@@ -260,8 +260,8 @@ class TestVAMPModel(unittest.TestCase):
         assert error < 0.05
 
     def test_CK_covariances_against_MSM(self):
-        obs = np.eye(3) # observe every state
-        sta = np.eye(3) # restrict p0 to every state
+        obs = np.eye(3)  # observe every state
+        sta = np.eye(3)  # restrict p0 to every state
         cktest = self.vamp.cktest(observables=obs, statistics=sta, mlags=4, show_progress=True)
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
@@ -286,7 +286,6 @@ class TestVAMPModel(unittest.TestCase):
         s1 = self.vamp.score(score_method='VAMP1')
         np.testing.assert_allclose(s1, Nnuc)
 
-        # TODO: check why this is not equal
         sE = self.vamp.score(score_method='VAMPE')
         np.testing.assert_allclose(sE, NFro)  # see paper appendix H.2
 
@@ -323,7 +322,7 @@ class TestVAMPModel(unittest.TestCase):
 class TestVAMPWithEdgeCaseData(unittest.TestCase):
     def test_1D_data(self):
         x = np.random.randn(10, 1)
-        vamp = pyemma_api_vamp([x], 1)  # just test that this doesn't raise
+        vamp = pyemma_api_vamp([x], 1, right=True)  # just test that this doesn't raise
         # Doing VAMP with 1-D data is just centering and normalizing the data.
         assert_allclose_ignore_phase(vamp.get_output()[0], (x - np.mean(x[1:, 0])) / np.std(x[1:, 0]))
 

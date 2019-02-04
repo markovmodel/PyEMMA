@@ -294,7 +294,8 @@ class VAMPModel(Model, SerializableMixIn):
 
         # scale vectors
         if self.scaling is not None:
-            U *= s[np.newaxis, 0:m]
+            U *= s[np.newaxis, 0:m]  # scaled left singular functions induce a kinetic map
+            V *= s[np.newaxis, 0:m]  # scaled right singular functions induce a kinetic map wrt. backward propagator
 
         self._U = U
         self._V = V
@@ -376,7 +377,7 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
     def describe(self):
         return "[VAMP, lag = %i; max. output dim. = %s]" % (self._lag, str(self.dim))
 
-    def __init__(self, lag, dim=None, scaling=None, right=True, epsilon=1e-6,
+    def __init__(self, lag, dim=None, scaling=None, right=False, epsilon=1e-6,
                  stride=1, skip=0, ncov_max=float('inf')):
         r""" Variational approach for Markov processes (VAMP) [1]_.
 

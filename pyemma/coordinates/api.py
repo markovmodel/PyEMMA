@@ -1267,7 +1267,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     return res
 
 
-def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('inf'),
+def vamp(data=None, lag=10, dim=None, scaling=None, right=False, ncov_max=float('inf'),
          stride=1, skip=0, chunksize=None):
     r""" Variational approach for Markov processes (VAMP) [1]_.
 
