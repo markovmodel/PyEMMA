@@ -401,8 +401,9 @@ class VAMP(StreamingEstimationTransformer, SerializableMixIn):
 
               * None: no scaling will be applied, variance of the order parameters is 1
               * 'kinetic map' or 'km': order parameters are scaled by singular value.
-                Only the left singular functions induce a kinetic map.
-                Therefore scaling='km' is only effective if `right` is False.
+                Only the left singular functions induce a kinetic map wrt the
+                conventional forward propagator. The right singular functions induce
+                a kinetic map wrt the backward propagator.
           right : boolean
               Whether to compute the right singular functions.
               If `right==True`, `get_output()` will return the right singular
