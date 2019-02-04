@@ -20,7 +20,7 @@ install:
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
   - conda config --set always_yes true
-  - conda install -q conda-build=3
+  - conda install -q conda-build
 
 build: false # Not a C# project, build stuff at the test step instead.
 
@@ -32,7 +32,7 @@ on_finish:
   # upload test results to AppVeyor
  - ps: |
      $wc = New-Object 'System.Net.WebClient';
-     $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", "C:/Users/appveyor/reports/junit.xml")
+     $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", "C:/Users/appveyor/reports/junit.xml")
 
 after_test:
   - ps: |
