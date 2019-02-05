@@ -17,14 +17,13 @@
 
 from abc import ABCMeta, abstractmethod
 import numpy as np
-import six
 
 from pyemma._base.loggable import Loggable
 from pyemma.coordinates.data._base._in_memory_mixin import InMemoryMixin
 from pyemma.util.types import is_int
 
 
-class Iterable(six.with_metaclass(ABCMeta, InMemoryMixin, Loggable)):
+class Iterable(InMemoryMixin, Loggable, metaclass=ABCMeta):
     _FALLBACK_CHUNKSIZE = 1000
 
     def __init__(self, chunksize=None):

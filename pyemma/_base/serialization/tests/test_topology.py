@@ -20,11 +20,10 @@ import tempfile
 import unittest
 import pkg_resources
 import mdtraj
-import six
 
 from pyemma._base.serialization.h5file import H5File
 
-@unittest.skipIf(six.PY2, 'only py3')
+
 class TestTopology(unittest.TestCase):
     maxDiff = None
 

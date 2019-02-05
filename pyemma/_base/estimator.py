@@ -338,19 +338,16 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         pool = Pool(processes=n_jobs)
         args = list(task_iter)
 
-        import six
         from contextlib import closing
-        opt_args = {}
-        if six.PY3:
-            def error_callback(*args, **kw):
-                if failfast:
-                    # TODO: can we be specific here? eg. obtain the stack of the actual process or is this the master proc?
-                    raise Exception('something failed')
-            opt_args['error_callback'] = error_callback
+
+        def error_callback(*args, **kw):
+            if failfast:
+                # TODO: can we be specific here? eg. obtain the stack of the actual process or is this the master proc?
+                raise Exception('something failed')
 
         with closing(pool), ctx:
             res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
-                                          **opt_args) for a in args]
+                                          error_callback=error_callback) for a in args]
             res = [x.get() for x in res_async]
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator

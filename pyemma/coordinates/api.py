@@ -23,7 +23,6 @@ r"""User-API for the pyemma.coordinates package
 """
 import numpy as _np
 import logging as _logging
-from six import string_types as _string_types
 
 from pyemma.util import types as _types
 # lift this function to the api
@@ -61,6 +60,7 @@ __all__ = ['featurizer',  # IO
            'assign_to_centers',
            ]
 
+_string_types = str
 
 # ==============================================================================
 #

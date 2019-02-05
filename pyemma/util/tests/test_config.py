@@ -19,9 +19,7 @@ Created on 11.06.2015
 
 @author: marscher
 '''
-
-
-from six.moves import configparser
+import configparser
 import os
 import sys
 import unittest

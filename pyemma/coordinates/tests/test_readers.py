@@ -1,5 +1,4 @@
 
-import six
 import unittest
 import tempfile
 import shutil
@@ -51,7 +50,7 @@ class GenerateTestMatrix(type):
         return type.__new__(mcs, name, bases, attr)
 
 
-class TestReaders(six.with_metaclass(GenerateTestMatrix, unittest.TestCase)):
+class TestReaders(unittest.TestCase, metaclass=GenerateTestMatrix):
     """
     trajectory lengths:
         - 5000

@@ -19,13 +19,11 @@
 import tempfile
 import unittest
 
-import six
 
 from pyemma._base.serialization.cli import main
 from pyemma.coordinates import source, tica, cluster_kmeans
 
 
-@unittest.skipIf(six.PY2, 'only py3')
 class TestListModelCLI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
