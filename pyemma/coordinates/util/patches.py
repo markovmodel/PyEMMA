@@ -22,7 +22,6 @@ Created on 13.03.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 from collections import namedtuple
 from itertools import groupby

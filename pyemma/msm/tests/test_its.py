@@ -24,7 +24,6 @@ r"""Unit test for the its method
 
 """
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma import msm

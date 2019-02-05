@@ -23,7 +23,6 @@ r"""This module contains unit tests for the trajectory module
 
 """
 
-from __future__ import absolute_import
 
 import os
 import unittest

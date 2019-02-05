@@ -20,7 +20,6 @@ r"""Unit test for implied timescale test using OOM-based MSM estimation.
 
 """
 
-from __future__ import absolute_import
 import unittest
 
 import numpy as np

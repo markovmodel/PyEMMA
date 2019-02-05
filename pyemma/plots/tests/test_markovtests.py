@@ -22,7 +22,6 @@ Created on 23.03.2016
 @author: marscher
 '''
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
 import pyemma

@@ -20,7 +20,6 @@ Created on 19.01.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 import numpy as np
 from pyemma._base.serialization.serialization import SerializableMixIn

@@ -20,7 +20,6 @@
 @author: paul
 """
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma.coordinates import vamp as pyemma_api_vamp

@@ -3,7 +3,6 @@ Created on 04.01.2016
 
 @author: marscher
 '''
-from __future__ import print_function
 
 import random
 import sys

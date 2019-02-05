@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 import numpy as _np
 from pyemma.coordinates import assign_to_centers as _assign_to_centers
