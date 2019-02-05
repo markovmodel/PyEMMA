@@ -25,16 +25,16 @@ env:
     - PYEMMA_NJOBS=1
     - MACOSX_DEPLOYMENT_TARGET=10.9
   matrix:
-    - CONDA_PY=2.7
     - CONDA_PY=3.5
     - CONDA_PY=3.6
+    - CONDA_PY=3.7
 
 matrix:
-  exclude: # test only 2.7 on osx.
+  exclude: # test only 3.7 on osx.
     - env: CONDA_PY=3.5
       os: osx
-    - os: osx
-      env: CONDA_PY=3.6
+    - env: CONDA_PY=3.6
+      os: osx
 
 before_install:
 - source devtools/ci/travis/install_miniconda.sh
