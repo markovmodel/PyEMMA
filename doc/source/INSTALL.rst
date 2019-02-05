@@ -13,7 +13,7 @@ Anaconda install (Recommended)
 ==============================
 
 We strongly recommend to use the Anaconda scientific python distribution in order to install
-python-based software, including PyEMMA. Python-based software is not trivial to distribute
+Python-based software, including PyEMMA. Python-based software is not trivial to distribute
 and this approach saves you many headaches and problems that frequently arise in other installation
 methods. You are free to use a different approach (see below) if you know how to sort out problems,
 but play at your own risk.

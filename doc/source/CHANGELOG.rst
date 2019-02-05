@@ -4,6 +4,8 @@ Changelog
 2.5.5 (??-??-????)
 ------------------
 
+This version only supports Python 3.
+
 **New features**:
 
 - msm: for Bayesian MSMs we show an optional progress bar for the counting computation. :pr:`1344`
@@ -17,7 +19,7 @@ Changelog
   the count matrix. :pr:`1343`
 - plots: fix vmin, vmax keyword arguments for plot_contour(). :pr:`1376`
 - coordinates: forcefully enable checking of coordinates data streaming for invalid (not initialized) data. :pr:`1384`
-- coordinates: for sake of faster strided MD data reading, we now require a version of MDTraj >= 1.9.2 :pr:`1391` 
+- coordinates: for sake of faster strided MD data reading, we now require a version of MDTraj >= 1.9.2 :pr:`1391`
 - coordinates: VAMP: changed default projection vector from right to left, since only the left singular functions induce
   a kinetic map wrt. the conventional forward propagator, while the right singular functions induce
   a kinetic map wrt. the backward propagator. :pr:`1394`
