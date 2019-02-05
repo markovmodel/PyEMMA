@@ -78,7 +78,6 @@ Low-level functions for estimation and analysis of transition matrices and io ha
 
 
 """
-from __future__ import absolute_import as _
 
 ######################################################
 from msmtools.analysis.dense.pcca import PCCA

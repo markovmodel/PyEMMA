@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 import numpy as _np
 import warnings
 from pyemma.util import types as _types

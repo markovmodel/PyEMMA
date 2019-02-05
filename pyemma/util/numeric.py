@@ -21,7 +21,6 @@ Created on 28.10.2013
 
 @author: marscher
 '''
-from __future__ import absolute_import
 from numpy.testing import assert_allclose as assert_allclose_np
 
 __all__ = ['assert_allclose',

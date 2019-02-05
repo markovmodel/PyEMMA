@@ -16,10 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
-import six
 
 import pyemma
 
@@ -182,9 +180,7 @@ class TestFeaturizer(unittest.TestCase):
         before we destroy the featurizer created in each test, we dump it via
         serialization and restore it to check for equality.
         """
-        import six
-        if six.PY3:
-            check_serialized_equal(self)
+        check_serialized_equal(self)
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
@@ -849,9 +845,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         before we destroy the featurizer created in each test, we dump it via
         serialization and restore it to check for equality.
         """
-        import six
-        if six.PY3:
-            check_serialized_equal(self)
+        check_serialized_equal(self)
 
     def testAddFeaturesWithDuplicates(self):
         """this tests adds multiple features twice (eg. same indices) and
@@ -1163,7 +1157,6 @@ class TestCustomFeature(unittest.TestCase):
 
         assert self.feat.dimension() == self.U.shape[1]
 
-    @unittest.skipIf(six.PY2, 'only py3')
     def test_serializable(self):
         import tempfile
         f = tempfile.mktemp()
