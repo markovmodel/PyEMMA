@@ -341,7 +341,7 @@ class oASIS_Nystroem(object):
     """
 
     def __init__(self, d, C_k, columns):
-        """
+        r"""
         Initializes the oASIS_Nystroem method.
 
         Parameters
@@ -570,7 +570,7 @@ class oASIS_Nystroem(object):
         return np.dot(self._C_k, self._R_k)
 
     def approximate_column(self, i):
-        """ Computes the Nystroem approximation of column :math:`i` of matrix $A \in \mathbb{R}^{n \times n}$.
+        r""" Computes the Nystroem approximation of column :math:`i` of matrix $A \in \mathbb{R}^{n \times n}$.
 
         """
         return np.dot(self._C_k, self._R_k[:, i])
