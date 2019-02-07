@@ -46,7 +46,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
                          'active_features',
                           )
 
-    def __init__(self, topfile, use_cache=True):
+    def __init__(self, topfile, **kwargs):
         """extracts features from MD trajectories.
 
         Parameters
@@ -55,9 +55,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         topfile : str or mdtraj.Topology
            a path to a topology file (pdb etc.) or an mdtraj Topology() object
         use_cache : boolean, default=True
-           cache already loaded topologies, if file contents match.
+           Deprecated, topologies are always cached.
         """
-        self.use_topology_cache = use_cache
         self.topology = None
         self.topologyfile = topfile
         self.active_features = []
@@ -70,8 +69,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
     def topologyfile(self, topfile):
         self._topologyfile = topfile
         if isinstance(topfile, str):
-            self.topology = load_topology_cached(topfile) if self.use_topology_cache \
-                else load_topology_uncached(topfile)
+            self.topology = load_topology_cached(topfile)
             self._topologyfile = topfile
         elif isinstance(topfile, mdtraj.Topology):
             self.topology = topfile

@@ -24,11 +24,12 @@ Created on 13.03.2015
 
 
 from collections import namedtuple
+from functools import lru_cache
 from itertools import groupby
 from operator import itemgetter
 
 import numpy as np
-from mdtraj import Topology, Trajectory, version
+from mdtraj import Topology, Trajectory
 from mdtraj.core.trajectory import _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
@@ -36,32 +37,19 @@ from mdtraj.utils.validation import cast_indices
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
 
-def _cache_mdtraj_topology(args):
-    import hashlib
-    from mdtraj import load_topology as md_load_topology
-    _top_cache = {}
-
-    def wrap(top_file):
-        if isinstance(top_file, Topology):
-            return top_file
-        if isinstance(top_file, Trajectory):
-            return top_file.topology
-        hasher = hashlib.md5()
-        with open(top_file, 'rb') as f:
-            hasher.update(f.read())
-        hash = hasher.hexdigest()
-
-        if hash in _top_cache:
-            top = _top_cache[hash]
-        else:
-            top = md_load_topology(top_file)
-            _top_cache[hash] = top
-        return top
-
-    return wrap
+@lru_cache(maxsize=32)
+def _load(top_file):
+    return load_topology(top_file)
 
 
-load_topology_cached = _cache_mdtraj_topology(load_topology)
+def load_topology_cached(top_file):
+    if isinstance(top_file, str):
+        return _load(top_file)
+    if isinstance(top_file, Topology):
+        return top_file
+    if isinstance(top_file, Trajectory):
+        return top_file.topology
+    raise NotImplementedError()
 
 
 class iterload(object):
