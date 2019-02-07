@@ -30,7 +30,7 @@ from .estimators import (MaximumLikelihoodHMSM as _ML_HMSM,
                          ImpliedTimescales as _ImpliedTimescales
                          )
 
-
+from .models import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
@@ -316,7 +316,6 @@ def markov_model(P, dt_model='1 step'):
 
 
     """
-    from .models import MSM
     return MSM(P, dt_model=dt_model)
 
 
