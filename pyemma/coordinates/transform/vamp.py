@@ -131,7 +131,7 @@ class VAMPModel(Model, SerializableMixIn):
         if dim is None or (isinstance(dim, float) and dim == 1.0):
             return min(rank0, rankt)
         if isinstance(dim, float):
-            return np.count_nonzero(VAMPModel._cumvar(singular_values) >= dim)
+            return np.searchsorted(VAMPModel._cumvar(singular_values), dim) + 1
         else:
             return np.min([rank0, rankt, dim])
 

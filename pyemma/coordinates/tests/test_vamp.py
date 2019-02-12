@@ -237,6 +237,17 @@ class TestVAMPModel(unittest.TestCase):
             np.testing.assert_allclose(np.diag(p), np.diag(r), atol=1E-6)
             np.testing.assert_allclose(np.abs(p), np.abs(r), atol=1E-6)
 
+        cumsum_Tsym = np.cumsum(S[1:] ** 2)
+        cumsum_Tsym /= cumsum_Tsym[-1]
+        np.testing.assert_allclose(self.vamp.cumvar, cumsum_Tsym)
+
+    def test_cumvar_variance_cutoff(self):
+        for d in (0.2, 0.5, 0.8, 0.9, 1.0):
+            self.vamp.dim = d
+            special_cumvar = np.asarray([0] + self.vamp.cumvar.tolist())
+            self.assertLessEqual(d, special_cumvar[self.vamp.dimension()],)
+            self.assertLessEqual(special_cumvar[self.vamp.dimension() - 1], d)
+
     def test_CK_expectation_against_MSM(self):
         obs = np.eye(3) # observe every state
         cktest = self.vamp.cktest(observables=obs, statistics=None, mlags=4)
