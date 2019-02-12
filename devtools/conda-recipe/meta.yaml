@@ -10,12 +10,13 @@ source:
   #git_url: ../../
 
 build:
-  preserve_egg_dir: True
   script_env:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+# workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
+  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
 
 requirements:
   build:
