@@ -171,7 +171,7 @@ class TestConfig(unittest.TestCase):
     def test_mute_progress(self):
         """ switch mute on shall turn off progress bars"""
         from pyemma._base.progress import ProgressReporterMixin
-        import mock
+        from unittest import mock
         rp = ProgressReporterMixin()
 
         self.config_inst.mute = True

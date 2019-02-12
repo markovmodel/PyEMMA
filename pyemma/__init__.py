@@ -44,7 +44,7 @@ def _version_check(current, testing=False):
 
     Can be disabled by setting config.check_version = False.
 
-    >>> from mock import patch
+    >>> from unittest.mock import patch
     >>> import warnings, pyemma
     >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
     ...     warnings.simplefilter('always', UserWarning)
