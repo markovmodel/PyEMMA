@@ -469,7 +469,7 @@ class TestRandomAccessStride(TestCase):
         for ext in savable_formats_mdtra_18:
             traj = create_traj(length=n, dir=self.tmpdir, format=ext)[0]
 
-            from mock import patch
+            from unittest.mock import patch
             # temporarily overwrite the memory cutoff with a smaller value, to trigger the switch to RA stride.
             with patch('pyemma.coordinates.util.patches.iterload.MEMORY_CUTOFF', n_bytes - 1):
                 r = coor.source(traj, top=get_top())

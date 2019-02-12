@@ -311,8 +311,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if logger_available:
         logger = estimators[0].logger
     if progress_reporter is None:
-        from mock import MagicMock
-        # TODO: replace with nullcontext from util once merged
+        from unittest.mock import MagicMock
         ctx = progress_reporter = MagicMock()
         callback = None
     else:

@@ -4,7 +4,7 @@ Changelog
 2.5.5 (??-??-????)
 ------------------
 
-This version only supports Python 3.
+For now all future versions will only support Python 3. :pr:`1395`
 
 **New features**:
 
@@ -23,6 +23,7 @@ This version only supports Python 3.
 - coordinates: VAMP: changed default projection vector from right to left, since only the left singular functions induce
   a kinetic map wrt. the conventional forward propagator, while the right singular functions induce
   a kinetic map wrt. the backward propagator. :pr:`1394`
+- coordinates: VAMP: fixed variance cutoff to really include as many dimensions to meet subspace variance criterion. :pr:`1397`
 
 
 **Contributors**:
