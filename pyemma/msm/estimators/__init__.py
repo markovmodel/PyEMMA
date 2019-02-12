@@ -19,8 +19,8 @@
 __author__ = 'noe'
 
 from .maximum_likelihood_msm import MaximumLikelihoodMSM
-from .maximum_likelihood_msm import OOMReweightedMSM
-from .maximum_likelihood_msm import AugmentedMarkovModel
+from .oom_reweighted_msm import OOMReweightedMSM
+from .augmented_msm import AugmentedMarkovModel
 from .bayesian_msm import BayesianMSM
 from .maximum_likelihood_hmsm import MaximumLikelihoodHMSM
 from .bayesian_hmsm import BayesianHMSM

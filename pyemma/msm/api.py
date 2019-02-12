@@ -57,7 +57,6 @@ __all__ = ['markov_model',
 # =============================================================================
 
 
-# TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
                    errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n',
@@ -118,6 +117,9 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     n_jobs : int, optional
         how many subprocesses to start to estimate the models for each lag time.
+
+    show_progress : bool, default=True
+        whether to show progress of estimation.
 
     mincount_connectivity : float or '1/n'
         minimum number of counts to consider a connection between two states.

@@ -205,7 +205,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # INIT HMM
         from bhmm import init_discrete_hmm
-        from pyemma.msm.estimators import MaximumLikelihoodMSM, OOMReweightedMSM
+        from pyemma.msm.estimators import MaximumLikelihoodMSM
+        from pyemma.msm.estimators import OOMReweightedMSM
         if self.msm_init=='largest-strong':
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
@@ -284,7 +285,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
     @msm_init.setter
     def msm_init(self, value):
-        from pyemma.msm.estimators import MaximumLikelihoodMSM, OOMReweightedMSM
+        from pyemma.msm.estimators import MaximumLikelihoodMSM
+        from pyemma.msm.estimators import OOMReweightedMSM
         if (isinstance(value, (MaximumLikelihoodMSM, OOMReweightedMSM)) and not value._estimated):
             raise ValueError('Given initial msm has not been estimated. Input was {}'.format(value))
         self._msm_init = value
