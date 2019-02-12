@@ -20,14 +20,13 @@ r"""User API for the pyemma.msm package
 
 """
 
-from __future__ import absolute_import
 from .estimators import (MaximumLikelihoodHMSM as _ML_HMSM,
                          BayesianMSM as _Bayes_MSM,
                          BayesianHMSM as _Bayes_HMSM,
                          MaximumLikelihoodMSM as _ML_MSM,
                          AugmentedMarkovModel as _ML_AMM,
                          OOMReweightedMSM as _OOM_MSM,
-                         ImpliedTimescales as _ImpliedTimescales
+                         ImpliedTimescales as _ImpliedTimescales,
                          )
 
 from .models import MSM
@@ -59,7 +58,6 @@ __all__ = ['markov_model',
 # =============================================================================
 
 
-# TODO: show_progress is not documented
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
                    errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n',
@@ -131,6 +129,9 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         If you are only interested in the timescales and its samples,
         you can consider turning this on in order to save memory. This can be
         useful to avoid blowing up memory with BayesianMSM and lots of samples.
+
+    show_progress: bool, default=True
+        show estimation progress or not.
 
     Returns
     -------
