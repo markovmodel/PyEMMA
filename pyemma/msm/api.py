@@ -20,14 +20,13 @@ r"""User API for the pyemma.msm package
 
 """
 
-from .estimators import (MaximumLikelihoodHMSM as _ML_HMSM,
-                         BayesianMSM as _Bayes_MSM,
-                         BayesianHMSM as _Bayes_HMSM,
-                         MaximumLikelihoodMSM as _ML_MSM,
-                         AugmentedMarkovModel as _ML_AMM,
-                         OOMReweightedMSM as _OOM_MSM,
-                         ImpliedTimescales as _ImpliedTimescales,
-                         )
+from .estimators import MaximumLikelihoodHMSM as _ML_HMSM
+from .estimators import BayesianMSM as _Bayes_MSM
+from .estimators import BayesianHMSM as _Bayes_HMSM
+from .estimators import MaximumLikelihoodMSM as _ML_MSM
+from .estimators import AugmentedMarkovModel as _ML_AMM
+from .estimators import OOMReweightedMSM as _OOM_MSM
+from .estimators import ImpliedTimescales as _ImpliedTimescales
 
 from .models import MSM
 from pyemma.util.annotators import shortcut
@@ -119,6 +118,9 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     n_jobs : int, optional
         how many subprocesses to start to estimate the models for each lag time.
 
+    show_progress : bool, default=True
+        whether to show progress of estimation.
+
     mincount_connectivity : float or '1/n'
         minimum number of counts to consider a connection between two states.
         Counts lower than that will count zero in the connectivity check and
@@ -129,9 +131,6 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         If you are only interested in the timescales and its samples,
         you can consider turning this on in order to save memory. This can be
         useful to avoid blowing up memory with BayesianMSM and lots of samples.
-
-    show_progress: bool, default=True
-        show estimation progress or not.
 
     Returns
     -------
