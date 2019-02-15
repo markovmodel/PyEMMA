@@ -30,23 +30,18 @@ from __future__ import print_function, absolute_import
 
 import sys
 import os
-from distutils.log import info
 
 import versioneer
 import warnings
 from io import open
 
-from setup_util import lazy_cythonize, get_pybind_include
+from setup_util import get_pybind_include
 
-try:
-    from setuptools import setup, Extension, find_packages
-except ImportError as ie:
-    print("PyEMMA requires setuptools. Please install it with conda or pip.")
-    sys.exit(1)
+from setuptools import setup, Extension, find_packages
 
-#if sys.version_info[0] < 3:
-#    print('PyEMMA requires Python3k')
-#    sys.exit(2)
+if sys.version_info[0] < 3:
+    print('PyEMMA requires Python3k')
+    sys.exit(2)
 
 
 DOCLINES = __doc__.split("\n")
@@ -80,31 +75,8 @@ except ImportError as ie:
 # Extensions
 ###############################################################################
 def extensions():
-    """How do we handle cython:
-    1. when on git, require cython during setup time (do not distribute
-    generated .c files via git)
-     a) cython present -> fine
-     b) no cython present -> install it on the fly. Extensions have to have .pyx suffix
-    This is solved via a lazy evaluation of the extension list. This is needed,
-    because build_ext is being called before cython will be available.
-    https://bitbucket.org/pypa/setuptools/issue/288/cannot-specify-cython-under-setup_requires
-
-    2. src dist install (have pre-converted c files and pyx files)
-     a) cython present -> fine
-     b) no cython -> use .c files
-    """
-    USE_CYTHON = False
-    try:
-        from Cython.Build import cythonize
-        USE_CYTHON = True
-    except ImportError:
-        warnings.warn('Cython not found. Using pre cythonized files.')
-
-
+    from Cython.Build import cythonize
     import mdtraj
-    # Note, that we add numpy include to every extension after declaration.
-    from numpy import get_include as _np_inc
-    np_inc = _np_inc()
 
     pybind_inc = get_pybind_include()
 
@@ -136,7 +108,7 @@ def extensions():
     eig_qr_module = \
         Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
                   sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
-                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc],
+                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/'],
                   extra_compile_args=['-std=c99'] + common_cflags)
 
     orderedset = \
@@ -224,18 +196,13 @@ def extensions():
              ]
     exts += exts_thermo
 
+    # Note, that we add numpy include to every extension after declaration.
+    from numpy import get_include as _np_inc
+    np_inc = _np_inc()
     for e in exts:
         e.include_dirs.append(np_inc)
 
-    if not USE_CYTHON:
-        # replace pyx files by their pre generated c code.
-        for e in exts:
-            new_src = []
-            for s in e.sources:
-                new_src.append(s.replace('.pyx', '.c'))
-            e.sources = new_src
-    else:
-        exts = cythonize(exts, language_level=sys.version_info[0])
+    exts = cythonize(exts, language_level=sys.version_info[0])
 
     return exts
 
@@ -399,19 +366,15 @@ else:
                                   ]
 
     metadata['package_data'] = {
-                                'pyemma': ['pyemma.cfg', 'logging.yml'],
-                                'pyemma.coordinates.tests': ['data/*'],
-                                'pyemma.msm.tests': ['data/*'],
-                                'pyemma.datasets': ['*.npz'],
-                                'pyemma.util.tests': ['data/*'],
-                                }
+        'pyemma': ['pyemma.cfg', 'logging.yml'],
+        'pyemma.coordinates.tests': ['data/*'],
+        'pyemma.msm.tests': ['data/*'],
+        'pyemma.datasets': ['*.npz'],
+        'pyemma.util.tests': ['data/*'],
+    }
 
-    # when on git, we require cython
+    # init submodules
     if os.path.exists('.git'):
-        warnings.warn('using git, require cython')
-        metadata['setup_requires'] += ['cython>=0.22']
-
-        # init submodules
         import subprocess
         modules = []
         cmd = "git submodule update --init {mod}"
