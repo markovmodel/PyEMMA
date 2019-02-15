@@ -18,7 +18,8 @@ ALLSPHINXOPTS   = -d $(BUILD_DIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) so
 
 # ipython notebook index file
 NBCONVERT_CONFIG = $(realpath jupyter_nbconvert_config.py)
-NBCONVERT_CMD = jupyter nbconvert $(nbflags) --config $(NBCONVERT_CONFIG)
+NBCONVERT_OUTPUT = source/generated
+NBCONVERT_CMD = jupyter nbconvert --output-dir=$(NBCONVERT_OUTPUT) $(nbflags) --config $(NBCONVERT_CONFIG)
 
 .PHONY: help clean html ipython-rst
 

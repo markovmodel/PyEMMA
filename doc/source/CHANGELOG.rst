@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.5.5 (??-??-????)
+2.5.5 (13-02-2019)
 ------------------
 
 For now all future versions will only support Python 3. :pr:`1395`
@@ -30,6 +30,8 @@ For now all future versions will only support Python 3. :pr:`1395`
 
 - :user:`marscher`
 - :user:`fabian-paul`
+- :user:`brookehus`
+- :user:`thempel`
 
 
 2.5.4 (07-20-2018)

@@ -13,13 +13,13 @@ with open('source/ipython.rst') as fh:
 
 notebooks_paths = []
 # legacy tutorials
-for root, dirs, files in os.walk('../pyemma-ipython'):
+for root, dirs, files in os.walk('./pyemma-ipython'):
     for f in files:
         if f in _notebooks:
             notebooks_paths.append(os.path.join(root, f))
 
 # live coms tutorials.
-tutorial_nbs =  sorted(glob('tutorials/notebooks/*.ipynb'))
+tutorial_nbs = sorted(glob('tutorials/notebooks/*.ipynb'))
 assert tutorial_nbs
 
 notebooks_paths += tutorial_nbs

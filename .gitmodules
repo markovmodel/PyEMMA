@@ -1,5 +1,5 @@
 [submodule "ipython"]
-	path = pyemma-ipython
+	path = doc/pyemma-ipython
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
 
 [submodule "doc/tutorials"]
