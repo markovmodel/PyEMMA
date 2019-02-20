@@ -26,7 +26,7 @@ If you want to use Miniconda on Linux or OSX, you can run this script to downloa
 After the script finishes, you have a miniconda installation and inside of this a 'pyemma' environment.
 You need to activate the new environment by invoking::
 
-   source activate pyemma
+   conda activate pyemma
 
 in order to work with this new environment. An environment encapsulates all software used by PyEMMA and is independent
 of other things. Further reading `here <https://conda.io/docs/user-guide/concepts.html#conda-environments>`_.
