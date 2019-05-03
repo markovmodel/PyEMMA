@@ -33,11 +33,11 @@ matrix:
 
 
 before_install:
-- "[ ${PIP_INSTALL} = 'NO' ] && source devtools/ci/travis/install_miniconda.sh"
+- "[ ${PIP_INSTALL} = NO ] && source devtools/ci/travis/install_miniconda.sh"
 
 script:
-- "[ ${PIP_INSTALL} = 'NO' ] && conda build -q devtools/conda-recipe -c conda-forge"
-- "[ ${PIP_INSTALL} = 'YES' ] || pip install . -v"
+- "[ ${PIP_INSTALL} = NO ] && conda build -q devtools/conda-recipe -c conda-forge"
+- "[ ${PIP_INSTALL} = YES ] && pip3 install . -v"
 
 after_script:
 - bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY
