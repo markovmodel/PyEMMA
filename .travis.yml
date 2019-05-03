@@ -1,9 +1,9 @@
-language: python
+language: c
 git:
   submodules: false
   depth: 500
 os:
-# - osx
+ - osx
  - linux
 
 sudo: false
@@ -19,7 +19,7 @@ env:
   matrix:
     #- CONDA_PY=3.5
     #- CONDA_PY=3.6
-    - PYTHON=3.7 CONDA_PY=3.7
+    - CONDA_PY=3.7
 
 matrix:
   exclude:  # test only 3.7 on osx.
@@ -35,15 +35,13 @@ matrix:
 before_install:
 - if [[ ${CONDA_BUILD} = YES ]]; then
     source devtools/ci/travis/install_miniconda.sh;
-  else
-    pip3 install --upgrade pip;
   fi
 
 script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
       conda build -q devtools/conda-recipe -c conda-forge;
     else
-      pip3 install . -v;
+      bash devtools/ci/travis/pip_install.sh
     fi
 
 after_script:
