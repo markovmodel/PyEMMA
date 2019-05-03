@@ -34,7 +34,7 @@ matrix:
 
 before_install:
 - if [[ ${CONDA_BUILD} = YES ]]; then
-    source devtools/ci/travis/install_miniconda.sh; fi
+    source devtools/ci/travis/install_miniconda.sh;
   else
     pip3 install --upgrade pip;
   fi
