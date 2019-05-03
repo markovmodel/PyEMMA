@@ -15,7 +15,7 @@ env:
     - OMP_NUM_THREADS=2
     - PYEMMA_NJOBS=1
     - MACOSX_DEPLOYMENT_TARGET=10.9
-    - PIP_INSTALL=NO
+    - CONDA_BUILD=YES
   matrix:
     - CONDA_PY=3.5
     - CONDA_PY=3.6
@@ -28,16 +28,16 @@ matrix:
     - env: CONDA_PY=3.6
       os: osx
   include:
-    - env: CONDA_PY=3.7 PIP_INSTALL=YES
+    - env: CONDA_PY=3.7 CONDA_BUILD=YES
       os: linux
 
 
 before_install:
-- "[ ${PIP_INSTALL} = NO ] && source devtools/ci/travis/install_miniconda.sh"
+- "[ ${CONDA_BUILD} = YES ] || source devtools/ci/travis/install_miniconda.sh"
 
 script:
-- "[ ${PIP_INSTALL} = NO ] && conda build -q devtools/conda-recipe -c conda-forge"
-- "[ ${PIP_INSTALL} = YES ] && pip3 install . -v"
+- "[ ${CONDA_BUILD} = YES ] || conda build -q devtools/conda-recipe -c conda-forge"
+- "[ ${CONDA_BUILD} = NO ] || pip3 install . -v"
 
 after_script:
-- bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY
+- "[ ${CONDA_BUILD} = YES ] || bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY"
