@@ -38,7 +38,7 @@ before_install:
 
 script:
   - "[ ${CONDA_BUILD} = YES ] && conda build -q devtools/conda-recipe -c conda-forge || return"
-- "[ ${CONDA_BUILD} = NO ] && pip3 install . -v || return"
+  - "[ ${CONDA_BUILD} = NO ] && pip3 install . -v || return"
 
 after_script:
 - "[ ${CONDA_BUILD} = YES ] && bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY || return"
