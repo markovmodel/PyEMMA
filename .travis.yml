@@ -2,9 +2,9 @@ language: c
 git:
   submodules: false
   depth: 500
-os:
- - osx
- - linux
+#os:
+# - osx
+# - linux
 
 sudo: false
 
@@ -17,8 +17,8 @@ env:
     - MACOSX_DEPLOYMENT_TARGET=10.9
     - CONDA_BUILD=YES
   matrix:
-    - CONDA_PY=3.5
-    - CONDA_PY=3.6
+    #- CONDA_PY=3.5
+    #- CONDA_PY=3.6
     - CONDA_PY=3.7
 
 matrix:
@@ -36,14 +36,14 @@ before_install:
 - if [[ ${CONDA_BUILD} = YES ]]; then
     source devtools/ci/travis/install_miniconda.sh;
   else
-    pip3 install --upgrade pip;
+    pip install --upgrade pip;
   fi
 
 script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
       conda build -q devtools/conda-recipe -c conda-forge;
     else
-      pip3 install . -v;
+      pip install . -v;
     fi
 
 after_script:
