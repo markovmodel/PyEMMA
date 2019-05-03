@@ -34,16 +34,16 @@ matrix:
 
 before_install:
 - if [[ ${CONDA_BUILD} = YES ]]; then
-     source devtools/ci/travis/install_miniconda.sh; fi
+    source devtools/ci/travis/install_miniconda.sh; fi
   else
-     pip3 install --upgrade pip;
+    pip3 install --upgrade pip;
   fi
 
 script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
-       conda build -q devtools/conda-recipe -c conda-forge;
+      conda build -q devtools/conda-recipe -c conda-forge;
     else
-       pip3 install . -v;
+      pip3 install . -v;
     fi
 
 after_script:
