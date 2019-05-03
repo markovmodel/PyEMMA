@@ -23,8 +23,7 @@ requirements:
     - ipywidgets
     - sphinx_rtd_theme
     - pip
-    # TODO: pinnig mpl does not help to fix empty plots in 00 notebook
-    - matplotlib <3
+    - matplotlib
 
 build:
   #noarch: generic
