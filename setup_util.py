@@ -199,8 +199,17 @@ class get_pybind_include(object):
                     pass
             return header_src
 
+        def inc_dir_next_to_interpreter():
+            import sys
+            exec_dir = os.path.dirname(os.path.abspath(sys.executable))
+            print('int dir:', exec_dir)
+            pybind_inc = os.path.join(exec_dir, '..', 'include')
+            print('incdir:', exec_dir)
+            return pybind_inc
+
         methods = (recommended(),
                    setuptools_temp_egg(),
+                   inc_dir_next_to_interpreter(),
                    )
         for m in methods:
             if os.path.exists(os.path.join(m, 'pybind11', 'pybind11.h')):

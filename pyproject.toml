@@ -5,6 +5,7 @@ requires = [
  "numpy>=1.10",
  "Cython>=0.22",
  "scipy",
- "mdtraj",
+ #"mdtraj",
+ "git+ssh://git@github.com/mdtraj/mdtraj.git@master#egg=mdtraj-1.9.2",
  "pybind11",
  ]

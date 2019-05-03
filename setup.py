@@ -17,16 +17,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""EMMA: Emma's Markov Model Algorithms
+"""PyEMMA: Emma's Markov Model Algorithms
 
-EMMA is an open source collection of algorithms implemented mostly in
+PyEMMA is an open source collection of algorithms implemented mostly in
 `NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_
 to analyze trajectories generated from any kind of simulation
 (e.g. molecular trajectories) via Markov state models (MSM).
-
 """
-
-from __future__ import print_function, absolute_import
 
 import sys
 import os
@@ -35,9 +32,16 @@ import versioneer
 import warnings
 from io import open
 
-from setup_util import get_pybind_include
+#from pip import __version__ as pip_version
+#if pip_version < '10.1':
+#    raise Exception('pip to old')
 
 from setuptools import setup, Extension, find_packages
+
+from Cython.Build import cythonize
+from pybind11 import get_include as pybind_get_include
+from numpy import get_include as np_get_include
+from mdtraj import capi as mdtraj_capi
 
 if sys.version_info[0] < 3:
     print('PyEMMA requires Python3k')
@@ -64,7 +68,8 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import lazy_cythonize
+from setup_util import lazy_cythonize, get_pybind_include
+
 try:
     from setuptools import setup, Extension, find_packages
 except ImportError as ie:
@@ -75,11 +80,9 @@ except ImportError as ie:
 # Extensions
 ###############################################################################
 def extensions():
-    from Cython.Build import cythonize
-    import mdtraj
-
-    pybind_inc = get_pybind_include()
-
+    pybind_inc = str(get_pybind_include())
+    mdtraj_inc = mdtraj_capi()['include_dir']
+    mdtraj_lib = mdtraj_capi()['lib_dir']
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
     common_cflags = ['-O3', ]
 
@@ -87,13 +90,13 @@ def extensions():
         Extension('pyemma.coordinates.clustering._ext',
                   sources=['pyemma/coordinates/clustering/src/clustering_module.cpp'],
                   include_dirs=[
-                      mdtraj.capi()['include_dir'],
+                      mdtraj_inc,
                       pybind_inc,
                       'pyemma/coordinates/clustering/include',
                   ],
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
-                  library_dirs=[mdtraj.capi()['lib_dir']],
+                  library_dirs=[mdtraj_lib],
                   extra_compile_args=common_cflags)
 
     covar_module = \
@@ -190,15 +193,14 @@ def extensions():
         ext_util]
 
     exts = [clustering_module,
-             covar_module,
-             eig_qr_module,
-             orderedset
-             ]
+            covar_module,
+            eig_qr_module,
+            orderedset
+    ]
     exts += exts_thermo
 
     # Note, that we add numpy include to every extension after declaration.
-    from numpy import get_include as _np_inc
-    np_inc = _np_inc()
+    np_inc = np_get_include()
     for e in exts:
         e.include_dirs.append(np_inc)
 
@@ -209,43 +211,6 @@ def extensions():
 
 def get_cmdclass():
     versioneer_cmds = versioneer.get_cmdclass()
-
-    sdist_class = versioneer_cmds['sdist']
-    class sdist(sdist_class):
-        """ensure cython files are compiled to c, when distributing"""
-
-        def run(self):
-            # only run if .git is present
-            if not os.path.exists('.git'):
-                print("Not on git, can not create source distribution")
-                return
-
-            try:
-                from Cython.Build import cythonize
-                print("cythonizing sources")
-                cythonize(extensions())
-            except ImportError:
-                warnings.warn('sdist cythonize failed')
-            return sdist_class.run(self)
-
-    versioneer_cmds['sdist'] = sdist
-
-    from setuptools.command.test import test as TestCommand
-
-    class PyTest(TestCommand):
-        user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
-
-        def initialize_options(self):
-            TestCommand.initialize_options(self)
-            self.pytest_args = ['pyemma']
-
-        def run_tests(self):
-            # import here, cause outside the eggs aren't loaded
-            import pytest
-            errno = pytest.main(self.pytest_args)
-            sys.exit(errno)
-
-    versioneer_cmds['test'] = PyTest
 
     from setuptools.command.build_ext import build_ext
     # taken from https://github.com/pybind/python_example/blob/master/setup.py
@@ -339,17 +304,16 @@ metadata = dict(
         'psutil>=3.1.1',
         'pyyaml',
         'scipy>=0.11',
-        'thermotools>=0.2.6',
         'tqdm>=4.23',
+    ],
+    dependency_links=[
+        "git+ssh://git@github.com/mdtraj/mdtraj.git@master#egg=mdtraj-1.9.2"
     ],
     zip_safe=False,
     entry_points={
         'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
     }
 )
-
-# this is only metadata and not used by setuptools
-metadata['requires'] = ['numpy', 'scipy']
 
 # not installing?
 if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
@@ -358,13 +322,6 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
                                           'clean'))):
     pass
 else:
-    # setuptools>=2.2 can handle setup_requires
-    metadata['setup_requires'] = ['numpy>=1.7.0',
-                                  'scipy',
-                                  'mdtraj>=1.7.0',
-                                  'pybind11',
-                                  ]
-
     metadata['package_data'] = {
         'pyemma': ['pyemma.cfg', 'logging.yml'],
         'pyemma.coordinates.tests': ['data/*'],
@@ -382,7 +339,7 @@ else:
             subprocess.check_call(cmd.format(mod=m).split(' '))
 
     # only require numpy and extensions in case of building/installing
-    metadata['ext_modules'] = lazy_cythonize(callback=extensions)
+    metadata['ext_modules'] = extensions()#lazy_cythonize(callback=extensions)
     # packages are found if their folder contains an __init__.py,
     metadata['packages'] = find_packages()
 
