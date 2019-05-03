@@ -14,10 +14,9 @@ build:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
-   - PYEMMA_TEST_PEP517
- # script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
 # workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
- # script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
+  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
 
 requirements:
   build:
@@ -27,10 +26,10 @@ requirements:
     - intel-openmp # [osx]
 
   host:
+    - cython
     - intel-openmp # [osx]
     - mdtraj
-    - cython  # [ not os.getenv('PYEMMA_TEST_PEP517', False) ]
-    - numpy  # [ not os.getenv('PYEMMA_TEST_PEP517', False) ]
+    - numpy
     - python
     - scipy
     - setuptools
@@ -64,7 +63,7 @@ test:
     - pytest
     - pytest-cov
     - coverage
-    - pytest-faulthandler
+    - pytest-faulthandler 
     - pytest-xdist
     - scikit-learn
     # https://github.com/Frozenball/pytest-sugar/issues/124
