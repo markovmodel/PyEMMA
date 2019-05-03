@@ -22,23 +22,23 @@ env:
     - CONDA_PY=3.7
 
 matrix:
-  exclude: # test only 3.7 on osx.
+  exclude:  # test only 3.7 on osx.
     - env: CONDA_PY=3.5
       os: osx
     - env: CONDA_PY=3.6
       os: osx
-  include:
-    - env: CONDA_PY=3.7 CONDA_BUILD=YES
+  include:  # test pip install
+    - env: CONDA_PY=3.7 CONDA_BUILD=NO
       os: linux
 
 
 before_install:
-- "[ ${CONDA_BUILD} = YES ] && source devtools/ci/travis/install_miniconda.sh || return"
-- "[ ${CONDA_BUILD} = NO ] && pip3 install --upgrade pip || return"
+- "[ ${CONDA_BUILD} = YES ] && source devtools/ci/travis/install_miniconda.sh || true"
+- "[ ${CONDA_BUILD} = NO ] && pip3 install --upgrade pip || true"
 
 script:
-  - "[ ${CONDA_BUILD} = YES ] && conda build -q devtools/conda-recipe -c conda-forge || return"
-  - "[ ${CONDA_BUILD} = NO ] && pip3 install . -v || return"
+  - "[ ${CONDA_BUILD} = YES ] && conda build -q devtools/conda-recipe -c conda-forge || true"
+  - "[ ${CONDA_BUILD} = NO ] && pip3 install . -v || true"
 
 after_script:
-- "[ ${CONDA_BUILD} = YES ] && bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY || return"
+- "[ ${CONDA_BUILD} = YES ] && bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY || true"
