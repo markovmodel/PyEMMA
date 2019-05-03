@@ -41,7 +41,7 @@ script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
       conda build -q devtools/conda-recipe -c conda-forge;
     else
-      bash devtools/ci/travis/pip_install.sh
+      bash devtools/ci/travis/pip_install.sh;
     fi
 
 after_script:
