@@ -33,12 +33,18 @@ matrix:
 
 
 before_install:
-- "[ ${CONDA_BUILD} = YES ] && source devtools/ci/travis/install_miniconda.sh || true"
-- "[ ${CONDA_BUILD} = NO ] && pip3 install --upgrade pip || true"
+- if [[ ${CONDA_BUILD} = YES ]]; then
+     source devtools/ci/travis/install_miniconda.sh; fi
+  else
+     pip3 install --upgrade pip;
+  fi
 
 script:
-  - "[ ${CONDA_BUILD} = YES ] && conda build -q devtools/conda-recipe -c conda-forge || true"
-  - "[ ${CONDA_BUILD} = NO ] && pip3 install . -v || true"
+  - if [[ ${CONDA_BUILD} = YES ]]; then
+       conda build -q devtools/conda-recipe -c conda-forge;
+    else
+       pip3 install . -v;
+    fi
 
 after_script:
-- "[ ${CONDA_BUILD} = YES ] && bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY || true"
+-  if [[ ${CONDA_BUILD} = YES ]]; then bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY; fi
