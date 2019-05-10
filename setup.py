@@ -32,16 +32,10 @@ import versioneer
 import warnings
 from io import open
 
-#from pip import __version__ as pip_version
-#if pip_version < '10.1':
-#    raise Exception('pip to old')
 
 from setuptools import setup, Extension, find_packages
 
-from Cython.Build import cythonize
-from pybind11 import get_include as pybind_get_include
-from numpy import get_include as np_get_include
-from mdtraj import capi as mdtraj_capi
+
 
 if sys.version_info[0] < 3:
     print('PyEMMA requires Python3k')
@@ -68,7 +62,7 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import lazy_cythonize, get_pybind_include
+from setup_util import get_pybind_include, parse_setuppy_commands
 
 try:
     from setuptools import setup, Extension, find_packages
@@ -80,6 +74,10 @@ except ImportError as ie:
 # Extensions
 ###############################################################################
 def extensions():
+    from Cython.Build import cythonize
+    from pybind11 import get_include as pybind_get_include
+    from numpy import get_include as np_get_include
+    from mdtraj import capi as mdtraj_capi
     pybind_inc = str(get_pybind_include())
     mdtraj_inc = mdtraj_capi()['include_dir']
     mdtraj_lib = mdtraj_capi()['lib_dir']
@@ -287,8 +285,6 @@ metadata = dict(
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     keywords='Markov State Model Algorithms',
-    # install default emma.cfg into package.
-    package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
     tests_require=['pytest'],
     # runtime dependencies
@@ -306,42 +302,25 @@ metadata = dict(
         'scipy>=0.11',
         'tqdm>=4.23',
     ],
-    dependency_links=[
-        "git+ssh://git@github.com/mdtraj/mdtraj.git@master#egg=mdtraj-1.9.2"
-    ],
     zip_safe=False,
     entry_points={
         'console_scripts': ['pyemma_list_models=pyemma._base.serialization.cli:main']
-    }
-)
-
-# not installing?
-if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
-                          sys.argv[1] in ('--help-commands',
-                                          '--version',
-                                          'clean'))):
-    pass
-else:
-    metadata['package_data'] = {
+    },
+    package_data={
         'pyemma': ['pyemma.cfg', 'logging.yml'],
         'pyemma.coordinates.tests': ['data/*'],
         'pyemma.msm.tests': ['data/*'],
         'pyemma.datasets': ['*.npz'],
         'pyemma.util.tests': ['data/*'],
-    }
-
-    # init submodules
-    if os.path.exists('.git'):
-        import subprocess
-        modules = []
-        cmd = "git submodule update --init {mod}"
-        for m in modules:
-            subprocess.check_call(cmd.format(mod=m).split(' '))
-
-    # only require numpy and extensions in case of building/installing
-    metadata['ext_modules'] = extensions()#lazy_cythonize(callback=extensions)
+    },
     # packages are found if their folder contains an __init__.py,
-    metadata['packages'] = find_packages()
+    packages=find_packages(),
+)
+
 
 if __name__ == '__main__':
+    if parse_setuppy_commands():
+        # only require numpy and extensions in case of building/installing
+        metadata['ext_modules'] = extensions()
+
     setup(**metadata)

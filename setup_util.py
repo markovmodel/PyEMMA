@@ -23,7 +23,7 @@ import tempfile
 import os
 import sys
 import shutil
-from distutils.ccompiler import new_compiler
+import warnings
 import setuptools
 import contextlib
 
@@ -141,20 +141,6 @@ def cpp_flag(compiler):
                            'is needed!'.format(compiler))
 
 
-class lazy_cythonize(list):
-    """evaluates extension list lazily.
-    pattern taken from http://tinyurl.com/qb8478q"""
-    def __init__(self, callback):
-        self._list, self.callback = None, callback
-    def c_list(self):
-        if self._list is None: self._list = self.callback()
-        return self._list
-    def __iter__(self):
-        for e in self.c_list(): yield e
-    def __getitem__(self, ii): return self.c_list()[ii]
-    def __len__(self): return len(self.c_list())
-
-
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
 
@@ -162,14 +148,11 @@ class get_pybind_include(object):
     until it is actually installed, so that the ``get_include()``
     method can be invoked. """
 
-    def __init__(self, user=False):
-        self.user = user
-
     def search_pybind11_headers(self):
         import pybind11
 
-        def recommended():
-            return pybind11.get_include(self.user)
+        def recommended(user):
+            return pybind11.get_include(user)
 
         def setuptools_temp_egg():
             # If users of setuptools drag in pybind11 only as a setup_require(ment), the pkg will be placed
@@ -207,7 +190,8 @@ class get_pybind_include(object):
             print('incdir:', exec_dir)
             return pybind_inc
 
-        methods = (recommended(),
+        methods = (recommended(user=False),
+                   recommended(user=True),
                    setuptools_temp_egg(),
                    inc_dir_next_to_interpreter(),
                    )
@@ -221,3 +205,63 @@ class get_pybind_include(object):
         if not result:
             raise RuntimeError('pybind11 headers not found')
         return result
+
+
+def parse_setuppy_commands():
+    """Check the commands and respond appropriately.
+    Return a boolean value for whether or not to run the build or not (avoid
+    parsing Cython and template files if False).
+
+    Adopted from scipy setup
+    """
+    args = sys.argv[1:]
+
+    if not args:
+        # User forgot to give an argument probably, let setuptools handle that.
+        return True
+
+    info_commands = ['--help-commands', '--name', '--version', '-V',
+                     '--fullname', '--author', '--author-email',
+                     '--maintainer', '--maintainer-email', '--contact',
+                     '--contact-email', '--url', '--license', '--description',
+                     '--long-description', '--platforms', '--classifiers',
+                     '--keywords', '--provides', '--requires', '--obsoletes']
+
+    for command in info_commands:
+        if command in args:
+            return False
+
+    # Note that 'alias', 'saveopts' and 'setopt' commands also seem to work
+    # fine as they are, but are usually used together with one of the commands
+    # below and not standalone.  Hence they're not added to good_commands.
+    good_commands = ('develop', 'sdist', 'build', 'build_ext', 'build_py',
+                     'build_clib', 'build_scripts', 'bdist_wheel', 'bdist_rpm',
+                     'bdist_wininst', 'bdist_msi', 'bdist_mpkg',
+                     'build_sphinx')
+
+    for command in good_commands:
+        if command in args:
+            return True
+
+    # The following commands are supported, but we need to show more
+    # useful messages to the user
+    if 'install' in args:
+        return True
+
+    if '--help' in args or '-h' in sys.argv[1]:
+        return False
+
+    # Commands that do more than print info, but also don't need Cython and
+    # template parsing.
+    other_commands = ['egg_info', 'install_egg_info', 'rotate']
+    for command in other_commands:
+        if command in args:
+            return False
+
+    # If we got here, we didn't detect what setup.py command was given
+    warnings.warn("Unrecognized setuptools command ('{}'), proceeding with "
+                  "generating Cython sources and expanding templates".format(
+                  ' '.join(sys.argv[1:])))
+
+    return True
+
