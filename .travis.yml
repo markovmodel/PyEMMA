@@ -30,6 +30,7 @@ matrix:
   include:  # test pip install
     - env: CONDA_PY=3.7 CONDA_BUILD=NO python=3.7
       os: linux
+      dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
       language: python
 
 
