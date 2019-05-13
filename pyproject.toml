@@ -5,6 +5,7 @@ requires = [
  "numpy>=1.10",
  "Cython>=0.22",
  "scipy",
+ "pip>=19",
 
  # TODO: use mdtraj from pypi once 1.9.3 is released.
  #"mdtraj",
