@@ -2,11 +2,10 @@
 	path = doc/pyemma-ipython
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
 
-[submodule "pybind11"]
-	path = ext/pybind11
-	url = https://github.com/pybind/pybind11
-
 [submodule "doc/tutorials"]
 	path = doc/tutorials
 	url = https://github.com/markovmodel/pyemma_tutorials
 
+[submodule "pybind11"]
+	path = ext/pybind11
+	url = https://github.com/pybind/pybind11

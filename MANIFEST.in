@@ -3,13 +3,8 @@ include LICENSE.txt
 include pyproject.toml
 
 # include test modules in pyemma directory
-#recursive-include pyemma/msm/tests
-#recursive-include pyemma/msm/io/tests
-#recursive-include pyemma/msm/io/matrix/testfiles
-
 recursive-include pyemma tests/* tests/data/*
 recursive-include pyemma testfiles/*
-
 
 # exclude compiled bytecode
 global-exclude *.pyc
@@ -23,21 +18,10 @@ include pyemma/_version.py
 # setup stuff
 include setup_util.py
 
-# documentation
-graft doc
-prune doc/build
-prune doc/source/generated
-prune doc/source/api/generated
-
-# ipython notebooks
-#graft pyemma-ipython
-#recursive-exclude pyemma-ipython .ipynb_checkpoints
-
-# exclude git related files
-recursive-exclude * git .git*
-
 # sources of extensions (incl. cython)
 recursive-include pyemma *.pyx *.h *.c
 
 # do not include eventually present eggs (installed during setup runtime)
 prune .eggs
+
+recursive-include ext/pybind11/include *.h

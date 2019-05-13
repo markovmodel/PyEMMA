@@ -32,9 +32,7 @@ import versioneer
 import warnings
 from io import open
 
-
 from setuptools import setup, Extension, find_packages
-
 
 
 if sys.version_info[0] < 3:
@@ -62,7 +60,7 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-from setup_util import get_pybind_include, parse_setuppy_commands
+from setup_util import parse_setuppy_commands
 
 try:
     from setuptools import setup, Extension, find_packages
@@ -75,12 +73,14 @@ except ImportError as ie:
 ###############################################################################
 def extensions():
     from Cython.Build import cythonize
-    from pybind11 import get_include as pybind_get_include
     from numpy import get_include as np_get_include
+    pybind_inc = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ext', 'pybind11', 'include')
+    assert os.path.exists(pybind_inc), 'pybind11 headers not found at %s' % pybind_inc
+
     from mdtraj import capi as mdtraj_capi
-    pybind_inc = str(get_pybind_include())
     mdtraj_inc = mdtraj_capi()['include_dir']
     mdtraj_lib = mdtraj_capi()['lib_dir']
+
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
     common_cflags = ['-O3', ]
 

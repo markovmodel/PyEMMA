@@ -5,7 +5,11 @@ requires = [
  "numpy>=1.10",
  "Cython>=0.22",
  "scipy",
+
+ # TODO: use mdtraj from pypi once 1.9.3 is released.
  #"mdtraj",
- "git+ssh://git@github.com/mdtraj/mdtraj.git@master#egg=mdtraj-1.9.2",
- "pybind11",
+ "git+https://github.com/mdtraj/mdtraj.git@master#egg=mdtraj",
+
+ # TODO: include again once https://github.com/pybind/pybind11/issues/1067 is fixed.
+ #"pybind11",
  ]
