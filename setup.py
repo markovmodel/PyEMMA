@@ -322,11 +322,11 @@ if __name__ == '__main__':
     if parse_setuppy_commands():
         # only require numpy and extensions in case of building/installing
         metadata['ext_modules'] = extensions()
-
+        assert os.path.exists('.git')
         # init submodules
         if os.path.exists('.git'):
             import subprocess
-            modules = ['ext/pybind11']
+            modules = ['pybind11']
             cmd = "git submodule update --init {mod}"
 
             for m in modules:
