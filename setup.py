@@ -321,9 +321,7 @@ metadata = dict(
 if __name__ == '__main__':
     if parse_setuppy_commands():
         # only require numpy and extensions in case of building/installing
-        metadata['ext_modules'] = extensions()
-        assert os.path.exists('.git')
-        # init submodules
+        # first initialize submodules
         if os.path.exists('.git'):
             import subprocess
             modules = ['pybind11']
@@ -331,5 +329,7 @@ if __name__ == '__main__':
 
             for m in modules:
                 subprocess.check_call(cmd.format(mod=m).split(' '))
+        # now build extension list.
+        metadata['ext_modules'] = extensions()
 
     setup(**metadata)
