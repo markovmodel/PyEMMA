@@ -329,7 +329,7 @@ if __name__ == '__main__':
             modules = ['ext/pybind11']
             cmd = "git submodule update --init {mod}"
 
-        for m in modules:
-            subprocess.check_call(cmd.format(mod=m).split(' '))
+            for m in modules:
+                subprocess.check_call(cmd.format(mod=m).split(' '))
 
     setup(**metadata)
