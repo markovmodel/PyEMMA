@@ -324,7 +324,7 @@ if __name__ == '__main__':
         # first initialize submodules
         if os.path.exists('.git'):
             import subprocess
-            modules = ['pybind11']
+            modules = [os.path.join('ext', 'pybind11')]
             cmd = "git submodule update --init {mod}"
 
             for m in modules:
