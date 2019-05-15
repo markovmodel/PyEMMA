@@ -177,7 +177,6 @@ def load(trajfiles, features=None, top=None, stride=1, chunksize=None, **kw):
            * Gromacs (.trr)
            * AMBER (.binpos)
            * AMBER (.netcdf)
-           * PDB trajectory format (.pdb)
            * TINKER (.arc),
            * MDTRAJ (.hdf5)
            * LAMMPS trajectory format (.lammpstrj)
