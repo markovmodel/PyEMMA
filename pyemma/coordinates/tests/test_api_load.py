@@ -46,7 +46,10 @@ class TestAPILoad(unittest.TestCase):
     def setUpClass(cls):
         path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.bpti_pdbfile = os.path.join(path, 'bpti_ca.pdb')
-        extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr']
+        extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr',
+                        # TODO: these can not be provided (mdconvert [mdtra]) does not support these).
+                        # '.arc', '.lamppstrj',
+                      ]
         cls.bpti_mini_files = [os.path.join(path, 'bpti_mini%s' % ext) for ext in extensions]
 
     def testUnicodeString_without_featurizer(self):
