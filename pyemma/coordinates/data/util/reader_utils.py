@@ -103,6 +103,10 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
                     raise ValueError('The input files were MD files which makes it mandatory to have either a '
                                      'Featurizer or a topology file.')
 
+                if suffix in ('.pdb', '.pdb.gz'):
+                    raise ValueError('PyEMMA can not read PDB-fake-trajectories. '
+                                     'Please consider using a sane trajectory format (e.g. xtc, dcd).')
+
                 reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
                                        chunksize=chunksize)
             elif suffix in ('.npy', '.npz'):
