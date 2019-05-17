@@ -118,6 +118,8 @@ class H5Reader(DataSource, SerializableMixIn):
         return array, shape
 
     def _get_traj_info(self, filename):
+        # noinspection PyUnresolvedReferences
+        import tables
         import h5py
 
         with h5py.File(filename, mode='r') as f:
