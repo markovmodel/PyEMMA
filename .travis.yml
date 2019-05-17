@@ -43,8 +43,8 @@ script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
       conda build -q devtools/conda-recipe -c conda-forge;
     else
-      pip install pip -U
-      pip install .
+      pip install pip -U;
+      pip install . ;
       pip install pytest;
       # run tests in home dir to prevent importing from clone (prevent non built extensions error)
       cd; pytest --pyargs pyemma;
