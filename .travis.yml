@@ -28,7 +28,7 @@ matrix:
     - env: CONDA_PY=3.6
       os: osx
   include:  # test pip install
-    - env: CONDA_PY=3.7 CONDA_BUILD=NO python=3.7
+    - env: CONDA_PY=3.7 CONDA_BUILD=NO python="3.7"
       os: linux
       dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
       language: python
@@ -43,9 +43,11 @@ script:
   - if [[ ${CONDA_BUILD} = YES ]]; then
       conda build -q devtools/conda-recipe -c conda-forge;
     else
-      bash devtools/ci/travis/pip_install.sh;
+      pip install pip -U
+      pip install .
       pip install pytest;
-      pytest pyemma;
+      # run tests in home dir to prevent importing from clone (prevent non built extensions error)
+      cd; pytest --pyargs pyemma;
     fi
 
 after_script:
