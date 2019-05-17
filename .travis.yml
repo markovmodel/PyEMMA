@@ -45,8 +45,9 @@ script:
     else
       pip install pip -U;
       pip install . ;
+      rm -r pyemma;
       pip install pytest tables;
-      cd; pytest --pyargs pyemma;
+      pytest --pyargs pyemma;
     fi
 
 after_script:
