@@ -44,6 +44,8 @@ script:
       conda build -q devtools/conda-recipe -c conda-forge;
     else
       bash devtools/ci/travis/pip_install.sh;
+      pip install pytest;
+      pytest pyemma;
     fi
 
 after_script:
