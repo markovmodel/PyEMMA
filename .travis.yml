@@ -17,8 +17,8 @@ env:
     - MACOSX_DEPLOYMENT_TARGET=10.9
     - CONDA_BUILD=YES
   matrix:
-    #- CONDA_PY=3.5
-    #- CONDA_PY=3.6
+    - CONDA_PY=3.5
+    - CONDA_PY=3.6
     - CONDA_PY=3.7
 
 matrix:
@@ -32,6 +32,7 @@ matrix:
       os: linux
       dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
       language: python
+      sudo: true
 
 
 before_install:
