@@ -38,9 +38,8 @@ def setup_logging(config, D=None):
     if not D:
         import yaml
         from distutils.version import LooseVersion
-        loader_support = LooseVersion(yaml.__version__) >= LooseVersion('5.1')
-        if loader_support:
-            load_kw = dict(loader=yaml.FullLoader)
+        if LooseVersion(yaml.__version__) >= LooseVersion('5.1'):
+            load_kw = dict(Loader=yaml.FullLoader)
         else:
             load_kw = dict()
 
