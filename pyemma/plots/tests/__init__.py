@@ -16,3 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+def teardown_module():
+    # close all figures
+    import matplotlib.pylab as plt
+    plt.close('all')
