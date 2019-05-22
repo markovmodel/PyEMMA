@@ -37,14 +37,16 @@ def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
 
 def _hash_numpy_array(x):
     import numpy as np
-    x = np.ascontiguousarray(x)
     import hashlib
-    old = x.flags.writeable
-    try:
-        x.flags.writeable = False
-        v = hashlib.sha1(x)
-    finally:
-        x.flags.writeable = old
-    hash_value = hash((x.shape, x.strides, v.digest()))
+    from io import BytesIO 
+    from scipy.sparse import issparse
+    v = hashlib.sha1()
+    v.update(x.data)
+    if issparse(x):
+         v.update(x.indices)
+    else:
+         v.update(str(x.shape).encode('ascii'))
+         v.update(str(x.strides).encode('ascii'))# if x.strides is not None else ''))
+         #v.update(str(x.strides).encode('ascii'))
+    return hash(v.digest())
 
-    return hash_value

@@ -225,7 +225,7 @@ class TestCK_AllEstimators(unittest.TestCase):
         BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40, reversible=True)
         # also ensure that reversible bit does not flip during cktest
         assert BMSM.reversible
-        self.ck = BMSM.cktest(2, mlags=[0,1,10])
+        self.ck = BMSM.cktest(2, mlags=[0,1,10], n_jobs=2)
         assert BMSM.reversible
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
