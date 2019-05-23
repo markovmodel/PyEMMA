@@ -23,12 +23,17 @@ from warnings import warn as _warn
 
 __author__ = 'noe'
 
+_matplotlib_version = None
+
 
 def _get_cmap(cmap):
     # matplotlib 2.0 deprecated 'spectral' colormap, renamed to nipy_spectral.
-    from matplotlib import __version__
-    version = tuple(map(int, __version__.split('.')))
-    if cmap == 'spectral' and version >= (2, ):
+    global _matplotlib_version
+    if _matplotlib_version is None:
+        from matplotlib import __version__
+        from distutils.version import LooseVersion
+        _matplotlib_version = LooseVersion(__version__).version
+    if cmap == 'spectral' and _matplotlib_version >= (2, ):
         cmap = 'nipy_spectral'
     return cmap
 
