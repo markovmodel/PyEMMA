@@ -23,7 +23,6 @@ r"""User-API for the pyemma.coordinates package
 """
 import numpy as _np
 import logging as _logging
-from six import string_types as _string_types
 
 from pyemma.util import types as _types
 # lift this function to the api
@@ -61,6 +60,7 @@ __all__ = ['featurizer',  # IO
            'assign_to_centers',
            ]
 
+_string_types = str
 
 # ==============================================================================
 #
@@ -177,7 +177,6 @@ def load(trajfiles, features=None, top=None, stride=1, chunksize=None, **kw):
            * Gromacs (.trr)
            * AMBER (.binpos)
            * AMBER (.netcdf)
-           * PDB trajectory format (.pdb)
            * TINKER (.arc),
            * MDTRAJ (.hdf5)
            * LAMMPS trajectory format (.lammpstrj)
@@ -1275,7 +1274,7 @@ def tica(data=None, lag=10, dim=0.95,
     return res
 
 
-def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('inf'),
+def vamp(data=None, lag=10, dim=None, scaling=None, right=False, ncov_max=float('inf'),
          stride=1, skip=0, chunksize=None):
     r""" Variational approach for Markov processes (VAMP) [1]_.
 
@@ -1299,9 +1298,9 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
 
           * None: no scaling will be applied, variance of the order parameters is 1
           * 'kinetic map' or 'km': order parameters are scaled by singular value.
-            Only the left singular functions induce a kinetic map.
-            Therefore scaling='km' is only effective if `right` is False.
-      right : boolean
+            Only the left singular functions induce a kinetic map wrt the
+            conventional forward propagator. The right singular functions induce
+            a kinetic map wrt the backward propagator.      right : boolean
           Whether to compute the right singular functions.
           If `right==True`, `get_output()` will return the right singular
           functions. Otherwise, `get_output()` will return the left singular
@@ -1323,6 +1322,14 @@ def vamp(data=None, lag=10, dim=None, scaling=None, right=True, ncov_max=float('
       ncov_max : int, default=infinity
           limit the memory usage of the algorithm from [3]_ to an amount that corresponds
           to ncov_max additional copies of each correlation matrix
+
+      Returns
+      -------
+      vamp : a :class:`VAMP <pyemma.coordinates.transform.VAMP>` transformation object
+         It contains the definitions of singular functions and singular values and
+         can be used to project input data to the dominant VAMP components, predict
+         expectations and time-lagged covariances and perform a Chapman-Kolmogorov
+         test.
 
       Notes
       -----

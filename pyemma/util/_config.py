@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
-import six
-from six.moves.configparser import ConfigParser
 import os
 import shutil
 import warnings
@@ -31,9 +28,6 @@ from pyemma.util.exceptions import ConfigDirectoryException
 class ReadConfigException(Exception):
     pass
 
-if six.PY2:
-    class NotADirectoryError(Exception):
-        pass
 
 __all__ = ('Config', )
 
@@ -410,6 +404,7 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
+        from configparser import ConfigParser
         config = ConfigParser()
 
         try:

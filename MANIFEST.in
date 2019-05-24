@@ -1,14 +1,10 @@
 include README.rst
 include LICENSE.txt
+include pyproject.toml
 
 # include test modules in pyemma directory
-#recursive-include pyemma/msm/tests
-#recursive-include pyemma/msm/io/tests
-#recursive-include pyemma/msm/io/matrix/testfiles
-
 recursive-include pyemma tests/* tests/data/* tests/data/serialization/*
 recursive-include pyemma testfiles/*
-
 
 # exclude compiled bytecode
 global-exclude *.pyc
@@ -22,21 +18,23 @@ include pyemma/_version.py
 # setup stuff
 include setup_util.py
 
-# documentation
-graft doc
-prune doc/build
-prune doc/source/generated
-prune doc/source/api/generated
-
-# ipython notebooks
-#graft pyemma-ipython
-#recursive-exclude pyemma-ipython .ipynb_checkpoints
-
-# exclude git related files
-recursive-exclude * git .git*
-
 # sources of extensions (incl. cython)
 recursive-include pyemma *.pyx *.h *.c
 
 # do not include eventually present eggs (installed during setup runtime)
 prune .eggs
+
+recursive-include ext/pybind11/include *.h
+
+exclude pyemma/thermo/extensions/mbar/mbar.c \
+    pyemma/thermo/extensions/dtram/dtram.c \
+    pyemma/thermo/extensions/mbar_direct/mbar_direct.c \
+    pyemma/thermo/extensions/trammbar_direct/trammbar_direct.c \
+    pyemma/thermo/extensions/util/util.c \
+    pyemma/thermo/extensions/bar/bar.c \
+    pyemma/thermo/extensions/trammbar/trammbar.c \
+    pyemma/thermo/extensions/tram/tram.c \
+    pyemma/thermo/extensions/wham/wham.c \
+    pyemma/thermo/extensions/tram_direct/tram_direct.c \
+    pyemma/_ext/orderedset/_orderedset.c \
+    pyemma/_ext/variational/solvers/eig_qr/eig_qr.c \

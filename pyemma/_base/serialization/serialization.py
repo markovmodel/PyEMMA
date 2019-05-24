@@ -235,9 +235,6 @@ class SerializableMixIn(object):
         ...    inst_restored = pyemma.load(file, 'simple') # doctest: +SKIP
         >>> np.testing.assert_equal(m.P, inst_restored.P) # doctest: +SKIP
         """
-        import six
-        if six.PY2:
-            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
         from pyemma._base.serialization.h5file import H5File
         try:
             with H5File(file_name=file_name, mode='a') as f:
@@ -267,9 +264,6 @@ class SerializableMixIn(object):
         -------
         obj : the de-serialized object
         """
-        import six
-        if six.PY2:
-            raise NotImplementedError('This feature is only available on Python3. Consider upgrading.')
         from .h5file import H5File
         with H5File(file_name, model_name=model_name, mode='r') as f:
             return f.model

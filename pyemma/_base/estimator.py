@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
 
 import inspect
@@ -312,8 +311,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if logger_available:
         logger = estimators[0].logger
     if progress_reporter is None:
-        from mock import MagicMock
-        # TODO: replace with nullcontext from util once merged
+        from unittest.mock import MagicMock
         ctx = progress_reporter = MagicMock()
         callback = None
     else:
@@ -339,19 +337,16 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         pool = Pool(processes=n_jobs)
         args = list(task_iter)
 
-        import six
         from contextlib import closing
-        opt_args = {}
-        if six.PY3:
-            def error_callback(*args, **kw):
-                if failfast:
-                    # TODO: can we be specific here? eg. obtain the stack of the actual process or is this the master proc?
-                    raise Exception('something failed')
-            opt_args['error_callback'] = error_callback
+
+        def error_callback(*args, **kw):
+            if failfast:
+                # TODO: can we be specific here? eg. obtain the stack of the actual process or is this the master proc?
+                raise Exception('something failed')
 
         with closing(pool), ctx:
             res_async = [pool.apply_async(_estimate_param_scan_worker, a, callback=callback,
-                                          **opt_args) for a in args]
+                                          error_callback=error_callback) for a in args]
             res = [x.get() for x in res_async]
 
     # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator

@@ -23,7 +23,7 @@ import tempfile
 import os
 import sys
 import shutil
-from distutils.ccompiler import new_compiler
+import warnings
 import setuptools
 import contextlib
 
@@ -141,74 +141,61 @@ def cpp_flag(compiler):
                            'is needed!'.format(compiler))
 
 
-class lazy_cythonize(list):
-    """evaluates extension list lazily.
-    pattern taken from http://tinyurl.com/qb8478q"""
-    def __init__(self, callback):
-        self._list, self.callback = None, callback
-    def c_list(self):
-        if self._list is None: self._list = self.callback()
-        return self._list
-    def __iter__(self):
-        for e in self.c_list(): yield e
-    def __getitem__(self, ii): return self.c_list()[ii]
-    def __len__(self): return len(self.c_list())
+def parse_setuppy_commands():
+    """Check the commands and respond appropriately.
+    Return a boolean value for whether or not to run the build or not (avoid
+    parsing Cython and template files if False).
 
+    Adopted from scipy setup
+    """
+    args = sys.argv[1:]
 
-class get_pybind_include(object):
-    """Helper class to determine the pybind11 include path
+    if not args:
+        # User forgot to give an argument probably, let setuptools handle that.
+        return True
 
-    The purpose of this class is to postpone importing pybind11
-    until it is actually installed, so that the ``get_include()``
-    method can be invoked. """
+    info_commands = ['--help-commands', '--name', '--version', '-V',
+                     '--fullname', '--author', '--author-email',
+                     '--maintainer', '--maintainer-email', '--contact',
+                     '--contact-email', '--url', '--license', '--description',
+                     '--long-description', '--platforms', '--classifiers',
+                     '--keywords', '--provides', '--requires', '--obsoletes']
 
-    def __init__(self, user=False):
-        self.user = user
+    for command in info_commands:
+        if command in args:
+            return False
 
-    def search_pybind11_headers(self):
-        import pybind11
+    # Note that 'alias', 'saveopts' and 'setopt' commands also seem to work
+    # fine as they are, but are usually used together with one of the commands
+    # below and not standalone.  Hence they're not added to good_commands.
+    good_commands = ('develop', 'sdist', 'build', 'build_ext', 'build_py',
+                     'build_clib', 'build_scripts', 'bdist_wheel', 'bdist_rpm',
+                     'bdist_wininst', 'bdist_msi', 'bdist_mpkg',
+                     'build_sphinx')
 
-        def recommended():
-            return pybind11.get_include(self.user)
+    for command in good_commands:
+        if command in args:
+            return True
 
-        def setuptools_temp_egg():
-            # If users of setuptools drag in pybind11 only as a setup_require(ment), the pkg will be placed
-            # temporarily into .eggs, but we can not use the headers directly. So we have to
-            # link non-installed header files to correct subdirectory, so they can be used during compilation
-            found = False
-            for p in pybind11.__path__:
-                if '.egg' in p:
-                    found = True
-            if not found:
-                return ''
+    # The following commands are supported, but we need to show more
+    # useful messages to the user
+    if 'install' in args:
+        return True
 
-            header_src = os.path.abspath(os.path.join(pybind11.__path__[0], '..'))
-            hdrs = []
+    if '--help' in args or '-h' in sys.argv[1]:
+        return False
 
-            for _, _, filenames in os.walk(header_src):
-                hdrs += [f for f in filenames if f.endswith('.h')]
-            for h in sorted(hdrs):
-                if 'detail' in h:
-                    sub = 'detail'
-                else:
-                    sub = ''
-                dest = os.path.join(pybind11.__path__[0], sub, os.path.basename(h))
-                try:
-                    os.link(h, dest)
-                except OSError:
-                    pass
-            return header_src
+    # Commands that do more than print info, but also don't need Cython and
+    # template parsing.
+    other_commands = ['egg_info', 'install_egg_info', 'rotate']
+    for command in other_commands:
+        if command in args:
+            return False
 
-        methods = (recommended(),
-                   setuptools_temp_egg(),
-                   )
-        for m in methods:
-            if os.path.exists(os.path.join(m, 'pybind11', 'pybind11.h')):
-                return m
-        return ''
+    # If we got here, we didn't detect what setup.py command was given
+    warnings.warn("Unrecognized setuptools command ('{}'), proceeding with "
+                  "generating Cython sources and expanding templates".format(
+                  ' '.join(sys.argv[1:])))
 
-    def __str__(self):
-        result = self.search_pybind11_headers()
-        if not result:
-            raise RuntimeError('pybind11 headers not found')
-        return result
+    return True
+

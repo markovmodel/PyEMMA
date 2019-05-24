@@ -21,7 +21,6 @@ import unittest
 from contextlib import contextmanager
 
 import numpy as np
-import six
 
 import pyemma
 from pyemma._base.serialization.h5file import H5File
@@ -81,7 +80,7 @@ def patch_old_location(faked_old_class, new_class):
 
         yield
 
-@unittest.skipIf(six.PY2, 'only py3')
+
 class TestSerialisation(unittest.TestCase):
 
     def setUp(self):

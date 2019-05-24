@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 
 import mdtraj
 import numpy as np
@@ -196,6 +195,8 @@ class FeatureReader(DataSource, SerializableMixIn):
             # ensure there is something to split
             file_name = "/dummy" + file_name
             suffix = os.path.splitext(file_name)[1]
+            if suffix in ('.pdb', '.pdb.gz'):
+                return False
             return suffix in FormatRegistry.loaders.keys()
 
         return False

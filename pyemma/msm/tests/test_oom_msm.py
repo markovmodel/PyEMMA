@@ -21,7 +21,6 @@ r"""Unit test for the OOM-based MSM estimation.
 
 """
 
-from __future__ import absolute_import
 import unittest
 
 import numpy as np
@@ -32,7 +31,7 @@ import pkg_resources
 
 from pyemma.msm import estimate_markov_model
 from pyemma.msm import markov_model
-from pyemma.msm.estimators.maximum_likelihood_msm import OOMReweightedMSM
+from pyemma.msm.estimators import OOMReweightedMSM
 from pyemma.util.linalg import _sort_by_norm
 from pyemma.util.discrete_trajectories import count_states
 import msmtools.estimation as msmest

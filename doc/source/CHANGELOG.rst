@@ -1,8 +1,10 @@
 Changelog
 =========
 
-2.5.5 (??-??-????)
+2.5.5 (13-02-2019)
 ------------------
+
+For now all future versions will only support Python 3. :pr:`1395`
 
 **New features**:
 
@@ -18,13 +20,19 @@ Changelog
   the count matrix. :pr:`1343`
 - plots: fix vmin, vmax keyword arguments for plot_contour(). :pr:`1376`
 - coordinates: forcefully enable checking of coordinates data streaming for invalid (not initialized) data. :pr:`1384`
-- coordinates: for sake of faster strided MD data reading, we now require a version of MDTraj >= 1.9.2:pr:`1391` 
-
+- coordinates: for sake of faster strided MD data reading, we now require a version of MDTraj >= 1.9.2 :pr:`1391`
+- coordinates: VAMP: changed default projection vector from right to left, since only the left singular functions induce
+  a kinetic map wrt. the conventional forward propagator, while the right singular functions induce
+  a kinetic map wrt. the backward propagator. :pr:`1394`
+- coordinates: VAMP: fixed variance cutoff to really include as many dimensions to meet subspace variance criterion. :pr:`1397`
 
 
 **Contributors**:
 
 - :user:`marscher`
+- :user:`fabian-paul`
+- :user:`brookehus`
+- :user:`thempel`
 
 
 2.5.4 (07-20-2018)

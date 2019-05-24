@@ -65,7 +65,6 @@ Classes
    NetworkPlot
 
 """
-from __future__ import absolute_import
 from .timescales import plot_implied_timescales
 from .plots2d import contour, scatter_contour
 from .plots2d import plot_density

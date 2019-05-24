@@ -44,7 +44,7 @@ def _version_check(current, testing=False):
 
     Can be disabled by setting config.check_version = False.
 
-    >>> from mock import patch
+    >>> from unittest.mock import patch
     >>> import warnings, pyemma
     >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
     ...     warnings.simplefilter('always', UserWarning)
@@ -74,16 +74,15 @@ def _version_check(current, testing=False):
 
     def _impl():
         import warnings
-        from six.moves.urllib.request import urlopen, Request
-        import six
+        from urllib.request import Request, urlopen
+
         try:
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
                         .format(emma_version=current, python_version=platform.python_version(),
                                 platform=platform.platform(terse=True), addr=uuid.getnode())} if not testing else {})
             with closing(urlopen(r, timeout=30)) as response:
-                args = {'encoding':'ascii'} if six.PY3 else {}
-                payload = str(response.read(), **args) # py3: encoding ascii
+                payload = str(response.read(), encoding='ascii')
             versions = json.loads(payload)
             latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
             latest = parse(latest_json)
