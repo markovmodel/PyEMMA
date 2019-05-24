@@ -1,7 +1,18 @@
 Changelog
 =========
 
-2.5.5 (13-02-2019)
+2.5.6 (05-24-2019)
+------------------
+
+**New features**:
+ - all dependencies can seemlessly be installed via pip. :pr:`1412`
+
+**Fixes**:
+ - NumPy 1.16 made it impossible to change the writeable flag,
+   which led to a bug in PyEMMA (CK-test failures with multiple jobs). :pr:`1406`
+
+
+2.5.5 (02-13-2019)
 ------------------
 
 For now all future versions will only support Python 3. :pr:`1395`
