@@ -10,7 +10,8 @@ class RemoveWidgetNotice(Preprocessor):
     def preprocess_cell(self, cell, resources, index):
         if 'outputs' in cell:
             outputs_ = [o for o in cell['outputs']  # list of dicts
-                        if ('data' in o and 'application/vnd.jupyter.widget-view+json' not in o['data'])
+                        if (('data' in o and 'application/vnd.jupyter.widget-view+json' not in o['data'])
+                            or 'data' not in o)
                        ]
             cell['outputs'] = outputs_
 
