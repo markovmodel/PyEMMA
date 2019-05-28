@@ -90,7 +90,7 @@ pygments_style = 'sphinx'
 # -- options for mathjax
 # note there is no protocol given here to avoid mixing http with https
 # see: http://docs.mathjax.org/en/latest/start.html#secure-cdn-access
-mathjax_path = ("https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?"
+mathjax_path = ("https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?"
                 "config=TeX-AMS-MML_HTMLorMML")
 
 # -- Options for HTML output ---------------------------------------------
