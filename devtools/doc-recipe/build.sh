@@ -6,8 +6,6 @@ set -x
 export PIP_IGNORE_INSTALLED=false
 export PIP_NO_INDEX=false
 
-python grep_active_notebooks.py
-
 pyemma_version=`python -c "import pyemma as e; print(e.version)"`
 export BUILD_DIR=${PREFIX}/v${pyemma_version}
 
@@ -26,7 +24,6 @@ fi
 pip install -vvv -r requirements-build-doc.txt
 
 make clean
-make ipython-rst
 make html
 
 # we only want to have the html contents
