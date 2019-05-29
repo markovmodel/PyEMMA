@@ -1,5 +1,5 @@
 [submodule "ipython"]
-	path = doc/pyemma-ipython
+	path = doc/source/legacy-notebooks
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
 
 [submodule "doc/tutorials"]
