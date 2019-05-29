@@ -5,14 +5,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-from __future__ import print_function
-
-import sys, os
-
-from nbconvert.preprocessors import Preprocessor
-
-sys.path.insert(0, '.')
-
+import os
 import pyemma
 print("Generating doc for PyEMMA version {version} installed in {path}"
       .format(version=pyemma.__version__, path=pyemma.__path__))
@@ -26,8 +19,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-    'sphinx.ext.graphviz',
-    'sphinx.ext.inheritance_diagram',
+    #'sphinx.ext.graphviz',
+    #'sphinx.ext.inheritance_diagram',
     'sphinx_issues',
     'nbsphinx',
 ]
@@ -36,7 +29,9 @@ extensions = [
 def _preprocess_notebooks():
     """ hooks into ExecutePreprocessor.preprocess to execute our own filters."""
     import nbconvert
-    org_method = nbconvert.preprocessors.ExecutePreprocessor.preprocess
+    import nbsphinx
+    from nbconvert.preprocessors import Preprocessor
+    org_method = nbsphinx.Exporter.from_notebook_node #nbconvert.preprocessors.ExecutePreprocessor.preprocess
 
     class RemoveSolutionStubs(Preprocessor):
         """For rendering executed versions of the notebooks, we do not want to have the solution stubs."""
@@ -54,13 +49,18 @@ def _preprocess_notebooks():
             cell.source = new_input
             return cell, resources
 
-    def my_preprocess(self, notebook, resources, km=None):
+    def my_from_notebook_node(self, nb, resources, **kwargs):
         self.log.info('patched preprocessing method')
-        notebook, resources = RemoveSolutionStubs().preprocess(notebook, resources=resources)
-        notebook, resources = RewriteNotebookLinks().preprocess(notebook, resources=resources)
-        return org_method(self, notebook, resources=resources, km=km)
+        filters = [RemoveSolutionStubs(),
+                   #RewriteNotebookLinks()
+                   ]
+        for f in filters:
+            nb, resources = f.preprocess(nb, resources=resources)
 
-    nbconvert.preprocessors.ExecutePreprocessor.preprocess = my_preprocess
+        return org_method(self, nb, resources=resources, **kwargs)
+
+    nbsphinx.Exporter.from_notebook_node = my_from_notebook_node
+
 
 # invoke method patch
 _preprocess_notebooks()
