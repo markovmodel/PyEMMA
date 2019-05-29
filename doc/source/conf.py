@@ -7,6 +7,12 @@
 # serve to show the default.
 from __future__ import print_function
 
+import sys
+
+from nbconvert.preprocessors import Preprocessor
+
+sys.path.insert(0, '.')
+
 import pyemma
 print("Generating doc for PyEMMA version {version} installed in {path}"
       .format(version=pyemma.__version__, path=pyemma.__path__))
@@ -20,8 +26,48 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
+    'sphinx.ext.graphviz',
+    'sphinx.ext.inheritance_diagram',
     'sphinx_issues',
+    'nbsphinx',
 ]
+
+
+def _preprocess_notebooks():
+    """ hooks into ExecutePreprocessor.preprocess to execute our own filters."""
+    import nbconvert
+    org_method = nbconvert.preprocessors.ExecutePreprocessor.preprocess
+
+    class RemoveSolutionStubs(Preprocessor):
+        """For rendering executed versions of the notebooks, we do not want to have the solution stubs."""
+        def preprocess(self, nb, resources):
+            filtered_cells = [
+                cell for cell in nb['cells']
+                if not cell['metadata'].get('solution2_first', False)
+            ]
+            nb['cells'] = filtered_cells
+            return nb, resources
+
+    class RewriteNotebookLinks(Preprocessor):
+        def preprocess_cell(self, cell, resources, index):
+            new_input = cell.source.replace('.ipynb', '.html')
+            cell.source = new_input
+            return cell, resources
+
+    def my_preprocess(self, notebook, resources, km=None):
+        notebook, resources = RemoveSolutionStubs().preprocess(notebook, resources=resources)
+        notebook, resources = RewriteNotebookLinks().preprocess(notebook, resources=resources)
+        return org_method(self, notebook, resources=resources, km=km)
+
+    nbconvert.preprocessors.ExecutePreprocessor.preprocess = my_preprocess
+
+# invoke method patch
+_preprocess_notebooks()
+
+nbsphinx_allow_errors = True
+nbsphinx_timeout = 600
+nbsphinx_execute= 'never'
+
 
 # Github repo
 issues_github_path = 'markovmodel/PyEMMA'
@@ -64,7 +110,7 @@ language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '*_test*']
+exclude_patterns = ['_build', '*_test*', '**/.ipynb_checkpoints/*']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 default_role = "autolink"

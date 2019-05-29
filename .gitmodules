@@ -3,7 +3,7 @@
 	url = https://github.com/markovmodel/PyEMMA_IPython.git
 
 [submodule "doc/tutorials"]
-	path = doc/tutorials
+	path = doc/source/tutorials
 	url = https://github.com/markovmodel/pyemma_tutorials
 
 [submodule "pybind11"]
