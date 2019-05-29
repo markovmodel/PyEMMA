@@ -15,13 +15,13 @@ in this archive, since we're not permitted to share this data. Thus the correspo
 notebooks can't be run without obtaining the simulation trajectory independently.
 
 Application walkthroughs
-========================
+------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   generated/pentapeptide_msm
-   generated/MSM_BPTI
+   legacy-notebooks/applications/pentapeptide_msm/pentapeptide_msm
+   legacy-notebooks/applications/bpti_msm/MSM_BPTI
 
 By means of application examples, these notebooks give an overview of following methods:
 
@@ -35,18 +35,18 @@ By means of application examples, these notebooks give an overview of following 
 
 
 Methods
-=======
+-------
 
 In this section we will give you in-depth tutorials on specific methods or concepts.
 
 .. toctree::
    :maxdepth: 1
 
-   generated/feature_selection
-   generated/model_selection_validation
-   generated/tpt
-   generated/augmented_markov_model_walkthrough
-   generated/storage
+   legacy-notebooks/methods/feature_selection/feature_selection
+   legacy-notebooks/methods/model_selection_validation/model_selection_validation
+   legacy-notebooks/methods/tpt/tpt
+   legacy-notebooks/methods/amm/augmented_markov_model_walkthrough
+   legacy-notebooks/methods/storage/storage
 
 
 Multi-Ensemble Markov state models
@@ -55,8 +55,8 @@ Multi-Ensemble Markov state models
 .. toctree::
    :maxdepth: 1
 
-   generated/PyEMMA.thermo.estimate_multi_temperatur_-_asymmetric_double_well
-   generated/PyEMMA.thermo.estimate_umbrella_sampling_-_asymmetric_double_well
+   legacy-notebooks/methods/multi_ensemble/doublewell/PyEMMA.thermo.estimate_multi_temperatur_-_asymmetric_double_well
+   legacy-notebooks/methods/multi_ensemble/doublewell/PyEMMA.thermo.estimate_umbrella_sampling_-_asymmetric_double_well
 
 Estimation with fixed equilibrium distribution
 ----------------------------------------------
@@ -64,5 +64,5 @@ Estimation with fixed equilibrium distribution
 .. toctree::
    :maxdepth: 1
 
-   generated/doublewell
-   generated/alanine
+   legacy-notebooks/methods/msm_with_given_equilibrium/doublewell/doublewell
+   legacy-notebooks/methods/msm_with_given_equilibrium/alanine/alanine

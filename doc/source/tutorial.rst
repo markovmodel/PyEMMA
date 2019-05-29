@@ -45,7 +45,6 @@ for the contents of both the article and the jupyter notebooks `here <https://gi
    tutorials/notebooks/08-common-problems
 
 
-The legacy tutorials (prior version 2.5.5) covering similar aspects and advanced topics can be found here :doc:`ipython`
 
 
 Workshop video tutorials
@@ -75,3 +74,14 @@ On our Youtube channel you will find lectures and talks about:
 .. raw:: html
 
    <iframe width="100%" height="480px" src="https://www.youtube-nocookie.com/embed/videoseries?list=PLych0HcnzSQIBl_AZN5L2cMZvOfyhzjd8"></iframe>
+
+|
+|
+|
+
+The legacy tutorials (prior version 2.5.5) covering similar aspects and advanced topics can be found here:
+
+.. toctree::
+   :maxdepth: 2
+
+   ipython
