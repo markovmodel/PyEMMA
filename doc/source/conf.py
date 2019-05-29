@@ -19,8 +19,6 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-    #'sphinx.ext.graphviz',
-    #'sphinx.ext.inheritance_diagram',
     'sphinx_issues',
     'nbsphinx',
 ]
@@ -28,10 +26,9 @@ extensions = [
 
 def _preprocess_notebooks():
     """ hooks into ExecutePreprocessor.preprocess to execute our own filters."""
-    import nbconvert
     import nbsphinx
     from nbconvert.preprocessors import Preprocessor
-    org_method = nbsphinx.Exporter.from_notebook_node #nbconvert.preprocessors.ExecutePreprocessor.preprocess
+    org_method = nbsphinx.Exporter.from_notebook_node
 
     class RemoveSolutionStubs(Preprocessor):
         """For rendering executed versions of the notebooks, we do not want to have the solution stubs."""
@@ -43,16 +40,18 @@ def _preprocess_notebooks():
             nb['cells'] = filtered_cells
             return nb, resources
 
-    class RewriteNotebookLinks(Preprocessor):
-        def preprocess_cell(self, cell, resources, index):
-            new_input = cell.source.replace('.ipynb', '.html')
-            cell.source = new_input
-            return cell, resources
+    class NoExecuteLegacyNotebooks(Preprocessor):
+        def preprocess(self, nb, resources):
+            path = resources['metadata']['path']
+            if 'legacy-notebooks' in path:
+                nb['metadata']['nbsphinx'] = {'execute': 'never'}
+                self.log.info('disabled notebook execution: %s', path)
+            return nb, resources
 
     def my_from_notebook_node(self, nb, resources, **kwargs):
         self.log.info('patched preprocessing method')
         filters = [RemoveSolutionStubs(),
-                   #RewriteNotebookLinks()
+                   NoExecuteLegacyNotebooks(),
                    ]
         for f in filters:
             nb, resources = f.preprocess(nb, resources=resources)
