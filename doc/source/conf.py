@@ -7,7 +7,7 @@
 # serve to show the default.
 from __future__ import print_function
 
-import sys
+import sys, os
 
 from nbconvert.preprocessors import Preprocessor
 
@@ -55,6 +55,7 @@ def _preprocess_notebooks():
             return cell, resources
 
     def my_preprocess(self, notebook, resources, km=None):
+        self.log.info('patched preprocessing method')
         notebook, resources = RemoveSolutionStubs().preprocess(notebook, resources=resources)
         notebook, resources = RewriteNotebookLinks().preprocess(notebook, resources=resources)
         return org_method(self, notebook, resources=resources, km=km)
@@ -66,7 +67,12 @@ _preprocess_notebooks()
 
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 600
-nbsphinx_execute= 'never'
+
+# execution is a long running operation, only turn it on if environment variable nbflags is set to '--execute'
+if os.getenv('nbflags', '') == '--execute':
+    nbsphinx_execute = 'auto'
+else:
+    nbsphinx_execute = 'never'
 
 
 # Github repo
