@@ -30,7 +30,6 @@ Technical features:
 * Basic compatibility with `scikit-learn <http://scikit-learn.org/>`_. More complete compatibility will follow.
 * Code is hosted at `GitHub <http://github.com/markovmodel/PyEMMA/>`_ under the Lesser GNU public license (LGPL).
   Please post issues or reports there.
-* Subscribe to the newsletter `here <https://lists.fu-berlin.de/listinfo/pyemma-newsletter#subscribe>`_. News will be sent only after major releases / fixes.
 
 Citation |DOI for Citing PyEMMA|
 ================================
