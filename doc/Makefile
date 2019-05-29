@@ -16,12 +16,7 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILD_DIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-# ipython notebook index file
-NBCONVERT_CONFIG = $(realpath jupyter_nbconvert_config.py)
-NBCONVERT_OUTPUT = source/generated
-NBCONVERT_CMD = jupyter nbconvert --output-dir=$(NBCONVERT_OUTPUT) $(nbflags) --config $(NBCONVERT_CONFIG)
-
-.PHONY: help clean html ipython-rst
+.PHONY: help clean html
 
 #------------------------------------------------------------------------------
 all: html
@@ -41,12 +36,6 @@ html:
 
 out_dir:
 	mkdir -p source/generated
-
-ipython-rst: out_dir
-	cd source/generated
-	pwd
-	exec $(NBCONVERT_CMD)
-	@echo "Conversion finished."
 
 latex:
 	mkdir -p build/latex build/doctrees
