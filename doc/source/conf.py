@@ -5,8 +5,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-from __future__ import print_function
-
+import os
 import pyemma
 print("Generating doc for PyEMMA version {version} installed in {path}"
       .format(version=pyemma.__version__, path=pyemma.__path__))
@@ -21,7 +20,59 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx_issues',
+    'nbsphinx',
 ]
+
+
+def _preprocess_notebooks():
+    """ hooks into ExecutePreprocessor.preprocess to execute our own filters."""
+    import nbsphinx
+    from nbconvert.preprocessors import Preprocessor
+    org_method = nbsphinx.Exporter.from_notebook_node
+
+    class RemoveSolutionStubs(Preprocessor):
+        """For rendering executed versions of the notebooks, we do not want to have the solution stubs."""
+        def preprocess(self, nb, resources):
+            filtered_cells = [
+                cell for cell in nb['cells']
+                if not cell['metadata'].get('solution2_first', False)
+            ]
+            nb['cells'] = filtered_cells
+            return nb, resources
+
+    class NoExecuteLegacyNotebooks(Preprocessor):
+        def preprocess(self, nb, resources):
+            path = resources['metadata']['path']
+            if 'legacy-notebooks' in path:
+                nb['metadata']['nbsphinx'] = {'execute': 'never'}
+                self.log.info('disabled notebook execution: %s', path)
+            return nb, resources
+
+    def my_from_notebook_node(self, nb, resources, **kwargs):
+        self.log.info('patched preprocessing method')
+        filters = [RemoveSolutionStubs(),
+                   NoExecuteLegacyNotebooks(),
+                   ]
+        for f in filters:
+            nb, resources = f.preprocess(nb, resources=resources)
+
+        return org_method(self, nb, resources=resources, **kwargs)
+
+    nbsphinx.Exporter.from_notebook_node = my_from_notebook_node
+
+
+# invoke method patch
+_preprocess_notebooks()
+
+nbsphinx_allow_errors = True
+nbsphinx_timeout = 600
+
+# execution is a long running operation, only turn it on if environment variable nbflags is set to '--execute'
+if os.getenv('nbflags', '') == '--execute':
+    nbsphinx_execute = 'auto'
+else:
+    nbsphinx_execute = 'never'
+
 
 # Github repo
 issues_github_path = 'markovmodel/PyEMMA'
@@ -64,7 +115,7 @@ language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '*_test*']
+exclude_patterns = ['_build', '*_test*', '**/.ipynb_checkpoints/*']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 default_role = "autolink"
@@ -90,7 +141,7 @@ pygments_style = 'sphinx'
 # -- options for mathjax
 # note there is no protocol given here to avoid mixing http with https
 # see: http://docs.mathjax.org/en/latest/start.html#secure-cdn-access
-mathjax_path = ("https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?"
+mathjax_path = ("https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?"
                 "config=TeX-AMS-MML_HTMLorMML")
 
 # -- Options for HTML output ---------------------------------------------

@@ -34,18 +34,17 @@ for the contents of both the article and the jupyter notebooks `here <https://gi
 .. toctree::
    :maxdepth: 1
 
-   generated/00-pentapeptide-showcase
-   generated/01-data-io-and-featurization
-   generated/02-dimension-reduction-and-discretization
-   generated/03-msm-estimation-and-validation
-   generated/04-msm-analysis
-   generated/05-pcca-tpt
-   generated/06-expectations-and-observables
-   generated/07-hidden-markov-state-models
-   generated/08-common-problems
+   tutorials/notebooks/00-pentapeptide-showcase
+   tutorials/notebooks/01-data-io-and-featurization
+   tutorials/notebooks/02-dimension-reduction-and-discretization
+   tutorials/notebooks/03-msm-estimation-and-validation
+   tutorials/notebooks/04-msm-analysis
+   tutorials/notebooks/05-pcca-tpt
+   tutorials/notebooks/06-expectations-and-observables
+   tutorials/notebooks/07-hidden-markov-state-models
+   tutorials/notebooks/08-common-problems
 
 
-The legacy tutorials (prior version 2.5.5) covering similar aspects and advanced topics can be found here :doc:`ipython`
 
 
 Workshop video tutorials
@@ -59,11 +58,6 @@ On our Youtube channel you will find lectures and talks about:
   * Enhanced sampling
   * Dealing with multi-ensemble molecular dynamics simulations in PyEMMA
   * Useful hints about practical issues...
-
-2019 Workshop
-^^^^^^^^^^^^^
-
-Stay tuned...
 
 
 2018 Workshop
@@ -80,3 +74,14 @@ Stay tuned...
 .. raw:: html
 
    <iframe width="100%" height="480px" src="https://www.youtube-nocookie.com/embed/videoseries?list=PLych0HcnzSQIBl_AZN5L2cMZvOfyhzjd8"></iframe>
+
+|
+|
+|
+
+The legacy tutorials (prior version 2.5.5) covering similar aspects and advanced topics can be found here:
+
+.. toctree::
+   :maxdepth: 2
+
+   ipython

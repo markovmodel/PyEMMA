@@ -5,11 +5,13 @@ Changelog
 ------------------
 
 **New features**:
- - all dependencies can seemlessly be installed via pip. :pr:`1412`
+
+- all dependencies can seemlessly be installed via pip. :pr:`1412`
 
 **Fixes**:
- - NumPy 1.16 made it impossible to change the writeable flag,
-   which led to a bug in PyEMMA (CK-test failures with multiple jobs). :pr:`1406`
+
+- NumPy 1.16 made it impossible to change the writeable flag,
+  which led to a bug in PyEMMA (CK-test failures with multiple jobs). :pr:`1406`
 
 
 2.5.5 (02-13-2019)
