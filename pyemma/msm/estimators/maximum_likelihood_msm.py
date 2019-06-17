@@ -214,10 +214,6 @@ class _MSMEstimator(_Estimator, _MSM):
             self._dtrajs_full, self._dtrajs_milestone_counting_offsets, self.n_cores = \
                 milestone_counting(dtrajs, core_set=self.core_set, in_place=False)
 
-            sum(d.size for d in dtrajs)
-            sum(d.size for d in self._dtrajs_full)
-
-
             # compute and store discrete trajectory statistics
             dtrajstats = _DiscreteTrajectoryStats(self._dtrajs_full)
             # check if this MSM seems too large to be dense
