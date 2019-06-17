@@ -18,7 +18,6 @@
 r"""
 This module provides functions to deal with connected sets.
 """
-from __future__ import absolute_import
 
 __all__ = [
     'compute_csets_TRAM',

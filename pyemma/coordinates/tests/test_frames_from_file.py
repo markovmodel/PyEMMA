@@ -24,7 +24,6 @@ the retrival via save_trajs
 @author: gph82, clonker
 '''
 
-from __future__ import absolute_import
 
 import pkg_resources
 import unittest
@@ -161,7 +160,7 @@ class TestFramesFromFile(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             _frames_from_file(files, top=get_top(), frames=inds)
         import re
-        matches = re.match(".*10\).*is larger than trajectory length.*\= 10", cm.exception.args[0])
+        matches = re.match(r".*10\).*is larger than trajectory length.*\= 10", cm.exception.args[0])
         assert matches
 
     def test_pass_reader(self):

@@ -15,13 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import absolute_import
 
 import os
 import unittest
 from contextlib import contextmanager
 
-from mock import patch
+from unittest.mock import patch
 from pyemma.util.files import TemporaryDirectory
 from logging import getLogger
 

@@ -12,7 +12,6 @@ and
 Base classes for all estimators.
 """
 
-from __future__ import absolute_import
 # Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
 # License: BSD 3 clause
 

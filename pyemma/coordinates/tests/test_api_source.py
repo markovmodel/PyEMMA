@@ -18,7 +18,6 @@
 
 
 
-from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -125,6 +124,11 @@ class TestApiSourceFileReader(unittest.TestCase):
         # reset to default chunk size.
         r3 = api.source(r, chunksize=None)
         assert r3.chunksize is not None
+
+    def test_pdb_traj_unsupported(self):
+        with self.assertRaises(ValueError) as c, tempfile.NamedTemporaryFile(suffix='.pdb') as ntf:
+            api.source([ntf.name], top=self.bpti_pdbfile)
+            assert 'PDB' in c.exception.args[0]
 
 
 class TestApiSourceFeatureReader(unittest.TestCase):

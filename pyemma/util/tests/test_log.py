@@ -27,7 +27,7 @@ import logging
 
 from pyemma.util import log
 from pyemma.util import config
-import mock
+from unittest import mock
 
 
 class TestNonWriteableLogFile(unittest.TestCase):

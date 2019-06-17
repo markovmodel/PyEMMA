@@ -20,11 +20,6 @@ import sys
 
 
 def main(argv=None):
-    import six
-    if six.PY2:
-        print('This tool is only available for Python3.')
-        sys.exit(1)
-
     import argparse
     from pyemma import load
     from pyemma._base.serialization.h5file import H5File

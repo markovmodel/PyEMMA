@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 import numpy as _np
 from pyemma.coordinates import assign_to_centers as _assign_to_centers
@@ -25,7 +24,7 @@ __all__ = [
 
 class DoubleWellSampler(object):
     '''Continuous multi-ensemble MCMC process in an asymmetric double well potential'''
-    def __init__(self):
+    def __init__(self, random_seed=None):
         self.xmin = -1.8
         self.xmid = 0.127
         self.xmax = 1.7
@@ -38,6 +37,12 @@ class DoubleWellSampler(object):
         self.pi = _np.exp(-epot)
         self.pi[:] = self.pi / self.pi.sum()
         self.f = -_np.log(self.pi)
+
+        if random_seed is not None:
+            self._rng = _np.random.RandomState(random_seed)
+        else:
+            self._rng = _np.random
+        self.random_seed = random_seed
 
     @property
     def centers(self):
@@ -66,9 +71,9 @@ class DoubleWellSampler(object):
         xtraj[0] = xinit
         etraj[0] = self.potential(xinit, kt=kt, kbias=kbias, xbias=xbias)
         for i in range(length):
-            x_candidate = xtraj[i] + self.step * (_np.random.rand() - 0.5)
+            x_candidate = xtraj[i] + self.step * (self._rng.rand() - 0.5)
             e_candidate = self.potential(x_candidate, kt=kt, kbias=kbias, xbias=xbias)
-            if e_candidate < etraj[i] or _np.random.rand() < _np.exp(etraj[i] - e_candidate):
+            if e_candidate < etraj[i] or self._rng.rand() < _np.exp(etraj[i] - e_candidate):
                 xtraj[i + 1] = x_candidate
                 etraj[i + 1] = e_candidate
             else:
@@ -82,8 +87,8 @@ class DoubleWellSampler(object):
         if xinit is None:
             if right:
                 pad = 0.2
-                return _np.random.rand() * (self.xmax - self.xmid - 2.0 * pad) + self.xmid + pad
-            return _np.random.choice(self.x, size=1, p=self.pi if weighted is True else None)
+                return self._rng.rand() * (self.xmax - self.xmid - 2.0 * pad) + self.xmid + pad
+            return self._rng.choice(self.x, size=1, p=self.pi if weighted is True else None)
         return xinit
 
     def sample(self, ntraj=1, xinit=None, length=10000):

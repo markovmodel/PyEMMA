@@ -23,33 +23,33 @@
 #define THERMOTOOLS_DTRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_DTRAM_LOG_PRIOR -23.025850929940457
 
-extern void _dtram_init_log_lagrangian_mult(
+void _dtram_init_log_lagrangian_mult(
     int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
-extern void _dtram_update_log_lagrangian_mult(
+void _dtram_update_log_lagrangian_mult(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
-extern void _dtram_update_conf_energies(
+void _dtram_update_conf_energies(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
     int n_conf_states, double *scratch_TM, double *new_conf_energies);
 
-extern void _dtram_estimate_transition_matrix(
+void _dtram_estimate_transition_matrix(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix);
 
-extern void _dtram_get_therm_energies(
+void _dtram_get_therm_energies(
     double *bias_energies, double *conf_energies, int n_therm_states, int n_conf_states,
     double *scratch_M, double *therm_energies);
 
-extern void _dtram_normalize(
+void _dtram_normalize(
     int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies);
 
-extern double _dtram_get_loglikelihood(
+double _dtram_get_loglikelihood(
     int *count_matrices, double *transition_matrices,
     int n_therm_states, int n_conf_states);
 
-extern double _dtram_get_prior();
-extern double _dtram_get_log_prior();
+double _dtram_get_prior(void);
+double _dtram_get_log_prior(void);
 
 #endif

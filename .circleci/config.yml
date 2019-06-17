@@ -21,7 +21,7 @@ jobs:
       - run: conda config --set quiet true
       - run: conda install conda-build=3.16 -c defaults
       - run: mkdir workspace
-      - run: conda build devtools/conda-recipe --python=3.6 --no-test --output-folder workspace
+      - run: conda build devtools/conda-recipe --python=3.7 --no-test --output-folder workspace
       - persist_to_workspace:
           root: workspace
           paths:
@@ -46,8 +46,8 @@ jobs:
       - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
       - attach_workspace:
           at: workspace
-      - run: conda build devtools/conda-recipe --python=3.6 --test --output-folder workspace
-      - run: bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml 
+      - run: conda build devtools/conda-recipe --python=3.7 --test --output-folder workspace
+      - run: bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml
       - store_test_results:
           path: /tmp/circleci-test-results
       # Save artifacts

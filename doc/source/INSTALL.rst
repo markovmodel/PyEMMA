@@ -13,7 +13,7 @@ Anaconda install (Recommended)
 ==============================
 
 We strongly recommend to use the Anaconda scientific python distribution in order to install
-python-based software, including PyEMMA. Python-based software is not trivial to distribute
+Python-based software, including PyEMMA. Python-based software is not trivial to distribute
 and this approach saves you many headaches and problems that frequently arise in other installation
 methods. You are free to use a different approach (see below) if you know how to sort out problems,
 but play at your own risk.
@@ -26,7 +26,7 @@ If you want to use Miniconda on Linux or OSX, you can run this script to downloa
 After the script finishes, you have a miniconda installation and inside of this a 'pyemma' environment.
 You need to activate the new environment by invoking::
 
-   source activate pyemma
+   conda activate pyemma
 
 in order to work with this new environment. An environment encapsulates all software used by PyEMMA and is independent
 of other things. Further reading `here <https://conda.io/docs/user-guide/concepts.html#conda-environments>`_.

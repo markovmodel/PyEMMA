@@ -20,17 +20,11 @@ Created on 15.10.2013
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 import logging
 from logging.config import dictConfig
 import os.path
 import warnings
-
-from pyemma.util.annotators import deprecated
-
-__all__ = ['getLogger',
-           ]
 
 
 class LoggingConfigurationError(RuntimeError):
@@ -43,6 +37,11 @@ def setup_logging(config, D=None):
     """
     if not D:
         import yaml
+        from distutils.version import LooseVersion
+        if LooseVersion(yaml.__version__) >= LooseVersion('5.1'):
+            load_kw = dict(Loader=yaml.FullLoader)
+        else:
+            load_kw = dict()
 
         args = config.logging_config
         default = False
@@ -56,13 +55,13 @@ def setup_logging(config, D=None):
         # first try to read configured file
         try:
             with open(src) as f:
-                D = yaml.load(f)
+                D = yaml.load(f, **load_kw)
         except EnvironmentError as ee:
             # fall back to default
             if not default:
                 try:
                     with open(config.default_logging_file) as f2:
-                        D = yaml.load(f2)
+                        D = yaml.load(f2, **load_kw)
                 except EnvironmentError as ee2:
                     raise LoggingConfigurationError('Could not read either configured nor '
                                                     'default logging configuration!\n%s' % ee2)
@@ -112,13 +111,3 @@ def setup_logging(config, D=None):
                         os.remove(f)
                 except OSError as o:
                     print("during removal of empty logfiles there was a problem: ", o)
-
-@deprecated("use logging.getLogger")
-def getLogger(name=None):
-    # if name is not given, return a logger with name of the calling module.
-    if not name:
-        import traceback
-        t = traceback.extract_stack(limit=2)
-        name = t[0][0]
-
-    return logging.getLogger(name)

@@ -8,9 +8,6 @@ environment:
     MINICONDA_PYTHON: "C:\\Miniconda36-x64"
 
   matrix:
-# TODO: this would involve building c++ with a recent compiler
-#    - CONDA_PY: "27"
-
     - CONDA_PY: "36"
       NUMPY: "--numpy=112" # "old" numpy
     - CONDA_PY: "37"

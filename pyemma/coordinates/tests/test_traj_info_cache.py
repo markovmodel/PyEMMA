@@ -20,7 +20,6 @@ Created on 30.04.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import, print_function
 
 from tempfile import NamedTemporaryFile
 
@@ -28,7 +27,7 @@ import os
 import tempfile
 import unittest
 
-import mock
+from unittest import mock
 
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader

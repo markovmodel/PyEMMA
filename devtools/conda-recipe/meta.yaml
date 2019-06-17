@@ -10,14 +10,13 @@ source:
   #git_url: ../../
 
 build:
-  preserve_egg_dir: True
   script_env:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
-  script: python setup.py install --single-version-externally-managed --record record.txt
-  # workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
-  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt # [linux]
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+# workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
+  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
 
 requirements:
   build:
@@ -34,8 +33,7 @@ requirements:
     - python
     - scipy
     - setuptools
-    # use build flags (eg. CFLAGS etc) from conda-forge
-    - toolchain
+    - pip
     - pybind11
 
   run:
@@ -45,7 +43,6 @@ requirements:
     - intel-openmp # [osx]
     - matplotlib
     - mdtraj >=1.8
-    - mock # TODO: remove when py3k only.
     - msmtools >=1.2
     - {{ pin_compatible('numpy') }}
     - pathos
@@ -54,9 +51,7 @@ requirements:
     - pyyaml
     - scipy
     - setuptools
-    - six >=1.10
     - tqdm
-    - progress_reporter >=2
 
 test:
   source_files:
@@ -68,8 +63,7 @@ test:
     - pytest
     - pytest-cov
     - coverage
-   # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
-    - pytest-faulthandler # [not win]
+    - pytest-faulthandler 
     - pytest-xdist
     - scikit-learn
     # https://github.com/Frozenball/pytest-sugar/issues/124

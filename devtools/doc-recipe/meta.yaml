@@ -1,27 +1,32 @@
-{% set version = GIT_DESCRIBE_TAG[1:] + '+' + GIT_DESCRIBE_NUMBER + '.' + GIT_DESCRIBE_HASH %}
 
 package:
   name: pyemma-doc
   # version number: [base tag]+[commits-upstream]_[git_hash]
   # eg. v2.0+0_g8824162
-  version: {{ version }}
+  version: "0"
+
 source:
-  path: ../..
+  - path: ../../doc/
+  # TODO: does not cure that this file can not be icnluded in docs. (relative path issue)
+  - path: ../../pyemma/pyemma.cfg
+    folder: pyemma
 
 requirements:
   build:
-    # there is a bug in conda-build 3.10.9 which does not allow our version number...
-    - pyemma-dev #=={{ version }}
+    - pyemma-dev
+    - make
     - mdshare
     - nglview
-    - nbconvert
+    - nbsphinx
     - sphinx
     - ipython
     - ipywidgets
     - sphinx_rtd_theme
+    - pip
+    - matplotlib
 
 build:
-  noarch: generic
+  #noarch: generic
   script_env:
   # options for sphinx builder
     - SPHINXOPTS

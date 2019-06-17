@@ -16,14 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 from numpy import vstack
 import mdtraj as md
 import numpy as np
 import os
 
-from six import string_types
 
 
 def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
@@ -52,15 +50,15 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
         return FragmentedTrajectoryReader(input_files, topology, chunksize, featurizer)
 
     # normal trajectories
-    if (isinstance(input_files, string_types)
+    if (isinstance(input_files, str)
             or (isinstance(input_files, (list, tuple))
-                and (any(isinstance(item, string_types) for item in input_files)
+                and (any(isinstance(item, str) for item in input_files)
                      or len(input_files) is 0))):
         reader = None
         # check: if single string create a one-element list
-        if isinstance(input_files, string_types):
+        if isinstance(input_files, str):
             input_list = [input_files]
-        elif len(input_files) > 0 and all(isinstance(item, string_types) for item in input_files):
+        elif len(input_files) > 0 and all(isinstance(item, str) for item in input_files):
             input_list = input_files
         else:
             if len(input_files) is 0:
@@ -104,6 +102,10 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
                 if not featurizer_or_top_provided:
                     raise ValueError('The input files were MD files which makes it mandatory to have either a '
                                      'Featurizer or a topology file.')
+
+                if suffix in ('.pdb', '.pdb.gz'):
+                    raise ValueError('PyEMMA can not read PDB-fake-trajectories. '
+                                     'Please consider using a sane trajectory format (e.g. xtc, dcd).')
 
                 reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
                                        chunksize=chunksize)
@@ -173,7 +175,7 @@ def preallocate_empty_trajectory(top, n_frames=1):
 
 
 def enforce_top(top):
-    if isinstance(top, string_types):
+    if isinstance(top, str):
         top = md.load(top).top
     elif isinstance(top, md.Trajectory):
         top = top.top

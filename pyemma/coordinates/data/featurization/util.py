@@ -58,18 +58,14 @@ def _catch_unhashable(x):
 
 
 def hash_top(top):
-    import six
-    if not six.PY3:
-        return hash(top)
-    else:
-        if top is None:
-            return hash(None)
-        # this is a temporary workaround for py3
-        hash_value = hash(top.n_atoms)
-        hash_value ^= hash(tuple(top.atoms))
-        hash_value ^= hash(tuple(top.residues))
-        hash_value ^= hash(tuple(top.bonds))
-        return hash_value
+    if top is None:
+        return hash(None)
+    # this is a temporary workaround for py3
+    hash_value = hash(top.n_atoms)
+    hash_value ^= hash(tuple(top.atoms))
+    hash_value ^= hash(tuple(top.residues))
+    hash_value ^= hash(tuple(top.bonds))
+    return hash_value
 
 
 def cmp_traj(traj_a, traj_b):

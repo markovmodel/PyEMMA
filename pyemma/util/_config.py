@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
-import six
-from six.moves.configparser import ConfigParser
 import os
 import shutil
 import warnings
@@ -31,9 +28,6 @@ from pyemma.util.exceptions import ConfigDirectoryException
 class ReadConfigException(Exception):
     pass
 
-if six.PY2:
-    class NotADirectoryError(Exception):
-        pass
 
 __all__ = ('Config', )
 
@@ -339,15 +333,20 @@ class Config(object):
         self._conf_values.set('pyemma', 'show_config_notification', str(val))
 
     @property
-    @_cached
     def coordinates_check_output(self):
-        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates """
-        return self._conf_values.getboolean('pyemma', 'coordinates_check_output')
+        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates.
+
+        Notes
+        -----
+        This setting is on by default by PyEMMA version 2.5.5
+        """
+        return True
 
     @coordinates_check_output.setter
-    @_invalidate_cache
-    def coordinates_check_output(self, val):
-        self._conf_values.set('pyemma', 'coordinates_check_output', str(val))
+    def coordinates_check_output(self, _):
+        import warnings, sys
+        warnings.warn('{d}Changing the setting for output checking has been disabled for very good reasons.{d}'
+                      .format(d=u' \U00002620 ' if sys.version_info[0] == 3 else ''))
 
     @property
     @_cached
@@ -405,6 +404,7 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
+        from configparser import ConfigParser
         config = ConfigParser()
 
         try:

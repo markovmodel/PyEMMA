@@ -22,52 +22,34 @@ Created on 13.03.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 from collections import namedtuple
+from functools import lru_cache
 from itertools import groupby
 from operator import itemgetter
 
 import numpy as np
-from mdtraj import Topology, Trajectory, version
+from mdtraj import Topology, Trajectory
 from mdtraj.core.trajectory import _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
 
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
-# newer versions do not need multiplying n_frames with stride for certain formats.
-from distutils.version import LooseVersion
-_stride_handling = LooseVersion(version.version) > LooseVersion('1.9.1')
-del LooseVersion
+
+@lru_cache(maxsize=32)
+def _load(top_file):
+    return load_topology(top_file)
 
 
-def _cache_mdtraj_topology(args):
-    import hashlib
-    from mdtraj import load_topology as md_load_topology
-    _top_cache = {}
-
-    def wrap(top_file):
-        if isinstance(top_file, Topology):
-            return top_file
-        if isinstance(top_file, Trajectory):
-            return top_file.topology
-        hasher = hashlib.md5()
-        with open(top_file, 'rb') as f:
-            hasher.update(f.read())
-        hash = hasher.hexdigest()
-
-        if hash in _top_cache:
-            top = _top_cache[hash]
-        else:
-            top = md_load_topology(top_file)
-            _top_cache[hash] = top
-        return top
-
-    return wrap
-
-
-load_topology_cached = _cache_mdtraj_topology(load_topology)
+def load_topology_cached(top_file):
+    if isinstance(top_file, str):
+        return _load(top_file)
+    if isinstance(top_file, Topology):
+        return top_file
+    if isinstance(top_file, Trajectory):
+        return top_file.topology
+    raise NotImplementedError()
 
 
 class iterload(object):
@@ -224,9 +206,7 @@ class iterload(object):
                 n_frames = None  # read all frames
             else:
                 n_frames = self._chunksize
-                # mdtraj > 1.9.1 handles stride for dcd, xtc and trr the right way.
-                if (not _stride_handling and self._extension != '.dcd') \
-                        or (_stride_handling and self._extension not in ('.xtc', '.trr', '.dcd')):
+                if self._extension not in ('.dcd', '.xtc', '.trr'):
                     n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
