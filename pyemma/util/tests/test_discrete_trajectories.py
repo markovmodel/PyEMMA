@@ -201,40 +201,40 @@ class TestMilestoneCounting(unittest.TestCase):
         dtrajs = [np.array([0, 0, 2, 0, 0, 3, 0, 5, 5, 5, 0, 0, 6, 8, 4, 1, 2, 0, 3])]
         expected = [np.array([2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 6, 6, 4, 4, 2, 2, 3])]
         core_set = np.arange(2, 7)
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set)
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set)
         self.assertEqual(n_cores, 5)
         np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_2(self):
         dtrajs = [np.array([0, 0, 2, 1, 2])]
         expected = [np.array([2, 1, 2])]
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=np.arange(1, 3))
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=np.arange(1, 3))
         self.assertEqual(n_cores, 2)
         np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_3(self):
         dtrajs = [np.array([2, 0, 1, 1, 2])]
         expected = [np.array([2, 2, 1, 1, 2])]
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=np.arange(1, 3))
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=np.arange(1, 3))
         self.assertEqual(n_cores, 2)
         np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_4(self):
         dtrajs = [np.array([2, 0, 0, 2, 0, 2, 0, 2])]
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=[1, 2])
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])
         self.assertEqual(n_cores, 2)
         np.testing.assert_equal(dtrajs_core, [np.ones_like(dtrajs[0]) * 2])
 
     def test_core_sets_5(self):
         dtrajs = [np.array([2, 2, 2, 2, 2, 2, 2, 0])]
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=[2])
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
         self.assertEqual(n_cores, 1)
         np.testing.assert_equal(dtrajs_core, [np.ones_like(dtrajs[0]) * 2])
 
     def test_core_set_all_non_negative(self):
         dtrajs = [np.array([-1, 2, -1, 0, 0, 1, -1, 0, 1, 0, 2, -1])]
         expected = [np.array([2,  2, 0, 0, 1,  1, 0, 1, 0, 2, 2])]
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set=None)
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=None)
         np.testing.assert_equal(offsets, [1])
         np.testing.assert_equal(n_cores, 3)
         np.testing.assert_equal(dtrajs_core, expected)
@@ -244,13 +244,13 @@ class TestMilestoneCounting(unittest.TestCase):
         import warnings
 
         if sys.version_info[0] == 2: # yeah python 2 bugs ftw...
-            if hasattr(dt.milestone_counting, '__globals__'):
-                if dt.milestone_counting.__globals__.has_key('__warningregistry__'):
-                    dt.milestone_counting.__globals__['__warningregistry__'].clear()
+            if hasattr(dt.rewrite_dtrajs_to_core_sets, '__globals__'):
+                if dt.rewrite_dtrajs_to_core_sets.__globals__.has_key('__warningregistry__'):
+                    dt.rewrite_dtrajs_to_core_sets.__globals__['__warningregistry__'].clear()
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning, append=False)
-            dtraj_core, offsets, _ = dt.milestone_counting(dtrajs, core_set=[1, 2])
+            dtraj_core, offsets, _ = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])
             assert len(w) == 2
             assert all(issubclass(x.category, UserWarning) for x in w)
             assert "had to be truncated" in str(w[0].message)
@@ -263,7 +263,7 @@ class TestMilestoneCounting(unittest.TestCase):
         dtrajs = [np.random.randint(0, n_states, size=1000) for _ in range(n_traj)]
         core_set = np.random.choice(np.arange(0, n_states), size=n_cores, replace=False)
         assert np.unique(core_set).size == n_cores
-        dtrajs_core, offsets, n_cores = dt.milestone_counting(dtrajs, core_set)
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set)
 
         def naive(dtrajs, core_set):
             import copy

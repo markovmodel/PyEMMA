@@ -224,7 +224,7 @@ def number_of_states(dtrajs, only_used = False):
 # indexing
 ################################################################################
 
-def milestone_counting(dtrajs, core_set, in_place=False):
+def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     r""" Perform milestone counting in given discrete trajectories between core sets.
 
     The given discrete trajectories are rewritten such, that only transitions between core sets
@@ -238,9 +238,9 @@ def milestone_counting(dtrajs, core_set, in_place=False):
     >>> dtrajs = [np.array([5, 4, 1, 3, 4, 4, 5, 3, 0, 1]),
     ...           np.array([4, 4, 4, 5]),
     ...           np.array([4, 4, 5, 1, 2, 3])]
-    >>> dtraj_core, offsets, n_cores = milestone_counting(dtrajs, core_set=[0, 1, 3])
+    >>> dtraj_core, offsets, n_cores = rewrite_dtrajs_to_core_sets(dtrajs, core_set=[0, 1, 3])
     >>> print(dtraj_core)
-    [array([1, 3, 3, 3, 3, 3, 0, 1]), array([1, 1, 3])]
+    [array([1, 3, -1, -1, -1, 3, 0, 1]), array([1, -1, 3])]
 
     We reach the first mile stone in the first trajectory after two steps, after four in the second and so on:
     >>> print(offsets)
@@ -275,19 +275,10 @@ def milestone_counting(dtrajs, core_set, in_place=False):
     if isinstance(core_set, (list, tuple)):
         core_set = list(map(types.ensure_int_vector, core_set))
         core_set = np.unique(np.concatenate(core_set))
-    elif core_set is None:
-        union = reduce(np.union1d, dtrajs)
-        unique = np.unique(union)
-        if unique[0] == -1:
-            unique = unique[1:]
-        core_set = unique
     else:
         core_set = np.unique(types.ensure_int_vector(core_set))
 
     n_cores = len(core_set)
-
-    if not n_cores:
-        return dtrajs, None, None
 
     if not in_place:
         dtrajs = copy.deepcopy(dtrajs)
@@ -295,13 +286,6 @@ def milestone_counting(dtrajs, core_set, in_place=False):
     # build a boolean expression to create a mask of indices within the core set.
     expr = ['(d == {i})'.format(i=i) for i in core_set]
     expr = '|'.join(expr)
-
-    def to_ranges(a):
-        # return a list of consecutive ranges in array a.
-        cons = np.split(a, np.where(np.diff(a) != 1)[0] + 1)
-        ranges = [(np.min(x), np.max(x) + 1) if len(x) > 1
-                  else (x[0], x[0] + 1) for x in cons]
-        return ranges
 
     # if we have no state definition at the beginning of a trajectory, we store the offset to the first milestone.
     offsets = [0]*len(dtrajs)
@@ -311,32 +295,23 @@ def milestone_counting(dtrajs, core_set, in_place=False):
         outside_core_set = np.logical_not(within_core_set)
         if not np.any(outside_core_set):
             continue
-        inds_outside_set = np.where(outside_core_set)[0]
-        # determine ranges to update, which lies outside the core set.
-        ranges = to_ranges(inds_outside_set)
+        d[outside_core_set] = -1
 
-        for start, stop in ranges:
-            # if the first state is not contained in any core set, we set it to -1.
-            # Note that subsequent states not in any core set will also be set to -1.
-            core_set = d[start - 1] if start > 0 else -1
-            d[start:stop] = core_set
-
-        # only the beginning should contain one or more -1
-        mask = d == -1
-        where_minus_one = np.where(mask)[0]
-        offsets[i] = where_minus_one.max() + 1 if len(where_minus_one) > 0 else 0
+        where_positive = np.where(d >= 0)[0]
+        offsets[i] = where_positive.min() if len(where_positive) > 0 else None
         # traj never reached a core set?
         if offsets[i] == len(d):
-            offsets[i] = None  # mark as missing
+            #offsets[i] = None  # mark as missing
             warnings.warn('The entire trajectory with index {i} never visited a core set!'.format(i=i))
-        elif offsets[i] > 0:
+        elif offsets[i] is not None and offsets[i] > 0:
             warnings.warn('The trajectory with index {i} had to be truncated for not starting in a core.'.format(i=i))
+            dtrajs[i] = d[np.where(d >= 0)[0][0]:]
 
-        # cut -1 states again
-        dtrajs[i] = d[~mask]
 
     # filter empty dtrajs
-    dtrajs = list(filter(lambda d: len(d) > 0, dtrajs))
+    dtrajs = [d for i,d in enumerate(dtrajs)
+              if offsets[i] is not None
+              ]
 
     return dtrajs, offsets, n_cores
 
