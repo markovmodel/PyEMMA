@@ -23,7 +23,7 @@ import numpy as np
 from msmtools import estimation as msmest
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
-from pyemma.util.discrete_trajectories import visited_set
+from pyemma.util.discrete_trajectories import visited_set, rewrite_dtrajs_to_core_sets
 
 __author__ = 'noe'
 
@@ -148,7 +148,8 @@ class DiscreteTrajectoryStats(object):
         S = msmest.connected_sets(Cconn, directed=strong)
         return S
 
-    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n', show_progress=True, n_jobs=None, name=''):
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n',
+                     show_progress=True, n_jobs=None, name='', core_set=None, milestoning_method='last_core'):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -182,11 +183,27 @@ class DiscreteTrajectoryStats(object):
 
         # Compute count matrix
         count_mode = count_mode.lower()
-        if count_mode == 'sliding':
+        if count_mode in ('sliding', 'sample') and core_set is not None:
+            if milestoning_method == 'last_core':
+
+                # assign -1 frames to last visited core
+                for d in self._dtrajs:
+                    while -1 in d:
+                        mask = (d == -1)
+                        d[mask] = d[np.roll(mask, -1)]
+                self._C = msmest.count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
+
+            else:
+                raise NotImplementedError('Milestoning method {} not implemented.'.format(milestoning_method))
+
+
+        elif count_mode == 'sliding':
             self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
         elif count_mode == 'sample':
             self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
         elif count_mode == 'effective':
+            if core_set is not None:
+                raise RuntimeError('Cannot estimate core set MSM with effective counting.')
             from pyemma.util.reflection import getargspec_no_self
             argspec = getargspec_no_self(msmest.effective_count_matrix)
             kw = {}

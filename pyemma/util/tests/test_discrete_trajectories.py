@@ -243,11 +243,6 @@ class TestMilestoneCounting(unittest.TestCase):
         dtrajs = [np.array([0, 1, 1, 2]), np.array([0, 0, 0])]
         import warnings
 
-        if sys.version_info[0] == 2: # yeah python 2 bugs ftw...
-            if hasattr(dt.rewrite_dtrajs_to_core_sets, '__globals__'):
-                if dt.rewrite_dtrajs_to_core_sets.__globals__.has_key('__warningregistry__'):
-                    dt.rewrite_dtrajs_to_core_sets.__globals__['__warningregistry__'].clear()
-
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning, append=False)
             dtraj_core, offsets, _ = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])

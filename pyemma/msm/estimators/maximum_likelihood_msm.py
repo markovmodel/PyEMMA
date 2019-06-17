@@ -209,11 +209,16 @@ class _MSMEstimator(_Estimator, _MSM):
             # TODO: reassign dtrajs needed?
             dtrajstats = dtrajs
         else:
-            self._dtrajs_orginal = dtrajs
-            # check for -1 in dtrajs and possibly rewrite to core_set
-            from pyemma.util.discrete_trajectories import milestone_counting
-            self._dtrajs_full, self._dtrajs_milestone_counting_offsets, self.n_cores = \
-                milestone_counting(dtrajs, core_set=self.core_set, in_place=False)
+            if self.core_set is None and any(-1 in d for d in dtrajs):
+                raise ValueError('Empty core set definition not compatible with unassigned states (-1) in trajectory.')
+            if self.core_set is not None or any(-1 in d for d in dtrajs):
+                self._dtrajs_orginal = dtrajs
+                # check for -1 in dtrajs and possibly rewrite to core_set
+                from pyemma.util.discrete_trajectories import rewrite_dtrajs_to_core_sets
+                self._dtrajs_full, self._dtrajs_milestone_counting_offsets, self.n_cores = \
+                    rewrite_dtrajs_to_core_sets(dtrajs, core_set=self.core_set, in_place=False)
+            else:
+                self._dtrajs_full = dtrajs
 
             # compute and store discrete trajectory statistics
             dtrajstats = _DiscreteTrajectoryStats(self._dtrajs_full)
@@ -222,13 +227,13 @@ class _MSMEstimator(_Estimator, _MSM):
                 self.logger.warning('Building a dense MSM with {nstates} states. This can be '
                                     'inefficient or unfeasible in terms of both runtime and memory consumption. '
                                     'Consider using sparse=True.'.format(nstates=dtrajstats.nstates))
-
+        self.milestoning_method = 'last_core'
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode,
                                 mincount_connectivity=self.mincount_connectivity,
                                 n_jobs=getattr(self, 'n_jobs', None),
                                 show_progress=getattr(self, 'show_progress', False),
-                                name=self.name)
+                                name=self.name, core_set=self.core_set, milestoning_method=self.milestoning_method)
         # for other statistics
         return dtrajstats
 

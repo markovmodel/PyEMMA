@@ -1113,10 +1113,9 @@ class TestCoreMSM(unittest.TestCase):
             assert len(np.setdiff1d(uniq, core_set)) == 0
 
     def test_indices_remapping(self):
-        dtrajs = [[-1, -1, 1, 0, 0, 1], [-1, 1, 0, 1, 3], [0, 1, 2, 3]]
+        dtrajs = [[5, 5, 1, 0, 0, 1], [5, 1, 0, 1, 3], [0, 1, 2, 3]]
         desired_offsets = [2, 1, 0]
-        # implicit core_set (omit -1)
-        msm = pyemma.msm.estimate_markov_model(dtrajs, lag=1)
+        msm = pyemma.msm.estimate_markov_model(dtrajs, lag=1, core_set=[0, 1, 2, 3])
         np.testing.assert_equal(msm.dtrajs_milestone_counting_offsets, desired_offsets)
 
         # sampling
@@ -1144,7 +1143,7 @@ class TestCoreMSM(unittest.TestCase):
     def test_compare2hmm_bayes(self):
         """test core set MSM with Bayesian sampling, compare ITS to 2-state BHMM; double-well"""
 
-        cmsm = pyemma.msm.bayesian_markov_model(self.dtraj, lag=5, core_set=[34, 65], nsamples=20)
+        cmsm = pyemma.msm.bayesian_markov_model(self.dtraj, lag=5, core_set=[34, 65], nsamples=20, count_mode='sliding')
         hmm = pyemma.msm.bayesian_hidden_markov_model(self.dtraj, 2, lag=5, nsamples=20)
 
         has_overlap = not (np.all(cmsm.sample_conf('timescales') < hmm.sample_conf('timescales')[0]) or
