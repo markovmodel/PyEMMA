@@ -183,7 +183,12 @@ class DiscreteTrajectoryStats(object):
 
         # Compute count matrix
         count_mode = count_mode.lower()
-        if count_mode in ('sliding', 'sample') and core_set is not None:
+        if core_set is not None and count_mode in ('sliding', 'sample'):
+
+            # set non-core states to -1
+            for d in self._dtrajs:
+                d[~np.in1d(d, core_set)] = -1
+
             if milestoning_method == 'last_core':
 
                 # assign -1 frames to last visited core

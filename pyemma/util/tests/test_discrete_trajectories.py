@@ -199,7 +199,7 @@ class TestSampleIndexes(unittest.TestCase):
 class TestMilestoneCounting(unittest.TestCase):
     def test_core_sets(self):
         dtrajs = [np.array([0, 0, 2, 0, 0, 3, 0, 5, 5, 5, 0, 0, 6, 8, 4, 1, 2, 0, 3])]
-        expected = [np.array([2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 6, 6, 4, 4, 2, 2, 3])]
+        expected = [np.array([2, -1, -1, 3, -1, 5, 5, 5, -1, -1, 6, -1, 4, -1, 2, -1, 3])]
         core_set = np.arange(2, 7)
         dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set)
         self.assertEqual(n_cores, 5)
@@ -214,29 +214,23 @@ class TestMilestoneCounting(unittest.TestCase):
 
     def test_core_sets_3(self):
         dtrajs = [np.array([2, 0, 1, 1, 2])]
-        expected = [np.array([2, 2, 1, 1, 2])]
+        expected = [np.array([2, -1, 1, 1, 2])]
         dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=np.arange(1, 3))
         self.assertEqual(n_cores, 2)
         np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_4(self):
         dtrajs = [np.array([2, 0, 0, 2, 0, 2, 0, 2])]
+        expected = [np.array([2, -1, -1, 2, -1, 2, -1, 2])]
         dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])
         self.assertEqual(n_cores, 2)
-        np.testing.assert_equal(dtrajs_core, [np.ones_like(dtrajs[0]) * 2])
+        np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_5(self):
         dtrajs = [np.array([2, 2, 2, 2, 2, 2, 2, 0])]
+        expected = [np.array([2, 2, 2, 2, 2, 2, 2, -1])]
         dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
         self.assertEqual(n_cores, 1)
-        np.testing.assert_equal(dtrajs_core, [np.ones_like(dtrajs[0]) * 2])
-
-    def test_core_set_all_non_negative(self):
-        dtrajs = [np.array([-1, 2, -1, 0, 0, 1, -1, 0, 1, 0, 2, -1])]
-        expected = [np.array([2,  2, 0, 0, 1,  1, 0, 1, 0, 2, 2])]
-        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=None)
-        np.testing.assert_equal(offsets, [1])
-        np.testing.assert_equal(n_cores, 3)
         np.testing.assert_equal(dtrajs_core, expected)
 
     def test_core_sets_6(self):
@@ -251,6 +245,9 @@ class TestMilestoneCounting(unittest.TestCase):
             assert "had to be truncated" in str(w[0].message)
             assert "never visited a core set" in str(w[1].message)
 
+    # TODO: implement for higher level function
+    # following test not useful for the function as it is now
+    @unittest.skip
     def test_realistic_random(self):
         n_states = 50
         n_traj = 10

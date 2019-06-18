@@ -245,7 +245,7 @@ class MSM(_Model, SerializableMixIn):
         if value is None:
             if self.P is not None:
                 if self.sparse:
-                    value = 10
+                    value = min(10, self._nstates - 1)
                 else:
                     value = self._nstates
 

@@ -225,14 +225,15 @@ def number_of_states(dtrajs, only_used = False):
 ################################################################################
 
 def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
-    r""" Perform milestone counting in given discrete trajectories between core sets.
+    r""" Rewrite trajectories that contain unassigned states.
 
-    The given discrete trajectories are rewritten such, that only transitions between core sets
-    are left in the result.
+    The given discrete trajectories are rewritten such that trajectories that begin
+    with -1 will be truncated here. Index offsets are computed to keep assignment to
+    original data.
 
     Examples
     --------
-    Lets assume we want to restrict the core sets to 1, 2 and 3:
+    Let's assume we want to restrict the core sets to 1, 2 and 3:
 
     >>> import numpy as np
     >>> dtrajs = [np.array([5, 4, 1, 3, 4, 4, 5, 3, 0, 1]),
@@ -242,7 +243,7 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     >>> print(dtraj_core)
     [array([1, 3, -1, -1, -1, 3, 0, 1]), array([1, -1, 3])]
 
-    We reach the first mile stone in the first trajectory after two steps, after four in the second and so on:
+    We reach the first milestone in the first trajectory after two steps, after four in the second and so on:
     >>> print(offsets)
     [2, None, 3]
 
@@ -254,9 +255,8 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     dtrajs: array_like or list of array_like
         Discretized trajectory or list of discretized trajectories.
 
-    core_set: None or ndarray(dtype=int) or list of ndarrays(dtype=int)
-        * If None is given, all indices except -1 are considered to be core sets.
-        * Pass an array of micro-states to define the core sets.
+    core_set: ndarray(dtype=int) or list of ndarrays(dtype=int)
+        Pass an array of micro-states to define the core sets.
 
     in_place: boolean, default=False
         if True, replace the current dtrajs
@@ -264,7 +264,7 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
 
     Returns
     -------
-    dtrajs, offsets: list of ndarray(dtype=int), list
+    dtrajs, offsets, n_cores: list of ndarray(dtype=int), list, int
 
     """
     import copy
@@ -300,10 +300,9 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
         where_positive = np.where(d >= 0)[0]
         offsets[i] = where_positive.min() if len(where_positive) > 0 else None
         # traj never reached a core set?
-        if offsets[i] == len(d):
-            #offsets[i] = None  # mark as missing
+        if offsets[i] is None:
             warnings.warn('The entire trajectory with index {i} never visited a core set!'.format(i=i))
-        elif offsets[i] is not None and offsets[i] > 0:
+        elif offsets[i] > 0:
             warnings.warn('The trajectory with index {i} had to be truncated for not starting in a core.'.format(i=i))
             dtrajs[i] = d[np.where(d >= 0)[0][0]:]
 
