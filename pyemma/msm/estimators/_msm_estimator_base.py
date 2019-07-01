@@ -137,6 +137,18 @@ class _MSMEstimator(_Estimator, _MSM):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            Definition of core set for milestoning MSMs.
+            If set to None, replaces state -1 (if found in discrete trajectories) and
+            performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+            If a list or np.ndarray is supplied, discrete trajectories will be assigned
+            accordingly.
+
+        milestoning_method : str
+            Method to use for counting transitions in trajectories with unassigned frames.
+            Currently available:
+            |  'last_core',   assigns unassigned frames to last visited core
+
         """
         self.lag = lag
 

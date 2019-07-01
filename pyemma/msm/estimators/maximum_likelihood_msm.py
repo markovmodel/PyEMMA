@@ -39,7 +39,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
                  count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', maxiter=1000000,
                  maxerr=1e-8, score_method='VAMP2', score_k=10,
-                 mincount_connectivity='1/n', core_set=None):
+                 mincount_connectivity='1/n', core_set=None, milestoning_method='last_core'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -148,8 +148,16 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             evaluates to 1/nstates.
 
         core_set : None (default) or array like, dtype=int
-            If set to None, replaces state -1 (if applicable) and performs milestone counting.
-            No effect for Voronoi-discretized trajectories (default).
+            Definition of core set for milestoning MSMs.
+            If set to None, replaces state -1 (if found in discrete trajectories) and
+            performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+            If a list or np.ndarray is supplied, discrete trajectories will be assigned
+            accordingly.
+
+        milestoning_method : str
+            Method to use for counting transitions in trajectories with unassigned frames.
+            Currently available:
+            |  'last_core',   assigns unassigned frames to last visited core
 
         References
         ----------
@@ -160,7 +168,8 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
                                                    sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
                                                    score_method=score_method, score_k=score_k,
-                                                   mincount_connectivity=mincount_connectivity, core_set=core_set)
+                                                   mincount_connectivity=mincount_connectivity,
+                                                   core_set=core_set, milestoning_method=milestoning_method)
 
         self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
         if self.statdist_constraint is not None:  # renormalize

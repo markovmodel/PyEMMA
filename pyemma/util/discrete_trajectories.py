@@ -227,9 +227,9 @@ def number_of_states(dtrajs, only_used = False):
 def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     r""" Rewrite trajectories that contain unassigned states.
 
-    The given discrete trajectories are rewritten such that trajectories that begin
-    with -1 will be truncated here. Index offsets are computed to keep assignment to
-    original data.
+    The given discrete trajectories are rewritten such that states not in the core
+    set are -1. Trajectories that begin with unassigned states will be truncated here.
+    Index offsets are computed to keep assignment to original data.
 
     Examples
     --------
@@ -255,7 +255,7 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     dtrajs: array_like or list of array_like
         Discretized trajectory or list of discretized trajectories.
 
-    core_set: ndarray(dtype=int) or list of ndarrays(dtype=int)
+    core_set: ndarray(dtype=int) or ndarray(dtype=int)
         Pass an array of micro-states to define the core sets.
 
     in_place: boolean, default=False

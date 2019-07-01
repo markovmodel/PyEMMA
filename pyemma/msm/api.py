@@ -60,7 +60,7 @@ __all__ = ['markov_model',
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, weights='empirical',
                    errors=None, nsamples=50, n_jobs=None, show_progress=True, mincount_connectivity='1/n',
-                   only_timescales=False):
+                   only_timescales=False, core_set=None, milestoning_method='last_core'):
     # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
@@ -131,6 +131,18 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         If you are only interested in the timescales and its samples,
         you can consider turning this on in order to save memory. This can be
         useful to avoid blowing up memory with BayesianMSM and lots of samples.
+
+    core_set : None (default) or array like, dtype=int
+        Definition of core set for milestoning MSMs.
+        If set to None, replaces state -1 (if found in discrete trajectories) and
+        performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+        If a list or np.ndarray is supplied, discrete trajectories will be assigned
+        accordingly.
+
+    milestoning_method : str
+        Method to use for counting transitions in trajectories with unassigned frames.
+        Currently available:
+        |  'last_core',   assigns unassigned frames to last visited core
 
     Returns
     -------
@@ -218,10 +230,18 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     # Choose estimator:
     if errors is None:
         if weights == 'empirical':
-            estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+            estimator = _ML_MSM(reversible=reversible, connectivity=connectivity,
+                                core_set=core_set, milestoning_method=milestoning_method)
         else:
-            estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity)
+            if core_set is not None or any(d == -1 for d in dtrajs):
+                raise NotImplementedError('OOM models currently not implemented with '
+                                          'milestoning.')
+            estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity,
+                                core_set=core_set, milestoning_method=milestoning_method)
     elif errors == 'bayes':
+        if core_set is not None or any(d == -1 for d in dtrajs):
+            raise NotImplementedError('Convenience function timescales_msm does not support '
+                                      'Bayesian error estimates for core set MSMs.')
         estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity,
                                nsamples=nsamples, show_progress=show_progress)
     else:
@@ -324,7 +344,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8,
                           score_method='VAMP2', score_k=10, mincount_connectivity='1/n',
-                          core_set=None,
+                          core_set=None, milestoning_method='last_core'
     ):
     r""" Estimates a Markov model from discrete trajectories
 
@@ -612,17 +632,20 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
                         sparse=sparse, connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter,
                         maxerr=maxerr, score_method=score_method, score_k=score_k,
-                        mincount_connectivity=mincount_connectivity, core_set=core_set)
+                        mincount_connectivity=mincount_connectivity, core_set=core_set,
+                        milestoning_method=milestoning_method)
         # estimate and return
         return mlmsm.estimate(dtrajs)
     elif weights == 'oom':
         if (statdist is not None) or (maxiter != 1000000) or (maxerr != 1e-8):
             import warnings
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
+        if core_set is not None or any(-1 in d for d in dtrajs):
+            raise NotImplementedError('Milestoning not implemented for OOMs.')
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
                            sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
                            score_method=score_method, score_k=score_k,
-                           mincount_connectivity=mincount_connectivity, core_set=core_set)
+                           mincount_connectivity=mincount_connectivity)
         # estimate and return
         return oom_msm.estimate(dtrajs)
 
@@ -631,7 +654,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
                           count_mode='effective',
                           nsamples=100, conf=0.95, dt_traj='1 step',
-                          show_progress=True, mincount_connectivity='1/n', core_set=None):
+                          show_progress=True, mincount_connectivity='1/n',
+                          core_set=None, milestoning_method='last_core'):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianMSM` that contains the
@@ -824,7 +848,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                                 count_mode=count_mode, sparse=sparse, connectivity=connectivity,
                                 dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress,
                                 mincount_connectivity=mincount_connectivity,
-                                core_set=core_set)
+                                core_set=core_set, milestoning_method=milestoning_method)
     return bmsm_estimator.estimate(dtrajs)
 
 
@@ -1329,7 +1353,8 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
 def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
                           count_mode='sliding',  connectivity='largest',
-                          dt_traj='1 step', maxiter=1000000, eps=0.05, maxcache=3000):
+                          dt_traj='1 step', maxiter=1000000, eps=0.05, maxcache=3000,
+                          core_set=None, milestoning_method='last_core'):
     r""" Estimates an Augmented Markov model from discrete trajectories and experimental data
 
     Returns a :class:`AugmentedMarkovModel` that
@@ -1468,15 +1493,19 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         # MAKE E matrix
         dta = _np.concatenate(dtrajs)
         fta = _np.concatenate(ftrajs)
-        all_markov_states = set(dta)
+        if core_set is not None:
+            all_markov_states = set(core_set)
+        else:
+            all_markov_states = set(dta)
         _E = _np.zeros((len(all_markov_states), fta.shape[1]))
         for i, s in enumerate(all_markov_states):
-            _E[i, :] = fta[_np.where(dta == s)].mean(axis = 0)
+            _E[i, :] = fta[_np.where(dta == s)].mean(axis=0)
         # transition matrix estimator
         mlamm = _ML_AMM(lag=lag, count_mode=count_mode,
                         connectivity=connectivity,
                         dt_traj=dt_traj, maxiter=maxiter, max_cache=maxcache,
-                        E=_E, w=_w, m=m)
+                        E=_E, w=_w, m=m, core_set=core_set,
+                        milestoning_method=milestoning_method)
         # estimate and return
         return mlamm.estimate(dtrajs)
 

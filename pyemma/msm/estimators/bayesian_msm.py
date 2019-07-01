@@ -36,7 +36,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95,
-                 show_progress=True, mincount_connectivity='1/n', core_set=None):
+                 show_progress=True, mincount_connectivity='1/n', core_set=None,
+                 milestoning_method='last_core'):
         r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -132,8 +133,16 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
             evaluates to 1/nstates.
 
         core_set : None (default) or array like, dtype=int
-            If set to None, replaces state -1 (if applicable) and performs milestone counting.
-            No effect for Voronoi-discretized trajectories (default).
+            Definition of core set for milestoning MSMs.
+            If set to None, replaces state -1 (if found in discrete trajectories) and
+            performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+            If a list or np.ndarray is supplied, discrete trajectories will be assigned
+            accordingly.
+
+        milestoning_method : str
+            Method to use for counting transitions in trajectories with unassigned frames.
+            Currently available:
+            |  'last_core',   assigns unassigned frames to last visited core
 
         References
         ----------
@@ -147,7 +156,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
                         count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj,
                         mincount_connectivity=mincount_connectivity,
-                        core_set=core_set)
+                        core_set=core_set, milestoning_method=milestoning_method)
         self.nsamples = nsamples
         self.nsteps = nsteps
         self.conf = conf

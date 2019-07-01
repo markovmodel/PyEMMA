@@ -39,7 +39,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     def __init__(self, lag=1, count_mode='sliding', connectivity='largest',
                  dt_traj='1 step',
                  E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, max_cache=3000,
-                 mincount_connectivity='1/n'):
+                 mincount_connectivity='1/n', core_set=None, milestoning_method='last_core'):
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -139,7 +139,8 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         super(AugmentedMarkovModel, self).__init__(lag=lag, reversible=True, count_mode=count_mode, sparse=False,
                                                    connectivity=connectivity, dt_traj=dt_traj, score_method=None,
                                                    score_k=None, mincount_connectivity=mincount_connectivity,
-                                                   maxiter=maxiter)
+                                                   maxiter=maxiter, core_set=core_set,
+                                                   milestoning_method=milestoning_method)
 
         self.E = E
         if E is not None:
