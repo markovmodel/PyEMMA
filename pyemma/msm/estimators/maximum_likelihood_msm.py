@@ -201,6 +201,20 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         self._C_full = dtrajstats.count_matrix()  # full count matrix
         self._nstates_full = self._C_full.shape[0]  # number of states
 
+        # check for consistency between statdist constraints and core set
+        if self.core_set is not None and self.statdist_constraint is not None:
+            if len(self.core_set) != len(self.statdist_constraint):
+                raise ValueError('Number of core sets and stationary distribution '
+                                 'constraints do not match.')
+
+            # rewrite statdist constraints to full set for compatibility reasons
+            #TODO: find a more consistent way of dealing with this
+            import copy
+            _stdist_constr_coreset = copy.deepcopy(self.statdist_constraint)
+            self.statdist_constraint = _np.zeros(self._nstates_full)
+            self.statdist_constraint[self.core_set] = _stdist_constr_coreset
+
+
         # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
             if self.statdist_constraint is None:
