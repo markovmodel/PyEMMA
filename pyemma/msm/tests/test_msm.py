@@ -1015,7 +1015,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
-
     def _two_state_kinetics(self, msm, eps=0.001):
         if msm.is_sparse:
             k = 4
@@ -1151,6 +1150,49 @@ class TestCoreMSM(unittest.TestCase):
 
         self.assertTrue(has_overlap, msg='Bayesian distributions of HMM and CMSM implied timescales have no overlap.')
 
+    def test_last_core_counting(self):
+
+        n_states = 30
+        n_traj = 10
+        n_cores = 15
+        dtrajs = [np.random.randint(0, n_states, size=1000) for _ in range(n_traj)]
+        core_set = np.random.choice(np.arange(0, n_states), size=n_cores, replace=False)
+        assert np.unique(core_set).size == n_cores
+
+        cmsm = pyemma.msm.estimate_markov_model(dtrajs, lag=1, core_set=core_set, count_mode='sample', reversible=False)
+
+        def naive(dtrajs, core_set):
+            import copy
+            dtrajs = copy.deepcopy(dtrajs)
+            nstates = np.concatenate(dtrajs).max() + 1
+            cmat = np.zeros((nstates, nstates))
+            newdiscretetraj = []
+            for t, st in enumerate(dtrajs):
+                oldmicro = None
+                newtraj = []
+                for f, micro in enumerate(st):
+                    newmicro = None
+                    for co in core_set:
+                        if micro == co:
+                            newmicro = micro
+                            oldmicro = micro
+                            break
+                    if newmicro is None and oldmicro is not None:
+                        newtraj.append(oldmicro)
+                    elif newmicro is not None:
+                        newtraj.append(newmicro)
+                newdiscretetraj.append(np.array(newtraj, dtype=int))
+
+            for d in newdiscretetraj:
+                for oldmicro, newmicro in zip(d[:-1], d[1:]):
+                    cmat[oldmicro, newmicro] += 1
+
+            return newdiscretetraj, cmat
+
+        expected_dtraj, expected_cmat = naive(dtrajs, core_set)
+        print(cmsm.active_set, cmsm.nstates_full)
+        np.testing.assert_equal(cmsm.dtrajs_full, expected_dtraj)
+        np.testing.assert_equal(cmsm.count_matrix_full, expected_cmat)
 
 if __name__ == "__main__":
     unittest.main()
