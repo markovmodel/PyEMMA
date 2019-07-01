@@ -23,7 +23,7 @@ import numpy as np
 from msmtools import estimation as msmest
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
-from pyemma.util.discrete_trajectories import visited_set, rewrite_dtrajs_to_core_sets
+from pyemma.util.discrete_trajectories import visited_set
 
 __author__ = 'noe'
 
@@ -184,15 +184,11 @@ class DiscreteTrajectoryStats(object):
         # Compute count matrix
         count_mode = count_mode.lower()
         if core_set is not None and count_mode in ('sliding', 'sample'):
-
-            # set non-core states to -1
-            for d in self._dtrajs:
-                d[~np.in1d(d, core_set)] = -1
-
             if milestoning_method == 'last_core':
 
                 # assign -1 frames to last visited core
                 for d in self._dtrajs:
+                    assert d[0] != -1
                     while -1 in d:
                         mask = (d == -1)
                         d[mask] = d[np.roll(mask, -1)]

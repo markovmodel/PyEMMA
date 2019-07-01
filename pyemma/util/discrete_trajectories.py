@@ -283,16 +283,12 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     if not in_place:
         dtrajs = copy.deepcopy(dtrajs)
 
-    # build a boolean expression to create a mask of indices within the core set.
-    expr = ['(d == {i})'.format(i=i) for i in core_set]
-    expr = '|'.join(expr)
-
     # if we have no state definition at the beginning of a trajectory, we store the offset to the first milestone.
     offsets = [0]*len(dtrajs)
 
     for i, d in enumerate(dtrajs):
-        within_core_set = eval(expr)
-        outside_core_set = np.logical_not(within_core_set)
+        # set non-core states to -1
+        outside_core_set = ~np.in1d(d, core_set)
         if not np.any(outside_core_set):
             continue
         d[outside_core_set] = -1
