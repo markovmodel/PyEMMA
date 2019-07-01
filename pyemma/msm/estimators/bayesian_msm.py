@@ -174,6 +174,10 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
         return super(BayesianMSM, self).estimate(dtrajs, **kw)
 
     def _estimate(self, dtrajs):
+
+        if self.core_set is not None and self.count_mode == 'effective':
+            raise RuntimeError('Cannot estimate core set MSM with effective counting.')
+
         # conduct MLE estimation (superclass) first
         _MLMSM._estimate(self, dtrajs)
 

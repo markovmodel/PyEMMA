@@ -191,8 +191,8 @@ class _MSMEstimator(_Estimator, _MSM):
                                         'Defining core set automatically; check correctness by calling self.core_set.')
                 else:
                     if set(_np.sort(_np.unique(_np.concatenate(dtrajs)))[1:]) != set(self.core_set):
-                        raise RuntimeError('Core set definition does not match states in dtraj while'
-                                           'dtraj already contains unassigned states.')
+                        self.logger.warning('dtraj containts states that are not in core set definition. '
+                                            'These states will be treated as unassigned.')
 
             if self.core_set is not None:
                 self._dtrajs_original = dtrajs
