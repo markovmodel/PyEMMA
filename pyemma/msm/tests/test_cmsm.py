@@ -815,5 +815,22 @@ class TestCoreMSM(unittest.TestCase):
         np.testing.assert_equal(cmsm.dtrajs_full, expected_dtraj)
         np.testing.assert_equal(cmsm.count_matrix_full, expected_cmat)
 
+    def test_not_implemented_raises(self):
+        with self.assertRaises(RuntimeError) as e:
+            pyemma.msm.bayesian_markov_model([0, 1, 0, 1, 0, 2, 2, 0], lag=1,
+                                             core_set=[0, 1], count_mode='effective')
+            self.assertIn('core set MSM with effective counting', e.exception.args[0])
+
+        with self.assertRaises(NotImplementedError) as e:
+            pyemma.msm.timescales_msm([0, 1, 0, 1, 0, 2, 2, 0], lags=[1, 2],
+                                             core_set=[0, 1], errors='bayes')
+            self.assertIn('does not support Bayesian error estimates for core set MSMs',
+                          e.exception.args[0])
+
+        with self.assertRaises(NotImplementedError) as e:
+            pyemma.msm.estimate_markov_model([0, 1, 0, 1, 0, 2, 2, 0], lag=1,
+                                             core_set=[0, 1], weights='oom')
+            self.assertIn('Milestoning not implemented for OOMs', e.exception.args[0])
+
 if __name__ == "__main__":
     unittest.main()
