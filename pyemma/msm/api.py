@@ -469,6 +469,18 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         may thus separate the resulting transition matrix. The default
         evaluates to 1/nstates.
 
+    core_set : None (default) or array like, dtype=int
+        Definition of core set for milestoning MSMs.
+        If set to None, replaces state -1 (if found in discrete trajectories) and
+        performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+        If a list or np.ndarray is supplied, discrete trajectories will be assigned
+        accordingly.
+
+    milestoning_method : str
+        Method to use for counting transitions in trajectories with unassigned frames.
+        Currently available:
+        |  'last_core',   assigns unassigned frames to last visited core
+
     Returns
     -------
     msm : :class:`MaximumLikelihoodMSM <pyemma.msm.MaximumLikelihoodMSM>`
@@ -741,6 +753,18 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
         Counts lower than that will count zero in the connectivity check and
         may thus separate the resulting transition matrix. The default
         evaluates to 1/nstates.
+
+    core_set : None (default) or array like, dtype=int
+        Definition of core set for milestoning MSMs.
+        If set to None, replaces state -1 (if found in discrete trajectories) and
+        performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+        If a list or np.ndarray is supplied, discrete trajectories will be assigned
+        accordingly.
+
+    milestoning_method : str
+        Method to use for counting transitions in trajectories with unassigned frames.
+        Currently available:
+        |  'last_core',   assigns unassigned frames to last visited core
 
     Returns
     -------
@@ -1444,6 +1468,18 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
     maxcache : int, optional
         Parameter which specifies the maximum size of cache used
         when performing estimation of AMM, in megabytes.
+
+    core_set : None (default) or array like, dtype=int
+        Definition of core set for milestoning MSMs.
+        If set to None, replaces state -1 (if found in discrete trajectories) and
+        performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+        If a list or np.ndarray is supplied, discrete trajectories will be assigned
+        accordingly.
+
+    milestoning_method : str
+        Method to use for counting transitions in trajectories with unassigned frames.
+        Currently available:
+        |  'last_core',   assigns unassigned frames to last visited core
 
     Returns
     -------
