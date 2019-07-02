@@ -308,8 +308,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._count_matrix_full(self.msmrev_eff)
 
     def _discrete_trajectories_full(self, msm):
-        np.testing.assert_equal(self.dtrajs[0], msm.discrete_trajectories_unmodified[0])
-        np.testing.assert_equal(self.dtrajs[0][:-msm.lag], msm.discrete_trajectories_full[0])
+        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
         assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
 
     def test_discrete_trajectories_full(self):
@@ -320,8 +319,7 @@ class TestMSMFiveState(unittest.TestCase):
         self._discrete_trajectories_full(self.msmrev_eff)
 
     def _discrete_trajectories_active(self, msm):
-        np.testing.assert_equal(self.dtrajs[0], msm.discrete_trajectories_unmodified[0])
-        np.testing.assert_equal(self.dtrajs[0][:-msm.lag], msm.discrete_trajectories_active[0])
+        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_active[0]))
         assert len(self.dtrajs) == len(msm.discrete_trajectories_active)
 
     def test_discrete_trajectories_active(self):
@@ -944,7 +942,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         cls.rmsmrev = markov_model(Tt_rev)
         cls.rmsm = markov_model(Tt)
 
-        "Compute further reference quantities:"
+        "Compute further referenc quantities:"
         # Active count fraction:
         cls.hist = 1.0*count_states(cls.dtrajs)
         cls.active_count_frac = np.sum(cls.hist[:4]) / np.sum(cls.hist)
@@ -1093,8 +1091,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         self._count_matrix_full(self.msm_sparse, sparse=True)
 
     def _discrete_trajectories_full(self, msm):
-        np.testing.assert_equal(self.dtrajs[0], msm.discrete_trajectories_unmodified[0])
-        np.testing.assert_equal(self.dtrajs[0][:-msm.lag], msm.discrete_trajectories_full[0])
+        assert (np.all(self.dtrajs[0] == msm.discrete_trajectories_full[0]))
         assert len(self.dtrajs) == len(msm.discrete_trajectories_full)
 
     def test_discrete_trajectories_full(self):
@@ -1106,7 +1103,7 @@ class TestMSM_Incomplete(unittest.TestCase):
     def _discrete_trajectories_active(self, msm):
         dtraj = self.dtrajs[15].copy()
         dtraj[dtraj==4] = -1
-        np.testing.assert_equal(dtraj[:-msm.lag], msm.discrete_trajectories_active[15])
+        assert (np.all(dtraj == msm.discrete_trajectories_active[15]))
         assert len(self.dtrajs) == len(msm.discrete_trajectories_active)
 
     def test_discrete_trajectories_active(self):
