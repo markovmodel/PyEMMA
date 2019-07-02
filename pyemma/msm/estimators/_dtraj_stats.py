@@ -98,16 +98,21 @@ class DiscreteTrajectoryStats(object):
     ----------
     dtrajs: list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
         discrete trajectories, stored as integer ndarrays (arbitrary size)
-        or a single ndarray for only one trajectory.
+        or a single ndarray for only one trajectory. Elements must be
+        non-negative; -1 elements denote unassigned states (milestone
+        counting).
 
     """
 
     def __init__(self, dtrajs):
-        # TODO: extensive input checking!
         from pyemma.util.types import ensure_dtraj_list
 
         # discrete trajectories
         self._dtrajs = ensure_dtraj_list(dtrajs)
+
+        # TODO: extensive input checking!
+        if any([np.any(d < -1) for d in self._dtrajs]):
+            raise ValueError('Discrete trajectory contains elements < -1.')
 
         ## basic count statistics
         # histogram

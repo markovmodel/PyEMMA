@@ -216,7 +216,7 @@ class TestITS_MSM(unittest.TestCase):
         dtraj_disconnected = [-2] * 10
         with self.assertRaises(RuntimeError) as e:
             timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
-        self.assertIn('negative row index', e.exception.args[0])
+        self.assertIn('elements < -1', e.exception.args[0])
 
     def test_no_return_estimators_samples(self):
         lags = [1, 2, 3, 10, 20]
