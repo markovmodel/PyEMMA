@@ -233,13 +233,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
             estimator = _ML_MSM(reversible=reversible, connectivity=connectivity,
                                 core_set=core_set, milestoning_method=milestoning_method)
         else:
-            if core_set is not None or any(d == -1 for d in dtrajs):
+            if core_set is not None or any(-1 in d for d in dtrajs):
                 raise NotImplementedError('OOM models currently not implemented with '
                                           'milestoning.')
-            estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity,
-                                core_set=core_set, milestoning_method=milestoning_method)
+            estimator = _OOM_MSM(reversible=reversible, connectivity=connectivity)
     elif errors == 'bayes':
-        if core_set is not None or any(d == -1 for d in dtrajs):
+        if core_set is not None or any(-1 in d for d in dtrajs):
             raise NotImplementedError('Convenience function timescales_msm does not support '
                                       'Bayesian error estimates for core set MSMs.')
         estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity,
@@ -640,7 +639,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         if (statdist is not None) or (maxiter != 1000000) or (maxerr != 1e-8):
             import warnings
             warnings.warn("Values for statdist, maxiter or maxerr are ignored if OOM-correction is used.")
-        if core_set is not None or any(-1 in d for d in dtrajs):
+        _has_unassigned_states = any(-1 in d for d in dtrajs) if isinstance(dtrajs[0], _np.ndarray) else -1 in dtrajs
+        if core_set is not None or _has_unassigned_states:
             raise NotImplementedError('Milestoning not implemented for OOMs.')
         oom_msm = _OOM_MSM(lag=lag, reversible=reversible, count_mode=count_mode,
                            sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,

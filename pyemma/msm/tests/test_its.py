@@ -162,7 +162,8 @@ class TestITS_MSM(unittest.TestCase):
 
     def test_insert_lag_time(self):
         lags = [1, 3, 5]
-        its = timescales_msm(self.dtraj2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        its = timescales_msm(self.dtraj2, lags=lags, errors='bayes',
+                             nsamples=10, show_progress=False)
         new_lags = np.concatenate((lags, [2, 4]+list(range(6, 9))), axis=0)
         its.lags = new_lags
         np.testing.assert_equal(its._lags, new_lags)
@@ -212,7 +213,7 @@ class TestITS_MSM(unittest.TestCase):
         np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
     def test_errors(self):
-        dtraj_disconnected = [-1] * 10
+        dtraj_disconnected = [-2] * 10
         with self.assertRaises(RuntimeError) as e:
             timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
         self.assertIn('negative row index', e.exception.args[0])
