@@ -241,7 +241,7 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     ...           np.array([4, 4, 5, 1, 2, 3])]
     >>> dtraj_core, offsets, n_cores = rewrite_dtrajs_to_core_sets(dtrajs, core_set=[0, 1, 3])
     >>> print(dtraj_core)
-    [array([1, 3, -1, -1, -1, 3, 0, 1]), array([1, -1, 3])]
+    [array([ 1,  3, -1, -1, -1,  3,  0,  1]), array([ 1, -1,  3])]
 
     We reach the first milestone in the first trajectory after two steps, after four in the second and so on:
     >>> print(offsets)
@@ -255,7 +255,7 @@ def rewrite_dtrajs_to_core_sets(dtrajs, core_set, in_place=False):
     dtrajs: array_like or list of array_like
         Discretized trajectory or list of discretized trajectories.
 
-    core_set: ndarray(dtype=int) or ndarray(dtype=int)
+    core_set: array -like of ints
         Pass an array of micro-states to define the core sets.
 
     in_place: boolean, default=False

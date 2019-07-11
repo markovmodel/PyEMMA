@@ -27,7 +27,6 @@ r"""Unit test for the MSM module
 import unittest
 
 import numpy as np
-import pyemma
 import scipy.sparse
 import warnings
 

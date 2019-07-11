@@ -22,29 +22,18 @@ r"""Unit test for the core set MSM module
 """
 
 import unittest
-
-import numpy as np
-import pyemma
-import scipy.sparse
 import warnings
 
-from msmtools.generation import generate_traj
-from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
-from msmtools.analysis import stationary_distribution, timescales
-from pyemma.util.numeric import assert_allclose
-from pyemma.msm.tests.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_markov_model, MaximumLikelihoodMSM
+import numpy as np
+import scipy.sparse
+
+import pyemma
+from pyemma.msm import estimate_markov_model
 
 
 class TestCMSMRevPi(unittest.TestCase):
     r"""Checks if the MLMSM correctly handles the active set computation
     if a stationary distribution is given"""
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
 
     def test_valid_stationary_vector(self):
         dtraj = np.array([0, 0, 1, 0, 1, 2])
@@ -474,8 +463,6 @@ class TestCMSMDoubleWell(unittest.TestCase):
         self._expectation(self.msm)
 
     def _correlation(self, msm):
-
-
         k = msm.nstates
         # raise assertion error because size is wrong:
         maxtime = 100000
@@ -725,23 +712,32 @@ class TestCoreMSM(unittest.TestCase):
             uniq = np.unique(d)
             assert len(np.setdiff1d(uniq, core_set)) == 0
 
-    def test_indices_remapping(self):
+    def test_indices_remapping_sample_by_dist(self):
         dtrajs = [[5, 5, 1, 0, 0, 1], [5, 1, 0, 1, 3], [0, 1, 2, 3]]
         desired_offsets = [2, 1, 0]
         msm = pyemma.msm.estimate_markov_model(dtrajs, lag=1, core_set=[0, 1, 2, 3])
         np.testing.assert_equal(msm.dtrajs_milestone_counting_offsets, desired_offsets)
 
-        # sampling
-        from pyemma.util.contexts import numpy_random_seed
-        with numpy_random_seed(10):
-            samples_states = msm.sample_by_state(1)
-            #syn_traj = msm.generate_traj(N=20)
-        # the first trajectory is shifted by two frames. Third remains constant.
-        np.testing.assert_equal(samples_states[0], [[0, 4]])
-        np.testing.assert_equal(samples_states[1], [[2, 1]])
-
         msm.pcca(2)
         samples = msm.sample_by_distributions(msm.metastable_distributions, 3)
+
+        # check that non-core-set states are not drawn
+        forbidden_traj_index_tuples = [(0, 0), (0, 1), (1, 0)]
+        samples = [tuple(x) for x in np.vstack(samples)]
+        for tpl in forbidden_traj_index_tuples:
+            self.assertNotIn(tpl, samples)
+
+    def test_indices_remapping_sample_by_state(self):
+        dtrajs = [[5, 5, 1, 0, 0, 1], [5, 1, 0, 1, 3], [0, 1, 2, 3]]
+        msm = pyemma.msm.estimate_markov_model(dtrajs, lag=1, core_set=[0, 1, 2, 3])
+
+        samples = msm.sample_by_state(3)
+
+        # check that non-core-set states are not drawn
+        forbidden_traj_index_tuples = [(0, 0), (0, 1), (1, 0)]
+        samples = [tuple(x) for x in np.vstack(samples)]
+        for tpl in forbidden_traj_index_tuples:
+            self.assertNotIn(tpl, samples)
 
     def test_compare2hmm(self):
         """test if estimated core set MSM is comparable to 2-state HMM; double-well"""
@@ -777,7 +773,6 @@ class TestCoreMSM(unittest.TestCase):
         # than naive implementation
         core_set = np.random.choice(np.arange(0, n_states-1), size=n_cores-1, replace=False)
         core_set = np.concatenate([core_set, [n_states-1]])
-        #TODO: is core_set assumed to be ordered?
         assert np.unique(core_set).size == n_cores
 
         cmsm = pyemma.msm.estimate_markov_model(dtrajs, lag=1, core_set=core_set,
