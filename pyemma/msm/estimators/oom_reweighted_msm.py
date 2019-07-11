@@ -164,8 +164,10 @@ class OOMReweightedMSM(_MSMEstimator):
 
     def _estimate(self, dtrajs):
         """ Estimate MSM """
+
         if self.core_set is not None:
             raise NotImplementedError('Core set MSMs currently not compatible with {}.'.format(self.__class__.__name__))
+
         # remove last lag steps from dtrajs:
         dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
 

@@ -21,7 +21,6 @@ Created on 28.10.2013
 
 @author: marscher
 '''
-
 from numpy.testing import assert_allclose as assert_allclose_np
 
 __all__ = ['assert_allclose',
@@ -50,5 +49,3 @@ def _hash_numpy_array(x):
          v.update(str(x.strides).encode('ascii'))# if x.strides is not None else ''))
          #v.update(str(x.strides).encode('ascii'))
     return hash(v.digest())
-
-    return hash_value

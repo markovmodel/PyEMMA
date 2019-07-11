@@ -50,6 +50,7 @@ class _MSMEstimator(_Estimator, _MSM):
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
                  mincount_connectivity='1/n', core_set=None, milestoning_method='last_core'):
+
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -148,7 +149,6 @@ class _MSMEstimator(_Estimator, _MSM):
             Method to use for counting transitions in trajectories with unassigned frames.
             Currently available:
             |  'last_core',   assigns unassigned frames to last visited core
-
         """
         self.lag = lag
 
@@ -217,6 +217,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
             # compute and store discrete trajectory statistics
             dtrajstats = _DiscreteTrajectoryStats(self._dtrajs_full)
+
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
                 self.logger.warning('Building a dense MSM with {nstates} states. This can be '
@@ -612,7 +613,8 @@ class _MSMEstimator(_Estimator, _MSM):
 
         return self._dtrajs_milestone_counting_offsets
 
-################################################################################
+
+    ################################################################################
     # Generation of trajectories and samples
     ################################################################################
 

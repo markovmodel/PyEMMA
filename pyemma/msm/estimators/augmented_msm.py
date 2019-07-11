@@ -40,6 +40,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                  dt_traj='1 step',
                  E=None, m=None, w=None, eps=0.05, support_ci=1.00, maxiter=500, max_cache=3000,
                  mincount_connectivity='1/n', core_set=None, milestoning_method='last_core'):
+
         r"""Maximum likelihood estimator for AMMs given discrete trajectory statistics and expectation values from experiments
 
         Parameters
@@ -340,6 +341,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
         self._full2active[self.active_set] = _np.arange(len(self.active_set))
 
         # slice out active states from E matrix
+
         _dset = list(set(_np.concatenate(self._dtrajs_full)))
         _rras = [_dset.index(s) for s in self.active_set]
         self.E_active = self.E[_rras]
