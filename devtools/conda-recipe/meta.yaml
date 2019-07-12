@@ -14,9 +14,9 @@ build:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+  script: "{{ PYTHON }} -m pip install . -vv"
 # workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
-  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
+#  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
 
 requirements:
   build:
