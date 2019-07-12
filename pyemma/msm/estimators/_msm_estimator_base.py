@@ -8,7 +8,31 @@ from pyemma.util import types as _types
 from pyemma.util.annotators import fix_docs, aliased, alias
 from pyemma.util.types import ensure_dtraj_list
 from pyemma.util.units import TimeUnit as _TimeUnit
+from decorator import decorator as _decorator
 
+@_decorator
+def _remap_indices_coring(func, self, *args, **kwargs):
+    """Since milestone counting sometimes has to truncate the discrete trajectories (eg. outliers),
+    it becomes mission crucial to maintain the mapping of the current indices to the original input trajectories.
+    """
+
+    indices = func(self, *args, **kwargs)
+    dtraj_offsets = self.dtrajs_milestone_counting_offsets
+
+    if any(dtraj_offsets):  # need to remap indices?
+        import numpy as np
+        from pyemma.util.discrete_trajectories import _apply_offsets_to_samples
+
+        # we handle 1d and 2d indices
+        if isinstance(indices, np.ndarray) and indices.dtype == np.int_:
+            _apply_offsets_to_samples(indices, dtraj_offsets)
+        elif isinstance(indices, list) or (isinstance(indices, np.ndarray) and indices.dtype == np.object_):
+            for s in indices:
+                _apply_offsets_to_samples(s, dtraj_offsets)
+        else:
+            raise TypeError('Indices "{}" not supported.'.format(indices))
+
+    return indices
 
 @fix_docs
 @aliased
@@ -25,7 +49,8 @@ class _MSMEstimator(_Estimator, _MSM):
 
     def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
                  connectivity='largest', dt_traj='1 step', score_method='VAMP2', score_k=10,
-                 mincount_connectivity='1/n'):
+                 mincount_connectivity='1/n', core_set=None, milestoning_method='last_core'):
+
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -113,6 +138,17 @@ class _MSMEstimator(_Estimator, _MSM):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            Definition of core set for milestoning MSMs.
+            If set to None, replaces state -1 (if found in discrete trajectories) and
+            performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+            If a list or np.ndarray is supplied, discrete trajectories will be assigned
+            accordingly.
+
+        milestoning_method : str
+            Method to use for counting transitions in trajectories with unassigned frames.
+            Currently available:
+            |  'last_core',   assigns unassigned frames to last visited core
         """
         self.lag = lag
 
@@ -139,6 +175,8 @@ class _MSMEstimator(_Estimator, _MSM):
 
         # connectivity
         self.mincount_connectivity = mincount_connectivity
+        self.core_set = core_set
+        self.milestoning_method = milestoning_method
 
     ################################################################################
     # Generic functions
@@ -158,8 +196,28 @@ class _MSMEstimator(_Estimator, _MSM):
         if isinstance(dtrajs, _DiscreteTrajectoryStats):
             dtrajstats = dtrajs
         else:
+            if any(-1 in d for d in dtrajs):
+                if self.core_set is None:
+                    self.core_set = _np.sort(_np.unique(_np.concatenate(dtrajs)))[1:]
+                    self.logger.warning('Empty core set while unassigned states (-1) in discrete trajectory. '
+                                        'Defining core set automatically; check correctness by calling self.core_set.')
+                else:
+                    if set(_np.sort(_np.unique(_np.concatenate(dtrajs)))[1:]) != set(self.core_set):
+                        self.logger.warning('dtraj containts states that are not in core set definition. '
+                                            'These states will be treated as unassigned.')
+
+            if self.core_set is not None:
+                self._dtrajs_original = dtrajs
+
+                from pyemma.util.discrete_trajectories import rewrite_dtrajs_to_core_sets
+                self._dtrajs_full, self._dtrajs_milestone_counting_offsets, self.n_cores = \
+                    rewrite_dtrajs_to_core_sets(dtrajs, core_set=self.core_set, in_place=False)
+            else:
+                self._dtrajs_full = dtrajs
+
             # compute and store discrete trajectory statistics
-            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
+            dtrajstats = _DiscreteTrajectoryStats(self._dtrajs_full)
+
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
                 self.logger.warning('Building a dense MSM with {nstates} states. This can be '
@@ -171,7 +229,8 @@ class _MSMEstimator(_Estimator, _MSM):
                                 mincount_connectivity=self.mincount_connectivity,
                                 n_jobs=getattr(self, 'n_jobs', None),
                                 show_progress=getattr(self, 'show_progress', False),
-                                name=self.name)
+                                name=self.name,
+                                core_set=self.core_set, milestoning_method=self.milestoning_method)
 
         # for other statistics
         return dtrajstats
@@ -516,6 +575,45 @@ class _MSMEstimator(_Estimator, _MSM):
         hist_active = hist[self.active_set]
         return float(_np.sum(hist_active)) / float(_np.sum(hist))
 
+    @property
+    def core_set(self):
+        """ list of states which are defined to lie within the core set.
+
+        Transitions will only be considered between cores.
+        """
+        return self._core_set
+
+    @core_set.setter
+    def core_set(self, value):
+        self._core_set = _types.ensure_int_vector(value) if value is not None else None
+
+    @property
+    @alias('dtrajs_unmodified')
+    def discrete_trajectories_unmodified(self):
+        """
+        A list of integer arrays with the original and not modified discrete trajectories.
+        """
+
+        self._check_is_estimated()
+
+        return self._dtrajs_original
+
+    @property
+    def dtrajs_milestone_counting_offsets(self):
+        """ Offsets for milestone counted trajectories for each input discrete trajectory.
+
+        In case a trajectory does not start in a core, we need to shift it towards the first core state visited.
+
+        Returns
+        -------
+        offsets: list of int (or None, indicating a trajectory never visits a core
+        """
+        if not hasattr(self, '_dtrajs_milestone_counting_offsets'):
+            self._dtrajs_milestone_counting_offsets = ()
+
+        return self._dtrajs_milestone_counting_offsets
+
+
     ################################################################################
     # Generation of trajectories and samples
     ################################################################################
@@ -531,6 +629,7 @@ class _MSMEstimator(_Estimator, _MSM):
             self._active_state_indexes = index_states(self.discrete_trajectories_active)
         return self._active_state_indexes
 
+    @_remap_indices_coring
     def generate_traj(self, N, start=None, stop=None, stride=1):
         """Generates a synthetic discrete trajectory of length N and simulation time stride * lag time * N
 
@@ -581,6 +680,7 @@ class _MSMEstimator(_Estimator, _MSM):
 
         return sample_indexes_by_sequence(self.active_state_indexes, syntraj)
 
+    @_remap_indices_coring
     def sample_by_state(self, nsample, subset=None, replace=True):
         """Generates samples of the connected states.
 
@@ -621,6 +721,7 @@ class _MSMEstimator(_Estimator, _MSM):
         return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
 
     # TODO: add sample_metastable() for sampling from metastable (pcca or hmm) states.
+    @_remap_indices_coring
     def sample_by_distributions(self, distributions, nsample):
         """Generates samples according to given probability distributions
 

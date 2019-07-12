@@ -1,6 +1,20 @@
 Changelog
 =========
 
+2.5.7 (unreleased)
+------------------
+
+**New features**:
+
+- msm: added milestone counting to ML-MSM, AugmentedMSM, and BayesianMSM (not effective sampling) based on
+  last visited core. Added API infrastructure to include more milestone counting methods. :pr:`1000`
+
+
+**Fixes**:
+
+- 
+
+
 2.5.6 (05-24-2019)
 ------------------
 

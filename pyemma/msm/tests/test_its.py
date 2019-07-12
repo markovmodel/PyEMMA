@@ -162,7 +162,8 @@ class TestITS_MSM(unittest.TestCase):
 
     def test_insert_lag_time(self):
         lags = [1, 3, 5]
-        its = timescales_msm(self.dtraj2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        its = timescales_msm(self.dtraj2, lags=lags, errors='bayes',
+                             nsamples=10, show_progress=False)
         new_lags = np.concatenate((lags, [2, 4]+list(range(6, 9))), axis=0)
         its.lags = new_lags
         np.testing.assert_equal(its._lags, new_lags)
@@ -212,10 +213,10 @@ class TestITS_MSM(unittest.TestCase):
         np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
     def test_errors(self):
-        dtraj_disconnected = [0, 0, 0, 0, -1, 1, 1, 1, 1]
+        dtraj_disconnected = [-2] * 10
         with self.assertRaises(RuntimeError) as e:
             timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
-        self.assertIn('negative row index', e.exception.args[0])
+        self.assertIn('elements < -1', e.exception.args[0])
 
     def test_no_return_estimators_samples(self):
         lags = [1, 2, 3, 10, 20]
@@ -300,6 +301,19 @@ class TestITS_AllEstimators(unittest.TestCase):
         np.testing.assert_array_less(L, estimator.timescales)
         np.testing.assert_array_less(estimator.timescales, R)
 
+    def test_its_cmsm_defined_core(self):
+        # core states, left and right well
+        core_set = [0, 5]
+        estimator = msm.estimators.MaximumLikelihoodMSM(core_set=core_set)
+        its = msm.ImpliedTimescales(estimator, lags=[1, 10, 100, 1000])
+        its.estimate([self.double_well_data.dtraj_T100K_dt10_n6good], n_jobs=1)
+        assert its.models[0].n_cores == 2
+        ref = np.array([[339.22244263],
+                        [334.56862305],
+                        [325.35442195],
+                        [343.53679359]])
+        # rough agreement with the first four timescales of MLE
+        np.testing.assert_allclose(its.timescales, ref, rtol=0.1, atol=10.0)
 
 if __name__ == "__main__":
     unittest.main()

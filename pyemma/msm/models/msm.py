@@ -245,7 +245,7 @@ class MSM(_Model, SerializableMixIn):
         if value is None:
             if self.P is not None:
                 if self.sparse:
-                    value = 10
+                    value = min(10, self._nstates - 1)
                 else:
                     value = self._nstates
 
@@ -506,7 +506,10 @@ class MSM(_Model, SerializableMixIn):
         A : int or int array
             set of states
         """
-        assert _np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
+        assert _np.max(A) < self._nstates, \
+            'Chosen set {A} contains states that are not included in the active set {active_set}.'.format(
+                A=A, active_set=[0, self.nstates-1]
+            )
 
     def _mfpt(self, P, A, B, mu=None):
         self._assert_in_active(A)

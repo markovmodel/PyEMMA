@@ -192,7 +192,7 @@ def string_to_bytes(string):
     if string == '0':
         return 0
     import re
-    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?(\D?)', string)
+    match = re.match(r'(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?(\D?)', string)
     if not match:
         raise RuntimeError('"{}" does not match "[integer] [suffix]"'.format(string))
     if match.group(3):

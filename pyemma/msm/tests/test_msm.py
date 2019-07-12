@@ -205,6 +205,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert 1.0 <= s2 <= 2.0
         se = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=2).mean()
         se_inf = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=None).mean()
+        #TODO: what is this?
 
     def test_score_cv(self):
         self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True))
@@ -222,7 +223,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # NONREVERSIBLE
         assert self.msmrev.is_reversible
         assert self.msmrevpi.is_reversible
-        assert (self.msmrev_sparse.is_reversible)
+        assert self.msmrev_sparse.is_reversible
         assert self.msmrevpi_sparse.is_reversible
         # REVERSIBLE
         assert not self.msm.is_reversible
@@ -249,9 +250,9 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_set(self, msm):
         # should always be <= full set
-        assert (len(msm.active_set) <= self.msm.nstates_full)
+        self.assertLessEqual(len(msm.active_set), self.msm.nstates_full)
         # should be length of nstates
-        assert (len(msm.active_set) == self.msm.nstates)
+        self.assertEqual(len(msm.active_set), self.msm.nstates)
 
     def test_active_set(self):
         self._active_set(self.msmrev)
@@ -767,7 +768,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     def _expectation(self, msm):
         e = msm.expectation(list(range(msm.nstates)))
         # approximately equal for both
-        assert (np.abs(e - 31.73) < 0.01)
+        self.assertLess(np.abs(e - 31.73), 0.01)
 
     def test_expectation(self):
         self._expectation(self.msmrev)
@@ -824,7 +825,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # should relax
         assert (len(times) == maxtime / msm.lagtime)
         assert (len(rel2) == maxtime / msm.lagtime)
-        assert (rel2[0] < rel2[-1])
+        self.assertLess(rel2[0], rel2[-1], msm)
 
     def test_relaxation(self):
         self._relaxation(self.msmrev)
@@ -979,7 +980,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             assert (np.all(samples.shape == (nsample, 2)))
             for row in samples:
                 assert (row[0] == 0)  # right trajectory
-                assert (dtraj_active[row[1]] == i)
+                self.assertEqual(dtraj_active[row[1]], i)
 
     def test_sample_by_state(self):
         self._sample_by_state(self.msmrev)
@@ -1014,7 +1015,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
-
     def _two_state_kinetics(self, msm, eps=0.001):
         if msm.is_sparse:
             k = 4
@@ -1034,7 +1034,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # therefore underestimate rates
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
-        assert (np.abs(k2 - ksum) < eps)
+        self.assertLess(np.abs(k2 - ksum), eps)
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)
@@ -1092,6 +1092,8 @@ IndexError: index 0 is out of bounds for axis 1 with size 0
         from pyemma.msm import timescales_msm
         its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
         assert its.estimator.mincount_connectivity == 0
+
+
 
 if __name__ == "__main__":
     unittest.main()

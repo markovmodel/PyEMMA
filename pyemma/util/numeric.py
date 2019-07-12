@@ -49,4 +49,3 @@ def _hash_numpy_array(x):
          v.update(str(x.strides).encode('ascii'))# if x.strides is not None else ''))
          #v.update(str(x.strides).encode('ascii'))
     return hash(v.digest())
-

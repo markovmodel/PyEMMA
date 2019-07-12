@@ -23,7 +23,7 @@ r"""This module contains unit tests for the trajectory module
 
 """
 
-
+import sys
 import os
 import unittest
 import pkg_resources
@@ -33,6 +33,7 @@ import numpy as np
 import pyemma.util.discrete_trajectories as dt
 
 testpath = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+
 
 class TestReadDiscreteTrajectory(unittest.TestCase):
 
@@ -88,12 +89,6 @@ class TestSaveDiscreteTrajectory(unittest.TestCase):
         self.assertTrue(np.all(dtraj_n==self.dtraj))
 
 class TestDiscreteTrajectoryStatistics(unittest.TestCase):
-    
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
 
     def test_count_1(self):
         S = np.array([0, 0, 0, 0, 0, 0])
@@ -122,6 +117,7 @@ class TestDiscreteTrajectoryStatistics(unittest.TestCase):
         dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         dt.number_of_states(dtraj)
         dt.count_states(dtraj)
+
 
 class TestIndexStates(unittest.TestCase):
 
@@ -167,6 +163,7 @@ class TestIndexStates(unittest.TestCase):
         # just run these to see if there's any exception
         dt.index_states(dtraj)
 
+
 class TestSampleIndexes(unittest.TestCase):
 
     def test_sample_by_sequence(self):
@@ -198,5 +195,116 @@ class TestSampleIndexes(unittest.TestCase):
             for t in range(sidx[i].shape[0]):
                 assert(dtraj[sidx[i][t,1]] == subset[i])
 
-if __name__=="__main__":
+
+class TestMilestoneCounting(unittest.TestCase):
+    def test_core_sets(self):
+        dtrajs = [np.array([0, 0, 2, 0, 0, 3, 0, 5, 5, 5, 0, 0, 6, 8, 4, 1, 2, 0, 3])]
+        expected = [np.array([2, -1, -1, 3, -1, 5, 5, 5, -1, -1, 6, -1, 4, -1, 2, -1, 3])]
+        core_set = np.arange(2, 7)
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set)
+        self.assertEqual(n_cores, 5)
+        self.assertEqual(offsets, [2])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_2(self):
+        dtrajs = [np.array([0, 0, 2, 1, 2])]
+        expected = [np.array([2, 1, 2])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=np.arange(1, 3))
+        self.assertEqual(n_cores, 2)
+        self.assertEqual(offsets, [2])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_3(self):
+        dtrajs = [np.array([2, 0, 1, 1, 2])]
+        expected = [np.array([2, -1, 1, 1, 2])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=np.arange(1, 3))
+        self.assertEqual(n_cores, 2)
+        self.assertEqual(offsets, [0])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_4(self):
+        dtrajs = [np.array([2, 0, 0, 2, 0, 2, 0, 2])]
+        expected = [np.array([2, -1, -1, 2, -1, 2, -1, 2])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])
+        self.assertEqual(n_cores, 2)
+        self.assertEqual(offsets, [0])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_5(self):
+        dtrajs = [np.array([2, 2, 2, 2, 2, 2, 2, 0])]
+        expected = [np.array([2, 2, 2, 2, 2, 2, 2, -1])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [0])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_7(self):
+        dtrajs = [np.array([0, 1, 2, 2, 2, 2, 2, 0])]
+        expected = [np.array([2, 2, 2, 2, 2, -1])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [2])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_8(self):
+        dtrajs = [np.array([2, 2, 1, 1, 1, 2, 2, 0])]
+        expected = [np.array([2, 2, -1, -1, -1, 2, 2, -1])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [0])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_9(self):
+        dtrajs = [np.array([1, 2, 1, 1, 1, 2, 2, 0])]
+        expected = [np.array([2, -1, -1, -1, 2, 2, -1])]
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [1])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_10(self):
+        dtrajs = [np.array([2, 2, 2, 2, 2, 2, 2, 2])]
+        expected = dtrajs
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[2])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [0])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_11(self):
+        dtrajs = [np.array([2, 2, 2, 2, 2, 2, 2, 2])]
+        expected = []
+        dtrajs_core, offsets, n_cores = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[0])
+        self.assertEqual(n_cores, 1)
+        self.assertEqual(offsets, [None])
+        np.testing.assert_equal(dtrajs_core, expected)
+
+    def test_core_sets_6(self):
+        dtrajs = [np.array([0, 1, 1, 2]), np.array([0, 0, 0])]
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=UserWarning, append=False)
+            dtraj_core, offsets, _ = dt.rewrite_dtrajs_to_core_sets(dtrajs, core_set=[1, 2])
+            assert len(w) == 2
+            assert all(issubclass(x.category, UserWarning) for x in w)
+            assert "had to be truncated" in str(w[0].message)
+            assert "never visited a core set" in str(w[1].message)
+
+    def test_reshift_indices_by_offset_1(self):
+        samples = np.array([(0, 1), (0, 3), (1, 42)])
+        # we have omitted itraj 1 and shift traj 0 by 2 and 2 by 1.
+        # so itraj 1 becomes 2
+        offsets = [2, None, 1]
+        dt._apply_offsets_to_samples(samples, offsets)
+        expected = np.array([(0, 3), (0, 5), (2, 43)])
+        np.testing.assert_equal(samples, expected)
+
+    def test_reshift_indices_by_offset_2(self):
+        samples = np.array([(0, 1), (0, 3), (1, 42), (2, 3)])
+        offsets = [2, None, 1, None, 7, None]
+        dt._apply_offsets_to_samples(samples, offsets)
+        expected = np.array([(0, 3), (0, 5), (2, 43), (4, 10)])
+        np.testing.assert_equal(samples, expected)
+
+if __name__ == "__main__":
     unittest.main()

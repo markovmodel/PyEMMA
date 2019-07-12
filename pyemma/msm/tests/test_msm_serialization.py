@@ -46,6 +46,7 @@ class TestMSMSerialization(unittest.TestCase):
         cls.msm = datasets.load_2well_discrete().msm
         cls.bmsm_rev = bayesian_markov_model(cls.obs_macro, cls.lag,
                                              reversible=True, nsamples=cls.nsamples)
+        cls.oom = pyemma.msm.estimate_markov_model(cls.obs_macro, cls.lag, weights='oom')
 
     def setUp(self):
         self.f = tempfile.mktemp()
