@@ -1,8 +1,8 @@
 Changelog
 =========
 
-2.5.7 (unreleased)
-------------------
+2.5.7 (9-24-2019)
+-----------------
 
 **New features**:
 
@@ -12,7 +12,7 @@ Changelog
 
 **Fixes**:
 
-- 
+- core: fixed a bug occurring with the usage of progress bars in jupyter notebooks (web frontend). :pr:`1434:`
 
 
 2.5.6 (05-24-2019)
