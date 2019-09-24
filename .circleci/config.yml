@@ -19,7 +19,7 @@ jobs:
       - run: conda config --add channels conda-forge
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
-      - run: conda install conda-build=3.16 -c defaults
+      - run: conda install conda-build -c defaults
       - run: mkdir workspace
       - run: conda build devtools/conda-recipe --python=3.7 --no-test --output-folder workspace
       - persist_to_workspace:

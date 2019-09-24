@@ -141,8 +141,8 @@ class ProgressReporterMixin(object):
         else:
             args = dict(total=amount_of_work, desc=description, dynamic_ncols=True, **tqdm_args)
             if _attached_to_ipy_notebook_with_widgets():
-                from .notebook import my_tqdm_notebook
-                pg = my_tqdm_notebook(leave=False, **args)
+                from tqdm.notebook import tqdm_notebook
+                pg = tqdm_notebook(leave=False, **args)
             else:
                 import tqdm
                 pg = tqdm.tqdm(leave=True, **args)
