@@ -74,9 +74,11 @@ class InverseDistanceFeature(DistanceFeature):
 
 class ResidueMinDistanceFeature(DistanceFeature):
     __serialize_version = 0
-    __serialize_fields = ('contacts', 'scheme', 'ignore_nonprotein', 'threshold', 'prefix_label')
+    __serialize_fields = ('contacts', 'scheme', 'ignore_nonprotein', 'threshold', 'prefix_label',
+                          'count_contacts')
 
-    def __init__(self, top, contacts, scheme, ignore_nonprotein, threshold, periodic):
+    def __init__(self, top, contacts, scheme, ignore_nonprotein, threshold, periodic,
+                 count_contacts=False):
         self.top = top
         self.contacts = contacts
         self.scheme = scheme
@@ -85,6 +87,11 @@ class ResidueMinDistanceFeature(DistanceFeature):
         self.periodic = periodic
         self.ignore_nonprotein = ignore_nonprotein
 
+        if count_contacts:
+            self.prefix_label = "counted " + self.prefix_label
+        self.count_contacts = count_contacts
+
+
         # mdtraj.compute_contacts might ignore part of the user input (if it is contradictory) and
         # produce a warning. I think it is more robust to let it run once on a dummy trajectory to
         # see what the actual size of the output is:
@@ -92,7 +99,10 @@ class ResidueMinDistanceFeature(DistanceFeature):
         dummy_dist, dummy_pairs = mdtraj.compute_contacts(dummy_traj, contacts=contacts,
                                                           scheme=scheme, periodic=periodic,
                                                           ignore_nonprotein=ignore_nonprotein)
-        self.dimension = dummy_dist.shape[1]
+        if count_contacts:
+            self.dimension = 1
+        else:
+            self.dimension = dummy_dist.shape[1]
         self.distance_indexes = dummy_pairs
 
     def describe(self):
@@ -112,7 +122,11 @@ class ResidueMinDistanceFeature(DistanceFeature):
             res[I[:, 0], I[:, 1]] = 1.0
         else:
             res = D
-        return res
+
+        if self.count_contacts and self.threshold is not None:
+            return res.sum(1, keepdims=True)
+        else:
+            return res
 
     def __eq__(self, other):
         eq = super(ResidueMinDistanceFeature, self).__eq__(other)
@@ -122,7 +136,8 @@ class ResidueMinDistanceFeature(DistanceFeature):
                 and self.scheme == other.scheme
                 and self.periodic == other.periodic
                 and self.threshold == other.threshold
-                and self.ignore_nonprotein == other.ignore_nonprotein)
+                and self.ignore_nonprotein == other.ignore_nonprotein
+                and self.count_contacts == other.count_contacts)
 
 
 class GroupMinDistanceFeature(DistanceFeature):

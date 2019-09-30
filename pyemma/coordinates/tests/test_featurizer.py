@@ -616,7 +616,28 @@ class TestFeaturizer(unittest.TestCase):
         I = np.argwhere(Dref <= threshold)
         Dbinary[I[:, 0], I[:, 1]] = 1
         assert np.allclose(D, Dbinary)
-        assert len(self.feat.describe()) == self.feat.dimension()
+
+    def test_Residue_Mindist_threshold_count_contacts(self):
+        # residue pairs:
+        pairs = self.feat.pairs(list(range(self.feat.topology.n_residues)), excluded_neighbors=2)
+        self.feat.add_residue_mindist(scheme='ca', threshold=0.5, periodic=False, count_contacts=True)
+
+        # The dimensionality of the feature is now one
+        assert (self.feat.dimension() == 1)
+
+        # number of upper triangular matrix elements excl two off-diagonals
+        D = np.zeros((self.traj.n_frames,
+                      int((self.feat.topology.n_residues**2 - 5 * self.feat.topology.n_residues + 6)/2)))
+
+        for n, (resid_a, resid_b) in enumerate(pairs):
+            # Ca only example: resid = atomid
+            X = self.traj.xyz[:, [resid_a], :]
+            Y = self.traj.xyz[:, [resid_b], :]
+            D[:, n] = np.sqrt(np.sum((X - Y) ** 2, axis=2)).min(axis=1)
+
+        C = (D <= 0.5).sum(axis=1, keepdims=True)
+
+        assert (np.allclose(C, self.feat.transform(self.traj)))
 
     def test_Residue_Mindist_Ca_array(self):
         contacts = np.array([[20, 10, ], [10, 0]])
