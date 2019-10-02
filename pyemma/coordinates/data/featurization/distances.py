@@ -143,18 +143,26 @@ class ResidueMinDistanceFeature(DistanceFeature):
 class GroupMinDistanceFeature(DistanceFeature):
     __serialize_version = 0
     __serialize_fields = ('group_identifiers', 'group_definitions', 'threshold', 'group_pairs',
-                          'distance_indexes')
+                          'distance_indexes', 'prefix_label', 'count_contacts')
     prefix_label = "GROUP_MINDIST"
 
-    def __init__(self, top, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic):
+    def __init__(self, top, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic,
+                 count_contacts=False):
         super(GroupMinDistanceFeature, self).__init__(distance_indexes=distance_list, top=top)
         self.group_identifiers = group_identifiers
         self.group_definitions = np.array(group_definitions)
         self.threshold = threshold
         self.group_pairs = group_pairs
 
+        if count_contacts:
+            self.prefix_label = "counted " + self.prefix_label
+        self.count_contacts = count_contacts
+
         self.periodic = periodic
-        self.dimension = len(group_pairs)  # TODO: validate
+        if count_contacts:
+            self.dimension = 1
+        else:
+            self.dimension = len(group_pairs)  # TODO: validate
 
     def describe(self):
         labels = ["%s %u--%u: [%s...%s]--[%s...%s]" % (self.prefix_label, pair[0], pair[1],
@@ -169,7 +177,7 @@ class GroupMinDistanceFeature(DistanceFeature):
         # All needed distances
         Dall = mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
         # Just the minimas
-        Dmin = np.zeros((traj.n_frames, self.dimension))
+        Dmin = np.zeros((traj.n_frames, len(self.group_pairs)))
         res = np.zeros_like(Dmin)
         # Compute the min groupwise
         for ii, (gi, gf) in enumerate(self.group_identifiers):
@@ -181,7 +189,10 @@ class GroupMinDistanceFeature(DistanceFeature):
         else:
             res = Dmin
 
-        return res
+        if self.count_contacts and self.threshold is not None:
+            return res.sum(1, keepdims=True)
+        else:
+            return res
 
     def __eq__(self, other):
         eq = super(GroupMinDistanceFeature, self).__eq__(other)
@@ -191,7 +202,8 @@ class GroupMinDistanceFeature(DistanceFeature):
                 and np.all(self.group_definitions == other.group_definitions)
                 and np.all(self.group_pairs == other.group_pairs)
                 and self.threshold == other.threshold
-                and self.periodic == other.periodic)
+                and self.periodic == other.periodic
+                and self.count_contacts == other.count_contacts)
 
 
 class ContactFeature(DistanceFeature):

@@ -735,7 +735,7 @@ def plot_contour(
         Assignment method; scipy.interpolate.griddata supports the
         methods 'nearest', 'linear', and 'cubic'.
     mask : boolean, optional, default=False
-        Hide unsampled areas is True.
+        Hide unsampled areas if True.
 
     Optional parameters for contourf (**kwargs)
     -------------------------------------------
