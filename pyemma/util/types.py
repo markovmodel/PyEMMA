@@ -25,6 +25,7 @@ import numpy as np
 import scipy.sparse as scisp
 import numbers
 import collections
+import itertools
 
 
 # ======================================================================================================================
@@ -43,44 +44,43 @@ def is_float(l):
     """
     return isinstance(l, numbers.Real)
 
+def is_iterable_of_types(l, supertype):
+    r""" Checks whether all elements of l are of type `supertype`.
+    """
+    return is_iterable(l) and all(issubclass(t, supertype) for t, _ in itertools.groupby(l, type))
+
 def is_iterable_of_int(l):
     r""" Checks if l is iterable and contains only integral types """
-    if not is_iterable(l):
-        return False
-
-    return all(is_int(value) for value in l)
+    return is_iterable_of_types(l, numbers.Integral)
 
 def is_list_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_int(l)
+    return is_iterable_of_types(l, numbers.Integral)
 
 def is_tuple_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_int(l)
+    return is_list_of_int(l)
 
 
 def is_iterable_of_float(l):
     r""" Checks if l is iterable and contains only floating point types """
-    if not is_iterable(l):
-        return False
-
-    return all(is_float(value) for value in l)
+    return is_iterable_of_types(l, numbers.Real)
 
 def is_list_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_float(l)
+    return is_iterable_of_types(l, numbers.Real)
 
 def is_tuple_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_float(l)
+    return is_list_of_float(l)
 
 def is_int_vector(l):
     r"""Checks if l is a numpy array of integers
