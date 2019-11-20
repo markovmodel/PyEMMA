@@ -490,7 +490,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         count_contacts : bool, optional, default = False
             If set to True, this feature will return the number of formed contacts (and not feature values with
             either 1.0 or 0). The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts).
-            Only has an effect if threshold is not None.
+            Requires threshold to be set.
 
 
         .. note::
@@ -622,7 +622,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         count_contacts : bool, optional, default = False
             If set to True, this feature will return the number of formed contacts (and not feature values with
             either 1.0 or 0). The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts).
-            Only has an effect if threshold is not None.
+            Requires threshold to be set.
 
         """
         from .distances import GroupMinDistanceFeature

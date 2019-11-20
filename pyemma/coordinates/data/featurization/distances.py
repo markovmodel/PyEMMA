@@ -127,7 +127,7 @@ class ResidueMinDistanceFeature(DistanceFeature):
             res = D
 
         if self.count_contacts and self.threshold is not None:
-            return res.sum(1, keepdims=True)
+            return res.sum(axis=1, keepdims=True)
         else:
             return res
 
@@ -193,7 +193,7 @@ class GroupMinDistanceFeature(DistanceFeature):
             res = Dmin
 
         if self.count_contacts and self.threshold is not None:
-            return res.sum(1, keepdims=True)
+            return res.sum(axis=1, keepdims=True)
         else:
             return res
 
@@ -233,7 +233,7 @@ class ContactFeature(DistanceFeature):
         I = np.argwhere(dists <= self.threshold)
         res[I[:, 0], I[:, 1]] = 1.0
         if self.count_contacts:
-            return res.sum(1, keepdims=True)
+            return res.sum(axis=1, keepdims=True)
         else:
             return res
 
