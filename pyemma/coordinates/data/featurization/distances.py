@@ -32,13 +32,16 @@ class DistanceFeature(Feature):
 
     prefix_label = "DIST:"
 
-    def __init__(self, top, distance_indexes, periodic=True):
+    def __init__(self, top, distance_indexes, periodic=True, dim=None):
         self.top = top
         self.distance_indexes = np.array(distance_indexes)
         if len(self.distance_indexes) == 0:
             raise ValueError("empty indices")
         self.periodic = periodic
-        self._dim = len(distance_indexes)
+        if dim is None:
+            self._dim = len(distance_indexes)
+        else:
+            self._dim = dim
 
     def describe(self):
         labels = ["%s %s - %s" % (self.prefix_label,
@@ -74,26 +77,36 @@ class InverseDistanceFeature(DistanceFeature):
 
 class ResidueMinDistanceFeature(DistanceFeature):
     __serialize_version = 0
-    __serialize_fields = ('contacts', 'scheme', 'ignore_nonprotein', 'threshold', 'prefix_label')
+    __serialize_fields = ('contacts', 'scheme', 'ignore_nonprotein', 'threshold', 'prefix_label',
+                          'count_contacts')
 
-    def __init__(self, top, contacts, scheme, ignore_nonprotein, threshold, periodic):
-        self.top = top
+    def __init__(self, top, contacts, scheme, ignore_nonprotein, threshold, periodic,
+                 count_contacts=False):
+        if count_contacts and threshold is None:
+            raise ValueError('Cannot count contacts when no contact threshold is supplied.')
+
         self.contacts = contacts
         self.scheme = scheme
         self.threshold = threshold
         self.prefix_label = "RES_DIST (%s)" % scheme
-        self.periodic = periodic
         self.ignore_nonprotein = ignore_nonprotein
+
+        if count_contacts:
+            self.prefix_label = "counted " + self.prefix_label
+        self.count_contacts = count_contacts
+
 
         # mdtraj.compute_contacts might ignore part of the user input (if it is contradictory) and
         # produce a warning. I think it is more robust to let it run once on a dummy trajectory to
         # see what the actual size of the output is:
-        dummy_traj = mdtraj.Trajectory(np.zeros((self.top.n_atoms, 3)), self.top)
+        dummy_traj = mdtraj.Trajectory(np.zeros((top.n_atoms, 3)), top)
         dummy_dist, dummy_pairs = mdtraj.compute_contacts(dummy_traj, contacts=contacts,
                                                           scheme=scheme, periodic=periodic,
                                                           ignore_nonprotein=ignore_nonprotein)
-        self.dimension = dummy_dist.shape[1]
-        self.distance_indexes = dummy_pairs
+
+        dim = 1 if count_contacts else dummy_dist.shape[1]
+        super(ResidueMinDistanceFeature, self).__init__(distance_indexes=dummy_pairs, top=top,
+                                                        periodic=periodic, dim=dim)
 
     def describe(self):
         labels = ["%s %s - %s" % (self.prefix_label,
@@ -112,7 +125,11 @@ class ResidueMinDistanceFeature(DistanceFeature):
             res[I[:, 0], I[:, 1]] = 1.0
         else:
             res = D
-        return res
+
+        if self.count_contacts and self.threshold is not None:
+            return res.sum(axis=1, keepdims=True)
+        else:
+            return res
 
     def __eq__(self, other):
         eq = super(ResidueMinDistanceFeature, self).__eq__(other)
@@ -122,24 +139,33 @@ class ResidueMinDistanceFeature(DistanceFeature):
                 and self.scheme == other.scheme
                 and self.periodic == other.periodic
                 and self.threshold == other.threshold
-                and self.ignore_nonprotein == other.ignore_nonprotein)
+                and self.ignore_nonprotein == other.ignore_nonprotein
+                and self.count_contacts == other.count_contacts)
 
 
 class GroupMinDistanceFeature(DistanceFeature):
     __serialize_version = 0
     __serialize_fields = ('group_identifiers', 'group_definitions', 'threshold', 'group_pairs',
-                          'distance_indexes')
+                          'distance_indexes', 'prefix_label', 'count_contacts')
     prefix_label = "GROUP_MINDIST"
 
-    def __init__(self, top, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic):
-        super(GroupMinDistanceFeature, self).__init__(distance_indexes=distance_list, top=top)
+    def __init__(self, top, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic,
+                 count_contacts=False):
+        if count_contacts and threshold is None:
+            raise ValueError('Cannot count contacts when no contact threshold is supplied.')
+
         self.group_identifiers = group_identifiers
         self.group_definitions = np.array(group_definitions)
         self.threshold = threshold
         self.group_pairs = group_pairs
 
-        self.periodic = periodic
-        self.dimension = len(group_pairs)  # TODO: validate
+        if count_contacts:
+            self.prefix_label = "counted " + self.prefix_label
+        self.count_contacts = count_contacts
+
+        dim = 1 if count_contacts else len(group_pairs)
+        super(GroupMinDistanceFeature, self).__init__(distance_indexes=distance_list, periodic=periodic,
+                                                      top=top, dim=dim)
 
     def describe(self):
         labels = ["%s %u--%u: [%s...%s]--[%s...%s]" % (self.prefix_label, pair[0], pair[1],
@@ -154,7 +180,7 @@ class GroupMinDistanceFeature(DistanceFeature):
         # All needed distances
         Dall = mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
         # Just the minimas
-        Dmin = np.zeros((traj.n_frames, self.dimension))
+        Dmin = np.zeros((traj.n_frames, len(self.group_pairs)))
         res = np.zeros_like(Dmin)
         # Compute the min groupwise
         for ii, (gi, gf) in enumerate(self.group_identifiers):
@@ -166,7 +192,10 @@ class GroupMinDistanceFeature(DistanceFeature):
         else:
             res = Dmin
 
-        return res
+        if self.count_contacts and self.threshold is not None:
+            return res.sum(axis=1, keepdims=True)
+        else:
+            return res
 
     def __eq__(self, other):
         eq = super(GroupMinDistanceFeature, self).__eq__(other)
@@ -176,7 +205,8 @@ class GroupMinDistanceFeature(DistanceFeature):
                 and np.all(self.group_definitions == other.group_definitions)
                 and np.all(self.group_pairs == other.group_pairs)
                 and self.threshold == other.threshold
-                and self.periodic == other.periodic)
+                and self.periodic == other.periodic
+                and self.count_contacts == other.count_contacts)
 
 
 class ContactFeature(DistanceFeature):
@@ -203,7 +233,7 @@ class ContactFeature(DistanceFeature):
         I = np.argwhere(dists <= self.threshold)
         res[I[:, 0], I[:, 1]] = 1.0
         if self.count_contacts:
-            return res.sum(1, keepdims=True)
+            return res.sum(axis=1, keepdims=True)
         else:
             return res
 

@@ -454,7 +454,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
                             scheme='closest-heavy',
                             ignore_nonprotein=True,
                             threshold=None,
-                            periodic=True):
+                            periodic=True,
+                            count_contacts=False):
         r"""
         Adds the minimum distance between residues to the feature list. See below how
         the minimum distance can be defined. If the topology generated out of :py:obj:`topfile`
@@ -486,6 +487,11 @@ class MDFeaturizer(SerializableMixIn, Loggable):
             information, we will treat dihedrals that cross periodic images
             using the minimum image convention.
 
+        count_contacts : bool, optional, default = False
+            If set to True, this feature will return the number of formed contacts (and not feature values with
+            either 1.0 or 0). The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts).
+            Requires threshold to be set.
+
 
         .. note::
             Using :py:obj:`scheme` = 'closest' or 'closest-heavy' with :py:obj:`residue pairs` = 'all'
@@ -501,7 +507,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
                 self.logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
                                      "very time consuming. Consider reducing the residue pairs")
 
-        f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold, periodic)
+        f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold, periodic,
+                                      count_contacts=count_contacts)
         self.__add_feature(f)
 
     def add_group_COM(self, group_definitions, ref_geom=None, image_molecules=False, mass_weighted=True,):
@@ -583,7 +590,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
 
         self.__add_feature(f)
 
-    def add_group_mindist(self, group_definitions, group_pairs='all', threshold=None, periodic=True):
+    def add_group_mindist(self, group_definitions, group_pairs='all', threshold=None,
+                          periodic=True, count_contacts=False):
         r"""
         Adds the minimum distance between groups of atoms to the feature list. If the groups of
         atoms are identical to residues, use :py:obj:`add_residue_mindist <pyemma.coordinates.data.featurizer.MDFeaturizer.add_residue_mindist>`.
@@ -611,6 +619,11 @@ class MDFeaturizer(SerializableMixIn, Loggable):
             information, we will treat dihedrals that cross periodic images
             using the minimum image convention.
 
+        count_contacts : bool, optional, default = False
+            If set to True, this feature will return the number of formed contacts (and not feature values with
+            either 1.0 or 0). The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts).
+            Requires threshold to be set.
+
         """
         from .distances import GroupMinDistanceFeature
         # Some thorough input checking and reformatting
@@ -618,7 +631,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
             _parse_groupwise_input(group_definitions, group_pairs, self.logger, 'add_group_mindist')
         distance_list = self._check_indices(distance_list)
 
-        f = GroupMinDistanceFeature(self.topology, group_definitions, group_pairs, distance_list, group_identifiers, threshold, periodic)
+        f = GroupMinDistanceFeature(self.topology, group_definitions, group_pairs, distance_list, group_identifiers,
+                                    threshold, periodic, count_contacts=count_contacts)
         self.__add_feature(f)
 
     def add_angles(self, indexes, deg=False, cossin=False, periodic=True):
