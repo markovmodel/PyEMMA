@@ -1,6 +1,19 @@
 Changelog
 =========
 
+2.5.8 (??-??-????)
+-----------------
+
+**New features**:
+
+- coordinates: added contact counting for GroupMinDistanceFeature and ResidueMinDistanceFeature. :pr:`1441`
+
+
+**Fixes**:
+
+
+
+
 2.5.7 (9-24-2019)
 -----------------
 
