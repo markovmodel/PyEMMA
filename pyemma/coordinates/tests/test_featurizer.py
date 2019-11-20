@@ -616,6 +616,7 @@ class TestFeaturizer(unittest.TestCase):
         I = np.argwhere(Dref <= threshold)
         Dbinary[I[:, 0], I[:, 1]] = 1
         assert np.allclose(D, Dbinary)
+        assert len(self.feat.describe()) == self.feat.dimension()
 
     def test_Residue_Mindist_threshold_count_contacts(self):
         # residue pairs:
@@ -638,6 +639,11 @@ class TestFeaturizer(unittest.TestCase):
         C = (D <= 0.5).sum(axis=1, keepdims=True)
 
         assert (np.allclose(C, self.feat.transform(self.traj)))
+
+    def test_Residue_Mindist_nothreshold_count_contacts(self):
+        # residue pairs:
+        with self.assertRaises(ValueError):
+            self.feat.add_residue_mindist(scheme='ca', periodic=False, count_contacts=True)
 
     def test_Residue_Mindist_Ca_array(self):
         contacts = np.array([[20, 10, ], [10, 0]])
@@ -745,6 +751,13 @@ class TestFeaturizer(unittest.TestCase):
         Dbinary_summed = Dbinary.sum(axis=1, keepdims=True)
 
         assert np.allclose(D, Dbinary_summed)
+
+    def test_Group_Mindist_All_Three_Groups_nothreshold_count_contacts(self):
+        group0 = [0, 20, 30, 0]
+        group1 = [1, 21, 31, 1]
+        group2 = [2, 22, 32, 2]
+        with self.assertRaises(ValueError):
+            self.feat.add_group_mindist(group_definitions=[group0, group1, group2], count_contacts=True)
 
     def test_Group_Mindist_Some_Three_Groups(self):
         group0 = [0, 20, 30, 0]
