@@ -154,7 +154,6 @@ class GroupMinDistanceFeature(DistanceFeature):
         if count_contacts and threshold is None:
             raise ValueError('Cannot count contacts when no contact threshold is supplied.')
 
-        super(GroupMinDistanceFeature, self).__init__(distance_indexes=distance_list, top=top)
         self.group_identifiers = group_identifiers
         self.group_definitions = np.array(group_definitions)
         self.threshold = threshold
@@ -164,11 +163,9 @@ class GroupMinDistanceFeature(DistanceFeature):
             self.prefix_label = "counted " + self.prefix_label
         self.count_contacts = count_contacts
 
-        self.periodic = periodic
-        if count_contacts:
-            self.dimension = 1
-        else:
-            self.dimension = len(group_pairs)  # TODO: validate
+        dim = 1 if count_contacts else len(group_pairs)
+        super(GroupMinDistanceFeature, self).__init__(distance_indexes=distance_list, periodic=periodic,
+                                                      top=top, dim=dim)
 
     def describe(self):
         labels = ["%s %u--%u: [%s...%s]--[%s...%s]" % (self.prefix_label, pair[0], pair[1],
