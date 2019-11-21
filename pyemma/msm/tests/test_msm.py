@@ -67,7 +67,8 @@ class TestMSMSimple(unittest.TestCase):
         self.C_MSM = count_matrix(self.dtraj, self.tau, sliding=True)
         self.lcc_MSM = largest_connected_set(self.C_MSM)
         self.Ccc_MSM = largest_connected_submatrix(self.C_MSM, lcc=self.lcc_MSM)
-        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True)
+        self.mle_rev_max_err = 1E-8
+        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True, maxerr=self.mle_rev_max_err)
         self.mu_MSM = stationary_distribution(self.P_MSM)
         self.k = 3
         self.ts = timescales(self.P_MSM, k=self.k, tau=self.tau)
@@ -77,7 +78,7 @@ class TestMSMSimple(unittest.TestCase):
         np.random.mtrand.set_state(self.state)
 
     def test_MSM(self):
-        msm = estimate_markov_model(self.dtraj, self.tau)
+        msm = estimate_markov_model(self.dtraj, self.tau, maxerr=self.mle_rev_max_err)
         assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
