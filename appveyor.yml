@@ -1,3 +1,5 @@
+image: Visual Studio 2015
+platform: x64
 environment:
   global:
     PYTHONHASHSEED: "0"
@@ -12,17 +14,20 @@ environment:
       NUMPY: "" # numpy unpinned
 
 install:
+  - cmd: '"%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%'
+  - ps: if ($env:PLATFORM -eq "x64") { $env:CONDA = "$env:CONDA-x64" }
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
-
-  - conda config --set always_yes true
+  - conda config --set always_yes true --set changeps1 no
+  - conda config --add channels conda-forge
+  - conda update -q conda
   - conda install -q conda-build=3
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - setenv /release /x64
-  - conda build -c conda-forge -q devtools/conda-recipe %CONDA_NPY%"
+  # - setenv /release /x64
+  - conda build -q devtools/conda-recipe %CONDA_NPY%"
 
 on_finish:
   # upload test results to AppVeyor
