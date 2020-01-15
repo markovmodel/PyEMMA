@@ -338,7 +338,7 @@ class DiscreteTrajectoryStats(object):
         self._assert_counted_at_lag()
         return self._lag
 
-    def count_matrix(self, connected_set=None, subset=None, effective=False):
+    def count_matrix(self, connected_set=None, subset=None):
         r"""The count matrix
 
         Parameters
@@ -348,16 +348,6 @@ class DiscreteTrajectoryStats(object):
             This parameter is exclusive with subset.
         subset : array-like of int or None, optional, default=None
             subset of states to compute the count matrix on. This parameter is exclusive with subset.
-        effective : bool, optional, default=False
-            Statistically uncorrelated transition counts within the active set of states.
-
-            You can use this count matrix for any kind of estimation, in particular it is meant to give reasonable
-            error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
-
-            The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
-            can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-            :math:`(s_1,\:s_{\tau+1},\:...),\:(s_2,\:t_{\tau+2},\:...),` etc. This geometrical average converges to the
-            correct likelihood in the statistical limit [1]_.
 
         References
         ----------
@@ -377,10 +367,6 @@ class DiscreteTrajectoryStats(object):
         else: # full matrix wanted
             C = self._C
 
-        # effective count matrix wanted?
-        if effective:
-            C /= float(self._lag)
-
         return C
 
     @alias('hist_lagged')
@@ -397,11 +383,11 @@ class DiscreteTrajectoryStats(object):
         return h.sum()
 
     @property
-    def count_matrix_largest(self, effective=False):
+    def count_matrix_largest(self):
         """The count matrix on the largest connected set
 
         """
-        return self.count_matrix(connected_set=0, effective=effective)
+        return self.count_matrix(connected_set=0)
 
     @property
     def largest_connected_set(self):
