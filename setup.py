@@ -325,7 +325,7 @@ if __name__ == '__main__':
         if os.path.exists('.git'):
             import subprocess
             modules = [os.path.join('ext', 'pybind11')]
-            cmd = "git submodule update --remote --init {mod}"
+            cmd = "git submodule update --init {mod}"
 
             for m in modules:
                 subprocess.check_call(cmd.format(mod=m).split(' '))
