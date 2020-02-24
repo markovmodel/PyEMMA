@@ -7,6 +7,7 @@ Changelog
 **New features**:
 
 - coordinates: added contact counting for GroupMinDistanceFeature and ResidueMinDistanceFeature. :pr:`1441`
+- plots: added multi cktest support to plot_cktest function. :pr:`1450`
 
 
 **Fixes**:

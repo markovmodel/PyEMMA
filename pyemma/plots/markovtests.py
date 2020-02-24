@@ -138,12 +138,12 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     lests = []
     lpreds = []
     for test_index, test in enumerate(cktests):
-        print("plotting", test_index)
         for (k, ax) in enumerate(axeslist):
             if diag and k < cktest.nsets:
                 ipos = int(k/layout[1])
                 jpos = int(k%layout[1])
-                lest, lpred = _add_ck_subplot(test, test_index, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units, dt=dt, **plot_kwargs)
+                lest, lpred = _add_ck_subplot(test, test_index, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units,
+                                              dt=dt, **plot_kwargs)
                 k += 1
             else:
                 i = int(k/cktest.nsets)
