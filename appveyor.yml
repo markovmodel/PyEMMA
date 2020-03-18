@@ -12,6 +12,8 @@ environment:
       NUMPY: "--numpy=112" # "old" numpy
     - CONDA_PY: "37"
       NUMPY: "" # numpy unpinned
+    - CONDA_PY: "38"
+      NUMPY: "" # numpy unpinned
 
 install:
   - cmd: '"%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%'
