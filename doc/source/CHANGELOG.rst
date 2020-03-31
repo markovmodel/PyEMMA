@@ -11,7 +11,7 @@ Changelog
 
 
 **Fixes**:
-
+- coordinates: fixed a bug in description of sidechain torsion featurizer. :pr:`1451`
 
 
 

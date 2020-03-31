@@ -222,9 +222,9 @@ class SideChainTorsions(DihedralFeature):
 
         if self.cossin:
             cossin = ('COS({dih} {res})', 'SIN({dih} {res})')
-            labels = [s.format(dih=prefixes[i], res=getlbl(self.top.atom(ires[1])))
+            labels = [s.format(dih=prefixes[j+len(cossin)*i], res=getlbl(self.top.atom(ires[1])))
                       for i, ires in enumerate(self.angle_indexes)
-                      for s in cossin]
+                      for j, s in enumerate(cossin)]
         else:
             labels = ['{dih} {res}'.format(dih=prefixes[i], res=getlbl(self.top.atom(ires[1])))
                       for i, ires in enumerate(self.angle_indexes)]

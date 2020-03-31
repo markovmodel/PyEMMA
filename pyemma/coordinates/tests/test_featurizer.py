@@ -549,6 +549,16 @@ class TestFeaturizer(unittest.TestCase):
         assert self.feat.dimension() == 1
         assert all('CHI1' in d for d in self.feat.describe())
 
+    def test_sidechain_torsions_selstr_cos_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(selstr='resid == 0', cossin=True, which=['chi1', 'chi2'])
+        assert self.feat.dimension() == 4
+        desc = self.feat.describe()
+        assert any(['COS(CHI1' in d for d in desc])
+        assert any(['SIN(CHI1' in d for d in desc])
+        assert any(['COS(CHI2' in d for d in desc])
+        assert any(['SIN(CHI2' in d for d in desc])
+
     def test_sidechain_torsions_invalid_which(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         with self.assertRaises(ValueError):
