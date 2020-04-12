@@ -153,6 +153,8 @@ def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
 
     """
+    if dtraj.ndim==2:
+        dtraj = dtraj.reshape(-1)
     if is_int_vector(dtraj):
         return dtraj
     elif is_list_of_int(dtraj):
