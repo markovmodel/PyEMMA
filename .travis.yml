@@ -21,8 +21,6 @@ env:
       CONDA_NPY=1.11
     - CONDA_PY=3.7
       CONDA_NPY=1.17
-    - CONDA_PY=3.8
-      CONDA_NPY=1.17
 
 matrix:
   exclude:  # test only 3.8 on osx.
@@ -30,12 +28,10 @@ matrix:
       os: osx
     - env: CONDA_PY=3.6
       os: osx
-    - env: CONDA_PY=3.7
-      os: osx
   include:  # test pip install
-    - env: CONDA_PY=3.8 CONDA_BUILD=NO python="3.8"
+    - env: CONDA_PY=3.7 CONDA_BUILD=NO python="3.7"
       os: linux
-      dist: xenial # You’ll need to add dist: xenial to use Python 3.8 and higher.
+      dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
       language: python
       sudo: true
 
