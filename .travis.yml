@@ -17,10 +17,12 @@ env:
     - MACOSX_DEPLOYMENT_TARGET=10.9
     - CONDA_BUILD=YES
   matrix:
-    - CONDA_PY=3.5
     - CONDA_PY=3.6
+      CONDA_NPY=1.11
     - CONDA_PY=3.7
+      CONDA_NPY=1.17
     - CONDA_PY=3.8
+      CONDA_NPY=1.17
 
 matrix:
   exclude:  # test only 3.8 on osx.
