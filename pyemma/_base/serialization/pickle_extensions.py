@@ -20,6 +20,10 @@ from pickle import Pickler, Unpickler, UnpicklingError
 
 import numpy as np
 import logging
+
+# pytables import provides blosc filter availability
+import tables
+
 logger = logging.getLogger(__name__)
 
 __author__ = 'marscher'
@@ -43,7 +47,7 @@ def _check_blosc_avail():
     blosc_opts = _blosc_opts()
     fid, name = tempfile.mkstemp()
     try:
-        with h5py.File(name) as h5f:
+        with h5py.File(name, 'w') as h5f:
             try:
                 h5f.create_dataset('test', shape=(1,1), **blosc_opts)
             except ValueError as ve:
