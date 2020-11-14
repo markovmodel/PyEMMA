@@ -23,6 +23,7 @@ import sys
 import os
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
+from sklearn.base import BaseEstimator as sklBaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util import types as _types
 
@@ -371,9 +372,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
 # we do not want to derive from Serializable here, because this would make all children serializable.
 # However we guide serializable children, what to store/restore.
-class Estimator(_BaseEstimator, Loggable):
-    """ Base class for PyEMMA estimators
 
+class Estimator(sklBaseEstimator, Loggable):
+#   class Estimator(_BaseEstimator, Loggable):
+    """ Base class for pyEMMA estimators
     """
     # flag indicating if estimator's estimate method has been called
     _estimated = False

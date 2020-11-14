@@ -209,7 +209,6 @@ your Python installation to at least version 3.5 to catch future updates.
 - base:estimator: fixed signature of fit function for compatability with scikit-learn. :pr:`1193`
 - coordinates: assign_to_centers now handles stride argument again. :pr:`1190`
 
-
 2.4 (05-19-2017)
 ----------------
 
