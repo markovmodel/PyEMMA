@@ -23,7 +23,6 @@ Created on 02.02.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 import unittest
 import os
 import pkg_resources
@@ -153,7 +152,7 @@ class TestPCAExtensive(unittest.TestCase):
         assert self.pca_obj.number_of_trajectories() == 1
 
     def test_output_type(self):
-        assert self.pca_obj.output_type() == np.float32
+        assert self.pca_obj.output_type() == np.float32()
 
     def test_trajectory_length(self):
         assert self.pca_obj.trajectory_length(0) == self.T
@@ -229,6 +228,19 @@ class TestPCAExtensive(unittest.TestCase):
         y = t.fit_transform(x)
         y2 = t.get_output()
         np.testing.assert_allclose(y2[0], y)
+
+    def test_api_cs(self):
+        p = pca(chunksize=1, dim=10)
+        assert p.chunksize == 1
+
+        # in case, we do not have a fixed dimension, pca can not calculate a proper chunksize.
+        p = pca(chunksize=None)
+        assert p.chunksize == p._FALLBACK_CHUNKSIZE
+
+        p = pca(chunksize=None, dim=10)
+        assert p.chunksize != 0
+        assert p.chunksize != p._FALLBACK_CHUNKSIZE
+
 
 if __name__ == "__main__":
     unittest.main()

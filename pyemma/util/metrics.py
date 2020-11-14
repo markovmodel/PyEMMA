@@ -24,7 +24,7 @@ def _svd_sym_koopman(K, C00_train, Ctt_train):
 
 
 def vamp_1_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_test, k=None):
-    """ Computes the VAMP-1 score of a kinetic model.
+    r""" Computes the VAMP-1 score of a kinetic model.
 
     Ranks the kinetic model described by the estimation of covariances C00, C0t and Ctt,
     defined by:
@@ -145,10 +145,9 @@ def vamp_2_score(K, C00_train, C0t_train, Ctt_train, C00_test, C0t_test, Ctt_tes
     from pyemma._ext.variational.solvers.direct import spd_inv_sqrt
 
     # SVD of symmetrized operator in empirical distribution
-    U, S, V = _svd_sym_koopman(K, C00_train, Ctt_train)
+    U, _, V = _svd_sym_koopman(K, C00_train, Ctt_train)
     if k is not None:
         U = U[:, :k]
-        # S = S[:k][:, :k]
         V = V[:, :k]
     A = spd_inv_sqrt(mdot(U.T, C00_test, U))
     B = mdot(U.T, C0t_test, V)

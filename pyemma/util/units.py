@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 from pyemma._base.serialization.serialization import SerializableMixIn
 
@@ -116,7 +115,7 @@ class TimeUnit(SerializableMixIn):
 
     def get_scaled(self, factor):
         """ Get a new time unit, scaled by the given factor """
-        res = self.__new__(self.__class__)
+        res = TimeUnit(self)
         res._factor = self._factor * factor
         res._unit = self._unit
         return res
@@ -193,7 +192,7 @@ def string_to_bytes(string):
     if string == '0':
         return 0
     import re
-    match = re.match('(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?(\D?)', string)
+    match = re.match(r'(\d+\.?\d?)\s?([bBkKmMgGtTpPeEzZyY])?(\D?)', string)
     if not match:
         raise RuntimeError('"{}" does not match "[integer] [suffix]"'.format(string))
     if match.group(3):

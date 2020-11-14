@@ -18,7 +18,6 @@
 
 
 
-from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -133,7 +132,7 @@ class TestCluster(unittest.TestCase):
 
     def test_output_type(self):
         for c in self.cl:
-            assert c.output_type() == np.int32
+            assert c.output_type() == np.int32()
 
     def test_save_dtrajs(self):
         extension = ".dtraj"

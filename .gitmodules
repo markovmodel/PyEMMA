@@ -1,7 +1,9 @@
-[submodule "ipython"]
-	path = pyemma-ipython
-	url = https://github.com/markovmodel/PyEMMA_IPython.git
-
 [submodule "pybind11"]
-	path = pybind11
+	path = ext/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "doc/source/legacy-notebooks"]
+	path = doc/source/legacy-notebooks
+	url = https://github.com/markovmodel/PyEMMA_IPython.git
+[submodule "doc/source/tutorials"]
+	path = doc/source/tutorials
+	url = https://github.com/markovmodel/pyemma_tutorials

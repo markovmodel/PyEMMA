@@ -18,7 +18,6 @@
 
 
 
-from __future__ import print_function, absolute_import
 
 __author__ = 'noe'
 
@@ -26,6 +25,8 @@ import numpy as np
 import scipy.sparse as scisp
 import numbers
 import collections
+import itertools
+
 
 # ======================================================================================================================
 # BASIC TYPE CHECKS
@@ -43,44 +44,43 @@ def is_float(l):
     """
     return isinstance(l, numbers.Real)
 
+def is_iterable_of_types(l, supertype):
+    r""" Checks whether all elements of l are of type `supertype`.
+    """
+    return is_iterable(l) and all(issubclass(t, supertype) for t, _ in itertools.groupby(l, type))
+
 def is_iterable_of_int(l):
     r""" Checks if l is iterable and contains only integral types """
-    if not is_iterable(l):
-        return False
-
-    return all(is_int(value) for value in l)
+    return is_iterable_of_types(l, numbers.Integral)
 
 def is_list_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_int(l)
+    return is_iterable_of_types(l, numbers.Integral)
 
 def is_tuple_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_int(l)
+    return is_list_of_int(l)
 
 
 def is_iterable_of_float(l):
     r""" Checks if l is iterable and contains only floating point types """
-    if not is_iterable(l):
-        return False
-
-    return all(is_float(value) for value in l)
+    return is_iterable_of_types(l, numbers.Real)
 
 def is_list_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_float(l)
+    return is_iterable_of_types(l, numbers.Real)
 
 def is_tuple_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    return is_iterable_of_float(l)
+    return is_list_of_float(l)
 
 def is_int_vector(l):
     r"""Checks if l is a numpy array of integers
@@ -173,8 +173,8 @@ def ensure_dtraj_list(dtrajs):
         if is_list_of_int(dtrajs):
             return [np.array(dtrajs, dtype=int)]
         else:
-            for i in range(len(dtrajs)):
-                dtrajs[i] = ensure_dtraj(dtrajs[i])
+            for i, dtraj in enumerate(dtrajs):
+                dtrajs[i] = ensure_dtraj(dtraj)
             return dtrajs
     else:
         return [ensure_dtraj(dtrajs)]
@@ -210,7 +210,8 @@ def ensure_int_vector(I, require_order = False):
             if is_list_of_int(lI):
                 return np.array(lI)
     else:
-        raise TypeError('Argument is not of a type that is convertible to an array of integers.')
+        raise TypeError('Argument is not of a type that is convertible to an array of integers. '
+                        'Argument was {}'.format(I))
 
 def ensure_int_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats
@@ -478,8 +479,8 @@ def ensure_traj_list(trajs):
             return [np.array(trajs)[:,None]]
         else:
             res = []
-            for i in range(len(trajs)):
-                res.append(ensure_traj(trajs[i]))
+            for traj in trajs:
+                res.append(ensure_traj(traj))
             return res
     else:
         # looks like this is one trajectory

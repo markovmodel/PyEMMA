@@ -24,7 +24,6 @@ import pyemma.coordinates as coor
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 
 
-
 class TestFragmentedTrajectory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -36,7 +35,8 @@ class TestFragmentedTrajectory(unittest.TestCase):
         reader = FragmentedTrajectoryReader([self.d, self.d])
         reader.chunksize = 0
         expected = np.vstack((self.d, self.d))
-        np.testing.assert_array_almost_equal(expected, reader.get_output(stride=1)[0])
+        output = reader.get_output(stride=1)[0]
+        np.testing.assert_array_almost_equal(expected, output)
 
     def test_full_trajectory_random_access(self):
         reader = FragmentedTrajectoryReader([self.d, self.d])
@@ -71,7 +71,7 @@ class TestFragmentedTrajectory(unittest.TestCase):
                     pass
 
                 np.testing.assert_array_almost_equal(data[::stride][0:len(Y)], X)
-                np.testing.assert_array_almost_equal(data[lag::stride], Y)
+                np.testing.assert_array_almost_equal(data[lag::stride], Y, err_msg='lag={lag}, stride={stride}'.format(stride=stride, lag=lag))
 
     def test_fragmented_xtc(self):
         from pyemma.coordinates.tests.util import create_traj

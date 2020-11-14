@@ -8,15 +8,6 @@ os:
 
 sudo: false
 
-#cache:
-#  directories:
-#    - $HOME/miniconda
-#  timeout: 480
-#before_cache:
-#  # Remove since we're caching the extracted directories
-#  - conda clean -ilps -v
-#  - rm -rvf "${MINICONDA_DIR}/conda-bld/"
-
 env:
   global:
     - MINICONDA_DIR="$HOME/miniconda"
@@ -24,15 +15,42 @@ env:
     - OMP_NUM_THREADS=2
     - PYEMMA_NJOBS=1
     - MACOSX_DEPLOYMENT_TARGET=10.9
+    - CONDA_BUILD=YES
   matrix:
-    - CONDA_PY=3.5
     - CONDA_PY=3.6
+      CONDA_NPY=1.11
+    - CONDA_PY=3.7
+      CONDA_NPY=1.17
+
+matrix:
+  exclude:  # test only 3.8 on osx.
+    - env: CONDA_PY=3.5
+      os: osx
+    - env: CONDA_PY=3.6
+      os: osx
+  include:  # test pip install
+    - env: CONDA_PY=3.7 CONDA_BUILD=NO python="3.7"
+      os: linux
+      dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
+      language: python
+      sudo: true
+
 
 before_install:
-- source devtools/ci/travis/install_miniconda.sh
+- if [[ ${CONDA_BUILD} = YES ]]; then
+    source devtools/ci/travis/install_miniconda.sh;
+  fi
 
 script:
-- conda build -q devtools/conda-recipe
+  - if [[ ${CONDA_BUILD} = YES ]]; then
+      conda build -q devtools/conda-recipe -c conda-forge;
+    else
+      pip install pip -U;
+      pip install . ;
+      rm -r pyemma;
+      pip install pytest tables;
+      pytest --pyargs pyemma;
+    fi
 
 after_script:
-- bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY
+-  if [[ ${CONDA_BUILD} = YES ]]; then bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml -e CONDA_PY; fi

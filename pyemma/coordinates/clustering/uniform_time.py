@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import, division
 
 import math
 
@@ -68,17 +67,17 @@ class UniformTimeClustering(AbstractClustering):
             traj_lengths = self.trajectory_lengths(stride=self.stride, skip=self.skip)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
-            self._logger.info("The number of cluster centers was not specified, "
+            self.logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
         # initialize time counters
         T = iterable.n_frames_total(stride=self.stride, skip=self.skip)
         if self.n_clusters > T:
             self.n_clusters = T
-            self._logger.info('Requested more clusters (k = %i'
+            self.logger.info('Requested more clusters (k = %i'
                               ' than there are total data points %i)'
                               '. Will do clustering with k = %i'
-                              % (self.n_clusters, T, T))
+                             % (self.n_clusters, T, T))
 
         # first data point in the middle of the time segment
         next_t = (T // self.n_clusters) // 2

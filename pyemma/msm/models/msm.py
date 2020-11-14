@@ -25,12 +25,10 @@ and provides them for later access.
 
 """
 
-from __future__ import absolute_import
 
 from pyemma._base.serialization.serialization import SerializableMixIn
-
 from pyemma.util.annotators import aliased, alias
-
+from pyemma.util.numeric import _hash_numpy_array
 
 __docformat__ = "restructuredtext en"
 
@@ -48,7 +46,7 @@ class MSM(_Model, SerializableMixIn):
     r"""Markov model with a given transition matrix"""
     __serialize_version = 0
 
-    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
+    __serialize_fields = ('_R', '_D', '_L', '_eigenvalues', '_p_id',
                           '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
                           '_metastable_memberships', '_metastable_sets', '_pcca',
                           '_nstates', '_timeunit_model')
@@ -157,7 +155,10 @@ class MSM(_Model, SerializableMixIn):
         if id(self) == id(other):
             return True
         if self.P is not None and other.P is not None:
-            P_equal = _np.allclose(self.P, other.P)
+            if self.P.shape != other.P.shape:
+                P_equal = False
+            else:
+                P_equal = _np.allclose(self.P, other.P)
         else:
             P_equal = True
         return (P_equal and
@@ -244,7 +245,7 @@ class MSM(_Model, SerializableMixIn):
         if value is None:
             if self.P is not None:
                 if self.sparse:
-                    value = 10
+                    value = min(10, self._nstates - 1)
                 else:
                     value = self._nstates
 
@@ -318,6 +319,7 @@ class MSM(_Model, SerializableMixIn):
     def _compute_eigendecomposition(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from msmtools.analysis import rdl_decomposition
+        self._p_id = _hash_numpy_array(self.transition_matrix)
 
         if self.reversible:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, norm='reversible',
@@ -351,8 +353,9 @@ class MSM(_Model, SerializableMixIn):
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
-            if m < neig:
-                # not enough eigenpairs present - recompute:
+            if m < neig or self._p_id != _hash_numpy_array(self.P):
+                # not enough eigenpairs present
+                # or eigendecomposition computed for an outdated transition matrix - recompute.
                 self._compute_eigendecomposition(neig)
         except AttributeError:
             # no eigendecomposition yet - compute:
@@ -503,7 +506,10 @@ class MSM(_Model, SerializableMixIn):
         A : int or int array
             set of states
         """
-        assert _np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
+        assert _np.max(A) < self._nstates, \
+            'Chosen set {A} contains states that are not included in the active set {active_set}.'.format(
+                A=A, active_set=[0, self.nstates-1]
+            )
 
     def _mfpt(self, P, A, B, mu=None):
         self._assert_in_active(A)

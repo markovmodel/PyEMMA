@@ -1,39 +1,42 @@
+image: Visual Studio 2015
+platform: x64
 environment:
   global:
-    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
-    # /E:ON and /V:ON options are not enabled in the batch script intepreter
-    # See: http://stackoverflow.com/a/13751649/163740
-    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
     PYTHONHASHSEED: "0"
+    MINICONDA_PYTHON: "C:\\Miniconda36-x64"
+    MSSdk: "1"
+    SET_DISTUTILS_SDK: "1"
 
   matrix:
-    - MINICONDA_PYTHON: "C:\\Miniconda35"
-      CONDA_PY: "35"
-
-    - MINICONDA_PYTHON: "C:\\Miniconda35-x64"
-      CONDA_PY: "35"
-      ARCH: "64"
-
-    - MINICONDA_PYTHON: "C:\\Miniconda36-x64"
-      CONDA_PY: "36"
-      ARCH: "64"
+    - CONDA_PY: "36"
+      NUMPY: "--numpy=112" # "old" numpy
+    - CONDA_PY: "37"
+      NUMPY: "" # numpy unpinned
 
 install:
+  - cmd: '"%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%'
+  - ps: if ($env:PLATFORM -eq "x64") { $env:CONDA = "$env:CONDA-x64" }
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
-
-  - conda config --set always_yes true
+  - conda config --set always_yes true --set changeps1 no
   - conda config --add channels conda-forge
+  - conda update -q conda
   - conda install -q conda-build=3
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - "%CMD_IN_ENV% conda build -q devtools/conda-recipe"
+  # - setenv /release /x64
+  - conda build -q devtools/conda-recipe %CONDA_NPY%"
 
-#on_finish:
+on_finish:
   # upload test results to AppVeyor
- # - ps: $wc = New-Object 'System.Net.WebClient';
- #       $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)",
- #       C:\Users\appveyor\reports\xunit.xml))
+ - ps: |
+     $wc = New-Object 'System.Net.WebClient';
+     $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", "C:/Users/appveyor/reports/junit.xml")
 
+after_test:
+  - ps: |
+      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+      bash codecov.sh -f 'c:\\users\appyeyor\\coverage.xml'

@@ -15,24 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from pyemma._base.loggable import Loggable
-from pyemma.util.contexts import attribute
+from pyemma.coordinates.data._base._in_memory_mixin import InMemoryMixin
 from pyemma.util.types import is_int
 
 
-class Iterable(Loggable, metaclass=ABCMeta):
+class Iterable(InMemoryMixin, Loggable, metaclass=ABCMeta):
+    _FALLBACK_CHUNKSIZE = 1000
 
     def __init__(self, chunksize=None):
         super(Iterable, self).__init__()
         self._default_chunksize = chunksize
-        self._in_memory = False
-        self._mapping_to_mem_active = False
-        self._Y = None
-        self._Y_source = None
         # should be set in subclass
         self._ndim = 0
 
@@ -43,18 +39,45 @@ class Iterable(Loggable, metaclass=ABCMeta):
     def ndim(self):
         return self.dimension()
 
+    @staticmethod
+    def _compute_default_cs(dim, itemsize, logger=None):
+        # obtain a human readable memory size from the config, convert it to bytes and calc maximum chunksize.
+        from pyemma import config
+        from pyemma.util.units import string_to_bytes
+        max_bytes = string_to_bytes(config.default_chunksize)
+
+        # TODO: consider rounding this to some cache size of CPU? e.g py-cpuinfo can obtain it.
+        # if one time step is already bigger than max_memory, we set the chunksize to 1.
+        bytes_per_frame = itemsize * dim
+        max_frames = max(1, int(np.floor(max_bytes / bytes_per_frame)))
+        assert max_frames * dim * itemsize <= max_bytes or max_frames == 1, \
+            "number of frames times dim times sizeof(dtype) should be smaller or equal than max_bytes"
+        result = max_frames
+
+        assert result > 0
+        if logger is not None:
+            logger.debug('computed default chunksize to %s'
+                         ' to limit memory per chunk to %s', result, config.default_chunksize)
+        return result
+
     @property
     def default_chunksize(self):
-        """ How much data will be processed at once, in case no chunksize has been provided."""
+        """ How much data will be processed at once, in case no chunksize has been provided.
+
+        Notes
+        -----
+        This variable respects your setting for maximum memory in pyemma.config.default_chunksize
+        """
         if self._default_chunksize is None:
-            from pyemma import config
-            from pyemma.util.units import string_to_bytes
-            max_bytes = string_to_bytes(config.default_chunksize)
-            itemsize = np.dtype(self.output_type()).itemsize
-            # TODO: consider rounding this to some cache size of CPU? e.g py-cpuinfo can obtain it.
-            max_elements = max_bytes // itemsize // self.ndim
-            self._default_chunksize = max_elements
-            assert self._default_chunksize > 0
+            try:
+                # TODO: if dimension is not yet fixed (eg tica var cutoff, use dim of data_producer.
+                self.dimension()
+                self.output_type()
+            except:
+                self._default_chunksize = Iterable._FALLBACK_CHUNKSIZE
+            else:
+                self._default_chunksize = Iterable._compute_default_cs(self.dimension(),
+                                                                       self.output_type().itemsize, self.logger)
         return self._default_chunksize
 
     @property
@@ -63,49 +86,11 @@ class Iterable(Loggable, metaclass=ABCMeta):
 
     @chunksize.setter
     def chunksize(self, value):
-        if self.default_chunksize < 0:
-            raise ValueError("Chunksize of %s was provided, but has to be >= 0" % self.default_chunksize)
+        if not isinstance(value, (type(None), int)):
+            raise ValueError('chunksize has to be of type: None or int')
+        if isinstance(value, int) and value < 0:
+            raise ValueError("Chunksize of %s was provided, but has to be >= 0" % value)
         self._default_chunksize = value
-
-    @property
-    def in_memory(self):
-        r"""are results stored in memory?"""
-        if not hasattr(self, '_in_memory'):
-            self._in_memory = False
-        return self._in_memory
-
-    @in_memory.setter
-    def in_memory(self, op_in_mem):
-        r"""
-        If set to True, the output will be stored in memory.
-        """
-        old_state = self.in_memory
-        if not old_state and op_in_mem:
-            self._map_to_memory()
-        elif not op_in_mem and old_state:
-            self._clear_in_memory()
-
-    def _clear_in_memory(self):
-        if self._logger_is_active(self._loglevel_DEBUG):
-            self._logger.debug("clear memory")
-        self._Y = None
-        self._Y_source = None
-        self._in_memory = False
-
-    def _map_to_memory(self, stride=1):
-        r"""Maps results to memory. Will be stored in attribute :attr:`_Y`."""
-        if self._logger_is_active(self._loglevel_DEBUG):
-            self._logger.debug("mapping to mem")
-
-        self._mapping_to_mem_active = True
-        try:
-            self._Y = self.get_output(stride=stride)
-            from pyemma.coordinates.data import DataInMemory
-            self._Y_source = DataInMemory(self._Y)
-        finally:
-            self._mapping_to_mem_active = False
-
-        self._in_memory = True
 
     def iterator(self, stride=1, lag=0, chunk=None, return_trajindex=True, cols=None, skip=0):
         """ creates an iterator to stream over the (transformed) data.
@@ -158,197 +143,21 @@ class Iterable(Loggable, metaclass=ABCMeta):
                 lag=lag, chunk=chunk, stride=stride, return_trajindex=return_trajindex, skip=skip
             )
         chunk = chunk if chunk is not None else self.chunksize
-        if 0 < lag <= chunk:
-            it = self._create_iterator(skip=skip, chunk=chunk, stride=1,
-                                       return_trajindex=return_trajindex, cols=cols)
-            it.return_traj_index = True
-            return _LaggedIterator(it, lag, return_trajindex, stride)
-        elif lag > 0:
-            it = self._create_iterator(skip=skip, chunk=chunk, stride=stride,
-                                       return_trajindex=return_trajindex, cols=cols)
-            it.return_traj_index = True
-            it_lagged = self._create_iterator(skip=skip + lag, chunk=chunk, stride=stride,
-                                              return_trajindex=True, cols=cols)
-            return _LegacyLaggedIterator(it, it_lagged, return_trajindex)
+        if lag > 0:
+            if chunk == 0 or lag <= chunk:
+                it = self._create_iterator(skip=skip, chunk=chunk, stride=1,
+                                           return_trajindex=return_trajindex, cols=cols)
+                it.return_traj_index = True
+                return _LaggedIterator(it, lag, return_trajindex, stride)
+            else:
+                it = self._create_iterator(skip=skip, chunk=chunk, stride=stride,
+                                           return_trajindex=return_trajindex, cols=cols)
+                it.return_traj_index = True
+                it_lagged = self._create_iterator(skip=skip + lag, chunk=chunk, stride=stride,
+                                                  return_trajindex=True, cols=cols)
+                return _LegacyLaggedIterator(it, it_lagged, return_trajindex)
         return self._create_iterator(skip=skip, chunk=chunk, stride=stride,
                                      return_trajindex=return_trajindex, cols=cols)
-
-    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=None):
-        """Maps all input data of this transformer and returns it as an array or list of arrays
-
-        Parameters
-        ----------
-        dimensions : list-like of indexes or slice, default=all
-           indices of dimensions you like to keep.
-        stride : int, default=1
-           only take every n'th frame.
-        skip : int, default=0
-            initially skip n frames of each file.
-        chunk: int, default=None
-            How many frames to process at once. If not given obtain the chunk size
-            from the source.
-
-        Returns
-        -------
-        output : list of ndarray(T_i, d)
-           the mapped data, where T is the number of time steps of the input data, or if stride > 1,
-           floor(T_in / stride). d is the output dimension of this transformer.
-           If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
-
-        """
-        if isinstance(dimensions, int):
-            ndim = 1
-            dimensions = slice(dimensions, dimensions + 1)
-        elif isinstance(dimensions, (list, np.ndarray, tuple, slice)):
-            if hasattr(dimensions, 'ndim') and dimensions.ndim > 1:
-                raise ValueError('dimension indices can\'t have more than one dimension')
-            ndim = len(np.zeros(self.ndim)[dimensions])
-        else:
-            raise ValueError('unsupported type (%s) of "dimensions"' % type(dimensions))
-
-        assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
-
-        if chunk is None:
-            chunk = self.chunksize
-
-        # create iterator
-        if self.in_memory and not self._mapping_to_mem_active:
-            from pyemma.coordinates.data.data_in_memory import DataInMemory
-            assert self._Y is not None
-            it = DataInMemory(self._Y)._create_iterator(skip=skip, chunk=chunk,
-                                                        stride=stride, return_trajindex=True)
-        else:
-            it = self._create_iterator(skip=skip, chunk=chunk, stride=stride, return_trajindex=True)
-
-        with it:
-            # allocate memory
-            try:
-                # TODO: avoid having a copy here, if Y is already filled
-                trajs = [np.empty((l, ndim), dtype=self.output_type())
-                         for l in it.trajectory_lengths()]
-            except MemoryError:
-                self.logger.exception("Could not allocate enough memory to map all data."
-                                       " Consider using a larger stride.")
-                return
-
-            from pyemma import config
-            if config.coordinates_check_output:
-                for t in trajs:
-                    t[:] = np.nan
-
-            if self._logger_is_active(self._loglevel_DEBUG):
-                self.logger.debug("get_output(): dimensions=%s" % str(dimensions))
-                self.logger.debug("get_output(): created output trajs with shapes: %s"
-                                   % [x.shape for x in trajs])
-                self.logger.debug("nchunks :%s, chunksize=%s" % (it.n_chunks, it.chunksize))
-            # fetch data
-            from pyemma._base.progress import ProgressReporter
-            pg = ProgressReporter()
-            pg.register(it.n_chunks, description='getting output of %s' % self.__class__.__name__)
-            with pg.context():
-                for itraj, chunk in it:
-                    L = len(chunk)
-                    assert L
-                    trajs[itraj][it.pos:it.pos + L, :] = chunk[:, dimensions]
-                    # update progress
-                    pg.update(1)
-
-        if config.coordinates_check_output:
-            for t in trajs:
-                assert np.all(np.isfinite(t))
-
-        return trajs
-
-    def write_to_csv(self, filename=None, extension='.dat', overwrite=False,
-                     stride=1, chunksize=100, **kw):
-        """ write all data to csv with numpy.savetxt
-
-        Parameters
-        ----------
-        filename : str, optional
-            filename string, which may contain placeholders {itraj} and {stride}:
-
-            * itraj will be replaced by trajetory index
-            * stride is stride argument of this method
-
-            If filename is not given, it is being tried to obtain the filenames
-            from the data source of this iterator.
-        extension : str, optional, default='.dat'
-            filename extension of created files
-        overwrite : bool, optional, default=False
-            shall existing files be overwritten? If a file exists, this method will raise.
-        stride : int
-            omit every n'th frame
-        chunksize: int
-            how many frames to process at once
-        kw : dict
-            named arguments passed into numpy.savetxt (header, seperator etc.)
-
-        Example
-        -------
-        Assume you want to save features calculated by some FeatureReader to ASCII:
-
-        >>> import numpy as np, pyemma
-        >>> import os
-        >>> from pyemma.util.files import TemporaryDirectory
-        >>> from pyemma.util.contexts import settings
-        >>> data = [np.random.random((10,3))] * 3
-        >>> reader = pyemma.coordinates.source(data)
-        >>> filename = "distances_{itraj}.dat"
-        >>> with TemporaryDirectory() as td, settings(show_progress_bars=False):
-        ...    out = os.path.join(td, filename)
-        ...    reader.write_to_csv(out, header='', delimiter=';')
-        ...    print(sorted(os.listdir(td)))
-        ['distances_0.dat', 'distances_1.dat', 'distances_2.dat']
-        """
-        import os
-        if not filename:
-            assert hasattr(self, 'filenames')
-            #    raise RuntimeError("could not determine filenames")
-            filenames = []
-            for f in self.filenames:
-                base, _ = os.path.splitext(f)
-                filenames.append(base + extension)
-        elif isinstance(filename, str):
-            filename = filename.replace('{stride}', str(stride))
-            filenames = [filename.replace('{itraj}', str(itraj)) for itraj
-                         in range(self.number_of_trajectories())]
-        else:
-            raise TypeError("filename should be str or None")
-        self.logger.debug("write_to_csv, filenames=%s" % filenames)
-        # check files before starting to write
-        import errno
-        for f in filenames:
-            try:
-                st = os.stat(f)
-                raise OSError(errno.EEXIST)
-            except OSError as e:
-                if e.errno == errno.EEXIST:
-                    if overwrite:
-                        continue
-                elif e.errno == errno.ENOENT:
-                    continue
-                raise
-        f = None
-        from pyemma._base.progress import ProgressReporter
-        pg = ProgressReporter()
-        it = self.iterator(stride, chunk=chunksize, return_trajindex=False)
-        pg.register(it.n_chunks, "saving to csv")
-        with it, pg.context():
-            oldtraj = -1
-            for X in it:
-                if oldtraj != it.current_trajindex:
-                    if f is not None:
-                        f.close()
-                    fn = filenames[it.current_trajindex]
-                    self.logger.debug("opening file %s for writing csv." % fn)
-                    f = open(fn, 'wb')
-                    oldtraj = it.current_trajindex
-                np.savetxt(f, X, **kw)
-                f.flush()
-                pg.update(1, 0)
-        if f is not None:
-            f.close()
 
     @abstractmethod
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
@@ -364,7 +173,7 @@ class Iterable(Loggable, metaclass=ABCMeta):
 
     def output_type(self):
         r""" By default transformers return single precision floats. """
-        return np.float32
+        return np.float32()
 
     def __iter__(self):
         return self.iterator()
@@ -396,6 +205,7 @@ class _LaggedIterator(object):
         self._sufficently_long_trajectories = [i for i, x in
                                                enumerate(self._it._data_source.trajectory_lengths(1, 0))
                                                if x > lag]
+        self._max_size = max(x for x in self._it._data_source.trajectory_lengths(1, 0))
 
     @property
     def n_chunks(self):
@@ -412,50 +222,64 @@ class _LaggedIterator(object):
     def __iter__(self):
         return self
 
+    @property
+    def chunksize(self):
+        return self._it.chunksize
+
+    def reset(self):
+        self._it.reset()
+
     def __next__(self):
-        return self.next()
+        chunksize_old = self._it.chunksize
+        try:
+            self._it.chunksize = self._max_size if self.chunksize == 0 else self.chunksize
+            changed = _skip_too_short_trajs(self._it, self._sufficently_long_trajectories)
+            if changed:
+                self._overlap = None
 
-    def next(self):
-        itraj_changed = False
-        while (self._it._itraj not in self._sufficently_long_trajectories
-               and self._it.number_of_trajectories() > self._it.current_trajindex):
-            self._it._itraj += 1
-            self._overlap = None
-            itraj_changed = True
-        # ensure file next handle gets opened.
-        if itraj_changed:
-            self._it._select_file(self._it._itraj)
+            if self._overlap is None:
+                chunksize_old2 = self._it.chunksize
+                try:
+                    self._it.chunksize = self._lag
+                    _, self._overlap = next(self._it)
+                    assert len(self._overlap) <= self._lag, 'len(overlap) > lag... %s>%s' % (len(self._overlap), self._lag)
+                    self._overlap = self._overlap[::self._actual_stride]
+                finally:
+                    self._it.chunksize = chunksize_old2
 
-        if self._overlap is None:
-            with attribute(self._it, 'chunksize', self._lag):
-                _, self._overlap = self._it.next()
-                self._overlap = self._overlap[::self._actual_stride]
+            chunksize_old3 = self._it.chunksize
+            try:
+                self._it.chunksize = self._it.chunksize * self._actual_stride
+                itraj, data_lagged = next(self._it)
+                assert len(data_lagged) <= self._it.chunksize * self._actual_stride
+                frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
+                data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
+                                                           % self._actual_stride::self._actual_stride]), axis=0)
 
-        with attribute(self._it, 'chunksize', self._it.chunksize * self._actual_stride):
+                offset = min(self._it.chunksize - self._lag, len(data_lagged))
+                self._overlap = data_lagged[offset::self._actual_stride, :]
 
-            itraj, data_lagged = self._it.next()
-            frag = data_lagged[:min(self._it.chunksize - self._lag, len(data_lagged)), :]
-            data = np.concatenate((self._overlap, frag[(self._actual_stride - self._lag)
-                                                       % self._actual_stride::self._actual_stride]), axis=0)
+                data_lagged = data_lagged[::self._actual_stride]
+            finally:
+                self._it.chunksize = chunksize_old3
 
-            offset = min(self._it.chunksize - self._lag, len(data_lagged))
-            self._overlap = data_lagged[offset::self._actual_stride, :]
+            if self._it.last_chunk_in_traj:
+                self._overlap = None
 
-            data_lagged = data_lagged[::self._actual_stride]
+            if len(data) > len(data_lagged):
+                # data chunk is bigger, truncate it to match data_lagged's shape
+                data = data[:len(data_lagged)]
+            elif len(data) < len(data_lagged):
+                raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
+                                   % (len(data), len(data_lagged)))
 
-        if self._it._last_chunk_in_traj:
-            self._overlap = None
+            if self._return_trajindex:
+                return itraj, data, data_lagged
+            return data, data_lagged
+        finally:
+            self._it.chunksize = chunksize_old
 
-        if data.shape[0] > data_lagged.shape[0]:
-            # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
-            raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
-
-        if self._return_trajindex:
-            return itraj, data, data_lagged
-        return data, data_lagged
+    next = __next__
 
     def __enter__(self):
         self._it.__enter__()
@@ -469,8 +293,8 @@ class _LegacyLaggedIterator(object):
 
     Parameters
     ----------
-    it: Iterable, skip=0
-    it_lagged: Iterable, skip=lag
+    it: DataSource, skip=0
+    it_lagged: DataSource, skip=lag
     return_trajindex: bool
         whether to return the current trajectory index during iteration (itraj).
     """
@@ -478,12 +302,19 @@ class _LegacyLaggedIterator(object):
         self._it = it
         self._it_lagged = it_lagged
         self._return_trajindex = return_trajindex
+        self._sufficently_long_trajectories = [i for i, x in
+                                               enumerate(self._it_lagged._data_source.trajectory_lengths(1, 0))
+                                               if x > it_lagged.skip]
 
     @property
     def n_chunks(self):
         n1 = self._it.n_chunks
         n2 = self._it_lagged.n_chunks
         return min(n1, n2)
+
+    @property
+    def chunksize(self):
+        return min(self._it.chunksize, self._it_lagged.chunksize)
 
     def __len__(self):
         return min(self._it.trajectory_lengths().min(), self._it_lagged.trajectory_lengths().min())
@@ -492,30 +323,59 @@ class _LegacyLaggedIterator(object):
         return self
 
     def __next__(self):
-        return self.next()
+        _skip_too_short_trajs(self._it_lagged, self._sufficently_long_trajectories)
+        self._it._itraj = self._it_lagged._itraj
 
-    def next(self):
         itraj, data = self._it.next()
+        assert itraj in self._sufficently_long_trajectories, itraj
         itraj_lag, data_lagged = self._it_lagged.next()
-
-        while itraj < itraj_lag:
+        assert itraj_lag in self._sufficently_long_trajectories, itraj_lag
+        if itraj < itraj_lag:
+            self._it._select_file(itraj_lag)
             itraj, data = self._it.next()
+            assert not itraj > itraj_lag
         assert itraj == itraj_lag
 
-        if data.shape[0] > data_lagged.shape[0]:
+        if len(data) > len(data_lagged):
             # data chunk is bigger, truncate it to match data_lagged's shape
-            data = data[:data_lagged.shape[0]]
-        elif data.shape[0] < data_lagged.shape[0]:
+            data = data[:len(data_lagged)]
+        elif len(data) < len(data_lagged):
             raise RuntimeError("chunk was smaller than time-lagged chunk (%s < %s), that should not happen!"
-                               % (data.shape[0], data_lagged.shape[0]))
+                               % (len(data), len(data_lagged)))
         if self._return_trajindex:
             return itraj, data, data_lagged
         return data, data_lagged
 
+    next = __next__
+
     def __enter__(self):
         self._it.__enter__()
         self._it_lagged.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._it.__exit__(exc_type, exc_val, exc_tb)
         self._it_lagged.__exit__(exc_type, exc_val, exc_tb)
+
+
+def _skip_too_short_trajs(it, sufficiently_long_traj_indices):
+    changed = False
+
+    while (it._itraj not in sufficiently_long_traj_indices
+           and it._itraj < it.state.ntraj):
+        changed = True
+        if len(sufficiently_long_traj_indices) == 1:
+            if it._itraj > sufficiently_long_traj_indices[0]:
+                raise StopIteration('no traj long enough.')
+            it._select_file(sufficiently_long_traj_indices[0])
+            break
+
+        idx = (np.abs(np.array(sufficiently_long_traj_indices) - it._itraj)).argmin()
+        if idx + 1 < len(sufficiently_long_traj_indices):
+            next_itraj = sufficiently_long_traj_indices[idx + 1]
+            it._select_file(next_itraj)
+            assert it._itraj == next_itraj
+        else:
+            raise StopIteration('no trajectory long enough.')
+    return changed
+

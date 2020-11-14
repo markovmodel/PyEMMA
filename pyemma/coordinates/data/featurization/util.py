@@ -60,6 +60,7 @@ def _catch_unhashable(x):
 def hash_top(top):
     if top is None:
         return hash(None)
+    # this is a temporary workaround for py3
     hash_value = hash(top.n_atoms)
     hash_value ^= hash(tuple(top.atoms))
     hash_value ^= hash(tuple(top.residues))
@@ -79,7 +80,7 @@ def cmp_traj(traj_a, traj_b):
         return False
     if traj_a is not None and traj_b is None:
         return False
-    equal_top = hash_top(traj_a.top) == hash_top(traj_b.top)
+    equal_top = traj_a.top == traj_b.top
     xyz_close = np.allclose(traj_a.xyz, traj_b.xyz)
     equal_time = np.all(traj_a.time == traj_b.time)
     equal_unitcell_angles = np.array_equal(traj_a.unitcell_angles, traj_b.unitcell_angles)

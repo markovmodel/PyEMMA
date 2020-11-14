@@ -1,51 +1,56 @@
 package:
   name: pyemma-dev
   # version number: [base tag]+[commits-upstream]_[git_hash]
-  # eg. v2.0+0_g8824162
-  version: {{ GIT_DESCRIBE_TAG[1:] + '+' + GIT_BUILD_STR}}
+  # eg. 2.0+0_g8824162
+  version: {{ GIT_DESCRIBE_TAG[1:] + '+' + GIT_DESCRIBE_NUMBER + '.' + GIT_DESCRIBE_HASH}}
+
 source:
   path: ../..
   # borked, but preferable, because it creates a "clean" working copy locally.
   #git_url: ../../
 
 build:
-  preserve_egg_dir: True
   script_env:
    - CIRCLE_TEST_REPORTS
    - OMP_NUM_THREADS
    - PYEMMA_NJOBS
-  script: python setup.py install --single-version-externally-managed --record record.txt
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+# workaround for bpo-24935, the compiler jinja2 template sets CC, but LDSHARED is not being set accordingly by distutils.sysconfig.
+  script: LDSHARED="$CC -shared" python setup.py install --single-version-externally-managed --record record.txt #  [linux and py35]
 
 requirements:
   build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - llvm-openmp # [osx]
+    - intel-openmp # [osx]
+
+  host:
     - cython
+    - intel-openmp # [osx]
     - mdtraj
-    # actually we could build with np18, but fastcluster (dep of mdtraj, we link against) is only avail for 1.9
-    - numpy 1.9.*  # [not (win and (py35 or py36))]
-    - numpy 1.9.*  # [win and py35]
-    - numpy 1.11.*  # [win and py36]
-    - python >=3
+    - numpy
+    - python
     - scipy
     - setuptools
-    - gcc # [ not win ]
+    - pip
+    - pybind11
+
   run:
-    - bhmm >=0.6,<0.7
+    - bhmm >=0.6.3,<0.7
     - decorator >=4.0.0
     - h5py
-    - libgcc # [linux or osx]
+    - intel-openmp # [osx]
     - matplotlib
-    - mdtraj
+    - mdtraj >=1.8
     - msmtools >=1.2
-    - numpy >=1.9  # [not (win and (py35 or py36))]
-    - numpy >=1.9  # [win and py35]
-    - numpy >=1.11  # [win and py36]
+    - {{ pin_compatible('numpy') }}
     - pathos
     - psutil >3.1
-    - python >=3
+    - python
     - pyyaml
     - scipy
     - setuptools
-    - thermotools >=0.2.6
     - tqdm
 
 test:
@@ -57,8 +62,8 @@ test:
   requires:
     - pytest
     - pytest-cov
-   # TODO: disabled on win64, until https://bugs.python.org/issue31701 is fixed.
-    - pytest-faulthandler # [not win]
+    - coverage
+    - pytest-faulthandler 
     - pytest-xdist
     - scikit-learn
     # https://github.com/Frozenball/pytest-sugar/issues/124

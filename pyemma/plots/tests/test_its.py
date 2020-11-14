@@ -22,13 +22,13 @@ Created on 10.03.2016
 @author: gph82
 '''
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
 
-from pyemma.msm import its, MaximumLikelihoodMSM, ImpliedTimescales
+from pyemma.msm import MaximumLikelihoodMSM, ImpliedTimescales
 from pyemma.plots import plot_implied_timescales
 from msmtools.generation import generate_traj
+
 
 class TestItsPlot(unittest.TestCase):
 
@@ -41,10 +41,10 @@ class TestItsPlot(unittest.TestCase):
                       ])
         # bogus its object
         lags = [1, 2, 3, 5, 10]
-        dtraj = generate_traj(P, 100)
-        estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
-        cls.its = ImpliedTimescales(estimator=estimator)
-        cls.its.estimate(dtraj, lags=lags)
+        cls.dtraj = generate_traj(P, 1000)
+        cls.estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
+        cls.its = ImpliedTimescales(estimator=cls.estimator)
+        cls.its.estimate(cls.dtraj, lags=lags)
 
         cls.refs = cls.its.timescales[-1]
         return cls
@@ -56,8 +56,20 @@ class TestItsPlot(unittest.TestCase):
     def test_nits(self):
         plot_implied_timescales(self.its,
                                 refs=self.refs, nits=2)
+
     def test_process(self):
-        plot_implied_timescales(self.its, refs=self.refs, process=[1,2], dt=0.01, units='ns')
+        plot_implied_timescales(self.its, refs=self.refs, process=[1, 2], dt=0.01, units='ns')
+
+    def test_its_estimated_with_only_ts(self):
+        its = ImpliedTimescales(estimator=self.estimator, lags=[1, 2, 3], only_timescales=True)
+        its.estimate(self.dtraj)
+        plot_implied_timescales(its)
+
+    def test_its_estimated_with_only_ts_samples(self):
+        from pyemma.msm import BayesianMSM
+        its = ImpliedTimescales(estimator=BayesianMSM(nsamples=2), lags=[1, 2, 3], only_timescales=True)
+        its.estimate(self.dtraj)
+        plot_implied_timescales(its)
 
 
 if __name__ == "__main__":

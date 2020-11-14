@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 import unittest
 import numpy as np
+
 import pyemma
 
 import os
@@ -27,7 +27,7 @@ import mdtraj
 from itertools import combinations, product
 
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
-from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom, hash_top
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
 
 from pyemma.coordinates.data.featurization.util import _atoms_in_residues
 import pkg_resources
@@ -39,6 +39,17 @@ pdbfile_ops_aa = os.path.join(path, 'opsin_aa_1_frame.pdb.gz')
 pdbfile_ops_Ca = os.path.join(path, 'opsin_Ca_1_frame.pdb.gz')
 
 asn_leu_pdb = """
+ATOM    548  N   ARG A  68       5.907  -1.379  53.221  1.00 39.48           N  
+ATOM    549  CA  ARG A  68       6.781  -2.058  54.196  1.00 40.75           C  
+ATOM    550  C   ARG A  68       7.205  -3.453  53.719  1.00 40.21           C  
+ATOM    551  O   ARG A  68       8.381  -3.819  53.821  1.00 37.97           O  
+ATOM    552  CB  ARG A  68       6.101  -2.190  55.568  1.00 42.54           C  
+ATOM    553  CG  ARG A  68       5.835  -0.874  56.293  1.00 44.54           C  
+ATOM    554  CD  ARG A  68       5.539  -1.081  57.777  1.00 45.95           C  
+ATOM    555  NE  ARG A  68       4.549  -2.141  58.029  1.00 47.49           N  
+ATOM    556  CZ  ARG A  68       3.238  -1.977  58.259  1.00 48.16           C  
+ATOM    557  NH1 ARG A  68       2.664  -0.774  58.288  1.00 48.92           N  
+ATOM    558  NH2 ARG A  68       2.478  -3.050  58.470  1.00 48.77           N  
 ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
 ATOM    560  CA  ASN A  69      20.356  -0.049 -10.419  1.00 25.52           C  
 ATOM    561  C   ASN A  69      21.572  -0.418  -9.653  1.00 24.26           C  
@@ -171,13 +182,8 @@ class TestFeaturizer(unittest.TestCase):
         """
         check_serialized_equal(self)
 
-
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
-
-    def test_hashing_top(self):
-        import copy
-        assert hash_top(self.feat.topology) == hash_top(copy.deepcopy(self.feat.topology))
 
     def test_select_non_symmetry_heavy_atoms(self):
         try:
@@ -475,7 +481,7 @@ class TestFeaturizer(unittest.TestCase):
 
         traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
-        self.assertEqual(Y.shape, (len(traj), 3 * 4))  # (3 phi + 3 psi)*2 [cos, sin]
+        self.assertEqual(Y.shape, (len(traj), 2 * 8))  # (4 phi + 4 psi)*2 [cos, sin]
         assert (np.alltrue(Y >= -np.pi))
         assert (np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -483,9 +489,9 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIn("COS", desc[0])
         self.assertIn("SIN", desc[1])
 
-    def test_backbone_dihedrials_chi(self):
+    def test_backbone_dihedrials_chi1(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions()
+        self.feat.add_sidechain_torsions(which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
@@ -494,9 +500,9 @@ class TestFeaturizer(unittest.TestCase):
         desc = self.feat.describe()
         self.assertEqual(len(desc), self.feat.dimension())
 
-    def test_backbone_dihedrials_chi_cossin(self):
+    def test_backbone_dihedrials_chi1_cossin(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
-        self.feat.add_chi1_torsions(cossin=True)
+        self.feat.add_sidechain_torsions(cossin=True, which='chi1')
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
         Y = self.feat.transform(traj)
@@ -506,6 +512,57 @@ class TestFeaturizer(unittest.TestCase):
         assert "COS" in desc[0]
         assert "SIN" in desc[1]
         self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_all_dihedrals(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 4 * 3  # 5 residues, chi1, chi2 (for 2*[asn, leu]), chi1-5 for arg
+
+    def test_all_dihedrals_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        # TODO: add chi5 when mdtraj-2.0 is released.
+        self.feat.add_sidechain_torsions(cossin=True, which=['chi1', 'chi2', 'chi3', 'chi4'])
+        assert self.feat.dimension() == 2 * (4 * 3)
+        desc = self.feat.describe()
+        assert 'COS' in desc[0]
+        assert 'SIN' in desc[1]
+
+    def test_sidechain_torsions_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(which='chi2')
+        assert self.feat.dimension() == 5
+        desc = self.feat.describe()
+        assert all('CHI2' in d for d in desc)
+        assert len(desc) == 5
+
+    def test_sidechain_torsions_which2(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(which=['chi1', 'chi3'])
+        assert self.feat.dimension() == 6
+        desc = self.feat.describe()
+        assert len(desc) == 6
+
+    def test_sidechain_torsions_selstr(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(selstr='resid == 0', which=['chi1'])
+        assert self.feat.dimension() == 1
+        assert all('CHI1' in d for d in self.feat.describe())
+
+    def test_sidechain_torsions_selstr_cos_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_sidechain_torsions(selstr='resid == 0', cossin=True, which=['chi1', 'chi2'])
+        assert self.feat.dimension() == 4
+        desc = self.feat.describe()
+        assert any(['COS(CHI1' in d for d in desc])
+        assert any(['SIN(CHI1' in d for d in desc])
+        assert any(['COS(CHI2' in d for d in desc])
+        assert any(['SIN(CHI2' in d for d in desc])
+
+    def test_sidechain_torsions_invalid_which(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        with self.assertRaises(ValueError):
+            self.feat.add_sidechain_torsions(selstr='resid == 0', which=['garbage'])
 
     def test_custom_feature(self):
         # TODO: test me
@@ -570,6 +627,33 @@ class TestFeaturizer(unittest.TestCase):
         Dbinary[I[:, 0], I[:, 1]] = 1
         assert np.allclose(D, Dbinary)
         assert len(self.feat.describe()) == self.feat.dimension()
+
+    def test_Residue_Mindist_threshold_count_contacts(self):
+        # residue pairs:
+        pairs = self.feat.pairs(list(range(self.feat.topology.n_residues)), excluded_neighbors=2)
+        self.feat.add_residue_mindist(scheme='ca', threshold=0.5, periodic=False, count_contacts=True)
+
+        # The dimensionality of the feature is now one
+        assert (self.feat.dimension() == 1)
+
+        # number of upper triangular matrix elements excl two off-diagonals
+        D = np.zeros((self.traj.n_frames,
+                      int((self.feat.topology.n_residues**2 - 5 * self.feat.topology.n_residues + 6)/2)))
+
+        for n, (resid_a, resid_b) in enumerate(pairs):
+            # Ca only example: resid = atomid
+            X = self.traj.xyz[:, [resid_a], :]
+            Y = self.traj.xyz[:, [resid_b], :]
+            D[:, n] = np.sqrt(np.sum((X - Y) ** 2, axis=2)).min(axis=1)
+
+        C = (D <= 0.5).sum(axis=1, keepdims=True)
+
+        assert (np.allclose(C, self.feat.transform(self.traj)))
+
+    def test_Residue_Mindist_nothreshold_count_contacts(self):
+        # residue pairs:
+        with self.assertRaises(ValueError):
+            self.feat.add_residue_mindist(scheme='ca', periodic=False, count_contacts=True)
 
     def test_Residue_Mindist_Ca_array(self):
         contacts = np.array([[20, 10, ], [10, 0]])
@@ -652,6 +736,38 @@ class TestFeaturizer(unittest.TestCase):
 
         assert np.allclose(D, Dbinary)
         assert len(self.feat.describe()) == self.feat.dimension()
+
+    def test_Group_Mindist_All_Three_Groups_threshold_count_contacts(self):
+        threshold = .7
+        group0 = [0, 20, 30, 0]
+        group1 = [1, 21, 31, 1]
+        group2 = [2, 22, 32, 2]
+        self.feat.add_group_mindist(group_definitions=[group0, group1, group2],
+                                    threshold=threshold, count_contacts=True)
+        D = self.feat.transform(self.traj)
+
+        # Now the references, computed separately for each combination of groups
+        dist_list_01 = np.array(list(product(np.unique(group0), np.unique(group1))))
+        dist_list_02 = np.array(list(product(np.unique(group0), np.unique(group2))))
+        dist_list_12 = np.array(list(product(np.unique(group1), np.unique(group2))))
+        Dref_01 = mdtraj.compute_distances(self.traj, dist_list_01).min(1)
+        Dref_02 = mdtraj.compute_distances(self.traj, dist_list_02).min(1)
+        Dref_12 = mdtraj.compute_distances(self.traj, dist_list_12).min(1)
+        Dref = np.vstack((Dref_01, Dref_02, Dref_12)).T
+
+        Dbinary = np.zeros_like(Dref)
+        I = np.argwhere(Dref <= threshold)
+        Dbinary[I[:, 0], I[:, 1]] = 1
+        Dbinary_summed = Dbinary.sum(axis=1, keepdims=True)
+
+        assert np.allclose(D, Dbinary_summed)
+
+    def test_Group_Mindist_All_Three_Groups_nothreshold_count_contacts(self):
+        group0 = [0, 20, 30, 0]
+        group1 = [1, 21, 31, 1]
+        group2 = [2, 22, 32, 2]
+        with self.assertRaises(ValueError):
+            self.feat.add_group_mindist(group_definitions=[group0, group1, group2], count_contacts=True)
 
     def test_Group_Mindist_Some_Three_Groups(self):
         group0 = [0, 20, 30, 0]
@@ -921,31 +1037,31 @@ class TestPairwiseInputParser(unittest.TestCase):
                               [0, 2],
                               [0, 3]])
 
-        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat.logger))
 
     def test_one_unique(self):
         # As a list
         group1 = [0, 1, 2]
         dist_list = np.asarray(list(combinations(group1, 2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat.logger))
 
         # As an array
         group1 = np.array([0, 1, 2])
         dist_list = np.asarray(list(combinations(group1, 2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat.logger))
 
     def test_two_uniques(self):
         # As a list
         group1 = [0, 1, 2]
         group2 = [3, 4, 5]
         dist_list = np.asarray(list(product(group1, group2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
         # As an array
         group1 = np.array([0, 1, 2])
         group2 = np.array([3, 4, 5])
         dist_list = np.asarray(list(product(group1, group2)))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
     def test_two_redundants(self):
         group1 = np.array([0, 1, 2, 0])
@@ -953,7 +1069,7 @@ class TestPairwiseInputParser(unittest.TestCase):
         dist_list = np.asarray(list(product(np.unique(group1),
                                             np.unique(group2)
                                             )))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
     def test_two_redundants_overlap(self):
         group1 = np.array([0, 1, 2, 0])
@@ -961,7 +1077,7 @@ class TestPairwiseInputParser(unittest.TestCase):
         dist_list = np.asarray(list(product(np.unique(group1),
                                             np.unique(group2[:-2])
                                             )))
-        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat.logger))
 
 
 class TestUtils(unittest.TestCase):

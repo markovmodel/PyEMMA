@@ -23,7 +23,6 @@ Created on Jul 25, 2014
 @author: noe
 '''
 
-from __future__ import absolute_import
 
 import numpy as np
 import math
@@ -43,7 +42,7 @@ def _confidence_interval_1d(data, alpha):
         a 1D-array of samples
     alpha : float in [0,1]
         the confidence level, i.e. percentage of data included in the interval
-        
+
     Returns
     -------
     (m, l, r) : m is the mean of the data, and (l, r) are the m-alpha/2
@@ -59,7 +58,7 @@ def _confidence_interval_1d(data, alpha):
     if np.isclose(dmin, dmax):
         warnings.warn('confidence interval for constant data is not meaningful')
         return dmin, dmin, dmin
-    
+
     # compute mean
     m = np.mean(data)
     # sort data
@@ -183,7 +182,7 @@ def _maxlength(X):
     return N
 
 def statistical_inefficiency(X, truncate_acf=True):
-    """ Estimates the statistical inefficiency from univariate time series X
+    r""" Estimates the statistical inefficiency from univariate time series X
 
     The statistical inefficiency [1]_ is a measure of the correlatedness of samples in a signal.
     Given a signal :math:`{x_t}` with :math:`N` samples and statistical inefficiency :math:`I \in (0,1]`, there are

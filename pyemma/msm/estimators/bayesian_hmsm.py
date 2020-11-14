@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
 import numpy as _np
 
@@ -39,14 +38,14 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
     r"""Estimator for a Bayesian Hidden Markov state model"""
     __serialize_version = 0
     __serialize_fields = ('accuracy',
-                         'count_matrix',
-                         'hidden_state_probabilities',
-                         'hidden_state_trajectories',
-                         'initial_count',
-                         'initial_distribution',
-                         'likelihood',
-                         'likelihoods',
-                         'sampled_trajs',
+                          'count_matrix',
+                          'hidden_state_probabilities',
+                          'hidden_state_trajectories',
+                          'initial_count',
+                          'initial_distribution',
+                          'likelihood',
+                          'likelihoods',
+                          'sampled_trajs',
                          )
 
     def __init__(self, nstates=2, lag=1, stride='effective',
@@ -152,12 +151,20 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         self.p0_prior = p0_prior
         self.transition_matrix_prior = transition_matrix_prior
         self.nsamples = nsamples
-        if init_hmsm is not None:
-            assert issubclass(init_hmsm.__class__, _MaximumLikelihoodHMSM), 'hmsm must be of type MaximumLikelihoodHMSM'
         self.init_hmsm = init_hmsm
         self.conf = conf
         self.store_hidden = store_hidden
         self.show_progress = show_progress
+
+    @property
+    def init_hmsm(self):
+        return self._init_hmsm
+
+    @init_hmsm.setter
+    def init_hmsm(self, value):
+        if value is not None and not issubclass(value.__class__, _MaximumLikelihoodHMSM):
+            raise ValueError('hmsm must be of type MaximumLikelihoodHMSM')
+        self._init_hmsm = value
 
     def _estimate(self, dtrajs):
         # ensure right format
@@ -185,11 +192,12 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
             # check if nstates and lag are compatible
             for attr in check_user_choices:
-                if not self.__getattribute__(attr) == self.init_hmsm.__getattribute__(attr):
+                if not getattr(self, attr) == getattr(self.init_hmsm, attr):
                     raise UserWarning('BayesianHMSM cannot be initialized with init_hmsm with '
-                                      + 'incompatible lag or nstates.')
+                                      'incompatible lag or nstates.')
 
-            if not _np.array_equal(dtrajs, self.init_hmsm._dtrajs_full):
+            if (len(dtrajs) != len(self.init_hmsm.dtrajs_full) or
+                    not all((_np.array_equal(d1, d2) for d1, d2 in zip(dtrajs, self.init_hmsm.dtrajs_full)))):
                 raise NotImplementedError('Bayesian HMM estimation with init_hmsm is currently only implemented ' +
                                           'if applied to the same data.')
 
@@ -218,8 +226,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
                 if _np.setxor1d(_np.concatenate(dtrajs_lagged_strided),
                                  _np.concatenate(self.init_hmsm._dtrajs_lagged)).size != 0:
-                    raise UserWarning('Choice of stride has excluded a different set of microstates than in ' +
-                                      'init_hmsm. Set of observed microstates in time-lagged strided trajectories ' +
+                    raise UserWarning('Choice of stride has excluded a different set of microstates than in '
+                                      'init_hmsm. Set of observed microstates in time-lagged strided trajectories '
                                       'must match to the one used for init_hmsm estimation.')
 
                 self._dtrajs_full = dtrajs
@@ -246,11 +254,12 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         # check if we have a valid initial model
         import msmtools.estimation as msmest
         if self.reversible and not msmest.is_connected(self.count_matrix):
-            raise NotImplementedError('Encountered disconnected count matrix:\n ' + str(self.count_matrix)
-                                      + 'with reversible Bayesian HMM sampler using lag=' + str(self.lag)
-                                      + ' and stride=' + str(self.stride) + '. Consider using shorter lag, '
-                                      + 'or shorter stride (to use more of the data), '
-                                      + 'or using a lower value for mincount_connectivity.')
+            raise NotImplementedError('Encountered disconnected count matrix:\n{count_matrix} '
+                                      'with reversible Bayesian HMM sampler using lag={lag}'
+                                      ' and stride={stride}. Consider using shorter lag, '
+                                      'or shorter stride (to use more of the data), '
+                                      'or using a lower value for mincount_connectivity.'
+                                      .format(count_matrix=self.count_matrix, lag=self.lag, stride=self.stride))
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler. This is just an initialization.
@@ -318,16 +327,20 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
         # return submodel (will return self if all None)
         return self.submodel(states=states_subset, obs=observe_subset,
-                             mincount_connectivity=self.mincount_connectivity)
+                             mincount_connectivity=self.mincount_connectivity,
+                             inplace=True)
 
-    def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
+    def submodel(self, states=None, obs=None, mincount_connectivity='1/n', inplace=False):
         # call submodel on MaximumLikelihoodHMSM
-        _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs, mincount_connectivity=mincount_connectivity)
+
+        submodel_estimator = _MaximumLikelihoodHMSM.submodel(self, states=states, obs=obs,
+                                                             mincount_connectivity=mincount_connectivity,
+                                                             inplace=inplace)
         # if samples set, also reduce them
         if hasattr(self, 'samples') and self.samples is not None:
-            subsamples = [sample.submodel(states=self.active_set, obs=self.observable_set)
+            subsamples = [sample.submodel(states=submodel_estimator.active_set, obs=submodel_estimator.observable_set)
                           for sample in self.samples]
-            self.update_model_params(samples=subsamples)
+            submodel_estimator.update_model_params(samples=subsamples)
 
         # return
-        return self
+        return submodel_estimator

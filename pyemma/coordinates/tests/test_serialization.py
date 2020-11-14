@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 import os
 import tempfile
@@ -235,7 +234,7 @@ class TestSerializationCoordinates(unittest.TestCase):
             # one consisting of the first and the last
             frag_trajs = [trajfiles, [trajfiles[0]], [trajfiles[0], trajfiles[2]]]
             chunksize = 232
-            source = coor.source(frag_trajs, top=top_file, chunk_size=chunksize)
+            source = coor.source(frag_trajs, top=top_file, chunksize=chunksize)
             params = {'chunksize': chunksize, 'ndim': source.ndim, '_trajectories': trajfiles}
             restored = self.compare(source, params)
 

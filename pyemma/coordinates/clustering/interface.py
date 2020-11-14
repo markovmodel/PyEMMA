@@ -22,7 +22,6 @@ Created on 18.02.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 import os
 
@@ -174,7 +173,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
         return 1
 
     def output_type(self):
-        return np.int32
+        return np.int32()
 
     def assign(self, X=None, stride=1):
         """
@@ -293,11 +292,11 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
         for filename, dtraj in zip(output_files, self.dtrajs):
             dest = path.join(output_dir, filename)
-            self._logger.debug('writing dtraj to "%s"' % dest)
+            self.logger.debug('writing dtraj to "%s"' % dest)
             try:
                 if path.exists(dest) and not self.overwrite_dtrajs:
                     raise EnvironmentError('Attempted to write dtraj "%s" which already existed. To automatically'
                                            ' overwrite existing files, set source.overwrite_dtrajs=True.' % dest)
                 write_dtraj(dest, dtraj)
             except IOError:
-                self._logger.exception('Exception during writing dtraj to "%s"' % dest)
+                self.logger.exception('Exception during writing dtraj to "%s"' % dest)

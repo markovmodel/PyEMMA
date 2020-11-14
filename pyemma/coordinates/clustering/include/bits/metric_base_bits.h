@@ -92,7 +92,7 @@ inline py::array_t<int> metric_base<dtype>::assign_chunk_to_centers(const np_arr
  */
 template <typename dtype>
 inline dtype euclidean_metric<dtype>::compute(const dtype *const a, const dtype *const b) {
-    dtype sum = 0.0;
+    double sum = 0.0;
     //#pragma omp simd reduction(+:sum)
     for (size_t i = 0; i < metric_base<dtype>::dim; ++i) {
         assert(std::isfinite(a[i]));
@@ -102,7 +102,7 @@ inline dtype euclidean_metric<dtype>::compute(const dtype *const a, const dtype 
         sum += d * d;
     }
     assert(std::isfinite(sum));
-    return std::sqrt(sum);
+    return static_cast<dtype>(std::sqrt(sum));
 }
 
 /**

@@ -1,0 +1,15 @@
+[build-system]
+requires = [
+ "setuptools",
+ "wheel",
+ "numpy>=1.10",
+ "Cython>=0.22",
+ "scipy",
+ "mdtraj",
+ # TODO: include again once https://github.com/pybind/pybind11/issues/1067 is fixed.
+ #"pybind11",
+ ]
+
+
+# TODO: investigate: this does not ship versioneer.py from project root.
+#build-backend = "setuptools.build_meta"

@@ -20,7 +20,6 @@ Created on 28.01.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 import os
 import random
@@ -29,6 +28,7 @@ import numpy as np
 
 from pyemma.coordinates.api import cluster_kmeans
 from pyemma.util.files import TemporaryDirectory
+from pyemma.util.contexts import settings, Capturing
 
 
 class TestKmeans(unittest.TestCase):
@@ -88,11 +88,9 @@ class TestKmeans(unittest.TestCase):
             np.testing.assert_equal(km1.initial_centers_, km2.initial_centers_)
 
             while not km1.converged:
-                km1.estimate(X=X, clustercenters=km1.clustercenters)
-            assert km1.converged
+                km1.estimate(X=X, clustercenters=km1.clustercenters, keep_data=True)
             while not km2.converged:
-                km2.estimate(X=X, clustercenters=km2.clustercenters)
-            assert km2.converged
+                km2.estimate(X=X, clustercenters=km2.clustercenters, keep_data=True)
 
             assert np.linalg.norm(km1.clustercenters - km1.initial_centers_) > 0
             np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
@@ -239,9 +237,26 @@ class TestKmeans(unittest.TestCase):
         assert len(cl.dtrajs[0]) == 100 - 42
 
     def test_with_pg(self):
-        from pyemma.util.contexts import settings
-        with settings(show_progress_bars=True):
+        with settings(show_progress_bars=True), Capturing(which='stderr') as output:
             cluster_kmeans(np.random.rand(100, 3))
+        self.assertNotIn('creating data array', '\n'.join(output))
+
+    def test_with_pg_data_not_in_memory(self):
+        import pkg_resources
+        import pyemma
+
+        path = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data') + os.path.sep
+        pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        traj_files = [
+            os.path.join(path, 'bpti_001-033.xtc'),
+            os.path.join(path, 'bpti_034-066.xtc'),
+            os.path.join(path, 'bpti_067-100.xtc')
+        ]
+        reader = pyemma.coordinates.source(traj_files, top=pdb_file)
+
+        with settings(show_progress_bars=True), Capturing(which='stderr') as out:
+            cluster_kmeans(reader)
+        self.assertIn('creating data array', '\n'.join(out))
 
 
 class TestKmeansResume(unittest.TestCase):
@@ -275,7 +290,6 @@ class TestKmeansResume(unittest.TestCase):
 
         self.assertLess(diff_next, diff, 'resume_centers=%s, new_centers=%s' % (resume_centers, new_centers))
 
-    @unittest.skip('not impled')
     def test_inefficient_args_log(self):
         from pyemma.util.testing_tools import MockLoggingHandler
         m = MockLoggingHandler()

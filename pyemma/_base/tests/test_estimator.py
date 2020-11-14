@@ -15,7 +15,8 @@ class TestBaseEstimator(unittest.TestCase):
     @unittest.skipIf(not have_sklearn, 'no sklearn')
     def test_sklearn_compat_fit(self):
         class T(Estimator):
-            def _estimate(self, X): pass
+            def _estimate(self, X):
+                return self
 
         from sklearn.pipeline import Pipeline
         p = Pipeline([('test', T())])

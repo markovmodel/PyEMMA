@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 from logging import getLogger
 
+from pyemma._base.loggable import Loggable
 from pyemma.coordinates.data._base.datasource import DataSource
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.transformer import StreamingTransformer
@@ -32,10 +32,10 @@ __all__ = ['Discretizer',
 __author__ = 'noe, marscher'
 
 
-class Pipeline(object):
+class Pipeline(Loggable):
     r"""Data processing pipeline."""
 
-    def __init__(self, chain, chunksize=100, param_stride=1):
+    def __init__(self, chain, chunksize=None, param_stride=1):
         r"""Data processing pipeline.
 
         Parameters
@@ -48,19 +48,17 @@ class Pipeline(object):
             omit every n'th data point
 
         """
-        self._chain = []
-        self.chunksize = chunksize
         self.param_stride = param_stride
-        self.chunksize = chunksize
+        self._chunksize = chunksize
 
         # add given elements in chain
+        self._chain = []
         for e in chain:
             self.add_element(e)
 
-        self._estimated = False
+        self.chunksize = chunksize
 
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
-        self._logger = getLogger(name)
+        self._estimated = False
 
     @property
     def chunksize(self):
@@ -143,7 +141,7 @@ class Pipeline(object):
         """
         for element in self._chain:
             if not element.is_reader and not element._estimated:
-                element.estimate(element.data_producer, stride=self.param_stride)
+                element.estimate(element.data_producer, stride=self.param_stride, chunksize=self.chunksize)
 
         self._estimated = True
 
@@ -178,7 +176,7 @@ class Discretizer(Pipeline):
         how many frames shall be processed at once.
     """
 
-    def __init__(self, reader, transform=None, cluster=None, chunksize=100, param_stride=1):
+    def __init__(self, reader, transform=None, cluster=None, chunksize=None, param_stride=1):
         # init with an empty chain and add given transformers afterwards
         Pipeline.__init__(
             self, [], chunksize=chunksize, param_stride=param_stride)
@@ -203,7 +201,7 @@ class Discretizer(Pipeline):
 
         if hasattr(reader, 'featurizer'):  # reader is a FeatureReader
             if reader.featurizer.dimension == 0:
-                self._logger.warning("no features selected!")
+                self.logger.warning("no features selected!")
 
         self.add_element(reader)
 
@@ -218,7 +216,7 @@ class Discretizer(Pipeline):
     def dtrajs(self):
         """ get discrete trajectories """
         if not self._estimated:
-            self._logger.info("not yet parametrized, running now.")
+            self.logger.info("not yet parametrized, running now.")
             self.parametrize()
         return self._chain[-1].dtrajs
 

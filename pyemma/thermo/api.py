@@ -45,7 +45,7 @@ def estimate_umbrella_sampling(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     width=None, **kwargs):
     r"""
-    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar``, and ``wham()`` and
+    This function acts as a wrapper for ``tram()``, ``dtram()``, ``mbar()``, and ``wham()`` and
     handles the calculation of bias energies (``bias``) and thermodynamic state trajectories
     (``ttrajs``) when the data comes from umbrella sampling and (optional) unbiased simulations.
 
@@ -552,7 +552,7 @@ def tram(
           The connected set is then computed by summing the count matrices over
           all thermodynamic states and taking it's largest strongly connected set.
           Not recommended!
-        For more details see :func:`thermotools.cset.compute_csets_TRAM`.
+        For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_TRAM`.
     connectivity_factor : float, optional, default=1.0
         Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Values
         greater than 1.0 weaken the connectivity conditions. For 'post_hoc_RE'
@@ -694,7 +694,7 @@ def tram(
                 callback=callback, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
                 equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias))
             tram_estimators.append(t)
-        pg.update(1)
+            pg.update(1)
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
@@ -759,7 +759,7 @@ def dtram(
           all thermodynamic states and taking it's largest strongly connected set.
           Not recommended!
         * None : assume that everything is connected. For debugging.
-        For more details see :func:`thermotools.cset.compute_csets_dTRAM`.
+        For more details see :func:`pyemma.thermo.extensions.cset.compute_csets_dTRAM`.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15

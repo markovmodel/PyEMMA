@@ -16,19 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 __author__ = 'noe'
 
 import math
 import numpy as np
 
 
-def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1., **plot_kwargs):
+def _add_ck_subplot(cktest, test_index, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1., **plot_kwargs):
     # plot estimates
     for default in ['color', 'linestyle']:
         if default in plot_kwargs.keys():
             #print("ignoring plot_kwarg %s: %s"%(default, plot_kwargs[default]))
             plot_kwargs.pop(default)
+    color = 'C{}'.format(test_index)
 
     lest = ax.plot(dt*cktest.lagtimes, cktest.estimates[:, i, j], color='black', **plot_kwargs)
     # plot error of estimates if available
@@ -36,11 +36,11 @@ def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='ste
         ax.fill_between(dt*cktest.lagtimes, cktest.estimates_conf[0][:, i, j], cktest.estimates_conf[1][:, i, j],
                         color='black', alpha=0.2)
     # plot predictions
-    lpred = ax.plot(dt*cktest.lagtimes, cktest.predictions[:, i, j], color='blue', linestyle='dashed', **plot_kwargs)
+    lpred = ax.plot(dt*cktest.lagtimes, cktest.predictions[:, i, j], color=color, linestyle='dashed', **plot_kwargs)
     # plot error of predictions if available
     if cktest.has_errors:
         ax.fill_between(dt*cktest.lagtimes, cktest.predictions_conf[0][:, i, j], cktest.predictions_conf[1][:, i, j],
-                        color='blue', alpha=0.2)
+                        color=color, alpha=0.2)
     # add label
     ax.text(0.05, 0.05, str(i+1)+' -> '+str(j+1), transform=ax.transAxes, weight='bold')
     if y01:
@@ -65,8 +65,10 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     Parameters
     ----------
 
-    cktest : msm.ChapmanKolmogorovValidator
-        Chapman-Kolmogorov Test
+    cktest : msm.ChapmanKolmogorovValidator or list of msm.ChapmanKolmogorovValidator
+        Chapman-Kolmogorov Test, optionally a list of tests which are all 
+        plotted into the same set of axes. This assumes that all cktests were
+        estimated for the same nstates.
 
     figsize : shape, default=(10, 10)
         Figure size
@@ -103,6 +105,13 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     axes : Axis objects with subplots
 
     """
+    if not isinstance(cktest, (list, tuple)):
+        cktests = [cktest]
+    else:
+        cktests = cktest
+    cktest = cktests[0]
+    for test in cktests:
+        assert cktest.nsets == test.nsets, "cktests all need same number of sets"
     import matplotlib.pylab as plt
     sharey = y01
     # first fix subfigure layout
@@ -126,22 +135,35 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     lest = None
     lpred = None
     # plot
-    for (k, ax) in enumerate(axeslist):
-        if diag and k < cktest.nsets:
-            ipos = int(k/layout[1])
-            jpos = int(k%layout[1])
-            lest, lpred = _add_ck_subplot(cktest, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units, dt=dt, **plot_kwargs)
-            k += 1
-        else:
-            i = int(k/cktest.nsets)
-            j = int(k%cktest.nsets)
-            lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01, units=units, dt=dt, **plot_kwargs)
+    lests = []
+    lpreds = []
+    for test_index, test in enumerate(cktests):
+        for (k, ax) in enumerate(axeslist):
+            if diag and k < cktest.nsets:
+                ipos = int(k/layout[1])
+                jpos = int(k%layout[1])
+                lest, lpred = _add_ck_subplot(test, test_index, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units,
+                                              dt=dt, **plot_kwargs)
+                k += 1
+            else:
+                i = int(k/cktest.nsets)
+                j = int(k%cktest.nsets)
+                lest, lpred = _add_ck_subplot(test, test_index, ax, i, j, y01=y01, units=units, dt=dt, **plot_kwargs)
+        lests.append(lest[0])
+        lpreds.append(lpred[0])
     # figure legend
-    predlabel = 'predict'
-    estlabel = 'estimate'
-    if cktest.has_errors:
-        predlabel += '     conf. {:3.1f}%'.format(100.0*cktest.conf)
-    fig.legend((lest[0], lpred[0]), (estlabel, predlabel), 'upper center', ncol=2, frameon=False)
+    handles = []
+    labels = []
+    for ix, test in enumerate(cktests):
+        predlabel = 'predict {}'.format(ix) if len(cktests) > 1 else 'predict'
+        estlabel = 'estimate {}'.format(ix) if len(cktests) > 1 else 'estimate'
+        if cktest.has_errors:
+            predlabel += '     conf. {:3.1f}%'.format(100.0*cktest.conf)
+        handles.append(lests[ix])
+        handles.append(lpreds[ix])
+        labels.append(predlabel)
+        labels.append(estlabel)
+    fig.legend(handles, labels, 'upper center', ncol=2, frameon=False)
     # change subplot padding
     plt.subplots_adjust(top=1.0-padding_top, wspace=padding_between, hspace=padding_between)
     # done

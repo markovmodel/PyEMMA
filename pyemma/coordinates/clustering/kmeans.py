@@ -20,21 +20,21 @@ Created on 22.01.2015
 @author: clonker, marscher, noe
 """
 
-from __future__ import absolute_import
 
 import math
 import os
+from contextlib import contextmanager
+
 import psutil
 import random
 import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporterMixin
-from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
 
-from pyemma.util.contexts import random_seed
+from pyemma.util.contexts import random_seed, nullcontext
 import numpy as np
 
 
@@ -46,6 +46,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
     r"""k-means clustering"""
 
     __serialize_version = 0
+    __serialize_fields = ('initial_centers_', '_converged', )
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
@@ -143,8 +144,8 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                 self._fixed_seed = random.randint(0, 2**32-1)
         elif types.is_int(val):
             if val < 0 or val > 2**32-1:
-                self.logger.warn("seed has to be positive (or smaller than 2**32-1)."
-                                 " Seed will be chosen randomly.")
+                self.logger.warning("seed has to be positive (or smaller than 2**32-1)."
+                                    " Seed will be chosen randomly.")
                 self.fixed_seed = False
             else:
                 self._fixed_seed = val
@@ -161,16 +162,15 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # check if we need to allocate memory.
         if hasattr(self, '_in_memory_chunks') and self._in_memory_chunks.size == size:
             assert hasattr(self, '_in_memory_chunks')
-            self.logger.info("re-use in memory data.")
+            self.logger.debug("re-use in memory data.")
             return
-        elif self._check_resume_iteration() and not self._in_memory_chunks_set:
-            pass
-            #self.logger.warning('Resuming kmeans iteration without the setting "keep_data=True", will re-create'
-            #                    ' the linear in-memory data. This is inefficient! Consider setting keep_data=True,'
-            #                    ' when you intend to resume.')
+        elif self._check_resume_iteration() and not self._in_memory_chunks_set and not self.keep_data:
+            self.logger.warning('Resuming kmeans iteration without the setting "keep_data=True", will re-create'
+                                ' the linear in-memory data. This is inefficient! Consider setting keep_data=True,'
+                                ' when you intend to resume the kmeans iteration.')
 
         available_mem = psutil.virtual_memory().available
-        required_mem = self._calculate_required_memory(size)
+        required_mem = size * self.data_producer.dimension() * np.float32().itemsize
         if required_mem <= available_mem:
             self._in_memory_chunks = np.empty(shape=(size, self.data_producer.dimension()),
                                               order='C', dtype=np.float32)
@@ -190,10 +190,6 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                                                    shape=(size, self.data_producer.dimension()), order='C',
                                                    dtype=np.float32)
 
-    def _calculate_required_memory(self, size):
-        empty = np.empty(shape=(1, self.data_producer.dimension()), order='C', dtype=np.float32)
-        return empty[0, :].nbytes * size
-
     def describe(self):
         return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
@@ -203,12 +199,13 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
 
     def _estimate(self, iterable, **kw):
         self._init_estimate()
-
-        # collect the data only if, we have not done this previously (eg. keep_data=True) or the centers are not initialized.
+        ctx = nullcontext() if 'data' not in self._progress_registered_stages else self._progress_context(stage='data')
+        # collect the data only if, we have not done this previously (eg. keep_data=True)
+        # or the centers are not initialized.
         if not self._check_resume_iteration() or not self._in_memory_chunks_set:
             resume_centers = self._check_resume_iteration()
             with iterable.iterator(return_trajindex=True, stride=self.stride,
-                                   chunk=self.chunksize, skip=self.skip) as it:
+                                   chunk=self.chunksize, skip=self.skip) as it, ctx:
                 # first pass: gather data and run k-means
                 first_chunk = True
                 for itraj, X in it:
@@ -220,7 +217,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                     first_chunk = False
             self.initial_centers_ = self.clustercenters[:]
 
-            self._logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
+            self.logger.debug("Accumulated all data, running kmeans on %s", self._in_memory_chunks.shape)
             self._in_memory_chunks_set = True
         else:
             if len(self.clustercenters) != self.n_clusters:
@@ -234,33 +231,36 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
             callback = None
 
         # run k-means with all the data
-        with self._progress_context(stage=1):
+        with self._progress_context(stage=1), self._finish_estimate():
             self.clustercenters, code, iterations = self._inst.cluster_loop(self._in_memory_chunks, self.clustercenters,
                                                                             self.n_jobs, self.max_iter, self.tolerance,
                                                                             callback)
             if code == 0:
                 self._converged = True
-                self._logger.info("Cluster centers converged after %i steps.", iterations + 1)
+                self.logger.debug("Cluster centers converged after %i steps.", iterations + 1)
             else:
-                self._logger.info("Algorithm did not reach convergence criterion"
-                                  " of %g in %i iterations. Consider increasing max_iter.",
-                                  self.tolerance, self.max_iter)
-        self._finish_estimate()
+                self.logger.warning("Algorithm did not reach convergence criterion"
+                                    " of %g in %i iterations. Consider increasing max_iter.",
+                                    self.tolerance, self.max_iter)
 
         return self
 
+    @contextmanager
     def _finish_estimate(self):
-        # delete the large input array, if the user wants to keep the array or the estimate has converged.
-        if not self.keep_data or self._converged:
-            fh = None
-            if isinstance(self._in_memory_chunks, np.memmap):
-                fh = self._in_memory_chunks.filename
-            del self._in_memory_chunks
-            if fh:
-                os.unlink(fh)
-            self._in_memory_chunks_set = False
-        if self.init_strategy == 'uniform':
-            del self._init_centers_indices
+        try:
+            yield
+        finally:
+            # delete the large input array, if the user wants to keep the array or the estimate has converged.
+            if not self.keep_data or self._converged:
+                fh = None
+                if isinstance(self._in_memory_chunks, np.memmap):
+                    fh = self._in_memory_chunks.filename
+                del self._in_memory_chunks
+                if fh:
+                    os.unlink(fh)
+                self._in_memory_chunks_set = False
+            if self.init_strategy == 'uniform':
+                del self._init_centers_indices
 
     def _init_estimate(self):
         # mini-batch sets stride to None
@@ -272,10 +272,9 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         total_length = sum(traj_lengths)
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
-            self._logger.info("The number of cluster centers was not specified, "
-                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+            self.logger.info("The number of cluster centers was not specified, "
+                             "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        if not isinstance(self, MiniBatchKmeansClustering) and not self._source_from_memory(self.data_producer):
             n_chunks = self.data_producer.n_chunks(chunksize=self.chunksize, skip=self.skip, stride=self.stride)
             self._progress_register(n_chunks, description="creating data array", stage='data')
 
@@ -312,10 +311,13 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         elif last_chunk and self.init_strategy == 'kmeans++':
             if self.init_strategy == 'kmeans++' and self.show_progress:
                 callback = lambda: self._progress_update(1, stage=0)
+                context = self._progress_context(stage=0)
             else:
                 callback = None
-            self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
-                                                               callback)
+                context = nullcontext()
+            with context:
+                self.clustercenters = self._inst.init_centers_KMpp(self._in_memory_chunks, self.fixed_seed, self.n_jobs,
+                                                                   callback)
 
     def _collect_data(self, X, first_chunk, last_chunk):
         # beginning - compute
@@ -325,8 +327,7 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
         self._t_total += len(X)
-        from pyemma.coordinates.data import DataInMemory
-        if not isinstance(self, MiniBatchKmeansClustering) and not isinstance(self.data_producer, DataInMemory):
+        if 'data' in self._progress_registered_stages:
             self._progress_update(1, stage='data')
 
         if last_chunk:
@@ -400,7 +401,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         ra_stride = self._draw_mini_batch_sample()
         with iterable.iterator(return_trajindex=False, stride=ra_stride, skip=self.skip) as iterator, \
-            self._progress_context():
+            self._progress_context(), self._finish_estimate():
             while not (self._converged or i_pass + 1 > self.max_iter):
                 first_chunk = True
                 # draw new sample and re-use existing iterator instance.
@@ -424,16 +425,14 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
                 if rel_change <= self.tolerance:
                     self._converged = True
-                    self._logger.info("Cluster centers converged after %i steps.", i_pass + 1)
+                    self.logger.info("Cluster centers converged after %i steps.", i_pass + 1)
                     self._progress_force_finish(stage=1)
                 else:
                     self._progress_update(1, stage=1)
 
                 i_pass += 1
 
-        self._finish_estimate()
-
         if not self._converged:
-            self._logger.info("Algorithm did not reach convergence criterion"
-                              " of %g in %i iterations. Consider increasing max_iter.", self.tolerance, self.max_iter)
+            self.logger.info("Algorithm did not reach convergence criterion"
+                             " of %g in %i iterations. Consider increasing max_iter.", self.tolerance, self.max_iter)
         return self

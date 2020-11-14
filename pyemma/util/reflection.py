@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division, print_function, absolute_import
 
 import inspect
+
 from collections import namedtuple
 
 __author__ = 'noe, marscher'
@@ -37,10 +37,8 @@ __author__ = 'noe, marscher'
 # This way, the caller code does not need to know whether it uses a legacy
 # .getargspec or bright and shiny .signature.
 
-
-# Apparently, yes. Wrap inspect.signature
-
 ArgSpec = namedtuple('ArgSpec', ['args', 'varargs', 'keywords', 'defaults'])
+
 
 def getargspec_no_self(func):
     """inspect.getargspec replacement using inspect.signature.

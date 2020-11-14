@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 from numpy import vstack
 import mdtraj as md
@@ -24,7 +23,8 @@ import numpy as np
 import os
 
 
-def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw):
+
+def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
     r"""
     Creates a (possibly featured) file reader by a number of input files and either a topology file or a featurizer.
     Parameters
@@ -35,7 +35,7 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
         A topology file. If given, the featurizer argument can be None.
     :param featurizer:
         A featurizer. If given, the topology file can be None.
-    :param chunk_size:
+    :param chunksize:
         The chunk size with which the corresponding reader gets initialized.
     :return: Returns the reader.
     """
@@ -47,7 +47,7 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
     # fragmented trajectories
     if (isinstance(input_files, (list, tuple)) and len(input_files) > 0 and
             any(isinstance(item, (list, tuple)) for item in input_files)):
-        return FragmentedTrajectoryReader(input_files, topology, chunk_size, featurizer)
+        return FragmentedTrajectoryReader(input_files, topology, chunksize, featurizer)
 
     # normal trajectories
     if (isinstance(input_files, str)
@@ -70,54 +70,54 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=1000, **kw)
         # TODO: this does not handle suffixes like .xyz.gz (rare)
         _, suffix = os.path.splitext(input_list[0])
 
+        suffix = str(suffix)
+
         # check: do all files have the same file type? If not: raise ValueError.
         if all(item.endswith(suffix) for item in input_list):
 
             # do all the files exist? If not: Raise value error
             all_exist = True
-            err_msg = ""
+            from six import StringIO
+            err_msg = StringIO()
             for item in input_list:
                 if not os.path.isfile(item):
-                    err_msg += "\n" if len(err_msg) > 0 else ""
-                    err_msg += "File %s did not exist or was no file" % item
+                    err_msg.write('\n' if err_msg.tell() > 0 else "")
+                    err_msg.write('File %s did not exist or was no file' % item)
                     all_exist = False
             if not all_exist:
-                raise ValueError("Some of the given input files were directories"
-                                 " or did not exist:\n%s" % err_msg)
+                raise ValueError('Some of the given input files were directories'
+                                 ' or did not exist:\n%s' % err_msg.getvalue())
+            featurizer_or_top_provided = featurizer is not None or topology is not None
+            # we need to check for h5 first, because of mdtraj custom HDF5 traj format (which is deprecated).
+            if suffix in ('.h5', '.hdf5') and not featurizer_or_top_provided:
+                # This check is potentially expensive for lots of files, we also re-open the file twice (causing atime updates etc.)
+                # So we simply require that no featurizer option is given.
+                # and not all((_is_mdtraj_hdf5_file(f) for f in input_files)):
+                from pyemma.coordinates.data.h5_reader import H5Reader
+                reader = H5Reader(filenames=input_files, chunk_size=chunksize, **kw)
+            # CASE 1.1: file types are MD files
+            elif FeatureReader.supports_format(suffix):
+                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+                # create a MD reader with file names and topology
+                if not featurizer_or_top_provided:
+                    raise ValueError('The input files were MD files which makes it mandatory to have either a '
+                                     'Featurizer or a topology file.')
 
-            if all_exist:
-                from mdtraj.formats.registry import FormatRegistry
-                # we need to check for h5 first, because of mdtraj custom HDF5 traj format (which is deprecated).
-                if suffix in ['.h5', '.hdf5']:
-                    # TODO: inspect if it is a mdtraj h5 file, eg. has the given attributes
-                    try:
-                        from mdtraj.formats import HDF5TrajectoryFile
-                        HDF5TrajectoryFile(input_list[0])
-                        reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
-                                               chunksize=chunk_size)
-                    except:
-                        from pyemma.coordinates.data.h5_reader import H5Reader
-                        reader = H5Reader(filenames=input_files, chunk_size=chunk_size, **kw)
-                # CASE 1.1: file types are MD files
-                elif suffix in list(FormatRegistry.loaders.keys()):
-                    # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-                    # create a MD reader with file names and topology
-                    if not featurizer and not topology:
-                        raise ValueError("The input files were MD files which makes it mandatory to have either a "
-                                         "featurizer or a topology file.")
+                if suffix in ('.pdb', '.pdb.gz'):
+                    raise ValueError('PyEMMA can not read PDB-fake-trajectories. '
+                                     'Please consider using a sane trajectory format (e.g. xtc, dcd).')
 
-                    reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
-                                           chunksize=chunk_size)
-                else:
-                    if suffix in ['.npy', '.npz']:
-                        reader = NumPyFileReader(input_list, chunksize=chunk_size)
-                    # otherwise we assume that given files are ascii tabulated data
-                    else:
-                        reader = PyCSVReader(input_list, chunksize=chunk_size, **kw)
+                reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
+                                       chunksize=chunksize)
+            elif suffix in ('.npy', '.npz'):
+                reader = NumPyFileReader(input_list, chunksize=chunksize)
+            # otherwise we assume that given files are ascii tabulated data
+            else:
+                reader = PyCSVReader(input_list, chunksize=chunksize, **kw)
         else:
-            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
+            raise ValueError('Not all elements in the input list were of the type %s!' % suffix)
     else:
-        raise ValueError("Input \"%s\" was no string or list of strings." % input)
+        raise ValueError('Input "{}" was no string or list of strings.'.format(input_files))
     return reader
 
 
@@ -241,3 +241,12 @@ def compare_coords_md_trajectory_objects(traj1, traj2, atom=None, eps=1e-6, mess
             break
 
     return found_diff, errmsg
+
+
+def _is_mdtraj_hdf5_file(fh):
+    # fh is a h5py.File
+    return ('coordinates' in fh.keys() and
+            fh.attrs['conventions'] == 'Pande' and
+            fh.attrs['conventionVersion'] == '1.1' and
+            fh.attrs['program'] == 'MDTraj'
+    )

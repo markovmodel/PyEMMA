@@ -1,19 +1,18 @@
+import os
 import unittest
+from glob import glob
+
 import numpy as np
 
 from pyemma.coordinates.data import DataInMemory
 from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
-import os
-from glob import glob
-
 
 
 class TestCoordinatesIterator(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.d = [np.random.random((100, 3)) for _ in range(3)]
+    def setUp(self):
+        self.d = [np.random.random((100, 3)).astype(np.float32) for _ in range(3)]
 
     def test_current_trajindex(self):
         r = DataInMemory(self.d)
@@ -60,6 +59,18 @@ class TestCoordinatesIterator(unittest.TestCase):
                 np.testing.assert_equal(it.n_chunks, chunks,
                                         err_msg="Expected number of chunks did not agree with what the iterator "
                                                 "returned for stride=%s, lag=%s" % (stride, lag))
+
+        dd = [np.random.random((100, 3)), np.random.random((120, 3)), np.random.random((120, 3))]
+        rr = DataInMemory(dd)
+
+        # test for lagged iterator
+        for stride in range(1, 5):
+            for lag in [x for x in range(0, 18)] + [50, 100]:
+                it = rr.iterator(lag=lag, chunk=30, stride=stride, return_trajindex=False)
+                chunks = sum(1 for _ in it)
+                np.testing.assert_equal(it.n_chunks, chunks,
+                                        err_msg="Expected number of chunks did not agree with what the iterator "
+                                                "returned for stride=%s, lag=%s" % (stride, lag))
                 assert chunks == it.n_chunks
 
     def _count_chunks(self, it):
@@ -102,6 +113,15 @@ class TestCoordinatesIterator(unittest.TestCase):
             i %= len(cs)
             it.chunksize = cs[i]
             assert it.chunksize == cs[i]
+
+    def test_chunksize_max_memory(self):
+        from pyemma.util.contexts import settings
+        data = np.random.random((10000, 10))
+        max_size = 1024
+        with settings(default_chunksize=str(max_size)):
+            r = DataInMemory(data)
+            for itraj, x in r.iterator():
+                self.assertLessEqual(x.nbytes, max_size)
 
     def test_last_chunk(self):
         r = DataInMemory(self.d)
@@ -179,6 +199,58 @@ class TestCoordinatesIterator(unittest.TestCase):
             for a, e in zip(actual, expected):
                 np.testing.assert_allclose(a, e)
 
+    def test_write_h5(self):
+        from pyemma.coordinates import tica
+        dim = 10
+        data = [np.random.random((np.random.randint(50, 150), dim)) for _ in range(4)]
+        tica = tica(data, lag=1)
+        import tempfile
+        out = tempfile.mktemp()
+        group = '/test'
+        def perform(chunksize, stride):
+            try:
+                transformed_output = tica.get_output(chunk=chunksize, stride=stride)
+                tica.write_to_hdf5(out, group=group, chunksize=chunksize, stride=stride)
+
+                import h5py
+                with h5py.File(out) as f:
+                    assert len(f[group]) == len(data)
+                    for (itraj, actual), desired in zip(f[group].items(), transformed_output):
+                        np.testing.assert_equal(actual, desired, err_msg='failed for cs=%s, stride=%s'
+                                                                         %(chunksize, stride))
+            finally:
+                os.remove(out)
+
+        for cs in [0, 1, 3, 10, 42, 50]:
+            for s in [1, 2, 3, 10]:
+                perform(cs, s)
+
+        # test overwrite
+        try:
+            tica.write_to_hdf5(out, group=group)
+            with self.assertRaises(ValueError):
+                tica.write_to_hdf5(out, group=group)
+
+            os.remove(out)
+            tica.write_to_hdf5(out)
+            with self.assertRaises(ValueError) as ctx:
+                tica.write_to_hdf5(out)
+            assert 'Refusing to overwrite data' in ctx.exception.args[0]
+
+            os.remove(out)
+            tica.write_to_hdf5(out, group=group)
+            tica.write_to_hdf5(out, group=group, overwrite=True)
+
+            os.remove(out)
+            import h5py
+            with h5py.File(out) as f:
+                f.create_group('empty').create_dataset('0000', shape=(1,1))
+            with self.assertRaises(ValueError):
+                tica.write_to_hdf5(out, group='empty')
+            tica.write_to_hdf5(out, group='empty', overwrite=True)
+        finally:
+            os.remove(out)
+
     def test_invalid_data_in_input_nan(self):
         self.d[0][-1] = np.nan
         r = DataInMemory(self.d)
@@ -198,6 +270,68 @@ class TestCoordinatesIterator(unittest.TestCase):
             with self.assertRaises(InvalidDataInStreamException) as cm:
                 for itraj, X in it:
                     pass
+
+    def test_lagged_iterator(self):
+        import pyemma.coordinates as coor
+        from pyemma.coordinates.tests.util import create_traj, get_top
+
+        trajectory_length = 4720
+        lagtime = 1000
+        n_trajs = 15
+
+        top = get_top()
+        trajs_data = [create_traj(top=top, length=trajectory_length) for _ in range(n_trajs)]
+        trajs = [t[0] for t in trajs_data]
+        xyzs = [t[1].reshape(-1, 9) for t in trajs_data]
+
+        reader = coor.source(trajs, top=top, chunksize=5000)
+
+        for chunk in [None, 0, trajectory_length, trajectory_length+1, trajectory_length+1000]:
+            it = reader.iterator(lag=lagtime, chunk=chunk, return_trajindex=True)
+            with it:
+                for itraj, X, Y in it:
+                    np.testing.assert_equal(X.shape, Y.shape)
+                    np.testing.assert_equal(X.shape[0], trajectory_length - lagtime)
+                    np.testing.assert_array_almost_equal(X, xyzs[itraj][:trajectory_length-lagtime])
+                    np.testing.assert_array_almost_equal(Y, xyzs[itraj][lagtime:])
+
+    def test_lagged_iterator_optimized(self):
+        import pyemma.coordinates as coor
+        from pyemma.coordinates.tests.util import create_traj, get_top
+        from pyemma.coordinates.util.patches import iterload
+
+        trajectory_length = 4720
+        lagtime = 20
+        n_trajs = 15
+        stride = iterload.MAX_STRIDE_SWITCH_TO_RA + 1
+
+        top = get_top()
+        trajs_data = [create_traj(top=top, length=trajectory_length) for _ in range(n_trajs)]
+        trajs = [t[0] for t in trajs_data]
+        xyzs = [t[1].reshape(-1, 9)[::stride] for t in trajs_data]
+        xyzs_lagged = [t[1].reshape(-1, 9)[lagtime::stride] for t in trajs_data]
+
+        reader = coor.source(trajs, stride=stride, top=top, chunksize=5000)
+
+        memory_cutoff = iterload.MEMORY_CUTOFF
+        try:
+            iterload.MEMORY_CUTOFF = 8
+            it = reader.iterator(stride=stride, lag=lagtime, chunk=5000, return_trajindex=True)
+            with it:
+                curr_itraj = 0
+                t = 0
+                for itraj, X, Y in it:
+                    if itraj != curr_itraj:
+                        curr_itraj = itraj
+                        t = 0
+                    np.testing.assert_equal(X.shape, Y.shape)
+                    l = len(X)
+                    np.testing.assert_array_almost_equal(X, xyzs[itraj][t:t+l])
+                    np.testing.assert_array_almost_equal(Y, xyzs_lagged[itraj][t:t+l])
+                    t += l
+        finally:
+            iterload.MEMORY_CUTOFF = memory_cutoff
+
 
 if __name__ == '__main__':
     unittest.main()

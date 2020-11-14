@@ -23,7 +23,6 @@ Created on 02.02.2015
 @author: marscher
 """
 
-from __future__ import absolute_import
 import unittest
 import os
 import pkg_resources
@@ -188,7 +187,11 @@ class TestTICA_Basic(unittest.TestCase):
         np.testing.assert_allclose(y2[0], y)
 
     def test_commute_map(self):
-        tica(list(range(100)), commute_map=True, kinetic_map=False)
+        tica(np.arange(100), commute_map=True, kinetic_map=False)
+
+    def test_default_cs(self):
+        t = tica(chunksize=None)
+        assert t.default_chunksize == t.chunksize == t._FALLBACK_CHUNKSIZE
 
 
 class TestTICAExtensive(unittest.TestCase):
@@ -228,7 +231,7 @@ class TestTICAExtensive(unittest.TestCase):
             cls.cov_tau_ref_nr = np.dot(cls.X_mf_nr[:-cls.lag, :].T, cls.X_mf_nr[cls.lag:, :]) / float(cls.T - cls.lag)
 
             # do unscaled TICA
-            reader=api.source(cls.X, chunk_size=0)
+            reader=api.source(cls.X, chunksize=0)
             cls.tica_obj = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False)
             # non-reversible TICA
             cls.tica_obj_nr = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False, reversible=False)
@@ -276,6 +279,8 @@ class TestTICAExtensive(unittest.TestCase):
     def test_describe(self):
         desc = self.tica_obj.describe()
         assert types.is_string(desc) or types.is_list_of_string(desc)
+        # describe on empty estimator
+        tica(lag=1).describe()
 
     def test_dimension(self):
         assert types.is_int(self.tica_obj.dimension())
@@ -288,6 +293,11 @@ class TestTICAExtensive(unittest.TestCase):
         assert tica.dimension() == 1
         with self.assertRaises(ValueError):  # trying to set both dim and subspace_variance is forbidden
             api.tica(data=self.X, lag=self.lag, dim=1, var_cutoff=0.9)
+
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=0)
+        with self.assertRaises(ValueError):
+            api.tica(lag=self.lag, var_cutoff=1.1)
 
     def test_eigenvalues(self):
         eval = self.tica_obj.eigenvalues
@@ -361,7 +371,7 @@ class TestTICAExtensive(unittest.TestCase):
         self.tica_obj.number_of_trajectories() == 1
 
     def test_output_type(self):
-        assert self.tica_obj.output_type() == np.float32
+        assert self.tica_obj.output_type() == np.float32()
 
     def test_trajectory_length(self):
         assert self.tica_obj.trajectory_length(0) == self.T
@@ -421,7 +431,7 @@ class TestTICAExtensive(unittest.TestCase):
             for x in data:
                 tica_obj.partial_fit(x)
 
-            self.assertEqual(tica_obj._used_data, 20 - lag)
+            #self.assertEqual(tica_obj._used_data, 20 - lag)
             self.assertEqual(len(log_handler.messages['warning']), 1)
             self.assertIn("longer than lag", log_handler.messages['warning'][0])
         finally:

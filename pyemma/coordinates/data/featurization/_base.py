@@ -32,8 +32,8 @@ class Feature(SerializableMixIn):
         return self._dim
 
     @dimension.setter
-    def dimension(self, val: int):
-        self._dim = val
+    def dimension(self, val):
+        self._dim = int(val)
 
     @property
     def top(self):
@@ -49,8 +49,10 @@ class Feature(SerializableMixIn):
     def __eq__(self, other):
         if not isinstance(other, Feature):
             return False
-        from pyemma.coordinates.data.featurization.util import hash_top
-        return self.dimension == other.dimension and hash_top(self.top) == hash_top(other.top)
+        # TODO: here it should be fine to use simply the (quicker) hash func to ensure we have the same topology
+        # for safety reasons, we use the much slower equality check.
+        return self.dimension == other.dimension and self.top == other.top
 
     def __repr__(self):
         return str(self.describe())
+

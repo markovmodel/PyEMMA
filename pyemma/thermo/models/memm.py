@@ -23,63 +23,69 @@ from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util.annotators import aliased as _aliased, alias as _alias
 from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 
+
 @_add_full_state_methods
 @_aliased
 class ThermoMSM(_MSM, _SubSet):
     __serialize_version = 0
 
-    def __init__(
-        self, P, active_set, nstates_full,
-        pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
-        r"""Markov model with a given transition matrix
+    r"""Markov model with a given transition matrix
 
-        Parameters
-        ----------
-        P : ndarray(n,n)
-            transition matrix
+    Parameters
+    ----------
+    P : ndarray(n,n)
+        transition matrix
 
-        active_set : arraylike of int
-            indices of the configuration states for which P is defined.
+    active_set : arraylike of int
+        indices of the configuration states for which P is defined.
 
-        nstates_full : int
-            total number of configuration states.
+    nstates_full : int
+        total number of configuration states.
 
-        pi : ndarray(n), optional, default=None
-            stationary distribution. Can be optionally given in case if it was
-            already computed, e.g. by the estimator.
+    pi : ndarray(n), optional, default=None
+        stationary distribution. Can be optionally given in case if it was
+        already computed, e.g. by the estimator.
 
-        reversible : bool, optional, default=None
-            whether P is reversible with respect to its stationary distribution.
-            If None (default), will be determined from P
+    reversible : bool, optional, default=None
+        whether P is reversible with respect to its stationary distribution.
+        If None (default), will be determined from P
 
-        dt_model : str, optional, default='1 step'
-            Description of the physical time corresponding to one time step of the
-            MSM (aka lag time). May be used by analysis algorithms such as plotting
-            tools to pretty-print the axes.
-            By default '1 step', i.e. there is no physical time unit. Specify by a
-            number, whitespace and unit. Permitted units are
-            (* is an arbitrary string):
+    dt_model : str, optional, default='1 step'
+        Description of the physical time corresponding to one time step of the
+        MSM (aka lag time). May be used by analysis algorithms such as plotting
+        tools to pretty-print the axes.
+        By default '1 step', i.e. there is no physical time unit. Specify by a
+        number, whitespace and unit. Permitted units are
+        (* is an arbitrary string):
 
-            |  'fs',  'femtosecond*'
-            |  'ps',  'picosecond*'
-            |  'ns',  'nanosecond*'
-            |  'us',  'microsecond*'
-            |  'ms',  'millisecond*'
-            |  's',   'second*'
+        |  'fs',  'femtosecond*'
+        |  'ps',  'picosecond*'
+        |  'ns',  'nanosecond*'
+        |  'us',  'microsecond*'
+        |  'ms',  'millisecond*'
+        |  's',   'second*'
 
-        neig : int or None
-            The number of eigenvalues / eigenvectors to be kept. If set to None,
-            defaults will be used. For a dense MSM the default is all eigenvalues.
-            For a sparse MSM the default is 10.
+    neig : int or None
+        The number of eigenvalues / eigenvectors to be kept. If set to None,
+        defaults will be used. For a dense MSM the default is all eigenvalues.
+        For a sparse MSM the default is 10.
 
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition
-            matrices. ncv is the number of Lanczos vectors generated, `ncv` must
-            be greater than k; it is recommended that ncv > 2*k.
+    ncv : int (optional)
+        Relevant for eigenvalue decomposition of reversible transition
+        matrices. ncv is the number of Lanczos vectors generated, `ncv` must
+        be greater than k; it is recommended that ncv > 2*k.
 
-        """
-        super(ThermoMSM, self).__init__(
-            P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, ncv=ncv)
+    """
+    def __init__(self, P, active_set, nstates_full,
+                 pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
+        self.set_model_params(P, active_set, nstates_full, pi=pi,
+                              reversible=reversible, dt_model=dt_model,
+                              neig=neig)
+
+    def set_model_params(self, P, active_set, nstates_full,
+                        pi=None, reversible=None, dt_model='1 step', neig=None):
+        super(ThermoMSM, self).set_model_params(P=P, pi=pi, reversible=reversible,
+                                                dt_model=dt_model, neig=neig)
         self.active_set = active_set
         self.nstates_full = nstates_full
 
@@ -96,17 +102,35 @@ class ThermoMSM(_MSM, _SubSet):
     def f(self):
         r"""The free energies (in units of kT) on the configuration states."""
         return -_np.log(self.pi)
-    
+
     @_map_to_full_state(default_arg=_np.inf)
     def eigenvectors_right(self, k=None):
-        r'''Get the first k (all all) right eigenvectors.'''
+        r"""Get the first k (all all) right eigenvectors."""
         return super(ThermoMSM, self).eigenvectors_right(k=k)
-    
+
     @_map_to_full_state(default_arg=_np.inf, extend_along_axis=1)
     def eigenvectors_left(self, k=None):
-        r'''Get the first k (all all) left eigenvectors.'''
+        r"""Get the first k (all all) left eigenvectors."""
         return super(ThermoMSM, self).eigenvectors_left(k=k)
 
+    @property
+    def models(self):
+        """List of Model objects, e.g. StationaryModel or MSM objects, at the
+        different thermodynamic states. This list may include the ground
+        state, such that self.pi = self.models[0].pi holds. An example for
+        that is data obtained from parallel tempering or replica-exchange,
+        where the lowest simulated temperature is usually identical to the
+        thermodynamic ground state. However, the list does not have to
+        include the thermodynamic ground state. For example, when obtaining
+        data from umbrella sampling, models might be the list of
+        stationary models for n umbrellas (biased ensembles), while the
+        thermodynamic ground state is the unbiased ensemble. In that
+        case, self.pi would be different from any self.models[i].pi"""
+        return self._models
+
+    @models.setter
+    def models(self, value):
+        self._models = value
 
 
 class MEMM(_MultiThermModel):
@@ -140,6 +164,7 @@ class MEMM(_MultiThermModel):
         description, such as '300 K' or a description of bias energy such
         as 'unbiased'.
     """
+    __serialize_version = 0
     # THIS CLASS EXTENDS MultiThermModel AND JUST ADDS ANOTHER GETTER
     @property
     def msm(self):

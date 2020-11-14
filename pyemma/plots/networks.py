@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 import numpy as _np
 import warnings
 from pyemma.util import types as _types
@@ -65,8 +64,8 @@ class NetworkPlot(object):
         >>> F = msm.tpt(msm.markov_model(P), [2], [3])
 
         now plot the gross flux
-        >>> NetworkPlot(F.gross_flux).plot_network() # doctest:+ELLIPSIS
-        <matplotlib.figure.Figure...
+        >>> NetworkPlot(F.gross_flux).plot_network() # doctest: +ELLIPSIS
+        <...Figure...
 
         """
 
@@ -207,7 +206,9 @@ class NetworkPlot(object):
         # show or suppress frame
         self.ax.set_frame_on(show_frame)
         # set node labels
-        if isinstance(state_labels, str) and state_labels == 'auto':
+        if state_labels is None:
+            pass
+        elif isinstance(state_labels, str) and state_labels == 'auto':
             state_labels = [str(i) for i in _np.arange(n)]
         else:
             if len(state_labels) != n:
@@ -253,8 +254,8 @@ class NetworkPlot(object):
             circles.append(c)
             self.ax.add_artist(c)
             # add annotation
-            self.ax.text(
-                self.pos[i][0], self.pos[i][1], state_labels[i], zorder=3, **textkwargs)
+            if state_labels is not None:
+                self.ax.text(self.pos[i][0], self.pos[i][1], state_labels[i], zorder=3, **textkwargs)
 
         assert len(circles) == n, "%i != %i" % (len(circles), n)
 
@@ -411,7 +412,7 @@ def plot_markov_model(
     ...              [0.0,  0.2, 0.0,  0.8,  0.0],
     ...              [0.0,  0.02, 0.02, 0.0,  0.96]])
     >>> plot_markov_model(P) # doctest:+ELLIPSIS
-    (<matplotlib.figure.Figure..., array...)
+    (<...Figure..., array...)
 
     """
     from msmtools import analysis as msmana
@@ -538,7 +539,7 @@ def plot_flux(
     to 1 (avoid printing many zeros). Now we visualize the flux:
 
     >>> plot_flux(F) # doctest:+ELLIPSIS
-    (<matplotlib.figure.Figure..., array...)
+    (<...Figure..., array...)
 
     """
     from matplotlib import pylab as plt
@@ -668,7 +669,7 @@ def plot_network(
     to 1 (avoid printing many zeros). Now we visualize the flux:
 
     >>> plot_network(P) # doctest:+ELLIPSIS
-    (<matplotlib.figure.Figure..., array...)
+    (<...Figure..., array...)
 
     """
     plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos, ax=ax)

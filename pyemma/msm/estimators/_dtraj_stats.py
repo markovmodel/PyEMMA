@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 
 import numpy as np
@@ -95,14 +94,25 @@ class DiscreteTrajectoryStats(object):
 
     Operates sparse by default.
 
+    Parameters
+    ----------
+    dtrajs: list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+        discrete trajectories, stored as integer ndarrays (arbitrary size)
+        or a single ndarray for only one trajectory. Elements must be
+        non-negative; -1 elements denote unassigned states (milestone
+        counting).
+
     """
 
     def __init__(self, dtrajs):
-        # TODO: extensive input checking!
         from pyemma.util.types import ensure_dtraj_list
 
         # discrete trajectories
         self._dtrajs = ensure_dtraj_list(dtrajs)
+
+        # TODO: extensive input checking!
+        if any([np.any(d < -1) for d in self._dtrajs]):
+            raise ValueError('Discrete trajectory contains elements < -1.')
 
         ## basic count statistics
         # histogram
@@ -115,54 +125,6 @@ class DiscreteTrajectoryStats(object):
 
         # not yet estimated
         self._counted_at_lag = False
-
-    def to_coreset(self, core_set, in_place=True):
-        """
-
-        Parameters
-        ----------
-        core_set: an array of micro-states to include as core-sets
-
-        in_place: boolean, default=True
-            if True, replace the current dtrajs
-            if False, return a copy
-
-        Returns
-        -------
-        dtrajs
-        """
-        import copy
-        dtrajs = self._dtrajs if in_place else copy.deepcopy(self._dtrajs)
-
-        core_set = np.array(core_set, dtype=int)
-        # build a boolean expression to create a mask of indices within the core set.
-        expr = ['(d == {i})'.format(i=i) for i in core_set]
-        expr = '|'.join(expr)
-
-        def to_ranges(a):
-            # return a list of consecutive ranges in array a.
-            cons = np.split(a, np.where(np.diff(a) != 1)[0] + 1)
-            ranges = [(np.min(x), np.max(x)+1) if len(x) > 1
-                      else (x[0], x[0]+1) for x in cons]
-            return ranges
-
-        for d in dtrajs:
-            within_core_set = eval(expr)
-            outside_core_set = np.logical_not(within_core_set)
-            inds_outside_set = np.where(outside_core_set)[0]
-            # determine ranges to update, which lies outside the core set.
-            ranges = to_ranges(inds_outside_set)
-
-            # start with first valid core set value.
-            for start, stop in ranges:
-                core_set = d[start - 1] if start > 0 else -1
-                d[start:stop] = core_set
-
-        # re-initialize
-        if in_place:
-            self.__init__(dtrajs)
-
-        return dtrajs
 
     @staticmethod
     def _compute_connected_sets(C, mincount_connectivity, strong=True):
@@ -191,7 +153,8 @@ class DiscreteTrajectoryStats(object):
         S = msmest.connected_sets(Cconn, directed=strong)
         return S
 
-    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n'):
+    def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n',
+                     show_progress=True, n_jobs=None, name='', core_set=None, milestoning_method='last_core'):
         r""" Counts transitions at given lag time
 
         Parameters
@@ -214,6 +177,10 @@ class DiscreteTrajectoryStats(object):
               at time indexes
               .. math:: (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
 
+        show_progress: bool, default=True
+            show the progress for the expensive effective count mode computation.
+
+        n_jobs: int or None
 
         """
         # store lag time
@@ -221,12 +188,49 @@ class DiscreteTrajectoryStats(object):
 
         # Compute count matrix
         count_mode = count_mode.lower()
-        if count_mode == 'sliding':
+        if core_set is not None and count_mode in ('sliding', 'sample'):
+            if milestoning_method == 'last_core':
+
+                # assign -1 frames to last visited core
+                for d in self._dtrajs:
+                    assert d[0] != -1
+                    while -1 in d:
+                        mask = (d == -1)
+                        d[mask] = d[np.roll(mask, -1)]
+                self._C = msmest.count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
+
+            else:
+                raise NotImplementedError('Milestoning method {} not implemented.'.format(milestoning_method))
+
+
+        elif count_mode == 'sliding':
             self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
         elif count_mode == 'sample':
             self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
         elif count_mode == 'effective':
-            self._C = msmest.effective_count_matrix(self._dtrajs, lag)
+            if core_set is not None:
+                raise RuntimeError('Cannot estimate core set MSM with effective counting.')
+            from pyemma.util.reflection import getargspec_no_self
+            argspec = getargspec_no_self(msmest.effective_count_matrix)
+            kw = {}
+            from pyemma.util.contexts import nullcontext
+            ctx = nullcontext()
+            if 'callback' in argspec.args:  # msmtools effective cmatrix ready for multiprocessing?
+                from pyemma._base.progress import ProgressReporter
+                from pyemma._base.parallel import get_n_jobs
+
+                kw['n_jobs'] = get_n_jobs() if n_jobs is None else n_jobs
+
+                if show_progress:
+                    pg = ProgressReporter()
+                    # this is a fast operation
+                    C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+                    pg.register(C_temp.nnz, '{}: compute stat. inefficiencies'.format(name), stage=0)
+                    del C_temp
+                    kw['callback'] = pg.update
+                    ctx = pg.context(stage=0)
+            with ctx:
+                self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
         else:
             raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
@@ -260,7 +264,7 @@ class DiscreteTrajectoryStats(object):
 
         # mapping from full to lcs
         self._full2lcs = -1 * np.ones((self._nstates), dtype=int)
-        self._full2lcs[self._lcs] = np.array(list(range(len(self._lcs))), dtype=int)
+        self._full2lcs[self._lcs] = np.arange(len(self._lcs))
 
         # remember that this function was called
         self._counted_at_lag = True
@@ -334,8 +338,8 @@ class DiscreteTrajectoryStats(object):
         self._assert_counted_at_lag()
         return self._lag
 
-    def count_matrix(self, connected_set=None, subset=None, effective=False):
-        """The count matrix
+    def count_matrix(self, connected_set=None, subset=None):
+        r"""The count matrix
 
         Parameters
         ----------
@@ -344,16 +348,6 @@ class DiscreteTrajectoryStats(object):
             This parameter is exclusive with subset.
         subset : array-like of int or None, optional, default=None
             subset of states to compute the count matrix on. This parameter is exclusive with subset.
-        effective : bool, optional, default=False
-            Statistically uncorrelated transition counts within the active set of states.
-
-            You can use this count matrix for any kind of estimation, in particular it is meant to give reasonable
-            error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
-
-            The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
-            can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-            :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-            correct likelihood in the statistical limit [1]_.
 
         References
         ----------
@@ -373,10 +367,6 @@ class DiscreteTrajectoryStats(object):
         else: # full matrix wanted
             C = self._C
 
-        # effective count matrix wanted?
-        if effective:
-            C /= float(self._lag)
-
         return C
 
     @alias('hist_lagged')
@@ -393,11 +383,11 @@ class DiscreteTrajectoryStats(object):
         return h.sum()
 
     @property
-    def count_matrix_largest(self, effective=False):
+    def count_matrix_largest(self):
         """The count matrix on the largest connected set
 
         """
-        return self.count_matrix(connected_set=0, effective=effective)
+        return self.count_matrix(connected_set=0)
 
     @property
     def largest_connected_set(self):

@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
-
-
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.parallel import NJobsMixIn as _NJobsMixIn
+from pyemma._base.progress import ProgressReporterMixin as _ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
@@ -31,14 +29,15 @@ __author__ = 'noe'
 
 
 @fix_docs
-class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
+class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
     r"""Bayesian Markov state model estimator"""
     __serialize_version = 0
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
                  statdist_constraint=None, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95,
-                 show_progress=True, mincount_connectivity='1/n'):
+                 show_progress=True, mincount_connectivity='1/n', core_set=None,
+                 milestoning_method='last_core'):
         r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -133,6 +132,18 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
 
+        core_set : None (default) or array like, dtype=int
+            Definition of core set for milestoning MSMs.
+            If set to None, replaces state -1 (if found in discrete trajectories) and
+            performs milestone counting. No effect for Voronoi-discretized trajectories (default).
+            If a list or np.ndarray is supplied, discrete trajectories will be assigned
+            accordingly.
+
+        milestoning_method : str
+            Method to use for counting transitions in trajectories with unassigned frames.
+            Currently available:
+            |  'last_core',   assigns unassigned frames to last visited core
+
         References
         ----------
         .. [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
@@ -144,7 +155,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
                         statdist_constraint=statdist_constraint,
                         count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj,
-                        mincount_connectivity=mincount_connectivity)
+                        mincount_connectivity=mincount_connectivity,
+                        core_set=core_set, milestoning_method=milestoning_method)
         self.nsamples = nsamples
         self.nsteps = nsteps
         self.conf = conf
@@ -171,8 +183,10 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
         return super(BayesianMSM, self).estimate(dtrajs, **kw)
 
     def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
+
+        if self.core_set is not None and self.count_mode == 'effective':
+            raise RuntimeError('Cannot estimate core set MSM with effective counting.')
+
         # conduct MLE estimation (superclass) first
         _MLMSM._estimate(self, dtrajs)
 
@@ -192,23 +206,18 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporterMixin):
             tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
                                        mu=statdist_active, nsteps=self.nsteps)
 
-        self._progress_register(self.nsamples, description="Sampling MSMs", stage=0)
-
-        if self.show_progress:
-            def call_back():
-                self._progress_update(1, stage=0)
+        if self.show_progress: #and self.nstates >= 1000:
+            self._progress_register(self.nsamples, '{}: Sampling MSMs'.format(self.name), stage=0)
+            call_back = lambda: self._progress_update(1)
         else:
             call_back = None
 
-        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples,
-                                                return_statdist=True,
-                                                call_back=call_back)
-        self._progress_force_finish(0)
-
+        with self._progress_context(stage='all'):
+            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, call_back=call_back)
         # construct sampled MSMs
         samples = []
-        for i, sample in enumerate(sample_Ps):
-            samples.append(_MSM(sample, pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
+        for P, pi in zip(sample_Ps, sample_mus):
+            samples.append(_MSM(P, pi=pi, reversible=self.reversible, dt_model=self.dt_model))
 
         # update self model
         self.update_model_params(samples=samples)

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash -x
-# remove the source, since we depend on the built (conda) version
-rm pyemma -r
+
+set -x
+
+# we want to install some dependencies via pip
+export PIP_IGNORE_INSTALLED=false
+export PIP_NO_INDEX=false
 
 pyemma_version=`python -c "import pyemma as e; print(e.version)"`
 export BUILD_DIR=${PREFIX}/v${pyemma_version}
@@ -11,17 +15,15 @@ python -c "import pyemma; pyemma.config.show_progress_bars=False; pyemma.config.
 # print new config
 python -c "import pyemma; print(pyemma.config)"
 
-# install requirements, which are not available in conda
-cd doc
-pip install -r requirements-build-doc.txt
-
 # if we have the fu-berlin file system, we copy the unpublished data (bpti)
 if [[ -d /group/ag_cmb/pyemma_performance/unpublished ]]; then
     cp /group/ag_cmb/pyemma_performance/unpublished ./pyemma-ipython -vuR
 fi
 
+# install requirements, which are not available in conda
+pip install -vvv -r requirements-build-doc.txt
+
 make clean
-make ipython-rst
 make html
 
 # we only want to have the html contents
@@ -30,4 +32,3 @@ rm -rf $BUILD_DIR/doctrees
 
 # remove the deps from $PREFIX so we have only the docs left.
 pip uninstall -y -r requirements-build-doc.txt
-

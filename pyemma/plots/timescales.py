@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 
 import numpy as _np
@@ -69,7 +68,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         :py:obj:`units` ='ns' to display the implied timescales in ns (instead of frames)
         If this parameter is a list, it will be assumed that dt[0] is for the x-axis and dt[1] for the y-axis.
 
-    **kwargs: Will be parsed to pyplot.plo when plotting the MLE datapoints (not the bootstrapped means).
+    **kwargs: Will be passed to pyplot.plot when plotting the MLE datapoints (not the bootstrapped means).
             See the doc of pyplot for more options. Most useful lineproperties like `marker='o'` and/or :markersize=5
 
     Returns

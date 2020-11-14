@@ -13,24 +13,36 @@ Anaconda install (Recommended)
 ==============================
 
 We strongly recommend to use the Anaconda scientific python distribution in order to install
-python-based software, including PyEMMA. Python-based software is not trivial to distribute
+Python-based software, including PyEMMA. Python-based software is not trivial to distribute
 and this approach saves you many headaches and problems that frequently arise in other installation
 methods. You are free to use a different approach (see below) if you know how to sort out problems,
 but play at your own risk.
 
-If you already have a conda installation, directly go to step 3:
 
-1. Download and install miniconda for Python 2.7 or 3+, 32 or 64 bit depending on your system. Note that
-   you can still use Python 2.7, however we recommend to use Python3:
+If you want to use Miniconda on Linux or OSX, you can run this script to download and install everything::
+
+   curl -s https://raw.githubusercontent.com/markovmodel/PyEMMA/devel/install_miniconda%2Bpyemma.sh | bash
+
+After the script finishes, you have a miniconda installation and inside of this a 'pyemma' environment.
+You need to activate the new environment by invoking::
+
+   conda activate pyemma
+
+in order to work with this new environment. An environment encapsulates all software used by PyEMMA and is independent
+of other things. Further reading `here <https://conda.io/docs/user-guide/concepts.html#conda-environments>`_.
+
+If you want to download and install manually, please perform the following steps:
+
+If you already have a conda installation, directly go to step 3.
+
+1. Download and install miniconda for Python3, 32 or 64 bit depending on your system.
 
    http://conda.pydata.org/miniconda.html
-
 
    For Windows users, who do not know what to choose for 32 or 64 bit, it is strongly
    recommended to read the second question of this FAQ first:
 
    http://windows.microsoft.com/en-us/windows/32-bit-and-64-bit-windows
-
 
    Run the installer and select **yes** to add conda to the **PATH** variable.
 
@@ -118,7 +130,7 @@ by us. If unsure, use the Anaconda installation.
 1. Ensure that you fulfill the following prerequisites:
 
    * C/C++ compiler
-   * setuptools > 18 
+   * setuptools > 18
    * cython >= 0.22
    * numpy >= 1.6
    * scipy >= 0.11
@@ -133,7 +145,7 @@ by us. If unsure, use the Anaconda installation.
        pip install --upgrade numpy
        pip install --upgrade scipy
        pip install --upgrade matplotlib
-       
+
    Note that if pip finds a newer version, it will trigger an update which will
    most likely involve compilation.
    Especially NumPy and SciPy are hard to build. You might want to take a look at
@@ -176,11 +188,11 @@ Frequently Asked Questions (FAQ)
 ================================
 
 * Q: Installation went fine with conda, but import pyemma leads to the following error: ::
-   
+
        ImportError: No module named PySide
-       
+
   A: install pyside manually with conda::
-     
+
      conda install pyside
 
 * Q: My conda installation raises errors during import
@@ -218,14 +230,14 @@ Frequently Asked Questions (FAQ)
   during "import xyz".
 
   A: Possible answer 1: you have probably mixed 32 and 64 bit. Using 32 bit Python
-     on 64 bit Windows is fine, but not the other way around. 
+     on 64 bit Windows is fine, but not the other way around.
      Possible answer 2: Do you have Python2 and Python3 on the same computer?
      To figure that you, open a cmd prompt and type in::
 
          where python
          "X:\\somepath\\miniconda2\\Scripts\\python.exe"
-    
+
      This should only display one line like. If it is displaying more than one .exe,
      you either know what you are doing or you should remove one installation (eg. decide,
-     which branch of Python [2 or 3] to keep). 
+     which branch of Python [2 or 3] to keep).
 

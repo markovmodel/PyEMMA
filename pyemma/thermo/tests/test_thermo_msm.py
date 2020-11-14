@@ -18,6 +18,7 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
+
 from pyemma.thermo.models.memm import ThermoMSM
 from pyemma.msm import MSM
 
@@ -50,19 +51,35 @@ class TestThermoMSM(unittest.TestCase):
         cls.msm = ThermoMSM(cls.P, cls.active_set, cls.nstates_full, cls.pi)
 
     def test_f(self):
-        npt.assert_array_equal(self.msm.free_energies, self.f)
-        npt.assert_array_equal(self.msm.free_energies_full_state, self.f_full)
-        npt.assert_array_equal(self.msm.f, self.f)
-        npt.assert_array_equal(self.msm.f_full_state, self.f_full)
+        npt.assert_allclose(self.msm.free_energies, self.f)
+        npt.assert_allclose(self.msm.free_energies_full_state, self.f_full)
+        npt.assert_allclose(self.msm.f, self.f)
+        npt.assert_allclose(self.msm.f_full_state, self.f_full)
 
     def test_pi(self):
-        npt.assert_array_equal(self.msm.pi, self.pi)
-        npt.assert_array_equal(self.msm.pi_full_state, self.pi_full)
-        npt.assert_array_equal(self.msm.stationary_distribution, self.pi)
-        npt.assert_array_equal(self.msm.stationary_distribution_full_state, self.pi_full)
+        npt.assert_allclose(self.msm.pi, self.pi)
+        npt.assert_allclose(self.msm.pi_full_state, self.pi_full)
+        npt.assert_allclose(self.msm.stationary_distribution, self.pi)
+        npt.assert_allclose(self.msm.stationary_distribution_full_state, self.pi_full)
 
     def test_eigenvectors(self):
-        npt.assert_array_equal(
+        npt.assert_allclose(
             self.msm.eigenvectors_left_full_state(k=self.nstates-1), self.eigvec_l_full)
-        npt.assert_array_equal(
+        npt.assert_allclose(
             self.msm.eigenvectors_right_full_state(k=self.nstates-1), self.eigvec_r_full)
+
+    def test_serialization(self):
+        ''' check if the test still hold for a restored model. '''
+        import tempfile
+        f = tempfile.mktemp()
+        try:
+            self.msm.save(f)
+            from pyemma import load
+            restored = load(f)
+            self.msm = restored
+            self.test_eigenvectors()
+            self.test_f()
+            self.test_pi()
+        finally:
+            import os
+            os.unlink(f)

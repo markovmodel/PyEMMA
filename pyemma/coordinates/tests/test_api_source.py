@@ -18,7 +18,6 @@
 
 
 
-from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -30,7 +29,7 @@ import numpy as np
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader as CSVReader
 import shutil
-
+import pkg_resources
 
 logger = getLogger('pyemma.'+'TestReaderUtils')
 
@@ -114,8 +113,24 @@ class TestApiSourceFileReader(unittest.TestCase):
         self.assertIsInstance(r.exception, (IOError, ValueError))
         self.assertIn('could not parse', str(r.exception))
 
+    def test_source_set_chunksize(self):
+        x = np.zeros(10)
+        r = api.source(x, chunksize=1)
+        assert r.chunksize == 1
+        r2 = api.source(r, chunksize=2)
+        assert r2 is r
+        assert r2.chunksize == 2
 
-import pkg_resources
+        # reset to default chunk size.
+        r3 = api.source(r, chunksize=None)
+        assert r3.chunksize is not None
+
+    def test_pdb_traj_unsupported(self):
+        with self.assertRaises(ValueError) as c, tempfile.NamedTemporaryFile(suffix='.pdb') as ntf:
+            api.source([ntf.name], top=self.bpti_pdbfile)
+            assert 'PDB' in c.exception.args[0]
+
+
 class TestApiSourceFeatureReader(unittest.TestCase):
 
     def setUp(self):
@@ -126,9 +141,6 @@ class TestApiSourceFeatureReader(unittest.TestCase):
             os.path.join(path, 'bpti_001-033.xtc'),
             os.path.join(path, 'bpti_067-100.xtc')
         ]
-
-    def tearDown(self):
-        pass
 
     def test_read_multiple_files_topology_file(self):
         reader = api.source(self.traj_files, top=self.pdb_file)

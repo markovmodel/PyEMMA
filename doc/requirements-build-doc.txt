@@ -1,4 +1,4 @@
-sphinxcontrib-issuetracker
+sphinx-issues
 
-# theme 
+# theme
 msmb_theme>=1.2

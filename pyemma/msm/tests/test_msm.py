@@ -24,7 +24,6 @@ r"""Unit test for the MSM module
 
 """
 
-from __future__ import absolute_import
 import unittest
 
 import numpy as np
@@ -68,7 +67,8 @@ class TestMSMSimple(unittest.TestCase):
         self.C_MSM = count_matrix(self.dtraj, self.tau, sliding=True)
         self.lcc_MSM = largest_connected_set(self.C_MSM)
         self.Ccc_MSM = largest_connected_submatrix(self.C_MSM, lcc=self.lcc_MSM)
-        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True)
+        self.mle_rev_max_err = 1E-8
+        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True, maxerr=self.mle_rev_max_err)
         self.mu_MSM = stationary_distribution(self.P_MSM)
         self.k = 3
         self.ts = timescales(self.P_MSM, k=self.k, tau=self.tau)
@@ -78,7 +78,7 @@ class TestMSMSimple(unittest.TestCase):
         np.random.mtrand.set_state(self.state)
 
     def test_MSM(self):
-        msm = estimate_markov_model(self.dtraj, self.tau)
+        msm = estimate_markov_model(self.dtraj, self.tau, maxerr=self.mle_rev_max_err)
         assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
@@ -105,6 +105,14 @@ class TestMSMSimple(unittest.TestCase):
         msm.estimate(self.dtraj, lag=self.tau + 1)
         pcca2 = msm.pcca(2)
         assert pcca2 is not pcca1
+
+    def test_rdl_recompute(self):
+        """ test for issue 1301. Should recompute RDL decomposition in case of new transition matrix. """
+        msm = estimate_markov_model(self.dtraj, self.tau)
+        ev1 = msm.eigenvectors_left(2)
+        msm.estimate(self.dtraj, lag=self.tau+1)
+        ev2 = msm.eigenvectors_left(2)
+        assert ev2 is not ev1
 
 
 class TestMSMRevPi(unittest.TestCase):
@@ -147,17 +155,18 @@ class TestMSMDoubleWell(unittest.TestCase):
         cls.statdist = nu/nu.sum()
 
         cls.tau = 10
-        cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
-        cls.msmrevpi = estimate_markov_model(cls.dtraj, cls.tau,
+        maxerr = 1e-12
+        cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau ,maxerr=maxerr)
+        cls.msmrevpi = estimate_markov_model(cls.dtraj, cls.tau,maxerr=maxerr,
                                              statdist=cls.statdist)
-        cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)
+        cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, maxerr=maxerr)
 
         """Sparse"""
-        cls.msmrev_sparse = estimate_markov_model(cls.dtraj, cls.tau, sparse=True)
-        cls.msmrevpi_sparse = estimate_markov_model(cls.dtraj, cls.tau,
+        cls.msmrev_sparse = estimate_markov_model(cls.dtraj, cls.tau, sparse=True, maxerr=maxerr)
+        cls.msmrevpi_sparse = estimate_markov_model(cls.dtraj, cls.tau,maxerr=maxerr,
                                                     statdist=cls.statdist,
                                                     sparse=True)
-        cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True)
+        cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True, maxerr=maxerr)
 
     # ---------------------------------
     # SCORE
@@ -197,6 +206,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert 1.0 <= s2 <= 2.0
         se = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=2).mean()
         se_inf = estimator.score_cv(self.dtraj, n=5, score_method='VAMPE', score_k=None).mean()
+        #TODO: what is this?
 
     def test_score_cv(self):
         self._score_cv(MaximumLikelihoodMSM(lag=10, reversible=True))
@@ -214,7 +224,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # NONREVERSIBLE
         assert self.msmrev.is_reversible
         assert self.msmrevpi.is_reversible
-        assert (self.msmrev_sparse.is_reversible)
+        assert self.msmrev_sparse.is_reversible
         assert self.msmrevpi_sparse.is_reversible
         # REVERSIBLE
         assert not self.msm.is_reversible
@@ -241,9 +251,9 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_set(self, msm):
         # should always be <= full set
-        assert (len(msm.active_set) <= self.msm.nstates_full)
+        self.assertLessEqual(len(msm.active_set), self.msm.nstates_full)
         # should be length of nstates
-        assert (len(msm.active_set) == self.msm.nstates)
+        self.assertEqual(len(msm.active_set), self.msm.nstates)
 
     def test_active_set(self):
         self._active_set(self.msmrev)
@@ -759,7 +769,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     def _expectation(self, msm):
         e = msm.expectation(list(range(msm.nstates)))
         # approximately equal for both
-        assert (np.abs(e - 31.73) < 0.01)
+        self.assertLess(np.abs(e - 31.73), 0.01)
 
     def test_expectation(self):
         self._expectation(self.msmrev)
@@ -816,7 +826,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # should relax
         assert (len(times) == maxtime / msm.lagtime)
         assert (len(rel2) == maxtime / msm.lagtime)
-        assert (rel2[0] < rel2[-1])
+        self.assertLess(rel2[0], rel2[-1], msm)
 
     def test_relaxation(self):
         self._relaxation(self.msmrev)
@@ -971,7 +981,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             assert (np.all(samples.shape == (nsample, 2)))
             for row in samples:
                 assert (row[0] == 0)  # right trajectory
-                assert (dtraj_active[row[1]] == i)
+                self.assertEqual(dtraj_active[row[1]], i)
 
     def test_sample_by_state(self):
         self._sample_by_state(self.msmrev)
@@ -1006,7 +1016,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
-
     def _two_state_kinetics(self, msm, eps=0.001):
         if msm.is_sparse:
             k = 4
@@ -1026,7 +1035,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # therefore underestimate rates
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
-        assert (np.abs(k2 - ksum) < eps)
+        self.assertLess(np.abs(k2 - ksum), eps)
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)
@@ -1084,6 +1093,8 @@ IndexError: index 0 is out of bounds for axis 1 with size 0
         from pyemma.msm import timescales_msm
         its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
         assert its.estimator.mincount_connectivity == 0
+
+
 
 if __name__ == "__main__":
     unittest.main()

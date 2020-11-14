@@ -21,7 +21,6 @@ r"""
 PyEMMA - Emma's Markov Model Algorithms
 =======================================
 """
-from __future__ import absolute_import
 
 # set version from versioneer.
 from ._version import get_versions
@@ -37,26 +36,7 @@ from . import util
 from . import plots
 from . import thermo
 
-
-def load(filename, model_name='latest'):
-    """ Restores a previously saved model or estimator from disk.
-
-    Parameters
-    ----------
-    filename : str
-        path to filename, where the model has been stored.
-    model_name: str, default='latest'
-        if multiple versions are contained in the file, older versions can be accessed by
-        their name. Use func:`list_models` to get a representation of all stored models.
-
-    Returns
-    -------
-    obj : Model or Estimator
-        the instance containing the same parameters as the saved model/estimator.
-
-    """
-    from ._base.serialization.serialization import SerializableMixIn
-    return SerializableMixIn.load(file_name=filename, model_name=model_name)
+from ._base.serialization import load, list_models
 
 
 def _version_check(current, testing=False):
@@ -94,8 +74,9 @@ def _version_check(current, testing=False):
 
     def _impl():
         import warnings
+        from urllib.request import Request, urlopen
+
         try:
-            from urllib.request import urlopen, Request
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}-{addr}'
                         .format(emma_version=current, python_version=platform.python_version(),
@@ -117,6 +98,7 @@ def _version_check(current, testing=False):
             import logging
             logging.getLogger('pyemma').debug("error during version check", exc_info=True)
     return threading.Thread(target=_impl)
+
 
 # start check in background
 _version_check(version).start()

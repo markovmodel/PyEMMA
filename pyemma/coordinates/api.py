@@ -28,7 +28,7 @@ from pyemma.util import types as _types
 # lift this function to the api
 from pyemma.coordinates.util.stat import histogram
 
-from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning as _PyEMMA_DeprecationWarning
 
 _logger = _logging.getLogger(__name__)
 
@@ -50,6 +50,8 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'tica_nystroem',
+           'vamp',
            'covariance_lagged',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
@@ -58,12 +60,41 @@ __all__ = ['featurizer',  # IO
            'assign_to_centers',
            ]
 
+_string_types = str
 
 # ==============================================================================
 #
 # DATA PROCESSING
 #
 # ==============================================================================
+
+def _check_old_chunksize_arg(chunksize, chunk_size_default, **kw):
+    # cases:
+    # 1. chunk_size not given, return chunksize
+    # 2. chunk_size given, chunksize is default, warn, return chunk_size
+    # 3. chunk_size and chunksize given, warn, return chunksize
+    chosen_chunk_size = NotImplemented
+    deprecated_arg_given = 'chunk_size' in kw
+    is_default = chunksize == chunk_size_default
+
+    if not deprecated_arg_given:  # case 1.
+        chosen_chunk_size = chunksize
+    else:
+        import warnings
+        from pyemma.util.annotators import get_culprit
+        filename, lineno = get_culprit(3)
+        if is_default:  # case 2.
+            warnings.warn_explicit('Passed deprecated argument "chunk_size", please use "chunksize"',
+                                   category=_PyEMMA_DeprecationWarning, filename=filename, lineno=lineno)
+            chosen_chunk_size = kw.pop('chunk_size')  # remove this argument to avoid further passing to other funcs.
+        else:  # case 3.
+            warnings.warn_explicit('Passed two values for chunk size: "chunk_size" and "chunksize", while the first one'
+                                   ' is deprecated. Please use "chunksize" in the future.',
+                                   category=_PyEMMA_DeprecationWarning, filename=filename, lineno=lineno)
+            chosen_chunk_size = chunksize
+    assert chosen_chunk_size is not NotImplemented
+    return chosen_chunk_size
+
 
 def featurizer(topfile):
     r""" Featurizer to select features from MD data.
@@ -112,7 +143,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
+def load(trajfiles, features=None, top=None, stride=1, chunksize=None, **kw):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use
@@ -146,7 +177,6 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
            * Gromacs (.trr)
            * AMBER (.binpos)
            * AMBER (.netcdf)
-           * PDB trajectory format (.pdb)
            * TINKER (.arc),
            * MDTRAJ (.hdf5)
            * LAMMPS trajectory format (.lammpstrj)
@@ -168,7 +198,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -204,12 +234,13 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
 
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
-
-    if isinstance(trajfiles, str) or (
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(load)['chunksize'], **kw)
+    if isinstance(trajfiles, _string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
+        reader = create_file_reader(trajfiles, top, features, chunksize=cs, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -219,7 +250,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None, chunk_size=None, **kw):
+def source(inp, features=None, top=None, chunksize=None, **kw):
     r""" Defines trajectory data source
 
     This function defines input trajectories without loading them. You can pass
@@ -273,7 +304,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
         will be extracted from it.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -316,7 +347,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     huge chunks to avoid memory issues:
 
     >>> data = np.random.random(int(1e6))
-    >>> reader = source(data, chunk_size=1000)
+    >>> reader = source(data, chunksize=1000)
     >>> from pyemma.coordinates import cluster_regspace
     >>> regspace = cluster_regspace(reader, dmin=0.1)
 
@@ -342,12 +373,16 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     """
     from pyemma.coordinates.data._base.iterable import Iterable
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
+
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(source)['chunksize'], **kw)
+
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, str) or (
+    if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, str)) for item in inp) or len(inp) is 0)):
-        reader = create_file_reader(inp, top, features, chunk_size=chunk_size, **kw)
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
+        reader = create_file_reader(inp, top, features, chunksize=cs, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -358,10 +393,9 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
         from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-        reader = _DataInMemory(inp, chunksize=chunk_size, **kw)
+        reader = _DataInMemory(inp, chunksize=cs, **kw)
     elif isinstance(inp, Iterable):
-        if chunk_size is not None:
-            inp.chunk = chunk_size
+        inp.chunksize = cs
         return inp
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
@@ -382,7 +416,7 @@ def combine_sources(sources, chunksize=None):
     sources : list, tuple
         list of DataSources (Readers, StreamingTransformers etc.) to combine for streaming access.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -431,7 +465,7 @@ def pipeline(stages, run=True, stride=1, chunksize=None):
         is usually correlated at short timescales, it is often sufficient to
         parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -449,14 +483,17 @@ def pipeline(stages, run=True, stride=1, chunksize=None):
     >>> from pyemma.coordinates import source, tica, assign_to_centers, pipeline
 
     Create some random data and cluster centers:
+
     >>> data = np.random.random((1000, 3))
     >>> centers = data[np.random.choice(1000, 10)]
     >>> reader = source(data)
 
     Define a TICA transformation with lag time 10:
+
     >>> tica_obj = tica(lag=10)
 
     Assign any input to given centers:
+
     >>> assign = assign_to_centers(centers=centers)
     >>> pipe = pipeline([reader, tica_obj, assign])
     >>> pipe.parametrize()
@@ -526,7 +563,7 @@ def discretizer(reader,
         it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -686,7 +723,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, 
         # Do we have what we need?
         if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
-        if not isinstance(top, (str, Topology, Trajectory)):
+        if not isinstance(top, (_string_types, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
                             "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
                             "Got type %s instead" % type(top))
@@ -847,7 +884,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
 #
 # =========================================================================
 
-def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_size=None):
+def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunksize=None, **kwargs):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
@@ -905,7 +942,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_s
     skip : int, default=0
         skip the first initial n frames per trajectory.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -938,23 +975,6 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_s
 
     See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
     for more theory and references.
-
-    Examples
-    --------
-    Create some input data:
-
-    >>> import numpy as np
-    >>> from pyemma.coordinates import pca
-    >>> data = np.ones((1000, 2))
-    >>> data[0, -1] = 0
-
-    Project all input data on the first principal component:
-
-    >>> pca_obj = pca(data, dim=1)
-    >>> pca_obj.get_output() # doctest: +ELLIPSIS
-    [array([[-0.99900001],
-           [ 0.001     ],
-           [ 0.001     ],...
 
     See also
     --------
@@ -995,13 +1015,17 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0, chunk_s
         warnings.warn("provided mean ignored", DeprecationWarning)
 
     res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(pca)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, weights='empirical',
-         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunk_size=None):
+         stride=1, remove_mean=True, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None, **kwargs):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1085,7 +1109,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         limit the memory usage of the algorithm from [7]_ to an amount that corresponds
         to ncov_max additional copies of each correlation matrix
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -1198,19 +1222,23 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     from pyemma.coordinates.transform.tica import TICA
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
-    if isinstance(weights, str):
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(tica)['chunksize'], **kwargs)
+
+    if isinstance(weights, _string_types):
         if weights == "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
             if not reversible:
                 raise ValueError("Koopman re-weighting is designed for reversible processes, set reversible=True")
             koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
-            koop.estimate(data, chunksize=chunk_size)
+            koop.estimate(data, chunksize=cs)
             weights = koop.weights
         elif weights == "empirical":
             weights = None
         else:
-            raise ValueError("reweighting must be either 'empirical', 'koopman' or an object with a weights(data) method.")
+            raise ValueError("reweighting must be either 'empirical', 'koopman' "
+                             "or an object with a weights(data) method.")
     elif hasattr(weights, 'weights') and type(getattr(weights, 'weights')) == types.MethodType:
         weights = weights
     elif isinstance(weights, (list, tuple)) and all(isinstance(w, _np.ndarray) for w in weights):
@@ -1227,85 +1255,360 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
                    'a significant speed up of calculations.'
         warnings.warn(
             user_msg,
-            category=PyEMMA_DeprecationWarning)
+            category=_PyEMMA_DeprecationWarning)
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip, stride=stride,
                weights=weights, reversible=reversible, ncov_max=ncov_max)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
+    return res
+
+
+def vamp(data=None, lag=10, dim=None, scaling=None, right=False, ncov_max=float('inf'),
+         stride=1, skip=0, chunksize=None):
+    r""" Variational approach for Markov processes (VAMP) [1]_.
+
+      Parameters
+      ----------
+      lag : int
+          lag time
+      dim : float or int, default=None
+          Number of dimensions to keep:
+
+          * if dim is not set (None) all available ranks are kept:
+              `n_components == min(n_samples, n_uncorrelated_features)`
+          * if dim is an integer >= 1, this number specifies the number
+            of dimensions to keep.
+          * if dim is a float with ``0 < dim < 1``, select the number
+            of dimensions such that the amount of kinetic variance
+            that needs to be explained is greater than the percentage
+            specified by dim.
+      scaling : None or string
+          Scaling to be applied to the VAMP order parameters upon transformation
+
+          * None: no scaling will be applied, variance of the order parameters is 1
+          * 'kinetic map' or 'km': order parameters are scaled by singular value.
+            Only the left singular functions induce a kinetic map wrt the
+            conventional forward propagator. The right singular functions induce
+            a kinetic map wrt the backward propagator.      right : boolean
+          Whether to compute the right singular functions.
+          If `right==True`, `get_output()` will return the right singular
+          functions. Otherwise, `get_output()` will return the left singular
+          functions.
+          Beware that only `frames[tau:, :]` of each trajectory returned
+          by `get_output()` contain valid values of the right singular
+          functions. Conversely, only `frames[0:-tau, :]` of each
+          trajectory returned by `get_output()` contain valid values of
+          the left singular functions. The remaining frames might
+          possibly be interpreted as some extrapolation.
+      epsilon : float
+          eigenvalue cutoff. Eigenvalues of :math:`C_{00}` and :math:`C_{11}`
+          with norms <= epsilon will be cut off. The remaining number of
+          eigenvalues together with the value of `dim` define the size of the output.
+      stride: int, optional, default = 1
+          Use only every stride-th time step. By default, every time step is used.
+      skip : int, default=0
+          skip the first initial n frames per trajectory.
+      ncov_max : int, default=infinity
+          limit the memory usage of the algorithm from [3]_ to an amount that corresponds
+          to ncov_max additional copies of each correlation matrix
+
+      Returns
+      -------
+      vamp : a :class:`VAMP <pyemma.coordinates.transform.VAMP>` transformation object
+         It contains the definitions of singular functions and singular values and
+         can be used to project input data to the dominant VAMP components, predict
+         expectations and time-lagged covariances and perform a Chapman-Kolmogorov
+         test.
+
+      Notes
+      -----
+      VAMP is a method for dimensionality reduction of Markov processes.
+
+      The Koopman operator :math:`\mathcal{K}` is an integral operator
+      that describes conditional future expectation values. Let
+      :math:`p(\mathbf{x},\,\mathbf{y})` be the conditional probability
+      density of visiting an infinitesimal phase space volume around
+      point :math:`\mathbf{y}` at time :math:`t+\tau` given that the phase
+      space point :math:`\mathbf{x}` was visited at the earlier time
+      :math:`t`. Then the action of the Koopman operator on a function
+      :math:`f` can be written as follows:
+
+      .. math::
+
+          \mathcal{K}f=\int p(\mathbf{x},\,\mathbf{y})f(\mathbf{y})\,\mathrm{dy}=\mathbb{E}\left[f(\mathbf{x}_{t+\tau}\mid\mathbf{x}_{t}=\mathbf{x})\right]
+
+      The Koopman operator is defined without any reference to an
+      equilibrium distribution. Therefore it is well-defined in
+      situations where the dynamics is irreversible or/and non-stationary
+      such that no equilibrium distribution exists.
+
+      If we approximate :math:`f` by a linear superposition of ansatz
+      functions :math:`\boldsymbol{\chi}` of the conformational
+      degrees of freedom (features), the operator :math:`\mathcal{K}`
+      can be approximated by a (finite-dimensional) matrix :math:`\mathbf{K}`.
+
+      The approximation is computed as follows: From the time-dependent
+      input features :math:`\boldsymbol{\chi}(t)`, we compute the mean
+      :math:`\boldsymbol{\mu}_{0}` (:math:`\boldsymbol{\mu}_{1}`) from
+      all data excluding the last (first) :math:`\tau` steps of every
+      trajectory as follows:
+
+      .. math::
+
+          \boldsymbol{\mu}_{0}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\boldsymbol{\chi}(t)
+
+          \boldsymbol{\mu}_{1}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\boldsymbol{\chi}(t)
+
+      Next, we compute the instantaneous covariance matrices
+      :math:`\mathbf{C}_{00}` and :math:`\mathbf{C}_{11}` and the
+      time-lagged covariance matrix :math:`\mathbf{C}_{01}` as follows:
+
+      .. math::
+
+          \mathbf{C}_{00}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+          \mathbf{C}_{11}	:=\frac{1}{T-\tau}\sum_{t=\tau}^{T}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+          \mathbf{C}_{01}	:=\frac{1}{T-\tau}\sum_{t=0}^{T-\tau}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]\left[\boldsymbol{\chi}(t+\tau)-\boldsymbol{\mu}_{1}\right]
+
+      The Koopman matrix is then computed as follows:
+
+      .. math::
+
+          \mathbf{K}=\mathbf{C}_{00}^{-1}\mathbf{C}_{01}
+
+      It can be shown [1]_ that the leading singular functions of the
+      half-weighted Koopman matrix
+
+      .. math::
+
+          \bar{\mathbf{K}}:=\mathbf{C}_{00}^{-\frac{1}{2}}\mathbf{C}_{01}\mathbf{C}_{11}^{-\frac{1}{2}}
+
+      encode the best reduced dynamical model for the time series.
+
+      The singular functions can be computed by first performing the
+      singular value decomposition
+
+      .. math::
+
+          \bar{\mathbf{K}}=\mathbf{U}^{\prime}\mathbf{S}\mathbf{V}^{\prime}
+
+      and then mapping the input conformation to the left singular
+      functions :math:`\boldsymbol{\psi}` and right singular
+      functions :math:`\boldsymbol{\phi}` as follows:
+
+      .. math::
+
+          \boldsymbol{\psi}(t):=\mathbf{U}^{\prime\top}\mathbf{C}_{00}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{0}\right]
+
+          \boldsymbol{\phi}(t):=\mathbf{V}^{\prime\top}\mathbf{C}_{11}^{-\frac{1}{2}}\left[\boldsymbol{\chi}(t)-\boldsymbol{\mu}_{1}\right]
+
+
+      References
+      ----------
+      .. [1] Wu, H. and Noe, F. 2017. Variational approach for learning Markov processes from time series data.
+          arXiv:1707.04659v1
+      .. [2] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+          J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+      .. [3] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+         computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
+    """
+    from pyemma.coordinates.transform.vamp import VAMP
+    res = VAMP(lag, dim=dim, scaling=scaling, right=right, skip=skip, ncov_max=ncov_max)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    else:
+        res.chunksize = chunksize
+    return res
+
+
+def tica_nystroem(max_columns, data=None, lag=10,
+                  dim=-1, var_cutoff=0.95, epsilon=1e-6,
+                  stride=1, skip=0, reversible=True, ncov_max=float('inf'), chunksize=None,
+                  initial_columns=None, nsel=1, neig=None):
+    r""" Sparse sampling implementation [1]_ of time-lagged independent component analysis (TICA) [2]_, [3]_, [4]_.
+
+    Parameters
+    ----------
+    max_columns : int
+        Maximum number of columns (features) to use in the approximation.
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+        source function array with the data. With it, the TICA
+        transformation is immediately computed and can be used to transform data.
+    lag : int, optional, default 10
+        lag time
+    dim : int, optional, default -1
+        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
+        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+    var_cutoff : float in the range [0,1], optional, default 0.95
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim.
+    epsilon : float, optional, default 1e-6
+        Eigenvalue norm cutoff. Eigenvalues of :math:`C_0` with norms <= epsilon will be
+        cut off. The remaining number of eigenvalues define the size
+        of the output.
+    stride: int, optional, default 1
+        Use only every stride-th time step. By default, every time step is used.
+    skip : int, optional, default 0
+        Skip the first initial n frames per trajectory.
+    reversible: bool, optional, default True
+        Symmetrize correlation matrices :math:`C_0`, :math:`C_{\tau}`.
+    initial_columns : list, ndarray(k, dtype=int), int, or None, optional, default None
+        Columns used for an initial approximation. If a list or an 1-d ndarray
+        of integers is given, use these column indices. If an integer is given,
+        use that number of randomly selected indices. If None is given, use
+        one randomly selected column.
+    nsel : int, optional, default 1
+        Number of columns to select and add per iteration and pass through the data.
+        Larger values provide for better pass-efficiency.
+    neig : int or None, optional, default None
+        Number of eigenvalues to be optimized by the selection process.
+        If None, use the whole available eigenspace.
+
+    Returns
+    -------
+    tica_nystroem : a :class:`NystroemTICA <pyemma.coordinates.transform.NystroemTICA>`
+                    transformation object
+        Object for sparse sampling time-lagged independent component (TICA) analysis.
+        It contains TICA eigenvalues and eigenvectors, and the projection of
+        input data to the dominant TICs.
+
+    Notes
+    -----
+    Perform a sparse approximation of time-lagged independent component analysis (TICA)
+    :class:`TICA <pyemma.coordinates.transform.TICA>`. The starting point is the
+    generalized eigenvalue problem
+
+    .. math:: C_{\tau} r_i = C_0 \lambda_i(\tau) r_i.
+
+    Instead of computing the full matrices involved in this problem, we conduct
+    a Nystroemm approximation [5]_ of the matrix :math:`C_0` by means of the
+    accelerated sequential incoherence selection (oASIS) algorithm [6]_ and,
+    in particular, its extension called spectral oASIS [1]_.
+
+    Iteratively, we select a small number of columns such that the resulting
+    Nystroem approximation is sufficiently accurate. This selection represents
+    in turn a subset of important features, for which we obtain a generalized
+    eigenvalue problem similar to the one above, but much smaller in size.
+    Its generalized eigenvalues and eigenvectors provide an approximation
+    to those of the full TICA solution [1]_.
+
+    References
+    ----------
+    .. [1] F. Litzinger, L. Boninsegna, H. Wu, F. Nueske, R. Patel, R. Baraniuk, F. Noe, and C. Clementi.
+       Rapid calculation of molecular kinetics using compressed sensing (2018). (submitted)
+    .. [2] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+    .. [3] Schwantes C, V S Pande. 2013.
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+    .. [4] L. Molgedey and H. G. Schuster. 1994.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
+    .. [5] P. Drineas and M. W. Mahoney.
+       On the Nystrom method for approximating a Gram matrix for improved kernel-based learning.
+       Journal of Machine Learning Research, 6:2153-2175 (2005).
+    .. [6] Raajen Patel, Thomas A. Goldstein, Eva L. Dyer, Azalia Mirhoseini, Richard G. Baraniuk.
+       oASIS: Adaptive Column Sampling for Kernel Matrix Approximation.
+       arXiv: 1505.05208 [stat.ML].
+
+    """
+    from pyemma.coordinates.transform.nystroem_tica import NystroemTICA
+    res = NystroemTICA(lag, max_columns,
+                       dim=dim, var_cutoff=var_cutoff, epsilon=epsilon,
+                       stride=stride, skip=skip, reversible=reversible,
+                       ncov_max=ncov_max,
+                       initial_columns=initial_columns, nsel=nsel, neig=neig)
+    if data is not None:
+        res.estimate(data, stride=stride, chunksize=chunksize)
+    else:
+        res.chunksize = chunksize
     return res
 
 
 def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
-                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None):
+                      reversible=False, bessel=True, lag=0, weights="empirical", stride=1, skip=0, chunksize=None,
+                      ncov_max=float('inf'), column_selection=None, diag_only=False):
+    r"""Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
+    number of time steps and N the number of dimensions, this function can compute lagged covariances like
+
+    .. math::
+
+        C_00 &= X^T X \\
+        C_{0t} &= X^T Y \\
+        C_{tt} &= Y^T Y,
+
+    where X comprises the first T-lag time steps and Y the last T-lag time steps. It is also possible to use more
+    than one time series, the number of time steps in each time series can also vary.
+
+    Parameters
+    ----------
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+        source function array with the data, if available. When given, the covariances are immediately computed.
+    c00 : bool, optional, default=True
+        compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+    c0t : bool, optional, default=False
+        compute lagged correlations. Does not work with lag==0.
+    ctt : bool, optional, default=False
+        compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+    remove_constant_mean : ndarray(N,), optional, default=None
+        substract a constant vector of mean values from time series.
+    remove_data_mean : bool, optional, default=False
+        substract the sample mean from the time series (mean-free correlations).
+    reversible : bool, optional, default=False
+        symmetrize correlations.
+    bessel : bool, optional, default=True
+        use Bessel's correction for correlations in order to use an unbiased estimator
+    lag : int, optional, default=0
+        lag time. Does not work with xy=True or yy=True.
+    weights : optional, default="empirical"
+         Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+            * "empirical":  no re-weighting
+            * "koopman":    use re-weighting procedure from [1]_
+            * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                            weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                            re-weighting factors (np.ndarray(T,)).
+    stride: int, optional, default = 1
+        Use only every stride-th time step. By default, every time step is used.
+    skip : int, optional, default=0
+        skip the first initial n frames per trajectory.
+    chunksize: int, default=None
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed. If None is passed,
+        use the default value of the underlying reader/data source. Choose zero to
+        disable chunking at all.
+    ncov_max : int, default=infinity
+        limit the memory usage of the algorithm from [2]_ to an amount that corresponds
+        to ncov_max additional copies of each correlation matrix
+    column_selection: ndarray(k, dtype=int) or None
+        Indices of those columns that are to be computed. If None, all columns are computed.
+    diag_only: bool
+        If True, the computation is restricted to the diagonal entries (autocorrelations) only.
+
+    Returns
+    -------
+    lc : a :class:`LaggedCovariance <pyemma.coordinates.estimation.covariance.LaggedCovariance>` object.
+
+
+    .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
+       approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
+    .. [2] Chan, T. F., Golub G. H., LeVeque R. J. 1979. Updating formulae and pairwiese algorithms for
+        computing sample variances. Technical Report STAN-CS-79-773, Department of Computer Science, Stanford University.
     """
-        Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
-        number of time steps and N the number of dimensions, this function can compute lagged covariances like
-
-        .. math::
-
-            C_00 &= X^T X \\
-            C_{0t} &= X^T Y \\
-            C_{tt} &= Y^T Y,
-
-        where X comprises the first T-lag time steps and Y the last T-lag time steps. It is also possible to use more
-        than one time series, the number of time steps in each time series can also vary.
-
-        Parameters
-        ----------
-        data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
-            source function array with the data, if available. When given, the covariances are immediately computed.
-        c00 : bool, optional, default=True
-            compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
-        c0t : bool, optional, default=False
-            compute lagged correlations. Does not work with lag==0.
-        ctt : bool, optional, default=False
-            compute instantaneous correlations over the second part of the data. Does not work with lag==0.
-        remove_constant_mean : ndarray(N,), optional, default=None
-            substract a constant vector of mean values from time series.
-        remove_data_mean : bool, optional, default=False
-            substract the sample mean from the time series (mean-free correlations).
-        reversible : bool, optional, default=False
-            symmetrize correlations.
-        bessel : bool, optional, default=True
-            use Bessel's correction for correlations in order to use an unbiased estimator
-        lag : int, optional, default=0
-            lag time. Does not work with xy=True or yy=True.
-        weights : optional, default="empirical"
-             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
-                * "empirical":  no re-weighting
-                * "koopman":    use re-weighting procedure from [1]_
-                * weights:      An object that allows to compute re-weighting factors. It must possess a method
-                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
-                                re-weighting factors (np.ndarray(T,)).
-        stride: int, optional, default = 1
-            Use only every stride-th time step. By default, every time step is used.
-        skip : int, optional, default=0
-            skip the first initial n frames per trajectory.
-        chunk_size: int, default=None
-            Number of data frames to process at once. Choose a higher value here,
-            to optimize thread usage and gain processing speed. If None is passed,
-            use the default value of the underlying reader/data source. Choose zero to
-            disable chunking at all.
-
-        Returns
-        -------
-        lc : a :class:`LaggedCovariance <pyemma.coordinates.estimation.covariance.LaggedCovariance>` object.
-
-
-        .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
-           approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
-
-        """
-
     from pyemma.coordinates.estimation.covariance import LaggedCovariance
     from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
     import types
-    if isinstance(weights, str):
+    if isinstance(weights, _string_types):
         if weights== "koopman":
             if data is None:
                 raise ValueError("Data must be supplied for reweighting='koopman'")
-            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip, ncov_max=ncov_max)
             koop.estimate(data, chunksize=chunksize)
             weights = koop.weights
         elif weights == "empirical":
@@ -1323,9 +1626,12 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
     # chunksize is an estimation parameter for now.
     lc = LaggedCovariance(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                           remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
-                          weights=weights, stride=stride, skip=skip)
+                          weights=weights, stride=stride, skip=skip, ncov_max=ncov_max,
+                          column_selection=column_selection, diag_only=diag_only)
     if data is not None:
         lc.estimate(data, chunksize=chunksize)
+    else:
+        lc.chunksize = chunksize
     return lc
 
 
@@ -1336,7 +1642,7 @@ def covariance_lagged(data=None, c00=True, c0t=True, ctt=False, remove_constant_
 # =========================================================================
 
 def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean',
-                              init_strategy='kmeans++', n_jobs=None, chunk_size=None, skip=0, clustercenters=None):
+                              init_strategy='kmeans++', n_jobs=None, chunksize=None, skip=0, clustercenters=None, **kwargs):
     r"""k-means clustering with mini-batch strategy
 
     Mini-batch k-means is an approximation to k-means which picks a randomly
@@ -1376,14 +1682,18 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
                                     batch_size=batch_size, n_jobs=n_jobs, skip=skip, clustercenters=clustercenters)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_mini_batch_kmeans)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = chunksize
     return res
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
                    metric='euclidean', init_strategy='kmeans++', fixed_seed=False,
-                   n_jobs=None, chunk_size=None, skip=0, keep_data=False, clustercenters=None):
+                   n_jobs=None, chunksize=None, skip=0, keep_data=False, clustercenters=None, **kwargs):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1437,7 +1747,7 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -1509,13 +1819,17 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
                            init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip,
                            keep_data=keep_data, clustercenters=clustercenters, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_kmeans)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
 def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
-                         n_jobs=None, chunk_size=None, skip=0):
+                         n_jobs=None, chunksize=None, skip=0, **kwargs):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in
@@ -1551,7 +1865,7 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -1584,13 +1898,17 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
     res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_uniform_time)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean',
-                     n_jobs=None, chunk_size=5000, skip=0):
+                     n_jobs=None, chunksize=None, skip=0, **kwargs):
     r"""Regular space clustering
 
     If given data, it performs a regular space clustering [1]_ and returns a
@@ -1638,7 +1956,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -1681,13 +1999,17 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
     res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric,
                                   n_jobs=n_jobs, stride=stride, skip=skip)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(cluster_regspace)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
+    else:
+        res.chunksize = cs
     return res
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
-                      metric='euclidean', n_jobs=None, chunk_size=None, skip=0):
+                      metric='euclidean', n_jobs=None, chunksize=None, skip=0, **kwargs):
     r"""Assigns data to the nearest cluster centers
 
     Creates a Voronoi partition with the given cluster centers. If given
@@ -1721,7 +2043,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
 
-    chunk_size: int, default=None
+    chunksize: int, default=None
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed. If None is passed,
         use the default value of the underlying reader/data source. Choose zero to
@@ -1768,9 +2090,13 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
     res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip, stride=stride)
+    from pyemma.util.reflection import get_default_args
+    cs = _check_old_chunksize_arg(chunksize, get_default_args(assign_to_centers)['chunksize'], **kwargs)
     if data is not None:
-        res.estimate(data, chunksize=chunk_size)
+        res.estimate(data, chunksize=cs)
         if return_dtrajs:
             return res.dtrajs
+    else:
+        res.chunksize = cs
 
     return res

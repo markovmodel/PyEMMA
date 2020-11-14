@@ -23,7 +23,6 @@ Created on Jul 26, 2014
 @author: noe
 '''
 
-from __future__ import absolute_import, print_function
 
 import numpy as np
 
@@ -34,7 +33,7 @@ from pyemma.util.annotators import alias, aliased
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
-from pyemma._base.progress import ProgressReporterMixin
+from pyemma._base.progress import ProgressReporter
 from pyemma._base.model import SampledModel
 
 __docformat__ = "restructuredtext en"
@@ -51,9 +50,8 @@ def _generate_lags(maxlag, multiplier):
 
     """
     # determine lag times
-    lags = []
+    lags = [1]
     # build default lag list
-    lags.append(1)
     lag = 1.0
     import decimal
     while lag <= maxlag:
@@ -64,25 +62,45 @@ def _generate_lags(maxlag, multiplier):
         if lag <= maxlag:
             ilag = int(lag)
             lags.append(ilag)
+    # always include the maximal requested lag time.
+    if maxlag not in lags:
+        lags.append(maxlag)
     return np.array(lags)
 
 
 def _hash_dtrajs(dtraj_list):
-    x = 0
     from pyemma.util.numeric import _hash_numpy_array
-    for d in dtraj_list:
+    x = _hash_numpy_array(dtraj_list[0])
+    for d in dtraj_list[1:]:
         x ^= _hash_numpy_array(d)
     return x
+
+
+class _DummyModel(object):
+    """ Used to encapsulate timescales and its samples in case we do not want to store the whole thing"""
+    __serialize_version = 0
+
+    def __init__(self, lag, timescales, ts_samples=None):
+        self.lag = lag
+        self._timescales = timescales
+        self._ts_samples = ts_samples
+
+    def timescales(self):
+        return self._timescales
+
+    def sample_f(self, arg):  # duck-type SampledModel
+        assert arg == 'timescales'
+        return self._ts_samples
 
 
 # TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 @aliased
-class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, SerializableMixIn):
+class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
     __serialize_version = 0
     __serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
-                         '_its', '_its_samples',
+                          '_its', '_its_samples', '_last_dtrajs_input_hash',
                           )
     r"""Implied timescales for a series of lag times.
 
@@ -91,9 +109,10 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
     estimator : Estimator
         Estimator to be used for estimating timescales at each lag time.
 
-    lags : array-like with integers or None, optional
+    lags : int, array-like with integers or None, optional
         integer lag times at which the implied timescales will be calculated. If set to None (default)
-        as list of lagtimes will be automatically generated.
+        as list of lag times will be automatically generated. For a single int, generate a set of lag times starting 
+        from 1 to lags, using a multiplier of 1.5 between successive lags.
 
     nits : int, optional
         maximum number of implied timescales to be computed and stored. If less
@@ -105,8 +124,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         how many subprocesses to start to estimate the models for each lag time.
 
     """
-    def __init__(self, estimator, lags=None, nits=None, n_jobs=1,
-                 show_progress=True):
+    def __init__(self, estimator, lags=None, nits=None, n_jobs=None,
+                 show_progress=True, only_timescales=False):
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
@@ -120,6 +139,10 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         self._its = None
         # sampled its's. 3D-array with indexing: lagtime, its, sample
         self._its_samples = None
+        # fingerprint of the last estimate input.
+        self._last_dtrajs_input_hash = None
+
+        self.only_timescales = only_timescales
 
     def estimate(self, X, **params):
         """
@@ -155,9 +178,11 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         if self._estimated:
             # if dtrajs has now changed, unset the _estimated flag to re-set every derived quantity.
             assert hasattr(self, '_last_dtrajs_input_hash')
-            if self._last_dtrajs_input_hash != _hash_dtrajs(dtrajs):
+            current_hash = _hash_dtrajs(dtrajs)
+            if self._last_dtrajs_input_hash != current_hash:
                 self.logger.warning("estimating from new data, discard all previously computed models.")
                 self._estimated = False
+                self._last_dtrajs_input_hash = current_hash
         else:
             self._last_dtrajs_input_hash = _hash_dtrajs(dtrajs)
 
@@ -193,25 +218,67 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         param_sets = tuple(param_grid({'lag': lags}))
 
         # run estimation on all lag times
-        models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
-                                                 return_estimators=True, n_jobs=self.n_jobs,
-                                                 progress_reporter=self)
-        self._estimators = estimators
+        if hasattr(self.estimator, 'show_progress'):
+            self.estimator.show_progress = False
+        if self.show_progress:
+            pg = ProgressReporter()
+            ctx = pg.context()
+        else:
+            pg = None
+            # TODO: replace with nullcontext from util once merged.
+            from contextlib import contextmanager
+            @contextmanager
+            def dummy():yield
+            ctx = dummy()
+        with ctx:
+            if not self.only_timescales:
+                models, estimators = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
+                                                         return_estimators=True, n_jobs=self.n_jobs,
+                                                         progress_reporter=pg, return_exceptions=True)
+                self._estimators = estimators
+            else:
+                evaluate = ['timescales']
+                evaluate_args = [[self.nits]]
+                if self._estimator_produces_samples():
+                    evaluate.append('sample_f')
+                    evaluate_args.append('timescales')
+                results = estimate_param_scan(self.estimator, dtrajs, param_sets, failfast=False,
+                                              return_estimators=False, n_jobs=self.n_jobs,
+                                              evaluate=evaluate,
+                                              evaluate_args=evaluate_args,
+                                              progress_reporter=pg, return_exceptions=True, )
 
-        self._postprocess_results(models)
+                if self._estimator_produces_samples():
+                    models = [_DummyModel(lag, ts, ts_sample) for lag, (ts, ts_sample) in zip(lags, results)]
+                else:
+                    models = [_DummyModel(lag, ts, None, ) for lag, ts in zip(lags, results)]
+            self._postprocess_results(models)
+
+        return self
+
+    def _estimator_produces_samples(self):
+        return hasattr(self.estimator, 'sample_f')
 
     def _postprocess_results(self, models):
         ### PROCESS RESULTS
         # if some results are None, estimation has failed. Warn and truncate models and lag times
-        good = np.array([i for i, m in enumerate(models) if m is not None], dtype=int)
-        bad = np.array([i for i, m in enumerate(models) if m is None], dtype=int)
-        if good.size == 0:
-            raise RuntimeError('Estimation has failed at ALL lagtimes. Check for errors.')
-        if bad.size > 0:
-            self.logger.warning('Estimation has failed at lagtimes: {lags}. '
-                                'Run single-lag estimation at these lags to track down the '
-                                'error.'.format(lags=self._lags[bad]))
-            models = list(np.array(models)[good])
+        check = lambda m: m is not None and not isinstance(m, Exception)
+        good = np.array([i for i, m in enumerate(models) if check(m)], dtype=int)
+        bad = np.array([i for i, m in enumerate(models) if not check(m)], dtype=int)
+
+        if len(good) != len(models):
+            def _format_failed_models():
+                errors = []
+                for b in bad:
+                    errors.append('Error at lag time {lag}: {err}'.format(lag=self._lags[b], err=models[b]))
+                from pprint import pformat
+                return pformat(errors)
+            if good.size == 0:
+                raise RuntimeError('Estimation has failed at ALL lagtimes. Details:\n{}'.format(_format_failed_models()))
+            if bad.size > 0:
+                self.logger.warning('Estimation has failed at lagtimes: {lags}. Details:\n{details}'
+                                    .format(lags=self._lags[bad], details=_format_failed_models()))
+                models = list(np.array(models)[good])
 
         # merge models prior evaluation
         if self._estimated:
@@ -250,7 +317,7 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
             computed_all = False
 
         # timescales samples if available
-        if isinstance(models[0], SampledModel):
+        if self._estimator_produces_samples():
             # samples
             timescales_samples = [m.sample_f('timescales') for m in models]
             nsamples = np.shape(timescales_samples[0])[0]
@@ -489,6 +556,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         r"""Returns the estimators for all lagtimes.
 
         """
+        if self.only_timescales:
+            raise RuntimeError('You requested only to save timescales and its samples upon estimation')
         return [self._estimators[i] for i in self._successful_lag_indexes]
 
     @property
@@ -496,6 +565,8 @@ class ImpliedTimescales(Estimator, ProgressReporterMixin, NJobsMixIn, Serializab
         r"""Returns the models for all lagtimes.
 
         """
+        if self.only_timescales:
+            raise RuntimeError('You requested only to save timescales and its samples upon estimation')
         return [self._models[i] for i in self._successful_lag_indexes]
 
     @property

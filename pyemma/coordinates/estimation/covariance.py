@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 
 import numpy as np
 import numbers
 from math import log
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import deprecated
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
@@ -33,7 +33,10 @@ __all__ = ['LaggedCovariance']
 __author__ = 'paul, nueske'
 
 
-class LaggedCovariance(StreamingEstimator):
+class LaggedCovariance(StreamingEstimator, SerializableMixIn):
+    __serialize_version = 0
+    __serialize_fields = []
+
     r"""Compute lagged covariances between time series.
 
      Parameters
@@ -77,14 +80,23 @@ class LaggedCovariance(StreamingEstimator):
          Use only every stride-th time step. By default, every time step is used.
      skip : int, optional, default=0
          skip the first initial n frames per trajectory.
-     chunksize : deprecated, default=NoTImplemented
-         The chunk size can be se during estimation.
+     chunksize : deprecated, default=NotImplemented
+         The chunk size should now be set during estimation.
+     column_selection: ndarray(k, dtype=int) or None
+         Indices of those columns that are to be computed. If None, all columns are computed.
+     diag_only: bool
+         If True, the computation is restricted to the diagonal entries (autocorrelations) only.
 
      """
     def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
-                 chunksize=NotImplemented, ncov_max=float('inf')):
+                 chunksize=NotImplemented, ncov_max=float('inf'), column_selection=None, diag_only=False):
         super(LaggedCovariance, self).__init__()
+        if chunksize is not NotImplemented:
+            import warnings
+            from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+            warnings.warn('passed deprecated argument chunksize to LaggedCovariance. Will be ignored!',
+                          category=PyEMMA_DeprecationWarning)
 
         if (c0t or ctt) and lag == 0:
             raise ValueError("lag must be positive if c0t=True or ctt=True")
@@ -93,14 +105,20 @@ class LaggedCovariance(StreamingEstimator):
             raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
             remove_constant_mean = ensure_float_vector(remove_constant_mean)
+        if column_selection is not None and diag_only:
+            raise ValueError('Computing only parts of the diagonal is not supported.')
+        if diag_only and sparse_mode is not 'dense':
+            if sparse_mode is 'sparse':
+                self.logger.warning('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
+            sparse_mode = 'dense'
         self.set_params(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                         bessel=bessel,
-                        weights=weights, stride=stride, skip=skip, ncov_max=ncov_max)
+                        weights=weights, stride=stride, skip=skip, ncov_max=ncov_max,
+                        column_selection=column_selection, diag_only=diag_only)
 
         self._rc = None
-        self._used_data = 0
 
     @property
     def weights(self):
@@ -142,10 +160,12 @@ class LaggedCovariance(StreamingEstimator):
                 self.logger.info("adapting storage size")
                 self.nsave = nsave
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
-            self._logger.debug("using %s moments for %i chunks", nsave, n_chunks)
+            self.logger.debug("using %s moments for %i chunks", nsave, n_chunks)
             self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
-                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
+                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data,
+                                     column_selection=self.column_selection, diag_only=self.diag_only,
+                                     nsave=nsave)
 
     def _estimate(self, iterable, partial_fit=False):
         indim = iterable.dimension()
@@ -154,7 +174,7 @@ class LaggedCovariance(StreamingEstimator):
 
         if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
             if partial_fit:
-                self.logger.warn("Could not use data passed to partial_fit(), "
+                self.logger.warning("Could not use data passed to partial_fit(), "
                                  "because no single data set [longest=%i] is longer than lag+skip [%i]",
                                  max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag+self.skip)
                 return self
@@ -218,7 +238,12 @@ class LaggedCovariance(StreamingEstimator):
                 pg.update(1, stage=0)
 
         if partial_fit:
-            self._used_data += len(it)
+            if '_rc' not in self.__serialize_fields:
+                self.__serialize_fields.append('_rc')
+        else:
+            if '_rc' in self.__serialize_fields:
+                self.__serialize_fields.remove('_rc')
+        return self
 
     def partial_fit(self, X):
         """ incrementally update the estimates
@@ -294,3 +319,18 @@ class LaggedCovariance(StreamingEstimator):
         if self.ctt:
             if self._rc.storage_YY.nsave <= ns:
                 self._rc.storage_YY.nsave = ns
+
+    @property
+    def column_selection(self):
+        return self._column_selection
+
+    @column_selection.setter
+    def column_selection(self, s):
+        self._column_selection = s
+        try:
+            if self._rc is not None:
+                self._rc.column_selection = s
+        except AttributeError:
+            pass
+        self._estimated = False
+        self.logger.debug('Modified column selection: estimate() needed for this change to take effect')

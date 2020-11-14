@@ -22,52 +22,34 @@ Created on 13.03.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import
 
 from collections import namedtuple
+from functools import lru_cache
+from itertools import groupby
+from operator import itemgetter
 
 import numpy as np
-from mdtraj import FormatRegistry
 from mdtraj import Topology, Trajectory
+from mdtraj.core.trajectory import _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
-
-from itertools import groupby
-from operator import itemgetter, attrgetter
-
-from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
-
 
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
 
-def _cache_mdtraj_topology(args):
-    import hashlib
-    from mdtraj import load_topology as md_load_topology
-    _top_cache = {}
-
-    def wrap(top_file):
-        if isinstance(top_file, Topology):
-            return top_file
-        if isinstance(top_file, Trajectory):
-            return top_file.topology
-        hasher = hashlib.md5()
-        with open(top_file, 'rb') as f:
-            hasher.update(f.read())
-        hash = hasher.hexdigest()
-
-        if hash in _top_cache:
-            top = _top_cache[hash]
-        else:
-            top = md_load_topology(top_file)
-            _top_cache[hash] = top
-        return top
-
-    return wrap
+@lru_cache(maxsize=32)
+def _load(top_file):
+    return load_topology(top_file)
 
 
-load_topology_cached = _cache_mdtraj_topology(load_topology)
+def load_topology_cached(top_file):
+    if isinstance(top_file, str):
+        return _load(top_file)
+    if isinstance(top_file, Topology):
+        return top_file
+    if isinstance(top_file, Trajectory):
+        return top_file.topology
+    raise NotImplementedError()
 
 
 class iterload(object):
@@ -75,7 +57,9 @@ class iterload(object):
     MEMORY_CUTOFF = int(128 * 1024**2) # 128 MB
     MAX_STRIDE_SWITCH_TO_RA = 20
 
-    def __init__(self, filename, chunk=1000, **kwargs):
+    _DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION = True
+
+    def __init__(self, filename, trajlen, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
 
         This may be more memory efficient than loading an entire trajectory at
@@ -120,13 +104,13 @@ class iterload(object):
         <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
 
         """
+        self._trajlen = trajlen
         self._filename = filename
         self._stride = kwargs.pop('stride', 1)
         self._atom_indices = cast_indices(kwargs.pop('atom_indices', None))
         self._top = kwargs.pop('top', None)
         self._skip = kwargs.pop('skip', 0)
         self._kwargs = kwargs
-        self._chunksize = chunk
         self._extension = _get_extension(self._filename)
         self._closed = False
         self._seeked = False
@@ -139,15 +123,19 @@ class iterload(object):
             raise Exception("Not supported as trajectory format {ext}".format(ext=self._extension))
 
         self._mode = None
+        self._offsets = kwargs.pop('offsets', None)
+
+        self.chunksize = chunk
 
         if self._atom_indices is not None:
             n_atoms = len(self._atom_indices)
         else:
             n_atoms = self._topology.n_atoms
 
-        if (self.is_ra_iter or
+        # temporarily(?) disable RA mode, test_lagged_iterator_optimized fails otherwise
+        if self.is_ra_iter or (not self._DEACTIVATE_RANDOM_ACCESS_OPTIMIZATION and (self.is_ra_iter or
                     self._stride > iterload.MAX_STRIDE_SWITCH_TO_RA or
-                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF)):
+                (8 * self._chunksize * self._stride * n_atoms > iterload.MEMORY_CUTOFF))):
             self._mode = 'random_access'
             self._f = (lambda x:
                        md_open(x, n_atoms=self._topology.n_atoms)
@@ -165,9 +153,17 @@ class iterload(object):
             )(self._filename)
 
             # offset array handling
-            offsets = kwargs.pop('offsets', None)
+            offsets = self._offsets
             if hasattr(self._f, 'offsets') and offsets is not None:
                 self._f.offsets = offsets
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, value):
+        self._chunksize = min(value, self._trajlen)
 
     @property
     def skip(self):
@@ -191,9 +187,6 @@ class iterload(object):
         self._closed = True
 
     def __next__(self):
-        return self.next()
-
-    def next(self):
         if self._closed:
             raise StopIteration("closed file")
 
@@ -212,7 +205,9 @@ class iterload(object):
             if self._chunksize == 0:
                 n_frames = None  # read all frames
             else:
-                n_frames = self._chunksize * self._stride
+                n_frames = self._chunksize
+                if self._extension not in ('.dcd', '.xtc', '.trr'):
+                    n_frames *= self._stride
 
             if self._extension not in _TOPOLOGY_EXTS:
                 traj = self._f.read_as_traj(self._topology, n_frames=n_frames,
@@ -225,6 +220,8 @@ class iterload(object):
             raise StopIteration("eof")
 
         return traj
+
+    next = __next__
 
     def __enter__(self):
         return self
@@ -255,8 +252,9 @@ class iterload(object):
                     yield _join_traj_data(coords, self._topology)
                     chunksize = self._chunksize
                     curr_size = 0
-                    coords = []
+                    del coords[:]  # clears a list in py27... lol
                 while leftovers:
+                    # TODO: local chunk can get longer than chunk size, because len(leftovers) + curr_size > chunksize
                     local_chunk = leftovers[:min(chunksize, len(leftovers))]
                     local_traj_data = _read_traj_data(self._atom_indices, f, len(local_chunk), **self._kwargs)
                     coords.append(local_traj_data)
@@ -265,7 +263,8 @@ class iterload(object):
                     if curr_size == chunksize:
                         yield _join_traj_data(coords, self._topology)
                         curr_size = 0
-                        coords = []
+                        del coords[:]
+                assert not leftovers
             if coords:
                 yield _join_traj_data(coords, self._topology)
 
@@ -274,7 +273,7 @@ class iterload(object):
 
 def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     """
-    
+
     Parameters
     ----------
     atom_indices
@@ -285,7 +284,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     Returns
     -------
     data : TrajData(xyz, unitcell_length, unitcell_angles, box)
-    
+
     Format read() return values:
      amber_netcdf_restart_f: xyz [Ang], time, cell_l, cell_a
      amber restart: xyz[Ang], time, cell_l, cell_a
@@ -303,7 +302,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
 
      trr: xyz[nm], time, step, box (n, 3, 3), lambd?
      xtc: xyz[nm], time, step, box
-     
+
      xyz: xyz
      lh5: xyz [nm]
      arc: xyz[Ang]

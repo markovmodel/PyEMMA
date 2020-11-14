@@ -16,13 +16,56 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from pickle import Pickler, Unpickler, UnpicklingError
 
 import numpy as np
-
+import logging
+logger = logging.getLogger(__name__)
 
 __author__ = 'marscher'
+
+
+def _blosc_opts(complevel=9, complib='blosc:lz4', shuffle=True):
+    shuffle = 2 if shuffle == 'bit' else 1 if shuffle else 0
+    compressors = ['blosclz', 'lz4', 'lz4hc', 'snappy', 'zlib', 'zstd']
+    complib = ['blosc:' + c for c in compressors].index(complib)
+    args = {
+        'compression': 32001,
+        'compression_opts': (0, 0, 0, 0, complevel, shuffle, complib)
+    }
+    if shuffle:
+        args['shuffle'] = False
+    return args
+
+
+def _check_blosc_avail():
+    import tempfile, h5py
+    blosc_opts = _blosc_opts()
+    fid, name = tempfile.mkstemp()
+    try:
+        with h5py.File(name) as h5f:
+            try:
+                h5f.create_dataset('test', shape=(1,1), **blosc_opts)
+            except ValueError as ve:
+                if 'Unknown compression filter' in str(ve):
+                    import warnings
+                    warnings.warn('BLOSC compression filter unavailable. '
+                                  'Your resulting file may be large and not optimal to process.')
+                    return {}
+                else:  # unknown exception
+                    raise
+            else:
+                return blosc_opts
+    finally:
+        try:
+            import os
+            os.unlink(name)
+        except:
+            pass
+
+
+# we cache this during runtime
+_DEFAULT_BLOSC_OPTIONS = _check_blosc_avail()
 
 
 class HDF5PersistentPickler(Pickler):
@@ -47,14 +90,17 @@ class HDF5PersistentPickler(Pickler):
         if key in self.group:
             assert id_ in self._seen_ids
             return id_
-        self.group.create_dataset(name=key, data=array,
-                                  chunks=True, compression='gzip', compression_opts=4, shuffle=True)
         self._seen_ids.add(id_)
+        self.group.create_dataset(name=key, data=array,
+                                  chunks=True, **_DEFAULT_BLOSC_OPTIONS)
         return id_
 
     def persistent_id(self, obj):
         if (isinstance(obj, np.ndarray) and obj.dtype != np.object_
                 and id(obj) not in self._seen_ids):
+            # do not store empty arrays in hdf (more overhead)
+            if not len(obj):
+                return None
             array_id = self._store(obj)
             return 'np_array', array_id
 
@@ -67,6 +113,7 @@ class HDF5PersistentUnpickler(Unpickler):
                           'mdtraj',
                           'numpy',
                           'scipy',
+                          'bhmm',
                           )
 
     def __init__(self, group, file):

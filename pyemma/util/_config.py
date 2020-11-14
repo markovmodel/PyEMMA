@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
-import configparser
 import os
 import shutil
 import warnings
@@ -25,14 +23,40 @@ import warnings
 from pyemma.util.files import mkdir_p
 from pyemma.util.exceptions import ConfigDirectoryException
 
-import pkg_resources
-
 
 # indicate error during reading
 class ReadConfigException(Exception):
     pass
 
+
 __all__ = ('Config', )
+
+
+def _cached(cfg_getter):
+    from functools import wraps
+
+    @wraps(cfg_getter)
+    def wrapper(self):
+        if cfg_getter in self._cache:
+            return self._cache[id(cfg_getter)]
+
+        value = cfg_getter(self)
+        self._cache[id(cfg_getter)] = value
+        return value
+
+    return wrapper
+
+
+def _invalidate_cache(cfg_setter):
+    from functools import wraps
+
+    @wraps(cfg_setter)
+    def wrapper(self, value):
+        if id(cfg_setter) in self._cache:
+            del self._cache[id(cfg_setter)]
+        cfg_setter(self, value)
+
+    return wrapper
 
 
 class Config(object):
@@ -42,6 +66,8 @@ class Config(object):
     DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
 
     def __init__(self):
+        self._cache = {}
+
         # this is a ConfigParser instance
         self._conf_values = None
 
@@ -149,12 +175,15 @@ class Config(object):
     @property
     def default_config_file(self):
         """ default config file living in PyEMMA package """
-        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_CONFIG_FILE_NAME)
-
+        import os.path as p
+        import pyemma
+        return p.join(pyemma.__path__[0], Config.DEFAULT_CONFIG_FILE_NAME)
     @property
     def default_logging_file(self):
         """ default logging configuration"""
-        return pkg_resources.resource_filename('pyemma', Config.DEFAULT_LOGGING_FILE_NAME)
+        import os.path as p
+        import pyemma
+        return p.join(pyemma.__path__[0], Config.DEFAULT_LOGGING_FILE_NAME)
 
     def keys(self):
         """ valid configuration keys"""
@@ -172,10 +201,10 @@ class Config(object):
         if not os.path.exists(pyemma_cfg_dir):
             try:
                 mkdir_p(pyemma_cfg_dir)
-            except EnvironmentError:
-                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
             except NotADirectoryError:  # on Python 3
                 raise ConfigDirectoryException("pyemma cfg dir (%s) is not a directory" % pyemma_cfg_dir)
+            except EnvironmentError:
+                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
 
         if not os.path.isdir(pyemma_cfg_dir):
             raise ConfigDirectoryException("%s is no valid directory" % pyemma_cfg_dir)
@@ -218,11 +247,13 @@ class Config(object):
     #    setup_logging(self, config)
 
     @property
+    @_cached
     def mute(self):
         """ Switch this to True, to tell PyEMMA not to use progress bars and logging to console. """
         return self._conf_values.getboolean('pyemma', 'mute')
 
     @mute.setter
+    @_invalidate_cache
     def mute(self, value):
         value = bool(value)
         import logging
@@ -240,36 +271,43 @@ class Config(object):
         self._conf_values.set('pyemma', 'mute', str(value))
 
     @property
+    @_cached
     def traj_info_max_entries(self):
         """ How many entries (files) the trajectory info cache can hold.
         The cache will forget the least recently used entries when this limit is hit."""
         return self._conf_values.getint('pyemma', 'traj_info_max_entries')
 
     @traj_info_max_entries.setter
+    @_invalidate_cache
     def traj_info_max_entries(self, val):
         self._conf_values.set('pyemma', 'traj_info_max_entries', str(val))
 
     @property
+    @_cached
     def traj_info_max_size(self):
         """ Maximum trajectory info cache size in bytes.
         The cache will forget the least recently used entries when this limit is hit."""
         return self._conf_values.getint('pyemma', 'traj_info_max_size')
 
     @traj_info_max_size.setter
+    @_invalidate_cache
     def traj_info_max_size(self, val):
         val = str(int(val))
         self._conf_values.set('pyemma', 'traj_info_max_size', val)
 
     @property
+    @_cached
     def show_progress_bars(self):
         """Show progress bars for heavy computations?"""
         return self._conf_values.getboolean('pyemma', 'show_progress_bars')
 
     @show_progress_bars.setter
+    @_invalidate_cache
     def show_progress_bars(self, val):
         self._conf_values.set('pyemma', 'show_progress_bars', str(val))
 
     @property
+    @_cached
     def use_trajectory_lengths_cache(self):
         """ Shall the trajectory info cache be used to remember attributes of trajectory files.
 
@@ -279,28 +317,39 @@ class Config(object):
         return self._conf_values.getboolean('pyemma', 'use_trajectory_lengths_cache')
 
     @use_trajectory_lengths_cache.setter
+    @_invalidate_cache
     def use_trajectory_lengths_cache(self, val):
         self._conf_values.set('pyemma', 'use_trajectory_lengths_cache', str(val))
 
     @property
+    @_cached
     def show_config_notification(self):
         """ """
         return self._conf_values.getboolean('pyemma', 'show_config_notification')
 
     @show_config_notification.setter
+    @_invalidate_cache
     def show_config_notification(self, val):
         self._conf_values.set('pyemma', 'show_config_notification', str(val))
 
     @property
     def coordinates_check_output(self):
-        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates """
-        return self._conf_values.getboolean('pyemma', 'coordinates_check_output')
+        """ Enabling this option will check for invalid output (NaN, Inf) in pyemma.coordinates.
+
+        Notes
+        -----
+        This setting is on by default by PyEMMA version 2.5.5
+        """
+        return True
 
     @coordinates_check_output.setter
-    def coordinates_check_output(self, val):
-        self._conf_values.set('pyemma', 'coordinates_check_output', str(val))
+    def coordinates_check_output(self, _):
+        import warnings, sys
+        warnings.warn('{d}Changing the setting for output checking has been disabled for very good reasons.{d}'
+                      .format(d=u' \U00002620 ' if sys.version_info[0] == 3 else ''))
 
     @property
+    @_cached
     def check_version(self):
         """ Check for the latest release online.
 
@@ -317,15 +366,18 @@ class Config(object):
         return self._conf_values.getboolean('pyemma', 'check_version')
 
     @check_version.setter
+    @_invalidate_cache
     def check_version(self, val):
         self._conf_values.set('pyemma', 'check_version', str(val))
 
     @property
+    @_cached
     def default_chunksize(self):
         """ default chunksize to use for coordinate transformations, only intergers with suffix [k,m,g]"""
         return self._conf_values.get('pyemma', 'default_chunksize')
 
     @default_chunksize.setter
+    @_invalidate_cache
     def default_chunksize(self, val):
         from pyemma.util.units import string_to_bytes
         # check for parsing exceptions
@@ -352,7 +404,8 @@ class Config(object):
                 shutil.copyfile(src, dest)
 
     def __read_cfg(self, filenames):
-        config = configparser.ConfigParser()
+        from configparser import ConfigParser
+        config = ConfigParser()
 
         try:
             self._used_filenames = config.read(filenames)

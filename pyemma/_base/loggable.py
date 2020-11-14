@@ -21,7 +21,6 @@ Created on 30.08.2015
 
 @author: marscher
 '''
-from __future__ import absolute_import
 import logging
 import weakref
 from itertools import count
@@ -60,10 +59,6 @@ class Loggable(object):
         except AttributeError:
             self.__create_logger()
             return self._logger_instance
-
-    @property
-    def _logger(self):
-        return self.logger
 
     def _logger_is_active(self, level):
         """ @param level: int log level (debug=10, info=20, warn=30, error=40, critical=50)"""

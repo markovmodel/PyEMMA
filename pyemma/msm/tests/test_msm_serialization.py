@@ -35,7 +35,7 @@ class TestMSMSerialization(unittest.TestCase):
         # coarse-grain microstates to two metastable states
         cg = np.zeros(100, dtype=int)
         cg[50:] = 1
-        obs_macro = cg[cls.obs_micro]
+        cls.obs_macro = cg[cls.obs_micro]
         # hidden states
         cls.nstates = 2
         # samples
@@ -44,9 +44,9 @@ class TestMSMSerialization(unittest.TestCase):
         cls.lag = 100
 
         cls.msm = datasets.load_2well_discrete().msm
-        cls.bmsm_rev = bayesian_markov_model(obs_macro, cls.lag,
+        cls.bmsm_rev = bayesian_markov_model(cls.obs_macro, cls.lag,
                                              reversible=True, nsamples=cls.nsamples)
-        cls.oom = pyemma.msm.estimate_markov_model(obs_macro, cls.lag, weights='oom')
+        cls.oom = pyemma.msm.estimate_markov_model(cls.obs_macro, cls.lag, weights='oom')
 
     def setUp(self):
         self.f = tempfile.mktemp()
@@ -224,6 +224,18 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(restored.timescales, its.timescales)
         np.testing.assert_equal(restored.sample_mean, its.sample_mean)
 
+    def test_its_sampled_only_ts(self):
+        lags = [1, 3]
+        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=2, only_timescales=True)
+
+        its.save(self.f)
+        restored = load(self.f)
+
+        self.assertEqual(restored.estimator.get_params(deep=False), its.estimator.get_params(deep=False))
+        np.testing.assert_equal(restored.lags, its.lags)
+        np.testing.assert_equal(restored.timescales, its.timescales)
+        np.testing.assert_equal(restored.sample_mean, its.sample_mean)
+
     def test_cktest(self):
         ck = self.bmsm_rev.cktest(nsets=2, mlags=[1, 3])
 
@@ -237,14 +249,16 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(restored.estimates_conf, ck.estimates_conf)
 
     def test_oom(self):
-        self.oom.save(self.f)
+        oom = pyemma.msm.estimate_markov_model(self.obs_macro, self.lag, weights='oom')
+
+        oom.save(self.f)
 
         restored = load(self.f)
-        np.testing.assert_equal(self.oom.eigenvalues_OOM, restored.eigenvalues_OOM)
-        np.testing.assert_equal(self.oom.timescales_OOM, restored.timescales_OOM)
-        np.testing.assert_equal(self.oom.OOM_rank, restored.OOM_rank)
-        np.testing.assert_equal(self.oom.OOM_omega, restored.OOM_omega)
-        np.testing.assert_equal(self.oom.OOM_sigma, restored.OOM_sigma)
+        np.testing.assert_equal(oom.eigenvalues_OOM, restored.eigenvalues_OOM)
+        np.testing.assert_equal(oom.timescales_OOM, restored.timescales_OOM)
+        np.testing.assert_equal(oom.OOM_rank, restored.OOM_rank)
+        np.testing.assert_equal(oom.OOM_omega, restored.OOM_omega)
+        np.testing.assert_equal(oom.OOM_sigma, restored.OOM_sigma)
 
     def test_ml_msm_sparse(self):
         from pyemma.util.contexts import numpy_random_seed

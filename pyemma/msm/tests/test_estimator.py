@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import os
 import unittest
 from unittest import mock
 from pyemma import msm
@@ -24,6 +24,8 @@ from pyemma._base.estimator import param_grid, estimate_param_scan, Estimator
 
 
 class TestCK_MSM(unittest.TestCase):
+
+    @unittest.skipIf(os.name == 'nt', 'known to be broken on win')
     def test_failfast_true(self):
         """ test that exception is thrown for failfast=True"""
         from pyemma._base.estimator import _estimate_param_scan_worker

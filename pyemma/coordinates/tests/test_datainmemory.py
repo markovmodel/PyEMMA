@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 import pyemma
 
 
@@ -38,8 +37,8 @@ logger = getLogger('pyemma.'+'TestDataInMemory')
 class TestDataInMemory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        d = np.random.random((100, 3))
-        d_1d = np.random.random(100)
+        d = np.random.random((100, 3)).astype(np.float32)
+        d_1d = np.random.random(100).astype(np.float32)
 
         cls.d = d
         cls.d_1d = d_1d
@@ -167,7 +166,7 @@ class TestDataInMemory(unittest.TestCase):
     def test_chunksize(self):
         data = np.random.randn(200, 2)
         cs = 100
-        source = pyemma.coordinates.source(data, chunk_size=cs)
+        source = pyemma.coordinates.source(data, chunksize=cs)
         source.chunksize = 100
         for i, ch in source.iterator():
             assert ch.shape[0] <= cs, ch.shape
@@ -205,7 +204,8 @@ class TestDataInMemory(unittest.TestCase):
         for idx, (traj, input_traj) in enumerate(zip(trajs, data)):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(), err_msg="failed for traj=%s"%idx)
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(),
+                                    err_msg="failed for traj=%s"%idx)
 
         # lagged data
         for idx, (traj, input_traj) in enumerate(zip(lagged_trajs, data)):
@@ -253,7 +253,7 @@ class TestDataInMemory(unittest.TestCase):
                                     err_msg="failed for traj=%s" % idx)
 
     def test_lagged_stridden_access(self):
-        data = np.random.random((1000, 2))
+        data = np.random.random((1000, 2)).astype(np.float32)
         reader = DataInMemory(data)
         strides = [2, 3, 5, 7, 15]
         lags = [1, 3, 7, 10, 30]
@@ -270,6 +270,17 @@ class TestDataInMemory(unittest.TestCase):
         cols=(2, 0)
         for x in reader.iterator(chunk=0, return_trajindex=False, cols=cols):
             np.testing.assert_equal(x, self.d[:, cols])
+
+    def test_exception_getoutput_invalid_data(self):
+        """ensure we get a proper exception if invalid data is contained in the stream"""
+        from pyemma.util.contexts import settings
+        data = np.ones(10)
+        data[-1] = np.nan
+        reader = pyemma.coordinates.source(data)
+        from pyemma.coordinates.data._base.datasource import InvalidDataInStreamException
+        with settings(coordinates_check_output=True), self.assertRaises(InvalidDataInStreamException):
+            reader.get_output()
+
 
 if __name__ == "__main__":
     unittest.main()

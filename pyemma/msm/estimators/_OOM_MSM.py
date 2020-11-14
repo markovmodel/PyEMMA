@@ -1,8 +1,25 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2014-2019 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
 from pyemma.util.linalg import _sort_by_norm
-import msmtools.estimation as me
 
 __all__ = ['bootstrapping_count_matrix', 'bootstrapping_dtrajs', 'twostep_count_matrix', 'rank_decision',
            'oom_components', 'equilibrium_transition_matrix']
@@ -213,6 +230,7 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     l : ndarray(M,)
         eigenvalues from OOM
     """
+    import msmtools.estimation as me
     # Decompose count matrix by SVD:
     if lcc is not None:
         Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
@@ -287,6 +305,8 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True, return_lcc=
     lcc : ndarray(M,)
         the largest connected set of the transition matrix.
     """
+    import msmtools.estimation as me
+
     # Compute equilibrium transition matrix:
     Ct_Eq = np.einsum('j,jkl,lmn,n->km', omega, Xi, Xi, sigma)
     # Remove negative entries:

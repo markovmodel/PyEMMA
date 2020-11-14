@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import unittest
 
 
@@ -111,6 +110,24 @@ class TestTRAMexceptions(unittest.TestCase):
         tram = pyemma.thermo.TRAM(lag=1)
         with self.assertRaises(AssertionError):
             tram.estimate(([ttraj], [dtraj], [btraj]))
+
+
+class TestTRAMConnectedSet(unittest.TestCase):
+    def test_TRAM_connected_set(self):
+        dtrajs = [np.array([3, 0, 1, 0, 1]), np.array([3, 1, 2, 1, 2])]
+        ttrajs = [np.array([0, 0, 0, 0, 0]), np.array([1, 1, 1, 1, 1])]
+        btrajs = [np.zeros((5, 2)), np.zeros((5, 2))]
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, connectivity='reversible_pathways')
+        tram.estimate((ttrajs, dtrajs, btrajs))
+        np.testing.assert_allclose(tram.active_set, [0, 1, 2])
+        np.testing.assert_allclose(tram.models[0].active_set, [0, 1])
+        np.testing.assert_allclose(tram.models[1].active_set, [1, 2])
+        np.testing.assert_allclose(tram.stationary_distribution, np.ones(3)/3)
+        np.testing.assert_allclose(tram.stationary_distribution_full_state, np.array([1., 1., 1., 0.])/3)
+        np.testing.assert_allclose(tram.models[0].stationary_distribution, np.array([0.5, 0.5]))
+        np.testing.assert_allclose(tram.models[0].stationary_distribution_full_state, np.array([0.5, 0.5, 0., 0.]))
+        np.testing.assert_allclose(tram.models[1].stationary_distribution, np.array([0.5, 0.5]))
+        np.testing.assert_allclose(tram.models[1].stationary_distribution_full_state, np.array([0., 0.5, 0.5, 0.]))
 
 
 class TestTRAMwith5StateDTRAMModel(unittest.TestCase):

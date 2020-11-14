@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
 
 import functools
 import numbers
@@ -106,6 +105,9 @@ class DataInMemory(DataSource, SerializableMixIn):
 
         self.data.append(array)
 
+    def output_type(self):
+        return self.data[0].dtype
+
     def _set_dimensions_and_lenghts(self):
         # number of trajectories/data sets
         self._ntraj = len(self.data)
@@ -140,12 +142,15 @@ class DataInMemory(DataSource, SerializableMixIn):
         return cls(data)
 
     def describe(self):
-        return "[DataInMemory array shapes: %s]" % [np.shape(x) for x in self.data]
+        return "DataInMemory(data={data}, chunksize={cs})".format(data=self.data, cs=self.chunksize)
 
     def __str__(self):
         return self.describe()
 
     __repr__ = __str__
+
+    def __reduce__(self):
+        return DataInMemory, (self.data, self.chunksize)
 
 
 class DataInMemoryCuboidRandomAccessStrategy(RandomAccessStrategy):
@@ -240,29 +245,14 @@ class DataInMemoryLinearItrajRandomAccessStrategy(DataInMemoryCuboidRandomAccess
 
 class DataInMemoryIterator(DataSourceIterator):
 
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
-        super(DataInMemoryIterator, self).__init__(data_source, skip, chunk,
-                                                   stride, return_trajindex, cols)
-        self._selected_itraj = -1
-        self._select_file(0)
-
     def close(self):
         pass
 
+    @DataSourceIterator._select_file_guard
     def _select_file(self, itraj):
-        if itraj != self._selected_itraj:
-            self._first_file_selected = True
-            self._itraj = itraj
-            self._selected_itraj = self._itraj
-            self._t = 0
+        pass
 
     def _next_chunk_impl(self, data):
-        if self._itraj >= self._data_source.ntraj:
-            self.close()
-            raise StopIteration()
-
-        traj_len = self._data_source.trajectory_length(self._itraj)
-
         # only apply _skip at the beginning of each trajectory
         skip = self.skip if self._t == 0 else 0
 
@@ -270,51 +260,21 @@ class DataInMemoryIterator(DataSourceIterator):
         if self.chunksize == 0:
             if not self.uniform_stride:
                 chunk = data[self.ra_indices_for_traj(self._itraj)]
-                self._itraj += 1
-                # skip trajs which are not included in stride
-                while self._itraj not in self.traj_keys and self._itraj < self.number_of_trajectories():
-                    self._itraj += 1
             else:
                 chunk = data[skip::self.stride]
-                self._itraj += 1
-            self._select_file(self._itraj)
-            return chunk
         # chunked mode
         else:
             if not self.uniform_stride:
-                random_access_chunk = data[
+                chunk = data[
                     self.ra_indices_for_traj(self._itraj)[self._t:min(
                             self._t + self.chunksize, self.ra_trajectory_length(self._itraj)
                     )]
                 ]
-                self._t += self.chunksize
-                if self._t >= self.ra_trajectory_length(self._itraj):
-                    self._itraj += 1
-                    self._t = 0
-
-                # skip trajs which are not included in stride
-                while (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
-                        and self._itraj < self.number_of_trajectories():
-                    self._itraj += 1
-                    self._t = 0
-
-                self._select_file(self._itraj)
-                return random_access_chunk
             else:
-                upper_bound = min(skip + self._t + self.chunksize * self.stride, traj_len)
-                slice_x = slice(skip + self._t, upper_bound, self.stride)
+                t_next = self._t_abs + self.chunksize * self.stride
+                slice_x = slice(self._t_abs, t_next, self.stride)
                 chunk = data[slice_x]
-
-                self._t = upper_bound
-
-                if upper_bound >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
-                    self._select_file(self._itraj)
-
-                return chunk
+        return chunk
 
     def _next_chunk(self):
-        if self._itraj >= self.number_of_trajectories():
-            raise StopIteration()
         return self._next_chunk_impl(self._data_source.data[self._itraj])

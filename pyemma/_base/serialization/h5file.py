@@ -26,22 +26,41 @@ __author__ = 'marscher'
 logger = logging.getLogger(__name__)
 
 
-class H5Wrapper(object):
+class H5File(object):
     stored_attributes = ('created',
                          'created_readable',
                          'class_str',
                          'class_repr',
                          'saved_streaming_chain',
-                         #'model',
                          'pyemma_version',
                          'digest',
                          )
 
-    def __init__(self, file_name: str, model_name=None, mode=None):
+    def __init__(self, file_name, model_name=None, mode='r'):
         import h5py
         self._file = h5py.File(file_name, mode=mode)
         self._parent = self._file.require_group('pyemma')
         self._current_model_group = model_name
+
+    def rename(self, old, new, overwrite=False):
+        if not old in self._parent:
+            raise KeyError('model "{}" not present'.format(old))
+
+        if new in self._parent and not overwrite:
+            raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
+                               ' or use a different name/file.'.format(name=new))
+
+        self._parent[new] = self._parent[old]
+        del self._parent[old]
+        self._current_model_group = new
+
+    def delete(self, name):
+        """ deletes model with given name """
+        if name not in self._parent:
+            raise KeyError('model "{}" not present'.format(name))
+        del self._parent[name]
+        if self._current_model_group == name:
+            self._current_model_group = None
 
     def select_model(self, name):
         """ choose an existing model """
@@ -53,12 +72,12 @@ class H5Wrapper(object):
         # used during saving.
         if name in self._parent:
             if overwrite:
-                logger.info('overwriting model "%s" in file %s', name, self._file.name)
+                logger.info('overwriting model "%s" in file %s', name, self._file.filename)
                 self.__group = self._parent[name]
                 del self._current_model_group
             else:
                 raise RuntimeError('model "{name}" already exists. Either use overwrite=True,'
-                                   ' or use a different name/file.')
+                                   ' or use a different name/file.'.format(name=name))
         self._current_model_group = name
 
     @property
@@ -66,14 +85,18 @@ class H5Wrapper(object):
         return self.__group
 
     @_current_model_group.setter
-    def _current_model_group(self, model_name: str):
+    def _current_model_group(self, model_name):
         if model_name is None:
             self.__group = None
         else:
             if model_name in self._parent and \
-                    not all(attr in self._parent[model_name].attrs for attr in H5Wrapper.stored_attributes):
+                    not all(attr in self._parent[model_name].attrs for attr in H5File.stored_attributes):
                 raise ValueError('already saved model does not contain desired attributes: {}. Contains only: {}'
-                                 .format(H5Wrapper.stored_attributes, list(self._parent[model_name].attrs)))
+                                 .format(H5File.stored_attributes, list(self._parent[model_name].attrs)))
+
+            # not existent and read only
+            if model_name not in self._parent and self._file.mode == 'r':
+                raise ValueError('model_name "{n}" not found in file {f}'.format(n=model_name, f=self._file.filename))
             self.__group = self._parent.require_group(model_name)
 
     @_current_model_group.deleter
@@ -88,7 +111,7 @@ class H5Wrapper(object):
     def model(self):
         # restore pickled object.
         g = self._current_model_group
-        inp = g['model'].value
+        inp = g['model'][()]
         from .pickle_extensions import HDF5PersistentUnpickler
         from io import BytesIO
         file = BytesIO(inp)
@@ -151,7 +174,7 @@ class H5Wrapper(object):
         attrs = self._current_model_group.attrs
         model = np.void(flat)
         # integrity check
-        attrs['digest'] = H5Wrapper._hash(attrs, flat)
+        attrs['digest'] = H5File._hash(attrs, flat)
         self._current_model_group['model'] = model
 
     @property
@@ -165,7 +188,7 @@ class H5Wrapper(object):
         """
         f = self._parent
         return {name: {a: f[name].attrs[a]
-                       for a in H5Wrapper.stored_attributes if a != 'model'}
+                       for a in H5File.stored_attributes}
                 for name in f.keys()}
 
     @staticmethod
@@ -174,7 +197,7 @@ class H5Wrapper(object):
         import hashlib
         digest = hashlib.sha256()
         digest.update(model)
-        for attr in H5Wrapper.stored_attributes:
+        for attr in H5File.stored_attributes:
             if attr == 'digest' or attr == 'saved_streaming_chain':
                 continue
             value = attributes[attr]
@@ -203,7 +226,7 @@ class H5Wrapper(object):
         return self._current_model_group.attrs['created_readable']
 
     @created_readable.setter
-    def created_readable(self, value:str):
+    def created_readable(self, value):
         self._current_model_group.attrs['created_readable'] = value
 
     @property
@@ -211,7 +234,7 @@ class H5Wrapper(object):
         return self._current_model_group.attrs['class_str']
 
     @class_str.setter
-    def class_str(self, value:str):
+    def class_str(self, value):
         self._current_model_group.attrs['class_str'] = value
 
     @property
@@ -219,7 +242,7 @@ class H5Wrapper(object):
         return self._current_model_group.attrs['class_repr']
 
     @class_repr.setter
-    def class_repr(self, value:str):
+    def class_repr(self, value):
         self._current_model_group.attrs['class_repr'] = value
 
     @property
@@ -227,7 +250,7 @@ class H5Wrapper(object):
         return self._current_model_group.attrs['saved_streaming_chain']
 
     @save_streaming_chain.setter
-    def save_streaming_chain(self, value:bool):
+    def save_streaming_chain(self, value):
         self._current_model_group.attrs['saved_streaming_chain'] = value
 
     @property
@@ -235,7 +258,7 @@ class H5Wrapper(object):
         return self._current_model_group.attrs['pyemma_version']
 
     @pyemma_version.setter
-    def pyemma_version(self, value:str):
+    def pyemma_version(self, value):
         self._current_model_group.attrs['pyemma_version'] = value
 
     def __enter__(self):

@@ -19,9 +19,6 @@ Created on 11.06.2015
 
 @author: marscher
 '''
-
-from __future__ import absolute_import, print_function
-
 import configparser
 import os
 import sys
@@ -68,7 +65,7 @@ class TestConfig(unittest.TestCase):
             self.config_inst.cfg_dir = '/dev/null'
         self.assertIn("no valid directory", str(cm.exception))
 
-    @unittest.skipIf(sys.platform == 'win32', 'unix based test')
+    @unittest.skipIf(sys.platform == 'win32' or os.getenv('CIRCLECI'), 'unix based test, known to fail inside docker')
     def test_non_writeable_cfg_dir(self):
         with TemporaryDirectory() as tmp:
             # make cfg dir non-writeable

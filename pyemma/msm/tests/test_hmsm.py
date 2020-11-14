@@ -21,7 +21,6 @@ Test MLHMM.
 
 """
 
-from __future__ import absolute_import
 
 import unittest
 import numpy as np
@@ -431,11 +430,33 @@ class TestMLHMM(unittest.TestCase):
         assert np.abs(k2 - ksum) < 1e-4
 
     def test_cktest_simple(self):
-        import pyemma
         dtraj = np.random.randint(0, 10, 100)
-        oom = pyemma.msm.estimate_markov_model(dtraj, 1)
+        oom = msm.estimate_markov_model(dtraj, 1)
         hmm = oom.coarse_grain(2)
         hmm.cktest()
+
+    def test_submodel_simple(self):
+        # sanity check for submodel;
+        # call should not alter self
+        from copy import deepcopy
+        # dtrj = np.random.randint(0, 2, size=100)
+        # dtrj[np.random.randint(0, dtrj.shape[0], 3)] = 2
+        # hard-coded due to stochastic failures
+        dtrj = [1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0,
+                0, 2, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0,
+                1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 2, 0, 0, 1, 1, 2, 0, 1, 1, 1,
+                0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0]
+
+        h = msm.estimate_hidden_markov_model(dtrj, 3, 2)
+        h_original = deepcopy(h)
+
+        hs = h.submodel_largest(mincount_connectivity=5)
+
+        self.assertTrue(h == h_original)
+
+        self.assertEqual(hs.timescales().shape[0], 1)
+        self.assertEqual(hs.pi.shape[0], 2)
+        self.assertEqual(hs.transition_matrix.shape, (2, 2))
 
 
 class TestHMMSpecialCases(unittest.TestCase):

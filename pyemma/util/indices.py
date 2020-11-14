@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import numpy as np
 
 
@@ -44,7 +43,7 @@ def combinations(seq, k):
      [1 2]]
     """
     from itertools import combinations as _combinations, chain
-    from scipy.misc import comb
+    from scipy.special import comb
 
     count = comb(len(seq), k, exact=True)
     res = np.fromiter(chain.from_iterable(_combinations(seq, k)),

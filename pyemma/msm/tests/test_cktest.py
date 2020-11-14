@@ -23,10 +23,10 @@ r"""Unit test for Chapman-Kolmogorov-Test module
 
 """
 
-from __future__ import absolute_import
 import unittest
 
 import numpy as np
+import pyemma
 
 from pyemma import msm
 from msmtools.generation import generate_traj
@@ -38,6 +38,7 @@ from pyemma.msm import estimate_markov_model
 
 import sys
 on_win = sys.platform == 'win32'
+py3 = sys.version_info[0] == 3
 
 
 class TestCK_MSM(unittest.TestCase):
@@ -189,9 +190,17 @@ class TestCK_AllEstimators(unittest.TestCase):
         import pyemma.datasets
         cls.double_well_data = pyemma.datasets.load_2well_discrete()
 
+    def tearDown(self):
+        if py3:
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False) as fh:
+                self.ck.save(fh.name)
+                restored = pyemma.load(fh.name)
+                assert hasattr(restored, 'has_errors')
+
     def test_ck_msm(self):
         MLMSM = msm.estimate_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40)
-        ck = MLMSM.cktest(2, mlags=[0,1,10])
+        self.ck = MLMSM.cktest(2, mlags=[0,1,10])
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
                            [[ 0.89806859,  0.10193141],
@@ -205,18 +214,18 @@ class TestCK_AllEstimators(unittest.TestCase):
                             [[ 0.62613723,  0.37386277],
                              [ 0.3669059,   0.6330941 ]]])
         # rough agreement with MLE
-        assert np.allclose(ck.estimates, estref, rtol=0.1, atol=10.0)
-        assert ck.estimates_conf[0] is None
-        assert ck.estimates_conf[1] is None
-        assert np.allclose(ck.predictions, predref, rtol=0.1, atol=10.0)
-        assert ck.predictions_conf[0] is None
-        assert ck.predictions_conf[1] is None
+        assert np.allclose(self.ck.estimates, estref, rtol=0.1, atol=10.0)
+        assert self.ck.estimates_conf[0] is None
+        assert self.ck.estimates_conf[1] is None
+        assert np.allclose(self.ck.predictions, predref, rtol=0.1, atol=10.0)
+        assert self.ck.predictions_conf[0] is None
+        assert self.ck.predictions_conf[1] is None
 
     def test_its_bmsm(self):
         BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40, reversible=True)
         # also ensure that reversible bit does not flip during cktest
         assert BMSM.reversible
-        ck = BMSM.cktest(2, mlags=[0,1,10])
+        self.ck = BMSM.cktest(2, mlags=[0,1,10], n_jobs=2)
         assert BMSM.reversible
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
@@ -243,16 +252,16 @@ class TestCK_AllEstimators(unittest.TestCase):
                              [[ 0.64392557,  0.39258944],
                               [ 0.38762444,  0.65176265]]])
         # rough agreement
-        assert np.allclose(ck.estimates, estref, rtol=0.1, atol=10.0)
-        assert ck.estimates_conf[0] is None
-        assert ck.estimates_conf[1] is None
-        assert np.allclose(ck.predictions, predref, rtol=0.1, atol=10.0)
-        assert np.allclose(ck.predictions[0], predLref, rtol=0.1, atol=10.0)
-        assert np.allclose(ck.predictions[1], predRref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.estimates, estref, rtol=0.1, atol=10.0)
+        assert self.ck.estimates_conf[0] is None
+        assert self.ck.estimates_conf[1] is None
+        assert np.allclose(self.ck.predictions, predref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.predictions[0], predLref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.predictions[1], predRref, rtol=0.1, atol=10.0)
 
     def test_its_hmsm(self):
         MLHMM = msm.estimate_hidden_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 2, 10)
-        ck = MLHMM.cktest(mlags=[0,1,10])
+        self.ck = MLHMM.cktest(mlags=[0,1,10])
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
                            [[ 0.98515058,  0.01484942],
@@ -266,16 +275,16 @@ class TestCK_AllEstimators(unittest.TestCase):
                             [[ 0.86961812,  0.13038188],
                              [ 0.12668553,  0.87331447]]])
         # rough agreement with MLE
-        assert np.allclose(ck.estimates, estref, rtol=0.1, atol=10.0)
-        assert ck.estimates_conf[0] is None
-        assert ck.estimates_conf[1] is None
-        assert np.allclose(ck.predictions, predref, rtol=0.1, atol=10.0)
-        assert ck.predictions_conf[0] is None
-        assert ck.predictions_conf[1] is None
+        assert np.allclose(self.ck.estimates, estref, rtol=0.1, atol=10.0)
+        assert self.ck.estimates_conf[0] is None
+        assert self.ck.estimates_conf[1] is None
+        assert np.allclose(self.ck.predictions, predref, rtol=0.1, atol=10.0)
+        assert self.ck.predictions_conf[0] is None
+        assert self.ck.predictions_conf[1] is None
 
     def test_its_bhmm(self):
         BHMM = msm.bayesian_hidden_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 2, 10)
-        ck = BHMM.cktest(mlags=[0,1,10])
+        self.ck = BHMM.cktest(mlags=[0,1,10])
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
                            [[ 0.98497185,  0.01502815],
@@ -301,12 +310,12 @@ class TestCK_AllEstimators(unittest.TestCase):
                              [[ 0.8865478 ,  0.14905352],
                               [ 0.14860461,  0.89064809]]])
         # rough agreement
-        assert np.allclose(ck.estimates, estref, rtol=0.1, atol=10.0)
-        assert ck.estimates_conf[0] is None
-        assert ck.estimates_conf[1] is None
-        assert np.allclose(ck.predictions, predref, rtol=0.1, atol=10.0)
-        assert np.allclose(ck.predictions[0], predLref, rtol=0.1, atol=10.0)
-        assert np.allclose(ck.predictions[1], predRref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.estimates, estref, rtol=0.1, atol=10.0)
+        assert self.ck.estimates_conf[0] is None
+        assert self.ck.estimates_conf[1] is None
+        assert np.allclose(self.ck.predictions, predref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.predictions[0], predLref, rtol=0.1, atol=10.0)
+        assert np.allclose(self.ck.predictions[1], predRref, rtol=0.1, atol=10.0)
 
 
 if __name__ == "__main__":
