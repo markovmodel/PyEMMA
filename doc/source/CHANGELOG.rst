@@ -12,7 +12,7 @@ Changelog
 
 **Fixes**:
 - coordinates: fixed a bug in description of sidechain torsion featurizer. :pr:`1451`
-
+- serialization: fixed bug in function which checked for h5 serialization options.
 
 
 2.5.7 (9-24-2019)
