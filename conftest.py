@@ -25,7 +25,7 @@ def add_np():
         pass
 
 
-@pytest.fixture('session')
+@pytest.fixture(scope='session')
 def session_fixture():
     setup_pyemma_config()
     add_np()
