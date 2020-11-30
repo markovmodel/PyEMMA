@@ -126,7 +126,7 @@ class TestSource(unittest.TestCase):
             import h5py
             from pyemma.coordinates.data.h5_reader import H5Reader
             plain_h5_file = os.path.join(td, 'f.h5')
-            with h5py.File(plain_h5_file) as fh:
+            with h5py.File(plain_h5_file, mode='a') as fh:
                 fh.create_dataset('test', data=np.random.random((100, 3)))
             r = api.source(plain_h5_file)
             self.assertIsInstance(r, H5Reader)

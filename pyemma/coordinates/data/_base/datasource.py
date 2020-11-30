@@ -487,7 +487,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
         pg = ProgressReporter()
         it = self.iterator(stride=stride, chunk=chunksize, return_trajindex=True)
         pg.register(it.n_chunks, 'writing output')
-        with h5py.File(filename) as f, it, pg.context():
+        with h5py.File(filename, mode='a') as f, it, pg.context():
             if group not in f:
                 g = f.create_group(group)
             elif group == '/':  # root always exists.

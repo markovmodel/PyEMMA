@@ -207,19 +207,21 @@ class TestCoordinatesIterator(unittest.TestCase):
         import tempfile
         out = tempfile.mktemp()
         group = '/test'
+
         def perform(chunksize, stride):
             try:
                 transformed_output = tica.get_output(chunk=chunksize, stride=stride)
                 tica.write_to_hdf5(out, group=group, chunksize=chunksize, stride=stride)
-
+                assert os.path.exists(out), "File did not get created"
                 import h5py
-                with h5py.File(out) as f:
+                with h5py.File(out, mode='r') as f:
                     assert len(f[group]) == len(data)
                     for (itraj, actual), desired in zip(f[group].items(), transformed_output):
                         np.testing.assert_equal(actual, desired, err_msg='failed for cs=%s, stride=%s'
                                                                          %(chunksize, stride))
             finally:
-                os.remove(out)
+                if os.path.exists(out):
+                    os.remove(out)
 
         for cs in [0, 1, 3, 10, 42, 50]:
             for s in [1, 2, 3, 10]:
@@ -243,7 +245,7 @@ class TestCoordinatesIterator(unittest.TestCase):
 
             os.remove(out)
             import h5py
-            with h5py.File(out) as f:
+            with h5py.File(out, mode='a') as f:
                 f.create_group('empty').create_dataset('0000', shape=(1,1))
             with self.assertRaises(ValueError):
                 tica.write_to_hdf5(out, group='empty')
