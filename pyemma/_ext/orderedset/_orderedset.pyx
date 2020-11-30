@@ -2,7 +2,7 @@
 
 # cython: embedsignature=True
 import sys
-from collections import Set, MutableSet, Iterable
+from collections.abc import Set, MutableSet, Iterable
 
 if sys.version_info[0] == 2:
     from itertools import izip

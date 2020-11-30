@@ -172,7 +172,7 @@ class H5Reader(DataSource, SerializableMixIn):
         import h5py
         filename, path = self._itraj_dataset_mapping[itraj]
         self.logger.debug('load file %s with path %s', filename, path)
-        file = h5py.File(filename, 'r')
+        file = h5py.File(filename, mode='r')
         ds = file[path]
         return ds
 
