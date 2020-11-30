@@ -20,6 +20,12 @@ from pickle import Pickler, Unpickler, UnpicklingError
 
 import numpy as np
 import logging
+
+try:
+    import tables
+except:
+    pass
+
 logger = logging.getLogger(__name__)
 
 __author__ = 'marscher'
