@@ -18,7 +18,7 @@ Parameter estimation tools
 #         Olivier Grisel <olivier.grisel@ensta.org>
 # License: BSD 3 clause
 
-from collections import Mapping
+from collections.abc import Mapping
 from functools import partial
 from itertools import product
 from functools import reduce
