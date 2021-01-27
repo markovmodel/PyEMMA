@@ -71,15 +71,15 @@ class TestKmeans(unittest.TestCase):
         for param in grid:
             init_strategy = param['init_strategy']
             fixed_seed = param['fixed_seed']
-            kmeans = cluster_kmeans(X, k=k, init_strategy=init_strategy, n_jobs=0, fixed_seed=fixed_seed)
+            kmeans = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=1)
             cc = kmeans.clustercenters
             self.assertTrue(np.all(np.isfinite(cc)), "cluster centers borked for strat %s" % init_strategy)
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
             assert (np.any((cc > -1.0) * (cc < 1.0))), "failed for init_strategy=%s" % init_strategy
             assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
 
-            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)
-            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=0)
+            km1 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=1)
+            km2 = cluster_kmeans(X, k=k, init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=1)
             self.assertEqual(len(km1.clustercenters), k)
             self.assertEqual(len(km2.clustercenters), k)
             self.assertEqual(km1.fixed_seed, km2.fixed_seed)
@@ -114,7 +114,7 @@ class TestKmeans(unittest.TestCase):
         while repeat and it < 3:
             for strat in ('uniform', 'kmeans++'):
                 seed = random.randint(0, 2**32-1)
-                cl_serial = cluster_kmeans(data, k=k, n_jobs=0, fixed_seed=seed, max_iter=max_iter, init_strategy=strat)
+                cl_serial = cluster_kmeans(data, k=k, n_jobs=1, fixed_seed=seed, max_iter=max_iter, init_strategy=strat)
                 cl_parallel = cluster_kmeans(data, k=k, n_jobs=2, fixed_seed=seed, max_iter=max_iter, init_strategy=strat)
                 try:
                     np.testing.assert_allclose(cl_serial.clustercenters, cl_parallel.clustercenters, atol=1e-4)
