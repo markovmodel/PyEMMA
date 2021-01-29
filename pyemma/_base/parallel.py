@@ -3,7 +3,10 @@ def get_n_jobs(logger=None):
 
     def _from_hardware():
         import psutil
-        return psutil.cpu_count(logical=False)
+        count = psutil.cpu_count(logical=True)
+        if count is None:  # this might happen if psutil cannot determine cpu count
+            count = 1
+        return count
 
     def _from_env(var):
         import os
@@ -59,6 +62,12 @@ class NJobsMixIn(object):
 
     @n_jobs.setter
     def n_jobs(self, val):
+        if val is not None and val == 0:
+            raise ValueError("n_jobs must not be 0.")
+        elif val is not None and val < 0:
+            import warnings
+            warnings.warn("Negative n_jobs will likely raise in future versions, use None instead.", DeprecationWarning)
+            val = None
         if val is None:
             val = get_n_jobs(logger=getattr(self, 'logger'))
         self._n_jobs = int(val)

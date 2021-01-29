@@ -5,7 +5,6 @@ Changelog
 -----------------
 
 **New features**:
-
 - coordinates: added contact counting for GroupMinDistanceFeature and ResidueMinDistanceFeature. :pr:`1441`
 - plots: added multi cktest support to plot_cktest function. :pr:`1450`
 
@@ -13,6 +12,8 @@ Changelog
 **Fixes**:
 - coordinates: fixed a bug in description of sidechain torsion featurizer. :pr:`1451`
 - serialization: fixed bug in function which checked for h5 serialization options.
+- :code:`n_jobs` is handled consistently, allows only for :code:`None` or positive integers and when
+  determined from hardware, falls back to logical number of cpus. :pr:`1488`
 
 
 2.5.7 (9-24-2019)
