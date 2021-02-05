@@ -287,7 +287,7 @@ def source(inp, features=None, top=None, chunksize=None, **kw):
            (read-only).
         8. List of tabulated ASCII files of shape (T, N).
         9. Nested lists (1 level) like), eg.:
-                [['traj1_0.xtc', 'traj1_1.xtc'], 'traj2_full.xtc'], ['traj3_0.xtc, ...]]
+                [['traj1_0.xtc', 'traj1_1.xtc'], ['traj2_full.xtc'], ['traj3_0.xtc, ...]]
            the grouped fragments will be treated as a joint trajectory.
 
     features : MDFeaturizer, optional, default = None
