@@ -552,6 +552,11 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
             return confidence_interval(self._its_samples[:, self._successful_lag_indexes, process], conf=conf)
 
     @property
+    def timescales_samples(self):
+        r""" Timescales obtained from, e.g., Bayesian sampling. Might be None. """
+        return self._its_samples
+
+    @property
     def estimators(self):
         r"""Returns the estimators for all lagtimes.
 
