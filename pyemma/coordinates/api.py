@@ -239,7 +239,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunksize=None, **kw):
     if isinstance(trajfiles, _string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, str)) for item in trajfiles)
-                 or len(trajfiles) is 0)):
+                 or len(trajfiles) == 0)):
         reader = create_file_reader(trajfiles, top, features, chunksize=cs, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
@@ -381,11 +381,11 @@ def source(inp, features=None, top=None, chunksize=None, **kw):
     # check: if single string create a one-element list
     if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) == 0)):
         reader = create_file_reader(inp, top, features, chunksize=cs, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
-                                          and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
+                                          and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) == 0)):
         # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.

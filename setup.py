@@ -301,6 +301,7 @@ metadata = dict(
         'pyyaml',
         'scipy>=0.11',
         'tqdm>=4.23',
+        # 'deeptime @ git+https://git@github.com/deeptime-ml/deeptime.git@main#egg=deeptime'  # for re-integration purposes
     ],
     zip_safe=False,
     entry_points={

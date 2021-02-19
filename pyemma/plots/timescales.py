@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 import numpy as _np
-from pyemma.util.types import  is_iterable_of_int as _is_iterable_of_int, is_int as _is_int
+
+from pyemma.util.statistics import confidence_interval as _conf
+from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int, is_int as _is_int
 
 __author__ = 'noe'
 
@@ -32,8 +32,9 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     Parameters
     ----------
     ITS : implied timescales object.
-        Object whose data will be plotted. Must provide the functions: get_timescales() and get_timescales(i) where i is the
-        the property samples_available
+        Object whose data will be plotted. Should be of type :class:`ImpliedTimescales <pyemma.msm.ImpliedTimescales>`
+        or a 3-tuple with: 1d array of lagtimes, (lagtimes, processes) array of timescales,
+        optionally (lagtimes, processes, samples) array of timescales of samples.
     ax : matplotlib Axes object, optional, default = None
         the axes to plot to. When set to None the default Axes object will be used.
     outfile : str, optional, default = None
@@ -76,12 +77,24 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     ax : Axes object containing the plot
 
     """
+    if isinstance(ITS, tuple):
+        assert len(ITS) in (2, 3)
+        lags = _np.asarray(ITS[0])
+        timescales = _np.asarray(ITS[1])
+        timescales_samples = _np.asarray(ITS[2]) if len(ITS) == 3 and ITS[2] is not None else None
+        n_timescales = timescales.shape[1]
+        samples_available = timescales_samples is not None
+    else:
+        lags = ITS.lagtimes
+        n_timescales = ITS.number_of_timescales
+        timescales = ITS.get_timescales()
+        samples_available = ITS.samples_available
+        timescales_samples = ITS.timescales_samples
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
         ax = _plt.gca()
     colors = ['blue', 'red', 'green', 'cyan', 'purple', 'orange', 'violet']
-    lags = ITS.lagtimes
     xmax = _np.max(lags)
     srt = _np.argsort(lags)
     # Check the processes to be shown
@@ -91,18 +104,18 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
                 'optional arguments nits and process are mutually exclusive:', nits, process)
         if not _is_iterable_of_int(process):
             raise ValueError('process has to be an iterable of integers')
-        if _np.max(process)+1 > ITS.number_of_timescales:
+        if _np.max(process)+1 > n_timescales:
             raise ValueError(
                 'requested process %u, whereas ITS only contains %u timescales' % (
-                    _np.max(process), ITS.number_of_timescales))
+                    _np.max(process), n_timescales))
         # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
         its_idx = process
     else:
         if not _is_int(nits):
             raise TypeError('nits is not an integer, ',nits)
         if nits == -1:
-            nits = ITS.number_of_timescales
-        its_idx = _np.arange(ITS.number_of_timescales)[:nits]
+            nits = n_timescales
+        its_idx = _np.arange(n_timescales)[:nits]
     # Check units and dt for user error.
     if isinstance(units, list) and len(units) != 2:
         raise TypeError("If units is a list, len(units) has to be = 2")
@@ -119,16 +132,18 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         # plot estimate
         if show_mle:
             ax.plot(
-                lags[srt] * dt[0], ITS.get_timescales(process=i)[srt] * dt[1],
+                lags[srt] * dt[0], timescales[..., i][srt] * dt[1],
                 color=colors[i % len(colors)], **kwargs)
         # sample available?
-        if ITS.samples_available:# and ITS.sample_number_of_timescales > i):
+        if samples_available:# and ITS.sample_number_of_timescales > i):
             # plot sample mean
+            process_samples = timescales_samples[:, i, :]
             if show_mean:
+                sample_mean = _np.mean(process_samples, axis=0)
                 ax.plot(
-                    lags[srt] * dt[0], ITS.get_sample_mean(process=i)[srt] * dt[1], marker='o',
+                    lags[srt] * dt[0], sample_mean[srt] * dt[1], marker='o',
                     color=colors[i % len(colors)], linestyle='dashed')
-            (lconf, rconf) = ITS.get_sample_conf(confidence, i)
+            lconf, rconf = _conf(process_samples, conf=confidence)
             ax.fill_between(
                 lags[srt] * dt[0], lconf[srt] * dt[1], rconf[srt] * dt[1],
                 alpha=0.2, color=colors[i % len(colors)])
