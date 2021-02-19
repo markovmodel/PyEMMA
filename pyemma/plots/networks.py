@@ -544,7 +544,7 @@ def plot_flux(
     """
     from matplotlib import pylab as plt
     F = flux_scale * getattr(flux, attribute_to_plot)
-    c = flux.committor
+    c = flux.forward_committor
     if state_sizes is None:
         state_sizes = flux.stationary_distribution
     plot = NetworkPlot(F, pos=pos, xpos=c, ax=ax)
@@ -554,13 +554,13 @@ def plot_flux(
 
     if isinstance(state_labels, str) and state_labels == 'auto':
         # the first and last element correspond to A and B in ReactiveFlux
-        state_labels = _np.array([str(i) for i in range(flux.nstates)])
+        state_labels = _np.array([str(i) for i in range(flux.n_states)])
         state_labels[_np.array(flux.A)] = "A"
         state_labels[_np.array(flux.B)] = "B"
     elif isinstance(state_labels, (_np.ndarray, list, tuple)):
-        if len(state_labels) != flux.nstates:
+        if len(state_labels) != flux.n_states:
             raise ValueError("length of state_labels({}) has to match length of states({})."
-                             .format(len(state_labels), flux.nstates))
+                             .format(len(state_labels), flux.n_states))
 
     fig = plot.plot_network(
         state_sizes=state_sizes, state_scale=state_scale, state_colors=state_colors,

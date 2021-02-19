@@ -107,6 +107,7 @@ class ReactiveFlux(Model, SerializableMixIn):
         self._timeunit_model = TimeUnit(self._dt_model)
 
     @property
+    @alias('n_states')
     def nstates(self):
         r"""Returns the number of states.
 
