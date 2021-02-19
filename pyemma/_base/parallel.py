@@ -70,6 +70,4 @@ class NJobsMixIn(object):
             val = None
         if val is None:
             val = get_n_jobs(logger=getattr(self, 'logger'))
-        if val < 1:
-            raise ValueError("n_jobs must be positive or None, but was {}.".format(val))
         self._n_jobs = int(val)
