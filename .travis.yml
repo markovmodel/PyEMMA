@@ -18,14 +18,12 @@ env:
     - CONDA_BUILD=YES
   matrix:
     - CONDA_PY=3.6
-      CONDA_NPY=1.11
+      CONDA_NPY=1.14
     - CONDA_PY=3.7
       CONDA_NPY=1.17
 
 matrix:
   exclude:  # test only 3.8 on osx.
-    - env: CONDA_PY=3.5
-      os: osx
     - env: CONDA_PY=3.6
       os: osx
   include:  # test pip install

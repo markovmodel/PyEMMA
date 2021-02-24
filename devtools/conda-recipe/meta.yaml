@@ -53,6 +53,7 @@ requirements:
     - scipy
     - setuptools
     - tqdm
+    - deeptime
 
 test:
   source_files:
