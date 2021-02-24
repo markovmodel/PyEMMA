@@ -554,7 +554,7 @@ class ImpliedTimescales(Estimator, NJobsMixIn, SerializableMixIn):
     @property
     def timescales_samples(self):
         r""" Timescales obtained from, e.g., Bayesian sampling. Might be None. """
-        return self._its_samples.transpose(1, 2, 0) if self._its_samples is not None else None
+        return self._its_samples
 
     @property
     def estimators(self):

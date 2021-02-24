@@ -17,10 +17,10 @@ env:
     - MACOSX_DEPLOYMENT_TARGET=10.9
     - CONDA_BUILD=YES
   matrix:
-    - CONDA_PY=3.6
-      CONDA_NPY=1.14
-    - CONDA_PY=3.7
-      CONDA_NPY=1.17
+    - CONDA_PY='3.6'
+      CONDA_NPY='1.11'
+    - CONDA_PY='3.7'
+      CONDA_NPY='1.17'
 
 matrix:
   exclude:  # test only 3.8 on osx.
@@ -29,7 +29,7 @@ matrix:
   include:  # test pip install
     - env: CONDA_PY=3.7 CONDA_BUILD=NO python="3.7"
       os: linux
-      dist: xenial # You’ll need to add dist: xenial to use Python 3.7 and higher.
+      dist: bionic # You’ll need to add dist: bionic to use Python 3.7 and higher.
       language: python
       sudo: true
 
