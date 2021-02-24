@@ -31,7 +31,7 @@ from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
 
 import numpy as np
-
+import deeptime as dt
 
 __all__ = ['RegularSpaceClustering']
 
@@ -79,6 +79,10 @@ class RegularSpaceClustering(AbstractClustering):
 
         """
         super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
+
+        from ._ext import RMSDMetric
+        dt.clustering.metrics.register("minRMSD", RMSDMetric)
+
         self._converged = False
         self.set_params(dmin=dmin, metric=metric,
                         max_centers=max_centers, stride=stride, skip=skip)
@@ -133,16 +137,17 @@ class RegularSpaceClustering(AbstractClustering):
         # temporary list to store cluster centers
         clustercenters = []
         used_frames = 0
-        from ._ext import regspace
-        self._inst = regspace.Regspace_f(self.dmin, self.max_centers, self.metric, iterable.ndim)
+        regspace = dt.clustering.RegularSpace(dmin=self.dmin, max_centers=self.max_centers,
+                                              metric=self.metric, n_jobs=self.n_jobs)
+
+        # from ._ext import regspace
         it = iterable.iterator(return_trajindex=False, stride=self.stride,
                                chunk=self.chunksize, skip=self.skip)
         try:
             with it:
                 for X in it:
+                    regspace.partial_fit(X.astype(np.float32, order='C', copy=False), n_jobs=self.n_jobs)
                     used_frames += len(X)
-                    self._inst.cluster(X.astype(np.float32, order='C', copy=False),
-                                       clustercenters, self.n_jobs)
             self._converged = True
         except regspace.MaxCentersReachedException:
             self._converged = False
@@ -156,8 +161,16 @@ class RegularSpaceClustering(AbstractClustering):
             raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
         finally:
             # even if not converged, we store the found centers.
-            new_shape = (len(clustercenters), iterable.ndim)
-            clustercenters = np.array(clustercenters).reshape(new_shape)
+            model = regspace.fetch_model()
+            clustercenters = model.cluster_centers.squeeze().reshape(-1, iterable.ndim)
+            self._inst = dt.clustering.ClusterModel(clustercenters, metric=self.metric)
+            from types import MethodType
+
+            def _assign(self, data, _, n_jobs):
+                out = self.transform(data, n_jobs=n_jobs)
+                return out
+
+            self._inst.assign = MethodType(_assign, self._inst)
             self.update_model_params(clustercenters=clustercenters,
                                      n_clusters=len(clustercenters))
 

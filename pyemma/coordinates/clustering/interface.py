@@ -160,8 +160,8 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
         # for performance reasons we pre-center the cluster centers for minRMSD.
         if self.metric == 'minRMSD' and not self._precentered:
-            self.logger.debug("precentering cluster centers for minRMSD.")
-            self._inst.precenter_centers(self.clustercenters)
+            # self.logger.debug("precentering cluster centers for minRMSD.")
+            # self._inst.precenter_centers(self.clustercenters)
             self._precentered = True
 
         dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
@@ -279,7 +279,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
                 output_files.append(name)
         else:
             for i in range(len(self.dtrajs)):
-                if prefix is not '':
+                if prefix != '':
                     name = "%s_%i%s" % (prefix, i, extension)
                 else:
                     name = str(i) + extension

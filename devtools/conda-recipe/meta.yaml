@@ -35,6 +35,7 @@ requirements:
     - setuptools
     - pip
     - pybind11
+    - deeptime
 
   run:
     - bhmm >=0.6.3,<0.7
