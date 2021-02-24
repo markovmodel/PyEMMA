@@ -35,9 +35,10 @@ requirements:
     - setuptools
     - pip
     - pybind11
+    - deeptime
 
   run:
-    - bhmm >=0.6.3,<0.7
+    - bhmm >=0.6.3
     - decorator >=4.0.0
     - h5py
     - intel-openmp # [osx]
@@ -52,6 +53,7 @@ requirements:
     - scipy
     - setuptools
     - tqdm
+    - deeptime
 
 test:
   source_files:

@@ -81,6 +81,9 @@ def extensions():
     mdtraj_inc = mdtraj_capi()['include_dir']
     mdtraj_lib = mdtraj_capi()['lib_dir']
 
+    from deeptime import capi_includes
+    deeptime_inc = capi_includes(inc_clustering=True)
+
     lib_prefix = 'lib' if sys.platform.startswith('win') else ''
     common_cflags = ['-O3', ]
 
@@ -91,7 +94,7 @@ def extensions():
                       mdtraj_inc,
                       pybind_inc,
                       'pyemma/coordinates/clustering/include',
-                  ],
+                  ] + deeptime_inc,
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj_lib],
@@ -301,6 +304,7 @@ metadata = dict(
         'pyyaml',
         'scipy>=0.11',
         'tqdm>=4.23',
+        'deeptime'
         # 'deeptime @ git+https://git@github.com/deeptime-ml/deeptime.git@main#egg=deeptime'  # for re-integration purposes
     ],
     zip_safe=False,
