@@ -141,11 +141,9 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
             process_samples = timescales_samples[:, i, :].T
             if show_mean:
                 sample_mean = _np.mean(process_samples, axis=0)
-                print(sample_mean.shape)
                 ax.plot(
                     lags[srt] * dt[0], sample_mean[srt] * dt[1], marker='o',
                     color=colors[i % len(colors)], linestyle='dashed')
-            print(process_samples.shape)
             lconf, rconf = _conf(process_samples, conf=confidence)
             ax.fill_between(
                 lags[srt] * dt[0], lconf[srt] * dt[1], rconf[srt] * dt[1],
