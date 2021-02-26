@@ -90,6 +90,8 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         timescales = ITS.get_timescales()
         samples_available = ITS.samples_available
         timescales_samples = ITS.timescales_samples
+        if timescales_samples is not None:
+            timescales_samples = timescales_samples.transpose(1, 2, 0)
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
@@ -108,7 +110,8 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
             raise ValueError(
                 'requested process %u, whereas ITS only contains %u timescales' % (
                     _np.max(process), n_timescales))
-        # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
+        # Now that it's for sure that nits==-1,
+        # process is iter_of_ints, and the requested processes exist in its object:
         its_idx = process
     else:
         if not _is_int(nits):
@@ -126,8 +129,6 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         units = [units] * 2
     if isinstance(dt, (float, int)):
         dt = [dt] * 2
-    #ymin = min(_np.min(lags), _np.min(ITS.get_timescales()))
-    #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in its_idx:
         # plot estimate
         if show_mle:
@@ -135,14 +136,16 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
                 lags[srt] * dt[0], timescales[..., i][srt] * dt[1],
                 color=colors[i % len(colors)], **kwargs)
         # sample available?
-        if samples_available:# and ITS.sample_number_of_timescales > i):
+        if samples_available:
             # plot sample mean
-            process_samples = timescales_samples[:, i, :]
+            process_samples = timescales_samples[:, i, :].T
             if show_mean:
                 sample_mean = _np.mean(process_samples, axis=0)
+                print(sample_mean.shape)
                 ax.plot(
                     lags[srt] * dt[0], sample_mean[srt] * dt[1], marker='o',
                     color=colors[i % len(colors)], linestyle='dashed')
+            print(process_samples.shape)
             lconf, rconf = _conf(process_samples, conf=confidence)
             ax.fill_between(
                 lags[srt] * dt[0], lconf[srt] * dt[1], rconf[srt] * dt[1],
@@ -154,20 +157,17 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     # cutoff
     ax.plot(lags[srt] * dt[0], lags[srt] * dt[1], linewidth=2, color='black')
     ax.set_xlim([1.0 * dt[0], xmax * dt[0]])
-    #ax.set_ylim([ymin,ymax])
     ax.fill_between(
         lags[srt] * dt[0], ax.get_ylim()[0]*_np.ones(len(lags))*dt[1], lags[srt] * dt[1],
         alpha=0.5, color='grey')
     # formatting
     ax.set_xlabel('lag time / %s' % units[0])
     ax.set_ylabel('timescale / %s' % units[1])
-    if (xlog):
+    if xlog:
         ax.set_xscale('log')
-    if (ylog):
+    if ylog:
         ax.set_yscale('log')
     # show or save
-    # if outfile is None:
-    #    _plt.show()
     if outfile is not None:
         _plt.savefig(outfile)
     return ax
