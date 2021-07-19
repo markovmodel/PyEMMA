@@ -62,14 +62,12 @@ test:
   files:
     - matplotlibrc
   requires:
+    - scikit-learn
     - pytest
     - pytest-cov
-    - coverage
-    - pytest-faulthandler 
+    - pytest-faulthandler
+    - pytest-sugar
     - pytest-xdist
-    - scikit-learn
-    # https://github.com/Frozenball/pytest-sugar/issues/124
-    #- pytest-sugar
 
 about:
   home: http://emma-project.org
