@@ -237,7 +237,7 @@ class MDFeaturizer(SerializableMixIn, Loggable):
         """ensure pairs are valid (shapes, all atom indices available?, etc.)
         """
 
-        pair_inds = np.array(pair_inds).astype(dtype=np.int, casting='safe')
+        pair_inds = np.array(pair_inds).astype(dtype=int, casting='safe')
 
         if pair_inds.ndim != 2:
             raise ValueError("pair indices has to be a matrix.")
