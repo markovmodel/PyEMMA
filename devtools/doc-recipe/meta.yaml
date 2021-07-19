@@ -7,7 +7,7 @@ package:
 
 source:
   - path: ../../doc/
-  # TODO: does not cure that this file can not be icnluded in docs. (relative path issue)
+  # TODO: does not cure that this file can not be included in docs. (relative path issue)
   - path: ../../pyemma/pyemma.cfg
     folder: pyemma
 
