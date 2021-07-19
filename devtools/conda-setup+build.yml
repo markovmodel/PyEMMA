@@ -13,6 +13,6 @@ steps:
     displayName: 'Install dependencies'
     continueOnError: false
   - bash: |
-      conda build devtools
+      conda build devtools/conda-recipe
     displayName: 'Build and test'
     continueOnError: false
