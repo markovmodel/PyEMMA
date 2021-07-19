@@ -14,7 +14,8 @@ Changelog
 - serialization: fixed bug in function which checked for h5 serialization options.
 - :code:`n_jobs` is handled consistently, allows only for :code:`None` or positive integers and when
   determined from hardware, falls back to logical number of cpus. :pr:`1488`
-
+- Use :code:`int` instead of :code:`numpy.int` to solve :code:`numpy` 1.20
+  DeprecationWarning :pr:`1504`
 
 2.5.7 (9-24-2019)
 -----------------
