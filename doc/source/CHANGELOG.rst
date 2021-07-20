@@ -16,6 +16,8 @@ Changelog
   determined from hardware, falls back to logical number of cpus. :pr:`1488`
 - import from :code:`collections.abc` instead of base :code:`collections`
   :pr:`1503`
+- Use :code:`int` instead of :code:`numpy.int` to solve :code:`numpy` 1.20
+  DeprecationWarning :pr:`1504`
 
 2.5.7 (9-24-2019)
 -----------------
