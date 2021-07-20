@@ -1,0 +1,26 @@
+jobs:
+- job:
+  displayName: Win
+  pool:
+    vmImage: vs2017-win2016
+  strategy:
+    matrix:
+      Python37:
+        CONDA_PY: '3.7'
+        CONDA_NPY: '1.19'
+      Python38:
+        CONDA_PY: '3.8'
+        CONDA_NPY: '1.19'
+      Python39:
+        CONDA_PY: '3.9'
+        CONDA_NPY: '1.19'
+
+  steps:
+  - template: checkout.yml
+  - task: BatchScript@1
+    inputs:
+      filename: "$(CONDA)\\Scripts\\activate.bat"
+      modifyEnvironment: True
+    displayName: Add conda to PATH
+  - template: conda-setup+build.yml
+  - template: test-results.yml
