@@ -67,7 +67,7 @@ test:
     - pytest-cov
     - pytest-faulthandler
     - pytest-sugar
-    # - pytest-xdist
+    - pytest-xdist
 
 about:
   home: http://emma-project.org
