@@ -2,8 +2,8 @@
 EMMA (Emma's Markov Model Algorithms)
 =====================================
 
-.. image:: https://img.shields.io/travis/markovmodel/PyEMMA/master.svg
-   :target: https://travis-ci.org/markovmodel/PyEMMA
+.. image:: https://img.shields.io/azure-devops/build/clonker/e16cf5d1-7827-4597-8bb5-b0f7577c73d1/6
+   :target: https://dev.azure.com/clonker/pyemma/_build
 .. image:: https://img.shields.io/pypi/v/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
 .. image:: https://anaconda.org/conda-forge/pyemma/badges/downloads.svg
