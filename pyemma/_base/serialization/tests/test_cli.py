@@ -15,21 +15,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import shutil
 import tempfile
-import unittest
 
 import pytest
+from numpy.testing import assert_
 
 from pyemma._base.serialization.cli import main
 from pyemma.coordinates import source, tica, cluster_kmeans
 
 
-class TestListModelCLI(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+@pytest.fixture
+def model_file():
+    file = None
+    try:
         from pyemma.datasets import get_bpti_test_data
-
         d = get_bpti_test_data()
         trajs, top = d['trajs'], d['top']
         s = source(trajs, top=top)
@@ -37,26 +37,23 @@ class TestListModelCLI(unittest.TestCase):
         t = tica(s, lag=1)
 
         c = cluster_kmeans(t)
-        cls.model_file = tempfile.mktemp()
-        c.save(cls.model_file, save_streaming_chain=True)
+        file = tempfile.mktemp()
+        c.save(file, save_streaming_chain=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        import os
-        os.unlink(cls.model_file)
-
-    @pytest.skip("skip to check if it causes test failure")
-    def test_recursive(self):
-        """ check the whole chain has been printed"""
-        from pyemma.util.contexts import Capturing
-        with Capturing() as out:
-            main(['--recursive', self.model_file])
-        assert out
-        all_out = '\n'.join(out)
-        self.assertIn('FeatureReader', all_out)
-        self.assertIn('TICA', all_out)
-        self.assertIn('Kmeans', all_out)
+        yield file
+    finally:
+        if file is not None:
+            shutil.rmtree(file, ignore_errors=True)
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.mark.skip("skip to check if it causes test failure")
+def test_recursive(model_file):
+    """ check the whole chain has been printed"""
+    from pyemma.util.contexts import Capturing
+    with Capturing() as out:
+        main(['--recursive', model_file])
+    assert out
+    all_out = '\n'.join(out)
+    assert_('FeatureReader' in all_out)
+    assert_('TICA' in all_out)
+    assert_('Kmeans' in all_out)
