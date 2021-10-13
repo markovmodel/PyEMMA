@@ -21,6 +21,8 @@ r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
 """
+from pathlib import Path
+
 import numpy as _np
 import logging as _logging
 
@@ -632,7 +634,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, image_molecules=False, verbose=True):
+def save_traj(traj_inp, indexes, outfile, top=None, stride=1, chunksize=None, image_molecules=False, verbose=True):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -753,6 +755,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=None, 
         return traj
     # or to disk as a molecular trajectory file
     else:
+        if isinstance(outfile, Path):
+            outfile = str(outfile.resolve())
         traj.save(outfile)
     if verbose:
         _logger.info("Created file %s" % outfile)
@@ -839,9 +843,12 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
 
     # Determine output format of the molecular trajectory file
     if fmt is None:
+        fname = traj_inp.filenames[0]
+        while hasattr(fname, '__getitem__') and not isinstance(fname, (str, bytes)):
+            fname = fname[0]
         import os
 
-        _, fmt = os.path.splitext(traj_inp.filenames[0])
+        _, fmt = os.path.splitext(fname)
     else:
         fmt = '.' + fmt
 

@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from pathlib import Path
 
 from numpy import vstack
 import mdtraj as md
@@ -127,6 +127,8 @@ def single_traj_from_n_files(file_list, top):
     """
     traj = None
     for ff in file_list:
+        if isinstance(ff, Path):
+            ff = str(ff.resolve())
         if traj is None:
             traj = md.load(ff, top=top)
         else:
