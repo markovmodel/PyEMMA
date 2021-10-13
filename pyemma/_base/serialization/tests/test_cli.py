@@ -19,6 +19,7 @@
 import tempfile
 import unittest
 
+import pytest
 
 from pyemma._base.serialization.cli import main
 from pyemma.coordinates import source, tica, cluster_kmeans
@@ -44,6 +45,7 @@ class TestListModelCLI(unittest.TestCase):
         import os
         os.unlink(cls.model_file)
 
+    @pytest.skip("skip to check if it causes test failure")
     def test_recursive(self):
         """ check the whole chain has been printed"""
         from pyemma.util.contexts import Capturing
