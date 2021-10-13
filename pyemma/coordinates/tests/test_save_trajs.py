@@ -74,6 +74,7 @@ class TestSaveTrajs(unittest.TestCase):
 
         self.traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
         self.strides = [2, 3, 5]
+        self.subdir = str(self.subdir)
 
     def tearDown(self):
         shutil.rmtree(self.subdir, ignore_errors=True)
