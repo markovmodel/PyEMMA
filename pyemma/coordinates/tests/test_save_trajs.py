@@ -68,9 +68,9 @@ class TestSaveTrajs(unittest.TestCase):
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)
         self.reader.chunksize = 30
         self.frag_reader = coor.source([self.trajfiles], top=self.pdbfile)
-        self.n_pass_files = [self.subdir / ('n_pass.set_%06u.xtc' % ii) for ii in range(len(self.sets))]
-        self.frag_pass_files = [self.subdir / ('frag_pass.set_%06u.xtc' % ii) for ii in range(len(self.sets))]
-        self.one_pass_files = [self.subdir / ('1_pass.set_%06u.xtc' % ii) for ii in range(len(self.sets))]
+        self.n_pass_files = [str(self.subdir / ('n_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
+        self.frag_pass_files = [str(self.subdir / ('frag_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
+        self.one_pass_files = [str(self.subdir / ('1_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
 
         self.traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
         self.strides = [2, 3, 5]
