@@ -36,7 +36,7 @@ requirements:
     - pip
     - pybind11
     - pybind11-abi
-    - deeptime
+    - deeptime >=0.3.0
 
   run:
     - bhmm >=0.6.3
