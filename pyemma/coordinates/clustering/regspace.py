@@ -80,8 +80,8 @@ class RegularSpaceClustering(AbstractClustering):
         """
         super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
 
-        from ._ext import RMSDMetric
-        dt.clustering.metrics.register("minRMSD", RMSDMetric)
+        from ._ext import rmsd
+        dt.clustering.metrics.register("minRMSD", rmsd)
 
         self._converged = False
         self.set_params(dmin=dmin, metric=metric,
@@ -149,16 +149,21 @@ class RegularSpaceClustering(AbstractClustering):
                     regspace.partial_fit(X.astype(np.float32, order='C', copy=False), n_jobs=self.n_jobs)
                     used_frames += len(X)
             self._converged = True
-        except regspace.MaxCentersReachedException:
-            self._converged = False
-            msg = 'Maximum number of cluster centers reached.' \
-                  ' Consider increasing max_centers or choose' \
-                  ' a larger minimum distance, dmin.'
-            self.logger.warning(msg)
-            warnings.warn(msg)
-            # pass amount of processed data
-            used_data = used_frames / float(it.n_frames_total()) * 100.0
-            raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
+        except Exception as e:
+            if 'MaxCentersReachedException' in e.__class__.__name__:
+                self._converged = False
+                msg = 'Maximum number of cluster centers reached.' \
+                      ' Consider increasing max_centers or choose' \
+                      ' a larger minimum distance, dmin.'
+                self.logger.warning(msg)
+                warnings.warn(msg)
+                # pass amount of processed data
+                used_data = used_frames / float(it.n_frames_total()) * 100.0
+                raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
+            else:
+                # todo ugly workaround until maxcentersreached is placed not within metric subpackage but globally
+                #  somewhere
+                raise
         finally:
             # even if not converged, we store the found centers.
             model = regspace.fetch_model()
