@@ -46,7 +46,6 @@ def model_file():
             shutil.rmtree(file, ignore_errors=True)
 
 
-@pytest.mark.skip("skip to check if it causes test failure")
 def test_recursive(model_file):
     """ check the whole chain has been printed"""
     from pyemma.util.contexts import Capturing
