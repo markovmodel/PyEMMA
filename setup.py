@@ -93,12 +93,11 @@ def extensions():
                   include_dirs=[
                       mdtraj_inc,
                       pybind_inc,
-                      'pyemma/coordinates/clustering/include',
                   ] + deeptime_inc,
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj_lib],
-                  extra_compile_args=common_cflags)
+                  extra_compile_args=common_cflags + [''])
 
     covar_module = \
         Extension('pyemma._ext.variational.estimators.covar_c._covartools',
@@ -239,6 +238,8 @@ def get_cmdclass():
                 if has_flag(self.compiler, '-fvisibility=hidden'):
                     opts.append('-fvisibility=hidden')
             elif ct == 'msvc':
+                opts.append('/std:c++17')
+                opts.append('/bigobj')
                 opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
 
             # setup OpenMP support

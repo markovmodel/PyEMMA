@@ -35,7 +35,8 @@ requirements:
     - setuptools
     - pip
     - pybind11
-    - deeptime
+    - pybind11-abi
+    - deeptime >=0.3.0
 
   run:
     - bhmm >=0.6.3

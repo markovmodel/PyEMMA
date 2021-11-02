@@ -26,6 +26,8 @@ Created on 18.02.2015
 import os
 
 import numpy as np
+from deeptime.clustering import ClusterModel, metrics
+
 from pyemma._base.serialization.serialization import SerializableMixIn
 
 from pyemma._base.model import Model
@@ -56,6 +58,8 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
     def __init__(self, metric='euclidean', n_jobs=None):
         super(AbstractClustering, self).__init__()
+        from ._ext import rmsd
+        metrics.register("minRMSD", rmsd)
         self.metric = metric
         self.clustercenters = None
         self._previous_stride = -1
@@ -153,18 +157,12 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         X = np.require(X, dtype=np.float32, requirements='C')
-        if not hasattr(self, '_inst'):
-            self.logger.debug("new cluster inst")
-            from ._ext import ClusteringBase_f
-            self._inst = ClusteringBase_f(self.metric, X.shape[1])
-
         # for performance reasons we pre-center the cluster centers for minRMSD.
         if self.metric == 'minRMSD' and not self._precentered:
-            # self.logger.debug("precentering cluster centers for minRMSD.")
-            # self._inst.precenter_centers(self.clustercenters)
             self._precentered = True
 
-        dtraj = self._inst.assign(X, self.clustercenters, self.n_jobs)
+        model = ClusterModel(cluster_centers=self.clustercenters, metric=self.metric)
+        dtraj = model.transform(X)
         res = dtraj[:, None]  # always return a column vector in this function
         return res
 

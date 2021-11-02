@@ -29,6 +29,7 @@ import unittest
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pyemma.coordinates as coor
@@ -61,16 +62,19 @@ class TestSaveTrajs(unittest.TestCase):
 
         self.sets = [set_1, set_2]
 
-        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test/')
+        self.subdir = Path(tempfile.mkdtemp(suffix='save_trajs_test/'))
 
         # Instantiate the reader
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)
         self.reader.chunksize = 30
-        self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
-        self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
+        self.frag_reader = coor.source([self.trajfiles], top=self.pdbfile)
+        self.n_pass_files = [str(self.subdir / ('n_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
+        self.frag_pass_files = [str(self.subdir / ('frag_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
+        self.one_pass_files = [str(self.subdir / ('1_pass.set_%06u.xtc' % ii)) for ii in range(len(self.sets))]
 
         self.traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
         self.strides = [2, 3, 5]
+        self.subdir = str(self.subdir)
 
     def tearDown(self):
         shutil.rmtree(self.subdir, ignore_errors=True)
@@ -89,12 +93,21 @@ class TestSaveTrajs(unittest.TestCase):
         __ = save_trajs(self.reader, self.sets,
                         outfiles=self.n_pass_files)
 
+        sets_frag = []
+        for i in range(len(self.sets)):
+            sets_frag.append([])
+            for traj_ix, frame_ix in self.sets[i]:
+                sets_frag[-1].append([0, traj_ix * 33 + frame_ix])
+
+        save_trajs(self.frag_reader, [np.array(sets_frag[0]), np.array(sets_frag[1])], outfiles=self.frag_pass_files)
         # Reload the object to memory
         traj_n_pass = single_traj_from_n_files(self.n_pass_files, top=self.pdbfile)
+        traj_frag = single_traj_from_n_files(self.frag_pass_files, top=self.pdbfile)
 
         # Check for diffs
         (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_n_pass, self.traj_ref, atom=0)
-
+        self.assertFalse(found_diff, errmsg)
+        (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_frag, self.traj_ref, atom=0)
         self.assertFalse(found_diff, errmsg)
 
     def test_save_SaveTrajs_onepass(self):
