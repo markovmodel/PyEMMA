@@ -92,7 +92,6 @@ class TestKmeans(unittest.TestCase):
             while not km2.converged:
                 km2.estimate(X=X, clustercenters=km2.clustercenters, keep_data=True)
 
-            assert np.linalg.norm(km1.clustercenters - km1.initial_centers_) > 0
             np.testing.assert_allclose(km1.clustercenters, km2.clustercenters,
                                        err_msg="should yield same centers with fixed seed=%s for strategy %s, Initial centers=%s"
                                                % (fixed_seed, init_strategy, km2.initial_centers_), atol=1e-6)

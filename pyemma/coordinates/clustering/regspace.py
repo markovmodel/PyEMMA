@@ -31,7 +31,7 @@ from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
 
 import numpy as np
-import deeptime as dt
+from deeptime.clustering import RegularSpace, metrics, ClusterModel
 
 __all__ = ['RegularSpaceClustering']
 
@@ -81,7 +81,7 @@ class RegularSpaceClustering(AbstractClustering):
         super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
 
         from ._ext import rmsd
-        dt.clustering.metrics.register("minRMSD", rmsd)
+        metrics.register("minRMSD", rmsd)
 
         self._converged = False
         self.set_params(dmin=dmin, metric=metric,
@@ -135,12 +135,8 @@ class RegularSpaceClustering(AbstractClustering):
         # 3. add new centroid, if min(distance to all other clustercenters) >= dmin
         ########
         # temporary list to store cluster centers
-        clustercenters = []
         used_frames = 0
-        regspace = dt.clustering.RegularSpace(dmin=self.dmin, max_centers=self.max_centers,
-                                              metric=self.metric, n_jobs=self.n_jobs)
-
-        # from ._ext import regspace
+        regspace = RegularSpace(dmin=self.dmin, max_centers=self.max_centers, metric=self.metric, n_jobs=self.n_jobs)
         it = iterable.iterator(return_trajindex=False, stride=self.stride,
                                chunk=self.chunksize, skip=self.skip)
         try:
@@ -168,7 +164,7 @@ class RegularSpaceClustering(AbstractClustering):
             # even if not converged, we store the found centers.
             model = regspace.fetch_model()
             clustercenters = model.cluster_centers.squeeze().reshape(-1, iterable.ndim)
-            self._inst = dt.clustering.ClusterModel(clustercenters, metric=self.metric)
+            self._inst = ClusterModel(clustercenters, metric=self.metric)
             from types import MethodType
 
             def _assign(self, data, _, n_jobs):

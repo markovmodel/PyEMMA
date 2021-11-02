@@ -93,7 +93,6 @@ def extensions():
                   include_dirs=[
                       mdtraj_inc,
                       pybind_inc,
-                      'pyemma/coordinates/clustering/include',
                   ] + deeptime_inc,
                   language='c++',
                   libraries=[lib_prefix+'theobald'],
