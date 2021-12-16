@@ -270,7 +270,7 @@ def get_umbrella_sampling_data(
     if width is None:
         width = _np.zeros(shape=(umbrella_centers.shape[1],), dtype=_np.float64)
     else:
-        width = _np.asarray(
+        width = _np.fromiter(
             map(lambda w: w if w is not None and w > 0.0 else 0.0, width),
             dtype=_np.float64)
     if width.shape[0] != umbrella_centers.shape[1]:
