@@ -18,6 +18,7 @@ Changelog
   :pr:`1503`
 - Use :code:`int` instead of :code:`numpy.int` to solve :code:`numpy` 1.20
   DeprecationWarning :pr:`1504`
+- Umbrella sampling: fix periodic width initialization :pr:`1522`
 
 2.5.7 (9-24-2019)
 -----------------
