@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from copy import copy
 from pathlib import Path
 
 from numpy import vstack
@@ -130,9 +131,9 @@ def single_traj_from_n_files(file_list, top):
         if isinstance(ff, Path):
             ff = str(ff.resolve())
         if traj is None:
-            traj = md.load(ff, top=top)
+            traj = md.load(copy(ff), top=top)
         else:
-            traj = traj.join(md.load(ff, top=top))
+            traj = traj.join(md.load(copy(ff), top=top))
 
     return traj
 

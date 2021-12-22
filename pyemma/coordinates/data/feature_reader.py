@@ -91,7 +91,7 @@ class FeatureReader(DataSource, SerializableMixIn):
         super(FeatureReader, self).__init__(chunksize=chunksize)
         self._is_reader = True
         self.topfile = topologyfile
-        self.filenames = trajectories
+        self.filenames = trajectories.copy()  # this is modified in-place in mdtraj.load
         self._return_traj_obj = False
 
         self._is_random_accessible = all(
@@ -353,6 +353,7 @@ class FeatureReaderIterator(EncapsulatedIterator):
 
     def _create_mditer(self, itraj):
         stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
+        print(itraj, len(self._data_source.filenames))
         _it = self._create_patched_iter(
                         self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
         )
