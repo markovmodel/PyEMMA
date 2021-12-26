@@ -63,7 +63,7 @@ def _version_check(current, testing=False):
     import platform
     import os
 
-    from distutils.version import LooseVersion as parse
+    from packaging.version import parse
     from contextlib import closing
     import threading
     import uuid
