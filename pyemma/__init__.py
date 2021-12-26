@@ -53,7 +53,7 @@ def _version_check(current, testing=False):
     ...     t.start()
     ...     t.join()
     ...     assert cw, "no warning captured"
-    ...     assert "latest release" in str(cw[0].message), "wrong msg"
+    ...     assert "latest release" in str(cw[0].message), f"wrong msg: {str(cw[0].message)}"
     """
     if not config.check_version:
         class _dummy:
