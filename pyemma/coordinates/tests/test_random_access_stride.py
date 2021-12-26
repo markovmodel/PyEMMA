@@ -19,6 +19,7 @@
 import os
 import tempfile
 import unittest
+from copy import copy
 from unittest import TestCase
 
 import mdtraj
@@ -423,7 +424,7 @@ class TestRandomAccessStride(TestCase):
             for i in range(3):
                 trajfiles.append(create_traj(start=i * 10, dir=td, length=20)[0])
             topfile = get_top()
-            trajfiles = [(trajfiles[0], trajfiles[1]), trajfiles[0],  trajfiles[2]]
+            trajfiles = [[trajfiles[0], trajfiles[1]], trajfiles[0],  trajfiles[2]]
 
             source = coor.source(trajfiles, top=topfile)
             assert isinstance(source, FragmentedTrajectoryReader)
@@ -435,7 +436,7 @@ class TestRandomAccessStride(TestCase):
                     _r._return_traj_obj = True
 
             from collections import defaultdict
-            for chunksize in [0, 2, 3, 100000]:
+            for chunksize in [0, 3, 100000]:
                 frames = defaultdict(list)
                 with source.iterator(chunk=chunksize, return_trajindex=True, stride=self.stride) as it:
                     for itraj, t in it:
@@ -451,11 +452,11 @@ class TestRandomAccessStride(TestCase):
                 keys = np.unique(self.stride[:, 0])
                 for i, coords in enumerate(dest):
                     if i in keys:
-                        traj = mdtraj.load(trajfiles[i], top=topfile)
+                        traj = mdtraj.load(copy(trajfiles[i]), top=topfile)
                         np.testing.assert_equal(coords.xyz,
                                                 traj.xyz[
                                                     np.array(self.stride[self.stride[:, 0] == i][:, 1])
-                                                ], err_msg="not equal for chunksize=%s" % chunksize)
+                                                ], err_msg=f"not equal for chunksize={chunksize}")
 
     def test_RA_high_stride(self):
         """ ensure we use a random access pattern for high strides chunksize combinations to avoid memory issues."""

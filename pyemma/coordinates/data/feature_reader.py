@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
+from copy import copy
 import mdtraj
 import numpy as np
 
@@ -91,7 +91,7 @@ class FeatureReader(DataSource, SerializableMixIn):
         super(FeatureReader, self).__init__(chunksize=chunksize)
         self._is_reader = True
         self.topfile = topologyfile
-        self.filenames = trajectories
+        self.filenames = copy(trajectories)  # this is modified in-place in mdtraj.load
         self._return_traj_obj = False
 
         self._is_random_accessible = all(
