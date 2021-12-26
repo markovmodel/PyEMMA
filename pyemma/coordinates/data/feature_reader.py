@@ -353,7 +353,6 @@ class FeatureReaderIterator(EncapsulatedIterator):
 
     def _create_mditer(self, itraj):
         stride = self.stride if self.uniform_stride else self.ra_indices_for_traj(itraj)
-        print(itraj, len(self._data_source.filenames))
         _it = self._create_patched_iter(
                         self._data_source.filenames[itraj], itraj=itraj, stride=stride, skip=self.skip
         )
