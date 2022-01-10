@@ -4,11 +4,11 @@
 
 #include <center.h>
 #include <theobald_rmsd.h>
-#include "register_clustering.h"
+#include <register_clustering.h>
 
 struct RMSDMetric {
     template<typename T>
-    static T compute(const T* xs, const T* ys, std::size_t dim) {
+    static T compute_squared(const T* xs, const T* ys, std::size_t dim) {
         if (dim % 3 != 0) {
             throw std::range_error("RMSDMetric is only implemented for input data with a dimension dividable by 3.");
         }
@@ -27,10 +27,9 @@ struct RMSDMetric {
         }
     }
 
-    template<typename dtype>
-    static dtype compute_squared(const dtype* xs, const dtype* ys, std::size_t dim) {
-        auto d = compute(xs, ys, dim);
-        return d*d;
+    template<typename T>
+    static T compute(const T* xs, const T* ys, std::size_t dim) {
+        return std::sqrt(compute_squared(xs, ys, dim));
     }
 };
 
