@@ -231,6 +231,11 @@ class TestKmeans(unittest.TestCase):
         kmeans = cluster_kmeans(np.random.rand(500, 3), 10, metric='minRMSD')
         kmeans.dtrajs
 
+    def test_minrmsd_clusternumbers(self):
+        n_clusters = 10
+        kmeans = cluster_kmeans([np.random.rand(500, 3)], n_clusters, metric='minRMSD')
+        self.assertEqual(np.unique(kmeans.dtrajs[0]).shape[0], n_clusters)
+
     def test_skip(self):
         cl = cluster_kmeans(np.random.rand(100, 3), skip=42)
         assert len(cl.dtrajs[0]) == 100 - 42
