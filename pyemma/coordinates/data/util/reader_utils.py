@@ -54,7 +54,7 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
     if (isinstance(input_files, str)
             or (isinstance(input_files, (list, tuple))
                 and (any(isinstance(item, str) for item in input_files)
-                     or len(input_files) is 0))):
+                     or len(input_files) == 0))):
         reader = None
         # check: if single string create a one-element list
         if isinstance(input_files, str):
@@ -62,7 +62,7 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
         elif len(input_files) > 0 and all(isinstance(item, str) for item in input_files):
             input_list = input_files
         else:
-            if len(input_files) is 0:
+            if len(input_files) == 0:
                 raise ValueError("The passed input list should not be empty.")
             else:
                 raise ValueError("The passed list did not exclusively contain strings or was a list of lists "
