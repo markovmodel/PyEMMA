@@ -232,9 +232,15 @@ class TestKmeans(unittest.TestCase):
         kmeans.dtrajs
 
     def test_minrmsd_clusternumbers(self):
+        state = np.random.RandomState(123)
+        data = [state.uniform(-50, 50, size=(500, 3 * 15))]
         n_clusters = 10
-        kmeans = cluster_kmeans([np.random.uniform(size=(500, 3))], n_clusters, metric='minRMSD')
-        self.assertEqual(np.unique(kmeans.dtrajs[0]).shape[0], n_clusters)
+        kmeans = cluster_kmeans(data, n_clusters, metric='minRMSD',
+                                fixed_seed=32, init_strategy='kmeans++', n_jobs=1)
+        kmeans2 = cluster_kmeans(data, n_clusters, metric='minRMSD',
+                                 fixed_seed=32, init_strategy='kmeans++', n_jobs=1)
+        np.testing.assert_array_equal(kmeans.dtrajs[0], kmeans2.dtrajs[0])
+        np.testing.assert_array_almost_equal(kmeans.clustercenters, kmeans2.clustercenters)
 
     def test_skip(self):
         cl = cluster_kmeans(np.random.rand(100, 3), skip=42)

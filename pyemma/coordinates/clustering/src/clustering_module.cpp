@@ -4,7 +4,7 @@
 
 #include <center.h>
 #include <theobald_rmsd.h>
-#include <deeptime/clustering/register_clustering.h>
+#include "register_clustering.h"
 
 struct RMSDMetric {
     template<typename T>
@@ -33,21 +33,12 @@ struct RMSDMetric {
     static T compute(const T* xs, const T* ys, std::size_t dim) {
         return std::sqrt(compute_squared(xs, ys, dim));
     }
-
-    /*template<typename T>
-    static void precenter_centers(np_array_nfc<T> centers, std::size_t N_centers) {
-        trace_centers.resize(N_centers);
-        float *trace_centers_p = trace_centers.data();
-
-        // This is already parallelized
-        for (std::size_t j = 0; j < N_centers; ++j) {
-            inplace_center_and_trace_atom_major(&centers[j * parent_t::dim],
-                                                &trace_centers_p[j], 1, parent_t::dim / 3);
-        }
-    }*/
 };
 
 PYBIND11_MODULE(_ext, m) {
     auto rmsdModule = m.def_submodule("rmsd");
     deeptime::clustering::registerClusteringImplementation<RMSDMetric>(rmsdModule);
+    rmsdModule.def("compute_metric", [](py::array_t<float> x, py::array_t<float> y) {
+        return RMSDMetric::compute<float>(x.data(), y.data(), x.size());
+    });
 }
