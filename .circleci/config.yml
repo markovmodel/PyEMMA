@@ -49,7 +49,9 @@ jobs:
       - run:
           name: Compile and test
           no_output_timeout: 30m
-          command: conda build devtools/conda-recipe --python=3.9 --numpy=1.21 --test --output-folder workspace
+          command: |
+            export PYTHONUNBUFFERED=1
+            conda build devtools/conda-recipe --python=3.9 --numpy=1.21 --test --output-folder workspace
       - run: bash <(curl -s https://codecov.io/bash) -f $HOME/coverage.xml
       - store_test_results:
           path: /tmp/circleci-test-results
