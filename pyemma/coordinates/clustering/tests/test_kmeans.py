@@ -233,7 +233,7 @@ class TestKmeans(unittest.TestCase):
 
     def test_minrmsd_clusternumbers(self):
         n_clusters = 10
-        kmeans = cluster_kmeans([np.random.rand(500, 3)], n_clusters, metric='minRMSD')
+        kmeans = cluster_kmeans([np.random.uniform(size=(500, 3))], n_clusters, metric='minRMSD')
         self.assertEqual(np.unique(kmeans.dtrajs[0]).shape[0], n_clusters)
 
     def test_skip(self):
