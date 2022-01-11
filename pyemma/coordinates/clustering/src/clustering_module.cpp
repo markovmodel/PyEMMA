@@ -25,7 +25,7 @@ struct RMSDMetric {
             std::vector<float> cast (xs, xs + dim);
             return msd_atom_major(dim3, dim3, cast.data(), buffer_b.data(), trace_a, trace_b, 0, nullptr);
         } else {
-            return msd_atom_major(dim3, dim3, buffer_a.data(), buffer_b.data(), trace_a, trace_b, 0, nullptr);
+            return msd_atom_major(dim3, dim3, xs, buffer_b.data(), trace_a, trace_b, 0, nullptr);
         }
     }
 
