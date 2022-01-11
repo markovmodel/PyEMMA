@@ -242,6 +242,52 @@ class TestKmeans(unittest.TestCase):
         np.testing.assert_array_equal(kmeans.dtrajs[0], kmeans2.dtrajs[0])
         np.testing.assert_array_almost_equal(kmeans.clustercenters, kmeans2.clustercenters)
 
+    def test_minrmsd_assignments(self):
+        from scipy.linalg import expm, norm
+        n_clusters = 5
+        n_particles = 3
+        n_frames_per_cluster = 25
+
+        def rotation_matrix(axis, theta):
+            """ rotation matrix
+            :param axis: np.ndarray, axis around which to rotate
+            :param theta: float, angle in radians
+            :return: rotation matrix
+            """
+            return expm(np.cross(np.eye(3), axis/norm(axis)*theta))
+
+        out = np.zeros((n_clusters*n_frames_per_cluster, 3*n_particles))
+        for i in range(n_clusters):
+            # define `n_particles` random particle xyz positions,
+            # repeat `n_frames_per_cluster` frames and add noise
+            _pos = np.random.choice(np.arange(3*n_particles), size=3*n_particles)
+            pos = np.repeat(_pos[None], n_frames_per_cluster, axis=0).astype(float)
+            pos += np.random.normal(size=pos.shape, scale=.1)
+
+            # add random rotation and translation for each frame
+            rand_rot_trans = np.zeros_like(pos)
+            for n, _pos in enumerate(pos):
+                r = rotation_matrix(np.array([0, 1, 0]), np.pi*np.random.rand())
+                t = np.array([np.random.normal(), np.random.normal(), np.random.normal()])
+
+                for m in range(n_particles):
+                    rand_rot_trans[n, 3*m:3*(m+1)] = np.dot(r, _pos[3*m:3*(m+1)]) - t
+
+            out[n_frames_per_cluster*i:n_frames_per_cluster*(i+1)] = rand_rot_trans
+
+        cl = cluster_kmeans(out, k=n_clusters, metric='minRMSD', max_iter=100)
+        assignments = cl.dtrajs[0]
+        unique = []
+        for i in range(n_clusters):
+            unique_in_inverval = np.unique(
+                assignments[n_frames_per_cluster*i:n_frames_per_cluster*(i+1)])
+            # assert that each interval is assigned correctly
+            self.assertEqual(unique_in_inverval.shape[0], 1)
+            unique.append(unique_in_inverval[0])
+
+        # assign that all integers are assigned
+        self.assertSetEqual(set(unique), set(range(n_clusters)))
+
     def test_skip(self):
         cl = cluster_kmeans(np.random.rand(100, 3), skip=42)
         assert len(cl.dtrajs[0]) == 100 - 42
