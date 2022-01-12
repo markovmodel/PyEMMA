@@ -24,6 +24,9 @@ Created on 28.01.2015
 import os
 import random
 import unittest
+
+import deeptime.clustering
+import mdtraj
 import numpy as np
 
 from pyemma.coordinates.api import cluster_kmeans
@@ -227,20 +230,37 @@ class TestKmeans(unittest.TestCase):
         self.assertGreaterEqual(np.inner(np.array([0, -144337500, -102061250], dtype=float), res) + 353560531, 0)
         self.assertGreaterEqual(np.inner(np.array([0, 0, -10000], dtype=float), res) + 17321, 0)
 
-    def test_with_n_jobs_minrmsd(self):
-        kmeans = cluster_kmeans(np.random.rand(500, 3), 10, metric='minRMSD')
-        kmeans.dtrajs
-
-    def test_minrmsd_clusternumbers(self):
+    def test_minrmsd_assignment(self):
         state = np.random.RandomState(123)
-        data = [state.uniform(-50, 50, size=(500, 3 * 15))]
-        n_clusters = 10
-        kmeans = cluster_kmeans(data, n_clusters, metric='minRMSD',
+        data = state.uniform(-50, 50, size=(500, 3 * 15))
+        n_clusters = 15
+        kmeans = cluster_kmeans([data], n_clusters, metric='minRMSD', max_iter=0,
                                 fixed_seed=32, init_strategy='kmeans++', n_jobs=1)
-        kmeans2 = cluster_kmeans(data, n_clusters, metric='minRMSD',
+        kmeans2 = cluster_kmeans([data], n_clusters, metric='minRMSD', max_iter=0,
                                  fixed_seed=32, init_strategy='kmeans++', n_jobs=1)
         np.testing.assert_array_equal(kmeans.dtrajs[0], kmeans2.dtrajs[0])
         np.testing.assert_array_almost_equal(kmeans.clustercenters, kmeans2.clustercenters)
+        np.testing.assert_equal(kmeans.metric, 'minRMSD')
+
+        impl = deeptime.clustering.metrics['minRMSD']
+        dtraj_manual = []
+        for frame in data:
+            dists_to_cc = [impl.compute_metric(frame, cc) for cc in kmeans.clustercenters]
+            dtraj_manual.append(np.argmin(dists_to_cc))
+        np.testing.assert_array_equal(dtraj_manual, kmeans.dtrajs[0])
+
+    def test_minrmsd_metric(self):
+        from pyemma.coordinates.clustering import KmeansClustering
+        # make sure impl is registered
+        _ = KmeansClustering(n_clusters=5)
+        # now we can import the impl
+        impl = deeptime.clustering.metrics['minRMSD']
+        target = np.random.uniform(size=(1, 3 * 15))
+        reference = np.random.uniform(size=(1, 3 * 15))
+        x = mdtraj.rmsd(mdtraj.Trajectory(target.reshape(1, -1, 3), None),
+                        mdtraj.Trajectory(reference.reshape(1, -1, 3), None))
+        y = impl.compute_metric(target, reference)
+        np.testing.assert_almost_equal(x[0], y)
 
     def test_minrmsd_assignments(self):
         from scipy.linalg import expm, norm
@@ -275,7 +295,7 @@ class TestKmeans(unittest.TestCase):
 
             out[n_frames_per_cluster*i:n_frames_per_cluster*(i+1)] = rand_rot_trans
 
-        cl = cluster_kmeans(out, k=n_clusters, metric='minRMSD', max_iter=100)
+        cl = cluster_kmeans(out, k=n_clusters, metric='minRMSD', max_iter=0)
         assignments = cl.dtrajs[0]
         unique = []
         for i in range(n_clusters):
