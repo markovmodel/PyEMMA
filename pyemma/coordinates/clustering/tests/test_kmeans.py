@@ -28,8 +28,10 @@ import unittest
 import deeptime.clustering
 import mdtraj
 import numpy as np
+from deeptime.clustering import ClusterModel
 
 from pyemma.coordinates.api import cluster_kmeans
+from pyemma.coordinates.clustering import KmeansClustering
 from pyemma.util.files import TemporaryDirectory
 from pyemma.util.contexts import settings, Capturing
 
@@ -250,7 +252,6 @@ class TestKmeans(unittest.TestCase):
         np.testing.assert_array_equal(dtraj_manual, kmeans.dtrajs[0])
 
     def test_minrmsd_metric(self):
-        from pyemma.coordinates.clustering import KmeansClustering
         # make sure impl is registered
         _ = KmeansClustering(n_clusters=5)
         # now we can import the impl
@@ -263,6 +264,11 @@ class TestKmeans(unittest.TestCase):
         np.testing.assert_almost_equal(x[0], y)
 
     def test_minrmsd_assignments(self):
+        # make sure impl is registered
+        _ = KmeansClustering(n_clusters=5)
+        # now we can import the impl
+        impl = deeptime.clustering.metrics['minRMSD']
+
         from scipy.linalg import expm, norm
         n_clusters = 5
         n_particles = 3
@@ -295,8 +301,9 @@ class TestKmeans(unittest.TestCase):
 
             out[n_frames_per_cluster*i:n_frames_per_cluster*(i+1)] = rand_rot_trans
 
-        cl = cluster_kmeans(out, k=n_clusters, metric='minRMSD', max_iter=0)
-        assignments = cl.dtrajs[0]
+        cc = impl.kmeans.init_centers_kmpp(out, k=n_clusters, random_seed=-1, n_threads=1, callback=None)
+        cl = ClusterModel(cc, metric='minRMSD', converged=True)
+        assignments = cl.transform(out)
         unique = []
         for i in range(n_clusters):
             unique_in_inverval = np.unique(
