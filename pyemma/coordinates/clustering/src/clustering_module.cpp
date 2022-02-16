@@ -4,7 +4,7 @@
 
 #include <center.h>
 #include <theobald_rmsd.h>
-#include "register_clustering.h"
+#include <deeptime/clustering/register_clustering.h>
 
 struct RMSDMetric {
     template<typename T>
