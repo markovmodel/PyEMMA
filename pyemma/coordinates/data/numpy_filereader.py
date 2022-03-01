@@ -22,6 +22,7 @@ Created on 07.04.2015
 
 
 import functools
+from pathlib import Path
 
 import numpy as np
 
@@ -57,12 +58,12 @@ class NumPyFileReader(DataSource, SerializableMixIn):
             filenames = [filenames]
 
         for f in filenames:
-            if not f.endswith('.npy'):
+            if Path(f).suffix != '.npy':
                 raise ValueError('given file "%s" is not supported by this'
                                  ' reader, since it does not end with .npy' % f)
 
         self.mmap_mode = mmap_mode
-        self.filenames = filenames
+        self.filenames = [str(fname) for fname in filenames]
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
         return NPYIterator(self, skip=skip, chunk=chunk, stride=stride,

@@ -24,6 +24,7 @@ Created on 11.04.2015
 import csv
 import os
 from math import ceil
+from pathlib import Path
 
 import numpy as np
 
@@ -202,8 +203,9 @@ class PyCSVReader(DataSource, SerializableMixIn):
 
         if isinstance(filenames, (tuple, list)):
             n = len(filenames)
-        elif isinstance(filenames, str):
+        elif isinstance(filenames, (str, Path)):
             n = 1
+            filenames = [filenames]
         else:
             raise TypeError("'filenames' argument has to be list, tuple or string")
         self._comments = PyCSVReader.__parse_args(comments, '#', n)
@@ -216,7 +218,7 @@ class PyCSVReader(DataSource, SerializableMixIn):
 
         self._skip = np.zeros(n, dtype=int)
         # invoke filename setter
-        self.filenames = filenames
+        self.filenames = [str(fname) for fname in filenames]
 
     @staticmethod
     def __parse_args(arg, default, n):

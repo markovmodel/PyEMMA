@@ -21,8 +21,14 @@ from pathlib import Path
 from numpy import vstack
 import mdtraj as md
 import numpy as np
-import os
 
+
+def file_suffix(path):
+    r""" Returns the suffix of a path. The path may be any kind of object that can be converted into a pathlib Path
+    object. """
+    if not isinstance(path, Path):
+        path = Path(path)
+    return path.suffix
 
 
 def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
@@ -51,15 +57,14 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
         return FragmentedTrajectoryReader(input_files, topology, chunksize, featurizer)
 
     # normal trajectories
-    if (isinstance(input_files, str)
+    if (isinstance(input_files, (Path, str))
             or (isinstance(input_files, (list, tuple))
-                and (any(isinstance(item, str) for item in input_files)
+                and (any(isinstance(item, (Path, str)) for item in input_files)
                      or len(input_files) == 0))):
-        reader = None
         # check: if single string create a one-element list
-        if isinstance(input_files, str):
+        if isinstance(input_files, (Path, str)):
             input_list = [input_files]
-        elif len(input_files) > 0 and all(isinstance(item, str) for item in input_files):
+        elif len(input_files) > 0 and all(isinstance(item, (Path, str)) for item in input_files):
             input_list = input_files
         else:
             if len(input_files) == 0:
@@ -68,20 +73,21 @@ def create_file_reader(input_files, topology, featurizer, chunksize=None, **kw):
                 raise ValueError("The passed list did not exclusively contain strings or was a list of lists "
                                  "(fragmented trajectory).")
 
-        # TODO: this does not handle suffixes like .xyz.gz (rare)
-        _, suffix = os.path.splitext(input_list[0])
+        # convert to list of paths
+        input_list = [Path(f) for f in input_list]
 
-        suffix = str(suffix)
+        # TODO: this does not handle suffixes like .xyz.gz (rare)
+        suffix = input_list[0].suffix
 
         # check: do all files have the same file type? If not: raise ValueError.
-        if all(item.endswith(suffix) for item in input_list):
+        if all(item.suffix == suffix for item in input_list):
 
             # do all the files exist? If not: Raise value error
             all_exist = True
             from six import StringIO
             err_msg = StringIO()
             for item in input_list:
-                if not os.path.isfile(item):
+                if not item.is_file():
                     err_msg.write('\n' if err_msg.tell() > 0 else "")
                     err_msg.write('File %s did not exist or was no file' % item)
                     all_exist = False

@@ -19,8 +19,8 @@ Created on 30.04.2015
 
 @author: marscher
 '''
-
-
+import shutil
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import os
@@ -35,7 +35,7 @@ from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
 from pyemma.coordinates.data.util.traj_info_backends import SqliteDB
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
-from pyemma.coordinates.tests.util import create_traj
+from pyemma.coordinates.tests.util import create_traj, get_top
 from pyemma.datasets import get_bpti_test_data
 from pyemma.util import config
 from pyemma.util.contexts import settings
@@ -267,6 +267,26 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             pyemma.coordinates.source(files)
         self.assertLessEqual(self.db.num_entries, max_entries)
         self.assertGreater(self.db.num_entries, 0)
+
+    def test_cache_miss_same_filename(self):
+        # reproduces issue #1541
+        tmpdir = None
+        try:
+            fname_pdb = os.path.basename(pdbfile)
+            fname_xtc = os.path.basename(xtcfiles[0])
+            tmpdir = Path(tempfile.mkdtemp())
+            shutil.copyfile(pdbfile, tmpdir / fname_pdb)
+            shutil.copyfile(xtcfiles[0], tmpdir / fname_xtc)
+            _ = pyemma.coordinates.source(tmpdir / fname_xtc, top=tmpdir / fname_pdb)
+            shutil.copyfile(get_top(), tmpdir / fname_pdb)  # overwrite pdb
+
+            t = mdtraj.load(tmpdir / fname_pdb)
+            t.xyz = np.zeros(shape=(400, 3, 3))
+            t.time = np.arange(len(t.xyz))
+            t.save(tmpdir / fname_xtc, force_overwrite=True)
+            _ = pyemma.coordinates.source(tmpdir / fname_xtc, top=tmpdir / fname_pdb)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_max_size(self):
         data = [np.random.random((150, 10)) for _ in range(150)]

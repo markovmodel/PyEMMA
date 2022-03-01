@@ -17,6 +17,8 @@
 
 
 from copy import copy
+from pathlib import Path
+
 import mdtraj
 import numpy as np
 
@@ -24,6 +26,7 @@ from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.coordinates.data._base.datasource import DataSource, EncapsulatedIterator
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer
+from pyemma.coordinates.data.util.reader_utils import file_suffix
 from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
 from pyemma.coordinates.util import patches
 from pyemma.util.annotators import deprecated, fix_docs
@@ -91,15 +94,15 @@ class FeatureReader(DataSource, SerializableMixIn):
         super(FeatureReader, self).__init__(chunksize=chunksize)
         self._is_reader = True
         self.topfile = topologyfile
-        self.filenames = copy(trajectories)  # this is modified in-place in mdtraj.load
+        if not isinstance(trajectories, (list, tuple)):
+            trajectories = [trajectories]
+        self.filenames = copy([str(traj) for traj in trajectories])  # this is modified in-place in mdtraj.load
         self._return_traj_obj = False
 
-        self._is_random_accessible = all(
-            (f.endswith(FeatureReader.SUPPORTED_RANDOM_ACCESS_FORMATS)
-             for f in self.filenames)
-        )
+        self._is_random_accessible = all(file_suffix(f) in FeatureReader.SUPPORTED_RANDOM_ACCESS_FORMATS
+                                         for f in self.filenames)
         # check we have at least mdtraj-1.6.1 to efficiently seek xtc, trr formats
-        if any(f.endswith('.xtc') or f.endswith('.trr') for f in trajectories):
+        if any(file_suffix(f) == '.xtc' or file_suffix(f) == '.trr' for f in trajectories):
             from distutils.version import LooseVersion
             xtc_trr_random_accessible = True if LooseVersion(mdtraj.version.version) >= LooseVersion('1.6.1') else False
             self._is_random_accessible &= xtc_trr_random_accessible
@@ -128,6 +131,7 @@ class FeatureReader(DataSource, SerializableMixIn):
         return self.filenames
 
     def _get_traj_info(self, filename):
+        filename = str(filename) if isinstance(filename, Path) else filename
         with mdtraj.open(filename, mode='r') as fh:
             try:
                 length = len(fh)

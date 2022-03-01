@@ -34,17 +34,19 @@ from mdtraj.core.trajectory import _TOPOLOGY_EXTS, _get_extension, open as md_op
 from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
 
+from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
+
 TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
 
 @lru_cache(maxsize=32)
-def _load(top_file):
+def _load(top_file, hash):
     return load_topology(top_file)
 
 
 def load_topology_cached(top_file):
     if isinstance(top_file, str):
-        return _load(top_file)
+        return _load(top_file, TrajectoryInfoCache.compute_file_hash(top_file))
     if isinstance(top_file, Topology):
         return top_file
     if isinstance(top_file, Trajectory):
