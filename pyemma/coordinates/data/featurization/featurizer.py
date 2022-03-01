@@ -17,6 +17,7 @@
 
 
 import warnings
+from pathlib import Path
 
 from pyemma._base.loggable import Loggable
 from pyemma._base.serialization.serialization import SerializableMixIn
@@ -68,8 +69,8 @@ class MDFeaturizer(SerializableMixIn, Loggable):
     @topologyfile.setter
     def topologyfile(self, topfile):
         self._topologyfile = topfile
-        if isinstance(topfile, str):
-            self.topology = load_topology_cached(topfile)
+        if isinstance(topfile, (Path, str)):
+            self.topology = load_topology_cached(str(topfile))
             self._topologyfile = topfile
         elif isinstance(topfile, mdtraj.Topology):
             self.topology = topfile

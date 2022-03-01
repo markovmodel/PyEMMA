@@ -58,7 +58,9 @@ class H5Reader(DataSource, SerializableMixIn):
         # and the interface of the cache does not allow for such a mapping (1:1 relation filename:(dimension, len)).
         from pyemma.util.contexts import settings
         with settings(use_trajectory_lengths_cache=False):
-            self.filenames = filenames
+            if not isinstance(filenames, (list, tuple)):
+                filenames = [filenames]
+            self.filenames = [str(fname) for fname in filenames]
 
         # we need to override the ntraj attribute to be equal with the itraj_counter to respect all data sets.
         self._ntraj = self._itraj_counter

@@ -62,7 +62,7 @@ __all__ = ['featurizer',  # IO
            'assign_to_centers',
            ]
 
-_string_types = str
+_string_types = (str, Path)
 
 # ==============================================================================
 #

@@ -27,6 +27,7 @@ import sys
 import warnings
 from io import BytesIO
 from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 
@@ -180,8 +181,10 @@ class TrajectoryInfoCache(object):
 
     def __getitem__(self, filename_reader_tuple):
         filename, reader = filename_reader_tuple
+        if isinstance(filename, Path):
+            filename = str(filename)
         abs_path = os.path.abspath(filename)
-        key = self._get_file_hash_v2(filename)
+        key = self.compute_file_hash(abs_path)
         try:
             info = self._database.get(key)
             if not isinstance(info, TrajInfo):
@@ -226,14 +229,12 @@ class TrajectoryInfoCache(object):
         hash_value ^= hash(data)
         return str(hash_value)
 
-    def _get_file_hash_v2(self, filename):
+    @staticmethod
+    def compute_file_hash(filename):
         statinfo = os.stat(filename)
         # now read the first megabyte and hash it
         with open(filename, mode='rb') as fh:
             data = fh.read(1024)
-
-        if sys.version_info > (3,):
-            long = int
 
         hasher = hashlib.md5()
         hasher.update(os.path.basename(filename).encode('utf-8'))
