@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from deeptime.markov import TransitionCountModel
+from deeptime.markov.msm import MarkovStateModel
 
 from pyemma.util.annotators import alias, aliased, fix_docs
 
@@ -159,7 +161,6 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
     #TODO: store_data is mentioned but not implemented or used!
     def _estimate(self, dtrajs):
-        import bhmm
         # ensure right format
         dtrajs = _types.ensure_dtraj_list(dtrajs)
 
@@ -195,7 +196,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
                 self.stride = int(min(self.lag, 2*corrtime))
 
         # LAG AND STRIDE DATA
-        dtrajs_lagged_strided = bhmm.lag_observations(dtrajs, self.lag, stride=self.stride)
+        from deeptime.markov import compute_dtrajs_effective
+        dtrajs_lagged_strided = compute_dtrajs_effective(dtrajs, self.lag, n_states=-1, stride=self.stride)
 
         # OBSERVATION SET
         if self.observe_nonempty:
@@ -204,54 +206,56 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             observe_subset = None
 
         # INIT HMM
-        from bhmm import init_discrete_hmm
+        from deeptime.markov.hmm import init
         from pyemma.msm.estimators import MaximumLikelihoodMSM
         from pyemma.msm.estimators import OOMReweightedMSM
-        if self.msm_init=='largest-strong':
-            hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
-                                         reversible=self.reversible, stationary=True, regularize=True,
-                                         method='lcs-spectral', separate=self.separate)
-        elif self.msm_init=='all':
-            hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
-                                         reversible=self.reversible, stationary=True, regularize=True,
-                                         method='spectral', separate=self.separate)
-        elif isinstance(self.msm_init, (MaximumLikelihoodMSM, OOMReweightedMSM)):  # initial MSM given.
-            from bhmm.init.discrete import init_discrete_hmm_spectral
-            p0, P0, pobs0 = init_discrete_hmm_spectral(self.msm_init.count_matrix_full, self.nstates,
-                                                       reversible=self.reversible, stationary=True,
-                                                       active_set=self.msm_init.active_set,
-                                                       P=self.msm_init.transition_matrix, separate=self.separate)
-            hmm_init = bhmm.discrete_hmm(p0, P0, pobs0)
-            observe_subset = self.msm_init.active_set  # override observe_subset.
-        else:
-            raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
+        from threadpoolctl import threadpool_limits
+        with threadpool_limits(limits=1):
+            if self.msm_init == 'largest-strong':
+                hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
+                                                              stride=self.stride, mode='largest-regularized',
+                                                              reversible=self.reversible, stationary=True,
+                                                              separate_symbols=self.separate)
+            elif self.msm_init == 'all':
+                hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
+                                                              stride=self.stride, reversible=self.reversible,
+                                                              stationary=True, separate_symbols=self.separate,
+                                                              mode='all-regularized')
+            elif isinstance(self.msm_init, (MaximumLikelihoodMSM, OOMReweightedMSM)):  # initial MSM given.
+                msm = MarkovStateModel(transition_matrix=self.msm_init.P,
+                                       count_model=TransitionCountModel(self.msm_init.count_matrix_active))
+                hmm_init = init.discrete.metastable_from_msm(msm, n_hidden_states=self.nstates,
+                                                             reversible=self.reversible,
+                                                             stationary=True, separate_symbols=self.separate)
+                observe_subset = self.msm_init.active_set  # override observe_subset.
+            else:
+                raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
 
-        # ---------------------------------------------------------------------------------------
-        # Estimate discrete HMM
-        # ---------------------------------------------------------------------------------------
+            # ---------------------------------------------------------------------------------------
+            # Estimate discrete HMM
+            # ---------------------------------------------------------------------------------------
 
-        # run EM
-        from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged_strided, self.nstates, initial_model=hmm_init,
-                                              output='discrete', reversible=self.reversible, stationary=self.stationary,
-                                              accuracy=self.accuracy, maxit=self.maxit)
-        # run
-        hmm_est.fit()
-        # package in discrete HMM
-        self.hmm = bhmm.DiscreteHMM(hmm_est.hmm)
+            # run EM
+            from deeptime.markov.hmm import MaximumLikelihoodHMM
+            hmm_est = MaximumLikelihoodHMM(hmm_init, lagtime=self.lag, stride=self.stride, reversible=self.reversible,
+                                           stationary=self.stationary, accuracy=self.accuracy, maxit=self.maxit)
+            # run
+            hmm_est.fit(dtrajs)
+            # package in discrete HMM
+            self.hmm = hmm_est.fetch_model()
 
         # get model parameters
         self.initial_distribution = self.hmm.initial_distribution
-        transition_matrix = self.hmm.transition_matrix
+        transition_matrix = self.hmm.transition_model.transition_matrix
         observation_probabilities = self.hmm.output_probabilities
 
         # get estimation parameters
-        self.likelihoods = hmm_est.likelihoods  # Likelihood history
+        self.likelihoods = self.hmm.likelihoods  # Likelihood history
         self.likelihood = self.likelihoods[-1]
-        self.hidden_state_probabilities = hmm_est.hidden_state_probabilities  # gamma variables
-        self.hidden_state_trajectories = hmm_est.hmm.hidden_state_trajectories  # Viterbi path
-        self.count_matrix = hmm_est.count_matrix  # hidden count matrix
-        self.initial_count = hmm_est.initial_count  # hidden init count
+        self.hidden_state_probabilities = self.hmm.state_probabilities  # gamma variables
+        self.hidden_state_trajectories = self.hmm.hidden_state_trajectories  # Viterbi path
+        self.count_matrix = self.hmm.count_model.count_matrix  # hidden count matrix
+        self.initial_count = self.hmm.initial_count  # hidden init count
         self._active_set = _np.arange(self.nstates)
 
         # TODO: it can happen that we loose states due to striding. Should we lift the output probabilities afterwards?
@@ -409,10 +413,9 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             mincount_connectivity = 1.0/float(self.nstates)
 
         # handle new connectivity
-        from bhmm.estimators import _tmatrix_disconnected
-        S = _tmatrix_disconnected.connected_sets(self.count_matrix,
-                                                 mincount_connectivity=mincount_connectivity,
-                                                 strong=True)
+        cm = TransitionCountModel(self.count_matrix)
+        S = cm.connected_sets(connectivity_threshold=mincount_connectivity, directed=True)
+
         if inplace:
             submodel_estimator = self
         else:
@@ -427,8 +430,12 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             for s in S:  # keep all (also small) transition counts within strongly connected subsets
                 C[_np.ix_(s, s)] = self.count_matrix[_np.ix_(s, s)]
             # re-estimate transition matrix with disc.
-            P = _tmatrix_disconnected.estimate_P(C, reversible=self.reversible, mincount_connectivity=0)
-            pi = _tmatrix_disconnected.stationary_distribution(P, C)
+            from deeptime.markov.msm import MaximumLikelihoodMSM
+            msmest = MaximumLikelihoodMSM(allow_disconnected=True, reversible=self.reversible, connectivity_threshold=0)
+            msm = msmest.fit_fetch(C)
+            P = msm.transition_matrix
+            from deeptime.markov._transition_matrix import stationary_distribution
+            pi = stationary_distribution(P, C, mincount_connectivity=0)
         else:
             C = self.count_matrix
             P = self.transition_matrix
@@ -436,11 +443,9 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # determine substates
         if isinstance(states, str):
-            from bhmm.estimators import _tmatrix_disconnected
             strong = 'strong' in states
             largest = 'largest' in states
-            S = _tmatrix_disconnected.connected_sets(self.count_matrix, mincount_connectivity=mincount_connectivity,
-                                                     strong=strong)
+            S = cm.connected_sets(connectivity_threshold=mincount_connectivity, directed=strong)
             if largest:
                 score = [len(s) for s in S]
             else:
