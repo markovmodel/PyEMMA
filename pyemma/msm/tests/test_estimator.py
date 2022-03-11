@@ -37,7 +37,7 @@ class TestCK_MSM(unittest.TestCase):
             args[5] = failfast
             return _estimate_param_scan_worker(*args)
 
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(BaseException):
             with mock.patch('pyemma._base.estimator._estimate_param_scan_worker', worker_wrapper):
                 hmm = msm.estimate_hidden_markov_model([0, 0, 0, 1, 1, 1, 0, 0], 2, 1, )
                 hmm.cktest()

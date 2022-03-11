@@ -18,7 +18,6 @@
 
 
 import numpy as _np
-from deeptime.markov._util import lag_observations
 
 from pyemma._base.progress import ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
@@ -219,7 +218,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
             # if stride is different to init_hmsm, check if microstates in lagged-strided trajs are compatible
             if self.stride != self.init_hmsm.stride:
-                dtrajs_lagged_strided = lag_observations(dtrajs, self.lag, stride=self.stride)
+                from deeptime.markov import compute_dtrajs_effective
+                dtrajs_lagged_strided = compute_dtrajs_effective(dtrajs, lagtime=self.lag, n_states=-1,
+                                                                 stride=self.stride)
                 _nstates_obs = _number_of_states(dtrajs_lagged_strided, only_used=True)
                 _nstates_obs_full = _number_of_states(dtrajs)
 
