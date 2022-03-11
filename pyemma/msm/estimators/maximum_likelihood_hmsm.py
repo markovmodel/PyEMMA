@@ -421,7 +421,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         else:
             from copy import deepcopy
             submodel_estimator = deepcopy(self)
-
+        from deeptime.markov._transition_matrix import stationary_distribution
         if len(S) > 1:
             # keep only non-negligible transitions
             C = _np.zeros(self.count_matrix.shape)
@@ -434,7 +434,6 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             msmest = MaximumLikelihoodMSM(allow_disconnected=True, reversible=self.reversible, connectivity_threshold=0)
             msm = msmest.fit_fetch(C)
             P = msm.transition_matrix
-            from deeptime.markov._transition_matrix import stationary_distribution
             pi = stationary_distribution(P, C, mincount_connectivity=0)
         else:
             C = self.count_matrix
@@ -456,7 +455,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             C = C[_np.ix_(states, states)].copy()
             P = P[_np.ix_(states, states)].copy()
             P /= P.sum(axis=1)[:, None]
-            pi = _tmatrix_disconnected.stationary_distribution(P, C)
+            pi = stationary_distribution(P, C)
             submodel_estimator.initial_count = self.initial_count[states]
             submodel_estimator.initial_distribution = self.initial_distribution[states] / self.initial_distribution[states].sum()
 
