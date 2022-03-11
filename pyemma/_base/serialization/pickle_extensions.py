@@ -120,6 +120,7 @@ class HDF5PersistentUnpickler(Unpickler):
                           'numpy',
                           'scipy',
                           'bhmm',
+                          'deeptime'
                           )
 
     def __init__(self, group, file):
