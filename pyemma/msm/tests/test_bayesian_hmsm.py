@@ -29,9 +29,6 @@ class TestBHMM(unittest.TestCase):
         import pyemma.datasets
         obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
 
-        # don't print
-        import bhmm
-        bhmm.config.verbose = False
         # hidden states
         cls.nstates = 2
         # samples

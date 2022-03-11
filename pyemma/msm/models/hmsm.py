@@ -36,14 +36,7 @@ from pyemma.util.annotators import fix_docs
 
 @fix_docs
 class HMSM(_MSM):
-    r""" Hidden Markov model on discrete states.
-
-    Parameters
-    ----------
-    hmm : :class:`DiscreteHMM <bhmm.DiscreteHMM>`
-        Hidden Markov Model
-
-    """
+    r""" Hidden Markov model on discrete states. """
     __serialize_version = 0
 
     def __init__(self, P, pobs, pi=None, dt_model='1 step'):
@@ -51,10 +44,10 @@ class HMSM(_MSM):
 
         Parameters
         ----------
-        Pcoarse : ndarray (m,m)
+        P : ndarray (m,m)
             coarse-grained or hidden transition matrix
 
-        Pobs : ndarray (m,n)
+        pobs : ndarray (m,n)
             observation probability matrix from hidden to observable discrete states
 
         dt_model : str, optional, default='1 step'

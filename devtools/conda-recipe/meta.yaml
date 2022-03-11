@@ -39,7 +39,6 @@ requirements:
     - deeptime >=0.3.0
 
   run:
-    - bhmm >=0.6.3
     - decorator >=4.0.0
     - h5py
     - intel-openmp # [osx]
