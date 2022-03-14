@@ -127,7 +127,7 @@ def _call_member(obj, name, failfast=True, *args, **kwargs):
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
-                                failfast, return_exceptions):
+                                failfast, return_exceptions, limit_threads):
     """ Method that runs estimation for several parameter settings.
 
     Defined as a worker for parallelization
@@ -136,7 +136,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # run estimation
     model = None
     try:  # catch any exception
-        with threadpool_limits(limits=1):
+        with threadpool_limits(limits=1 if limit_threads else None):
             estimator.estimate(X, **params)
             model = estimator.model
     except KeyboardInterrupt:
@@ -329,11 +329,14 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         if logger_available:
             logger.debug('estimating %s with n_jobs=%s', estimator, n_jobs)
         # iterate over parameter settings
+        limit_threads = True
         task_iter = ((estimator,
                       param_set, X,
                       evaluate,
                       evaluate_args,
-                      failfast, return_exceptions)
+                      failfast,
+                      return_exceptions,
+                      limit_threads)
                      for estimator, param_set in zip(estimators, param_sets))
 
         from pathos.multiprocessing import Pool
@@ -361,7 +364,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         with ctx:
             for estimator, param_set in zip(estimators, param_sets):
                 res.append(_estimate_param_scan_worker(estimator, param_set, X,
-                                                       evaluate, evaluate_args, failfast, return_exceptions))
+                                                       evaluate, evaluate_args, failfast, return_exceptions, False))
                 if progress_reporter is not None:
                     progress_reporter._progress_update(1, stage='param-scan')
 
