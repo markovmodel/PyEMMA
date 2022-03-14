@@ -120,7 +120,7 @@ def cktest_resource():
     np.random.mtrand.set_state(rnd_state)
 
 
-@pytest.mark.parametrize('n_jobs', [1, 2, 3])
+@pytest.mark.parametrize('n_jobs', [1, 2])
 def test_cktest(n_jobs, cktest_resource):
     # introduce a (fake) third set in order to model incomplete partition.
     memberships = np.array([[1, 0, 0],
