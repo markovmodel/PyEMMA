@@ -29,6 +29,8 @@ import unittest
 
 from unittest import mock
 
+import pytest
+
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
@@ -254,6 +256,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         pyemma.coordinates.source(xtcfiles, top=pdbfile)
         self.assertEqual(self.db.num_entries, len(xtcfiles))
 
+    @pytest.mark.skip(reason="Sometimes causes CI to go spinning beach ball of death")
     def test_max_n_entries(self):
         data = [np.random.random((10, 3)) for _ in range(20)]
         max_entries = 10
