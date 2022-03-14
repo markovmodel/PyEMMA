@@ -209,40 +209,38 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         from deeptime.markov.hmm import init
         from pyemma.msm.estimators import MaximumLikelihoodMSM
         from pyemma.msm.estimators import OOMReweightedMSM
-        from threadpoolctl import threadpool_limits
-        with threadpool_limits(limits=1):
-            if self.msm_init == 'largest-strong':
-                hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
-                                                              stride=self.stride, mode='largest-regularized',
-                                                              reversible=self.reversible, stationary=True,
-                                                              separate_symbols=self.separate)
-            elif self.msm_init == 'all':
-                hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
-                                                              stride=self.stride, reversible=self.reversible,
-                                                              stationary=True, separate_symbols=self.separate,
-                                                              mode='all-regularized')
-            elif isinstance(self.msm_init, (MaximumLikelihoodMSM, OOMReweightedMSM)):  # initial MSM given.
-                msm = MarkovStateModel(transition_matrix=self.msm_init.P,
-                                       count_model=TransitionCountModel(self.msm_init.count_matrix_active))
-                hmm_init = init.discrete.metastable_from_msm(msm, n_hidden_states=self.nstates,
-                                                             reversible=self.reversible,
-                                                             stationary=True, separate_symbols=self.separate)
-                observe_subset = self.msm_init.active_set  # override observe_subset.
-            else:
-                raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
+        if self.msm_init == 'largest-strong':
+            hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
+                                                          stride=self.stride, mode='largest-regularized',
+                                                          reversible=self.reversible, stationary=True,
+                                                          separate_symbols=self.separate)
+        elif self.msm_init == 'all':
+            hmm_init = init.discrete.metastable_from_data(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
+                                                          stride=self.stride, reversible=self.reversible,
+                                                          stationary=True, separate_symbols=self.separate,
+                                                          mode='all-regularized')
+        elif isinstance(self.msm_init, (MaximumLikelihoodMSM, OOMReweightedMSM)):  # initial MSM given.
+            msm = MarkovStateModel(transition_matrix=self.msm_init.P,
+                                   count_model=TransitionCountModel(self.msm_init.count_matrix_active))
+            hmm_init = init.discrete.metastable_from_msm(msm, n_hidden_states=self.nstates,
+                                                         reversible=self.reversible,
+                                                         stationary=True, separate_symbols=self.separate)
+            observe_subset = self.msm_init.active_set  # override observe_subset.
+        else:
+            raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
 
-            # ---------------------------------------------------------------------------------------
-            # Estimate discrete HMM
-            # ---------------------------------------------------------------------------------------
+        # ---------------------------------------------------------------------------------------
+        # Estimate discrete HMM
+        # ---------------------------------------------------------------------------------------
 
-            # run EM
-            from deeptime.markov.hmm import MaximumLikelihoodHMM
-            hmm_est = MaximumLikelihoodHMM(hmm_init, lagtime=self.lag, stride=self.stride, reversible=self.reversible,
-                                           stationary=self.stationary, accuracy=self.accuracy, maxit=self.maxit)
-            # run
-            hmm_est.fit(dtrajs)
-            # package in discrete HMM
-            self.hmm = hmm_est.fetch_model()
+        # run EM
+        from deeptime.markov.hmm import MaximumLikelihoodHMM
+        hmm_est = MaximumLikelihoodHMM(hmm_init, lagtime=self.lag, stride=self.stride, reversible=self.reversible,
+                                       stationary=self.stationary, accuracy=self.accuracy, maxit=self.maxit)
+        # run
+        hmm_est.fit(dtrajs)
+        # package in discrete HMM
+        self.hmm = hmm_est.fetch_model()
 
         # get model parameters
         self.initial_distribution = self.hmm.initial_distribution

@@ -22,6 +22,8 @@ import inspect
 import sys
 import os
 
+from threadpoolctl import threadpool_limits
+
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util import types as _types
@@ -134,8 +136,9 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # run estimation
     model = None
     try:  # catch any exception
-        estimator.estimate(X, **params)
-        model = estimator.model
+        with threadpool_limits(limits=1):
+            estimator.estimate(X, **params)
+            model = estimator.model
     except KeyboardInterrupt:
         # we want to be able to interactively interrupt the worker, no matter of failfast=False.
         raise
