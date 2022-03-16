@@ -256,7 +256,6 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         pyemma.coordinates.source(xtcfiles, top=pdbfile)
         self.assertEqual(self.db.num_entries, len(xtcfiles))
 
-    @pytest.mark.skip(reason="Sometimes causes CI to go spinning beach ball of death")
     def test_max_n_entries(self):
         data = [np.random.random((10, 3)) for _ in range(20)]
         max_entries = 10
@@ -339,6 +338,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         finally:
             del sys.meta_path[0]
 
+    @pytest.mark.skip(reason="Sometimes causes CI to go spinning beach ball of death")
     def test_in_memory_db(self):
         """ new instance, not yet saved to disk, no lru cache avail """
         old_cfg_dir = config.cfg_dir
