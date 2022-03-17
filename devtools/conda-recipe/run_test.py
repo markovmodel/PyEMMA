@@ -18,7 +18,7 @@ junit_xml = os.path.join(xml_results_dest, 'junit.xml')
 cov_xml = os.path.join(xml_results_dest, 'coverage.xml')
 
 print('junit destination:', junit_xml)
-njobs_args = '-p no:xdist' # if os.getenv('TRAVIS') or os.getenv('CIRCLECI') else '-n2'
+njobs_args = '-p no:xdist'  # if os.getenv('TRAVIS') else '-n2'
 
 pytest_args = ("-v --pyargs {test_pkg} "
                "--cov={cover_pkg} "

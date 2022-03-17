@@ -29,6 +29,8 @@ import unittest
 
 from unittest import mock
 
+import pytest
+
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
@@ -49,6 +51,7 @@ xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
 
 
+@pytest.mark.skip(reason="Sometimes causes CI to go spinning beach ball of death")
 class TestTrajectoryInfoCache(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -336,6 +339,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         finally:
             del sys.meta_path[0]
 
+    @pytest.mark.skip(reason="Sometimes causes CI to go spinning beach ball of death")
     def test_in_memory_db(self):
         """ new instance, not yet saved to disk, no lru cache avail """
         old_cfg_dir = config.cfg_dir

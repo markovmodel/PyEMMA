@@ -138,11 +138,8 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(actual.count_matrix_EM, desired.count_matrix_EM)
 
         self.assertEqual(actual.dt_traj, desired.dt_traj)
-
         np.testing.assert_equal(actual.hidden_state_probabilities, desired.hidden_state_probabilities)
-        self.assertEqual(actual.hidden_state_trajectories.shape, desired.hidden_state_trajectories.shape)
-        for x, y in zip(actual.hidden_state_trajectories, desired.hidden_state_trajectories):
-            np.testing.assert_equal(x, y)
+        np.testing.assert_equal(actual.hidden_state_trajectories, desired.hidden_state_trajectories)
 
         np.testing.assert_equal(actual.initial_count, desired.initial_count)
         np.testing.assert_equal(actual.initial_distribution, desired.initial_distribution)

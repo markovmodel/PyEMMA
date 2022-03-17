@@ -293,7 +293,6 @@ metadata = dict(
     tests_require=['pytest'],
     # runtime dependencies
     install_requires=[
-        'bhmm>=0.6,<0.7',
         'decorator>=4.0.0',
         'h5py>=2.7.1',
         'matplotlib',

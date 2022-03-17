@@ -19,7 +19,6 @@
 
 import numpy as _np
 
-
 from pyemma._base.progress import ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
@@ -27,7 +26,6 @@ from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma.util.units import TimeUnit
-from bhmm import lag_observations as _lag_observations
 from msmtools.estimation import number_of_states as _number_of_states
 
 __author__ = 'noe'
@@ -220,7 +218,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
             # if stride is different to init_hmsm, check if microstates in lagged-strided trajs are compatible
             if self.stride != self.init_hmsm.stride:
-                dtrajs_lagged_strided = _lag_observations(dtrajs, self.lag, stride=self.stride)
+                from deeptime.markov import compute_dtrajs_effective
+                dtrajs_lagged_strided = compute_dtrajs_effective(dtrajs, lagtime=self.lag, n_states=-1,
+                                                                 stride=self.stride)
                 _nstates_obs = _number_of_states(dtrajs_lagged_strided, only_used=True)
                 _nstates_obs_full = _number_of_states(dtrajs)
 
@@ -279,29 +279,46 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
         if self.show_progress:
             self._progress_register(self.nsamples, description='Sampling HMSMs', stage=0)
 
-            def call_back():
-                self._progress_update(1, stage=0)
-        else:
-            call_back = None
+            from deeptime.util.callbacks import ProgressCallback
+            outer_self = self
 
-        from bhmm import discrete_hmm, bayesian_hmm
+            class BHMMCallback(ProgressCallback):
+
+                def __call__(self, inc=1, *args, **kw):
+                    super().__call__(inc, *args, **kw)
+                    outer_self._progress_update(1, stage=0)
+
+            progress = BHMMCallback
+        else:
+            progress = None
+
+        from deeptime.markov.hmm import BayesianHMM
 
         if self.init_hmsm is not None:
             hmm_mle = self.init_hmsm.hmm
+            estimator = BayesianHMM(hmm_mle, n_samples=self.nsamples, stride=self.stride,
+                                    initial_distribution_prior=self.p0_prior,
+                                    transition_matrix_prior=self.transition_matrix_prior,
+                                    store_hidden=self.store_hidden, reversible=self.reversible,
+                                    stationary=self.stationary)
         else:
-            hmm_mle = discrete_hmm(self.initial_distribution, self.transition_matrix, B_init)
+            estimator = BayesianHMM.default(dtrajs, n_hidden_states=self.nstates, lagtime=self.lag,
+                                            n_samples=self.nsamples, stride=self.stride,
+                                            initial_distribution_prior=self.p0_prior,
+                                            transition_matrix_prior=self.transition_matrix_prior,
+                                            store_hidden=self.store_hidden, reversible=self.reversible,
+                                            stationary=self.stationary,
+                                            prior_submodel=True, separate=self.separate)
 
-        sampled_hmm = bayesian_hmm(self.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   reversible=self.reversible, stationary=self.stationary,
-                                   p0_prior=self.p0_prior, transition_matrix_prior=self.transition_matrix_prior,
-                                   store_hidden=self.store_hidden, call_back=call_back)
-
+        estimator.fit(dtrajs, n_burn_in=0, n_thin=1, progress=progress)
+        model = estimator.fetch_model()
         if self.show_progress:
             self._progress_force_finish(stage=0)
 
         # Samples
-        sample_inp = [(m.transition_matrix, m.stationary_distribution, m.output_probabilities)
-                      for m in sampled_hmm.sampled_hmms]
+        sample_inp = [(m.transition_model.transition_matrix, m.transition_model.stationary_distribution,
+                       m.output_probabilities)
+                      for m in model.samples]
 
         samples = []
         for P, pi, pobs in sample_inp:  # restrict to observable set if necessary
@@ -310,7 +327,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
             samples.append(_HMSM(P, pobs, pi=pi, dt_model=self.dt_model))
 
         # store results
-        self.sampled_trajs = [sampled_hmm.sampled_hmms[i].hidden_state_trajectories for i in range(self.nsamples)]
+        self.sampled_trajs = [model.samples[i].hidden_state_trajectories for i in range(self.nsamples)]
         self.update_model_params(samples=samples)
 
         # deal with connectivity

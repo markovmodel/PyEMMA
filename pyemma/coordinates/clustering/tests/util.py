@@ -59,7 +59,7 @@ def make_blobs(n_samples=100, n_features=2, centers=3, cluster_std=1.0,
         centers = generator.uniform(center_box[0], center_box[1],
                                     size=(centers, n_features))
     else:
-        from bhmm._external.sklearn.utils import check_array
+        from sklearn.utils import check_array
         centers = check_array(centers)
         n_features = centers.shape[1]
 

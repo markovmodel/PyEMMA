@@ -29,9 +29,6 @@ class TestBHMM(unittest.TestCase):
         import pyemma.datasets
         obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
 
-        # don't print
-        import bhmm
-        bhmm.config.verbose = False
         # hidden states
         cls.nstates = 2
         # samples
@@ -332,7 +329,7 @@ class TestBHMMSpecialCases(unittest.TestCase):
     def test_separate_states(self):
         dtrajs = [np.array([0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1]),
                   np.array([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]),]
-        hmm_bayes = bayesian_hidden_markov_model(dtrajs, 3, lag=1, separate=[0], nsamples=100)
+        hmm_bayes = bayesian_hidden_markov_model(dtrajs, 3, lag=1, separate=[0], nsamples=100, store_hidden=True)
         # we expect zeros in all samples at the following indexes:
         pobs_zeros = [[0, 1, 2, 2, 2], [0, 0, 1, 2, 3]]
         for s in hmm_bayes.samples:
