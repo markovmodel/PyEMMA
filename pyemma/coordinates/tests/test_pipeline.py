@@ -17,22 +17,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
-
-import unittest
 import os
+import unittest
 
 import numpy as np
+import pkg_resources
+from deeptime.markov.msm import MarkovStateModel
 
+from pyemma.coordinates import api
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data import MDFeaturizer
-from pyemma.coordinates import api
-import msmtools.generation as msmgen
-import tempfile
-
-import pkg_resources
 from pyemma.util.files import TemporaryDirectory
-import pyemma.coordinates as coor
+
 
 class TestPipeline(unittest.TestCase):
     @classmethod
@@ -54,7 +50,7 @@ class TestPipeline(unittest.TestCase):
         # continuous trajectory
         x = np.zeros((t, 2))
         # hidden trajectory
-        dtraj = msmgen.generate_traj(p, t)
+        dtraj = MarkovStateModel(p).simulate(t)
         for t in range(t):
             s = dtraj[t]
             x[t, 0] = widths[s][0] * np.random.randn() + means[s][0]

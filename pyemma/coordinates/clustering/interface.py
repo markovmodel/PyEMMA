@@ -230,10 +230,7 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
             # return
             return mapped
 
-    def save_dtrajs(self, trajfiles=None, prefix='',
-                    output_dir='.',
-                    output_format='ascii',
-                    extension='.dtraj'):
+    def save_dtrajs(self, trajfiles=None, prefix='', output_dir='.', output_format='ascii', extension='.dtraj'):
         """saves calculated discrete trajectories. Filenames are taken from
         given reader. If data comes from memory dtrajs are written to a default
         filename.
@@ -258,9 +255,14 @@ class AbstractClustering(StreamingEstimationTransformer, Model, ClusterMixin, NJ
 
         # obtain filenames from input (if possible, reader is a featurereader)
         if output_format == 'ascii':
-            from msmtools.dtraj import write_discrete_trajectory as write_dtraj
+            def write_dtraj(_filename, _dtraj):
+                _dtraj = np.asarray(_dtraj)
+                with open(_filename, 'w') as f:
+                    _dtraj.tofile(f, sep='\n', format='%d')
         else:
-            from msmtools.dtraj import save_discrete_trajectory as write_dtraj
+            def write_dtraj(_filename, _dtraj):
+                _dtraj = np.asarray(_dtraj)
+                np.save(_filename, _dtraj)
         import os.path as path
 
         output_files = []

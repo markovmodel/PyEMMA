@@ -80,18 +80,14 @@ Low-level functions for estimation and analysis of transition matrices and io ha
 """
 
 ######################################################
-from msmtools.analysis.dense.pcca import PCCA
-
-#####################################################
-# Estimators and models
-from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
-
-from .estimators import MaximumLikelihoodMSM, BayesianMSM
-from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
-from .estimators import AugmentedMarkovModel, OOMReweightedMSM
-from .estimators import ImpliedTimescales
-from .estimators import ChapmanKolmogorovValidator
-
 
 # high-level api
 from .api import *
+from .estimators import AugmentedMarkovModel, OOMReweightedMSM
+from .estimators import ChapmanKolmogorovValidator
+from .estimators import ImpliedTimescales
+from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import MaximumLikelihoodMSM, BayesianMSM
+#####################################################
+# Estimators and models
+from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux

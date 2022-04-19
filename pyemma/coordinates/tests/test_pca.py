@@ -23,17 +23,16 @@ Created on 02.02.2015
 @author: marscher
 '''
 
-import unittest
 import os
-import pkg_resources
+import unittest
+from logging import getLogger
 
 import numpy as np
+import pkg_resources
+from deeptime.markov.msm import MarkovStateModel
 
-from pyemma.coordinates import pca, source
-from logging import getLogger
 import pyemma.util.types as types
-
-
+from pyemma.coordinates import pca, source
 
 logger = getLogger('pyemma.'+'TestPCA')
 
@@ -42,8 +41,6 @@ class TestPCAExtensive(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import msmtools.generation as msmgen
-
         # set random state, remember old one and set it back in tearDownClass
         cls.old_state = np.random.get_state()
         np.random.seed(0)
@@ -57,7 +54,7 @@ class TestPCAExtensive(unittest.TestCase):
         # continuous trajectory
         cls.X = np.zeros((cls.T, 2))
         # hidden trajectory
-        dtraj = msmgen.generate_traj(cls.P, cls.T)
+        dtraj = MarkovStateModel(cls.P).simulate(cls.T)
         for t in range(cls.T):
             s = dtraj[t]
             cls.X[t,0] = widths[s][0] * np.random.randn() + means[s][0]

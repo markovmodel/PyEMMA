@@ -28,6 +28,7 @@ import os
 import pkg_resources
 import numpy as np
 import scipy.linalg as scl
+from deeptime.markov.msm import MarkovStateModel
 
 from pyemma.coordinates import api
 
@@ -198,8 +199,6 @@ class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with numpy_random_seed(123):
-            import msmtools.generation as msmgen
-
             # generate HMM with two Gaussians
             cls.P = np.array([[0.99, 0.01],
                               [0.01, 0.99]])
@@ -209,7 +208,7 @@ class TestTICAExtensive(unittest.TestCase):
             # continuous trajectory
             cls.X = np.zeros((cls.T, 2))
             # hidden trajectory
-            dtraj = msmgen.generate_traj(cls.P, cls.T)
+            dtraj = MarkovStateModel(cls.P).simulate(cls.T)
             for t in range(cls.T):
                 s = dtraj[t]
                 cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
