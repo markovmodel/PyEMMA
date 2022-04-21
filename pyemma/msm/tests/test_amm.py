@@ -27,8 +27,8 @@ import unittest
 import numpy as np
 import warnings
 
-from msmtools.generation import generate_traj
-from pyemma.msm.tests.birth_death_chain import BirthDeathChain
+from deeptime.data import BirthDeathChain
+
 from pyemma.msm import estimate_augmented_markov_model
 from pyemma.msm.estimators import AugmentedMarkovModel
 from pyemma.msm.tests.test_msm import TestMSMDoubleWell as _tmsm
@@ -56,8 +56,7 @@ class TestAMMSimple(unittest.TestCase):
         p[4] = 1.0 - 10 ** (-b)
 
         bdc = BirthDeathChain(q, p)
-        P = bdc.transition_matrix()
-        self.dtraj = generate_traj(P, 10000, start=0)
+        self.dtraj = bdc.msm.simulate(10000, start=0)
         self.tau = 1
 
         self.k = 3

@@ -18,6 +18,8 @@
 
 import unittest
 import numpy as np
+from deeptime.markov.tools.analysis import is_transition_matrix, is_reversible, stationary_distribution
+
 from pyemma.msm import bayesian_markov_model
 
 
@@ -83,14 +85,11 @@ class TestBMSM(unittest.TestCase):
         # shape
         assert np.array_equal(np.shape(Psamples), (self.nsamples, self.nstates, self.nstates))
         # consistency
-        import msmtools.analysis as msmana
         for P in Psamples:
-            assert msmana.is_transition_matrix(P)
+            assert is_transition_matrix(P)
             try:
-                assert msmana.is_reversible(P)
+                assert is_reversible(P)
             except AssertionError:
-                # re-do calculation msmtools just performed to get details
-                from msmtools.analysis import stationary_distribution
                 mu = stationary_distribution(P)
                 X = mu[:, np.newaxis] * P
                 np.testing.assert_allclose(X, np.transpose(X), atol=1e-12,
@@ -101,12 +100,11 @@ class TestBMSM(unittest.TestCase):
         self._transition_matrix_stats(self.bmsm_revpi)
 
     def _transition_matrix_stats(self, msm):
-        import msmtools.analysis as msmana
         # mean
         Pmean = msm.sample_mean('transition_matrix')
         # test shape and consistency
         assert np.array_equal(Pmean.shape, (self.nstates, self.nstates))
-        assert msmana.is_transition_matrix(Pmean)
+        assert is_transition_matrix(Pmean)
         # std
         Pstd = msm.sample_std('transition_matrix')
         # test shape

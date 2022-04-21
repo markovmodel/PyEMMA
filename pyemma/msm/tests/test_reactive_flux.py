@@ -1,21 +1,3 @@
-
-# This file is part of MSMTools.
-#
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
-#
-# MSMTools is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 r"""Unit test for the ReactiveFlux object
 
 .. moduleauthor:: F.Noe <frank  DOT noe AT fu-berlin DOT de>
@@ -23,10 +5,10 @@ r"""Unit test for the ReactiveFlux object
 """
 import unittest
 import numpy as np
+from deeptime.markov.tools.analysis import stationary_distribution
 from numpy.testing import assert_allclose
 
 from pyemma import msm as msmapi
-import msmtools.analysis as msmana
 
 
 class TestReactiveFluxFunctions(unittest.TestCase):
@@ -89,7 +71,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
                               [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.3, 0.5, 0.1, 0.0],
                               [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.1, 0.5, 0.2],
                               [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.2, 0.5]])
-        pstat2_nonrev = msmana.statdist(P2_nonrev)
+        pstat2_nonrev = stationary_distribution(P2_nonrev)
         # make reversible
         C = np.dot(np.diag(pstat2_nonrev), P2_nonrev)
         Csym = C + C.T

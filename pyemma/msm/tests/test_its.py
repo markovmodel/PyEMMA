@@ -25,13 +25,13 @@ r"""Unit test for the its method
 """
 
 import unittest
+
 import numpy as np
+from deeptime.markov.msm import MarkovStateModel
+from deeptime.markov.tools.analysis import timescales
+
 from pyemma import msm
-from msmtools.analysis import timescales
-
-from pyemma.msm import ImpliedTimescales
 from pyemma.msm.api import timescales_msm
-
 
 
 class TestITS_MSM(unittest.TestCase):
@@ -39,7 +39,6 @@ class TestITS_MSM(unittest.TestCase):
     # run only-once
     @classmethod
     def setUpClass(cls):
-        from msmtools.generation import generate_traj
         cls.dtrajs = []
 
         # simple case
@@ -63,7 +62,7 @@ class TestITS_MSM(unittest.TestCase):
 
         # Markovian timeseries with timescale about 5
         cls.P2 = np.array([[0.9, 0.1], [0.1, 0.9]])
-        cls.dtraj2 = generate_traj(cls.P2, 1000)
+        cls.dtraj2 = MarkovStateModel(cls.P2).simulate(1000)
         cls.dtrajs.append([cls.dtraj2])
 
         # Markovian timeseries with timescale about 5
@@ -71,7 +70,7 @@ class TestITS_MSM(unittest.TestCase):
                             [0.05, 0.93, 0.02, 0.0],
                             [0.0, 0.02, 0.93, 0.05],
                             [0.0, 0.0, 0.05, 0.95]])
-        cls.dtraj4_2 = generate_traj(cls.P4, 20000)
+        cls.dtraj4_2 = MarkovStateModel(cls.P4).simulate(20000)
         I = [0, 0, 1, 1]  # coarse-graining
         for i in range(len(cls.dtraj4_2)):
             cls.dtraj4_2[i] = I[cls.dtraj4_2[i]]

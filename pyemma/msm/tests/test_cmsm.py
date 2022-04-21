@@ -26,6 +26,7 @@ import warnings
 
 import numpy as np
 import scipy.sparse
+from deeptime.markov.tools.analysis import is_transition_matrix, is_connected, is_reversible
 
 import pyemma
 from pyemma.msm import estimate_markov_model
@@ -256,13 +257,11 @@ class TestCMSMDoubleWell(unittest.TestCase):
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
-        import msmtools.analysis as msmana
-
-        assert (msmana.is_transition_matrix(P))
-        assert (msmana.is_connected(P))
+        assert (is_transition_matrix(P))
+        assert (is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))
+            assert (is_reversible(P))
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)

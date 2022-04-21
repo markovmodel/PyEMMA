@@ -26,14 +26,13 @@ import unittest
 
 import numpy as np
 import pytest
+from deeptime.data import BirthDeathChain
 
 import pyemma
 
 from pyemma import msm
-from msmtools.generation import generate_traj
-from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
+from deeptime.markov.tools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
 
 import sys
@@ -60,8 +59,7 @@ def cktest_resource():
     p[4] = 1.0 - 10 ** (-b)
 
     bdc = BirthDeathChain(q, p)
-    P = bdc.transition_matrix()
-    dtraj = generate_traj(P, 10000, start=0)
+    dtraj = bdc.msm.simulate(10000, start=0)
     tau = 1
 
     """Estimate MSM"""
