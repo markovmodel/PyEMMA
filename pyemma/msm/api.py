@@ -1545,6 +1545,7 @@ def estimate_augmented_markov_model(dtrajs, ftrajs, lag, m, sigmas,
         # estimate and return
         return mlamm.estimate(dtrajs)
 
+
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
 
