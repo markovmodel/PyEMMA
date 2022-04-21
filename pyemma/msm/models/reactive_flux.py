@@ -68,6 +68,12 @@ class ReactiveFlux(_ReactiveFlux, SerializableMixIn):
 
     __serialize_version = 1
 
+    @staticmethod
+    def from_deeptime_model(m: _ReactiveFlux, dt_model):
+        return ReactiveFlux(m.source_states, m.target_states, flux=m.net_flux,
+                            mu=m.stationary_distribution, qminus=m.backward_committor,
+                            qplus=m.forward_committor, gross_flux=m.gross_flux, dt_model=dt_model)
+
     def __init__(self, A, B, flux, mu=None, qminus=None, qplus=None, gross_flux=None, dt_model='1 step'):
         super(ReactiveFlux, self).__init__(A, B, flux, mu, qminus, qplus, gross_flux)
         self.dt_model = dt_model
@@ -151,8 +157,5 @@ class ReactiveFlux(_ReactiveFlux, SerializableMixIn):
         return super().major_flux(fraction) / self._timeunit_model.dt
 
     def coarse_grain(self, user_sets):
-        sets, tpt_cg = super().coarse_grain(user_sets)
-        tpt_cg = ReactiveFlux(tpt_cg.source_states, tpt_cg.target_states, flux=tpt_cg.net_flux,
-                              mu=tpt_cg.stationary_distribution, qminus=tpt_cg.backward_committor,
-                              qplus=tpt_cg.forward_committor, gross_flux=tpt_cg.gross_flux, dt_model=self.dt_model)
-        return sets, tpt_cg
+        sets, model = super().coarse_grain(user_sets)
+        return sets, ReactiveFlux.from_deeptime_model(model, self.dt_model)

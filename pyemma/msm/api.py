@@ -43,7 +43,6 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 
 __all__ = ['markov_model',
            'timescales_msm',
-           'its',
            'estimate_markov_model',
            'bayesian_markov_model',
            'timescales_hmsm',
@@ -1623,28 +1622,19 @@ def tpt(msmobj, A, B):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-    rate_matrix = False : boolean
-        By default (False), T is a transition matrix.
-        If set to True, T is a rate matrix.
 
     Notes
     -----
     The central object used in transition path theory is
-    the forward and backward comittor function.
+    the forward and backward committor function.
 
-    TPT (originally introduced in [1]) for continous systems has a
+    TPT (originally introduced in [1]) for continuous systems has a
     discrete version outlined in [2]. Here, we use the transition
     matrix formulation described in [3].
 
     See also
     --------
-    msmtools.analysis.committor, ReactiveFlux
+    deeptime.markov.tools.analysis.committor, ReactiveFlux
 
     References
     ----------
@@ -1659,34 +1649,9 @@ def tpt(msmobj, A, B):
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
 
     """
-    from msmtools.flux import flux_matrix, to_netflux
-    import msmtools.analysis as msmana
+    from deeptime.markov.msm import MarkovStateModel
+    msm = MarkovStateModel(msmobj.transition_matrix, stationary_distribution=msmobj.stationary_distribution)
+    flux = msm.reactive_flux(source_states=A, target_states=B)
 
-    T = msmobj.transition_matrix
-    mu = msmobj.stationary_distribution
-    A = _types.ensure_ndarray(A, kind='i')
-    B = _types.ensure_ndarray(B, kind='i')
-
-    if len(A) == 0 or len(B) == 0:
-        raise ValueError('set A or B is empty')
-    n = T.shape[0]
-    if len(A) > n or len(B) > n or max(A) > n or max(B) > n:
-        raise ValueError('set A or B defines more states, than given transition matrix.')
-
-    # forward committor
-    qplus = msmana.committor(T, A, B, forward=True)
-    # backward committor
-    if msmana.is_reversible(T, mu=mu):
-        qminus = 1.0 - qplus
-    else:
-        qminus = msmana.committor(T, A, B, forward=False, mu=mu)
-    # gross flux
-    grossflux = flux_matrix(T, mu, qminus, qplus, netflux=False)
-    # net flux
-    netflux = to_netflux(grossflux)
-
-    # construct flux object
     from .models.reactive_flux import ReactiveFlux
-
-    F = ReactiveFlux(A, B, netflux, mu=mu, qminus=qminus, qplus=qplus, gross_flux=grossflux, dt_model=msmobj.dt_model)
-    return F
+    return ReactiveFlux.from_deeptime_model(flux, msmobj.dt_model)
