@@ -19,8 +19,10 @@
 
 
 import numpy as np
+from deeptime.markov import number_of_states, count_states
+from deeptime.markov.tools.estimation import effective_count_matrix, connected_sets
+from msmtools.estimation import count_matrix
 
-from msmtools import estimation as msmest
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
@@ -116,12 +118,11 @@ class DiscreteTrajectoryStats(object):
 
         ## basic count statistics
         # histogram
-        from msmtools.dtraj import count_states
         self._hist = count_states(self._dtrajs, ignore_negative=True)
         # total counts
         self._total_count = np.sum(self._hist)
         # number of states
-        self._nstates = msmest.number_of_states(dtrajs)
+        self._nstates = number_of_states(dtrajs)
 
         # not yet estimated
         self._counted_at_lag = False
@@ -139,7 +140,6 @@ class DiscreteTrajectoryStats(object):
         -------
         Cconn, S
         """
-        import msmtools.estimation as msmest
         import scipy.sparse as scs
         if scs.issparse(C):
             Cconn = C.tocsr(copy=True)
@@ -150,7 +150,7 @@ class DiscreteTrajectoryStats(object):
             Cconn[np.where(Cconn < mincount_connectivity)] = 0
 
         # treat each connected set separately
-        S = msmest.connected_sets(Cconn, directed=strong)
+        S = connected_sets(Cconn, directed=strong)
         return S
 
     def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n',
@@ -197,21 +197,21 @@ class DiscreteTrajectoryStats(object):
                     while -1 in d:
                         mask = (d == -1)
                         d[mask] = d[np.roll(mask, -1)]
-                self._C = msmest.count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
+                self._C = count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
 
             else:
                 raise NotImplementedError('Milestoning method {} not implemented.'.format(milestoning_method))
 
 
         elif count_mode == 'sliding':
-            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+            self._C = count_matrix(self._dtrajs, lag, sliding=True)
         elif count_mode == 'sample':
-            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
+            self._C = count_matrix(self._dtrajs, lag, sliding=False)
         elif count_mode == 'effective':
             if core_set is not None:
                 raise RuntimeError('Cannot estimate core set MSM with effective counting.')
             from pyemma.util.reflection import getargspec_no_self
-            argspec = getargspec_no_self(msmest.effective_count_matrix)
+            argspec = getargspec_no_self(effective_count_matrix)
             kw = {}
             from pyemma.util.contexts import nullcontext
             ctx = nullcontext()
@@ -224,13 +224,13 @@ class DiscreteTrajectoryStats(object):
                 if show_progress:
                     pg = ProgressReporter()
                     # this is a fast operation
-                    C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+                    C_temp = count_matrix(self._dtrajs, lag, sliding=True)
                     pg.register(C_temp.nnz, '{}: compute stat. inefficiencies'.format(name), stage=0)
                     del C_temp
                     kw['callback'] = pg.update
                     ctx = pg.context(stage=0)
             with ctx:
-                self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
+                self._C = effective_count_matrix(self._dtrajs, lag, **kw)
         else:
             raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
@@ -244,7 +244,7 @@ class DiscreteTrajectoryStats(object):
             self._connected_sets = \
                 self._compute_connected_sets(self._C, mincount_connectivity=self._mincount_connectivity)
         else:
-            self._connected_sets = msmest.connected_sets(self._C)
+            self._connected_sets = connected_sets(self._C)
 
         # set sizes and count matrices on reversibly connected sets
         self._connected_set_sizes = np.zeros((len(self._connected_sets)))
