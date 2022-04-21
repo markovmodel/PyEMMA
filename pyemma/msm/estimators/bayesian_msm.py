@@ -23,7 +23,6 @@ from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.annotators import fix_docs
-from pyemma.util.types import ensure_dtraj_list
 
 __author__ = 'noe'
 
