@@ -1,4 +1,5 @@
 import numpy as _np
+from deeptime.markov import count_states
 from deeptime.markov.tools.estimation import count_matrix
 
 from pyemma._base.estimator import Estimator as _Estimator
@@ -800,8 +801,7 @@ class _MSMEstimator(_Estimator, _MSM):
         statdist_full = _np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
         # histogram observed states
-        import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
+        hist = 1.0 * count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
@@ -861,7 +861,7 @@ class _MSMEstimator(_Estimator, _MSM):
         estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
-    def coarse_grain(self, ncoarse, method='hmm'):
+    def coarse_grain(self, ncoarse):
         r"""Returns a coarse-grained Markov model.
 
         Currently only the HMM method described in [1]_ is available for coarse-graining MSMs.

@@ -16,7 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
-from msmtools import estimation as msmest
+from deeptime.markov.tools.estimation import largest_connected_submatrix, largest_connected_set, transition_matrix, \
+    effective_count_matrix
+from msmtools.estimation import is_connected
 
 from pyemma.msm.estimators._msm_estimator_base import _MSMEstimator
 from pyemma.util.annotators import aliased, fix_docs
@@ -192,7 +194,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
         # Find visited states with positive stationary probabilities"""
         pos = _np.where(pi_visited > 0.0)[0]
         # Reduce C to positive probability states"""
-        C_pos = msmest.connected_cmatrix(C, lcc=pos)
+        C_pos = largest_connected_submatrix(C, lcc=pos)
         if C_pos.sum() == 0.0:
             errstr = """The set of states with positive stationary
             probabilities is not visited by the trajectories. A MSM
@@ -200,7 +202,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
             not be estimated"""
             raise ValueError(errstr)
         # Compute largest connected set of C_pos, undirected connectivity"""
-        lcc = msmest.largest_connected_set(C_pos, directed=False)
+        lcc = largest_connected_set(C_pos, directed=False)
         return pos[lcc]
 
     def _estimate(self, dtrajs):
@@ -277,21 +279,20 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         # Estimate transition matrix
         if self.connectivity == 'largest':
-            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         mu=statdist_active, maxiter=self.maxiter,
-                                         maxerr=self.maxerr, **opt_args)
+            P = transition_matrix(self._C_active, reversible=self.reversible,
+                                  mu=statdist_active, maxiter=self.maxiter,
+                                  maxerr=self.maxerr, **opt_args)
         elif self.connectivity == 'none':
             # reversible mode only possible if active set is connected
             # - in this case all visited states are connected and thus
             # this mode is identical to 'largest'
-            if self.reversible and not msmest.is_connected(self._C_active):
+            if self.reversible and not is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode "none", '
                                  'because the set of all visited states is not reversibly connected')
-            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         mu=statdist_active,
-                                         maxiter=self.maxiter, maxerr=self.maxerr,
-                                         **opt_args
-                                         )
+            P = transition_matrix(self._C_active, reversible=self.reversible,
+                                  mu=statdist_active,
+                                  maxiter=self.maxiter, maxerr=self.maxerr,
+                                  **opt_args)
         else:
             raise NotImplementedError(
                 'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
@@ -322,7 +323,7 @@ class MaximumLikelihoodMSM(_MSMEstimator):
 
         """
         self._check_is_estimated()
-        Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
+        Ceff_full = effective_count_matrix(self._dtrajs_full, self.lag)
         from pyemma.util.linalg import submatrix
         Ceff = submatrix(Ceff_full, self.active_set)
         return Ceff

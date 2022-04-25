@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from deeptime.markov.tools.estimation import tmatrix_sampler
 
 from pyemma._base.parallel import NJobsMixIn as _NJobsMixIn
 from pyemma._base.progress import ProgressReporterMixin as _ProgressReporterMixin
@@ -190,7 +190,6 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
         _MLMSM._estimate(self, dtrajs)
 
         # transition matrix sampler
-        from msmtools.estimation import tmatrix_sampler
         from math import sqrt
         if self.nsteps is None:
             self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate

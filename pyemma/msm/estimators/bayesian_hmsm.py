@@ -18,6 +18,8 @@
 
 
 import numpy as _np
+from deeptime.markov import number_of_states
+from deeptime.markov.tools.analysis import is_connected
 
 from pyemma._base.progress import ProgressReporterMixin
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
@@ -26,7 +28,6 @@ from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.annotators import fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma.util.units import TimeUnit
-from msmtools.estimation import number_of_states as _number_of_states
 
 __author__ = 'noe'
 
@@ -221,8 +222,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                 from deeptime.markov import compute_dtrajs_effective
                 dtrajs_lagged_strided = compute_dtrajs_effective(dtrajs, lagtime=self.lag, n_states=-1,
                                                                  stride=self.stride)
-                _nstates_obs = _number_of_states(dtrajs_lagged_strided, only_used=True)
-                _nstates_obs_full = _number_of_states(dtrajs)
+                _nstates_obs = number_of_states(dtrajs_lagged_strided, only_used=True)
+                _nstates_obs_full = number_of_states(dtrajs)
 
                 if _np.setxor1d(_np.concatenate(dtrajs_lagged_strided),
                                  _np.concatenate(self.init_hmsm._dtrajs_lagged)).size != 0:
@@ -252,8 +253,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
                                      dt_model=TimeUnit(self.dt_traj).get_scaled(self.lag))
 
         # check if we have a valid initial model
-        import msmtools.estimation as msmest
-        if self.reversible and not msmest.is_connected(self.count_matrix):
+        if self.reversible and not is_connected(self.count_matrix):
             raise NotImplementedError('Encountered disconnected count matrix:\n{count_matrix} '
                                       'with reversible Bayesian HMM sampler using lag={lag}'
                                       ' and stride={stride}. Consider using shorter lag, '
