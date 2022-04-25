@@ -70,13 +70,6 @@ If you are not an expert user, use the API functions above.
    ReactiveFlux
    PCCA
 
-
-MSM functions (low-level API)
-=============================
-Low-level functions for estimation and analysis of transition matrices and io have been moved to `MSMTools
-<https://msmtools.readthedocs.io/>`_.
-
-
 """
 
 from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux

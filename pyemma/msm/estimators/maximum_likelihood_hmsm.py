@@ -190,7 +190,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
                 import warnings
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', category=ImaginaryEigenValueWarning,
-                                            module='msmtools.analysis.dense.decomposition')
+                                            module='deeptime.markov.tools.analysis.dense.decomposition')
                     corrtime = max(1, msm_nr.timescales()[self.nstates - 1])
                 # use the smaller of these two pessimistic estimates
                 self.stride = int(min(self.lag, 2*corrtime))

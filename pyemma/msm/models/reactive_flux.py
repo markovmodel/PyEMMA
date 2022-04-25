@@ -38,7 +38,7 @@ class ReactiveFlux(_ReactiveFlux, SerializableMixIn):
     total transition rate or mean first passage time, and they can be coarse-grained onto a set discretization
     of the node set.
 
-    Fluxes can be computed in EMMA using transition path theory - see :func:`msmtools.tpt`
+    Fluxes can be computed in EMMA using transition path theory
 
     Parameters
     ----------

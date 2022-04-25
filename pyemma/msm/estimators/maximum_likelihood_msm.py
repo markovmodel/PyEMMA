@@ -17,8 +17,7 @@
 
 import numpy as _np
 from deeptime.markov.tools.estimation import largest_connected_submatrix, largest_connected_set, transition_matrix, \
-    effective_count_matrix
-from msmtools.estimation import is_connected
+    effective_count_matrix, is_connected
 
 from pyemma.msm.estimators._msm_estimator_base import _MSMEstimator
 from pyemma.util.annotators import aliased, fix_docs

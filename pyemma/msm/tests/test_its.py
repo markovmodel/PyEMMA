@@ -114,8 +114,6 @@ class TestITS_MSM(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             its = msm.timescales_msm(dtraj, lags=lags, reversible=False)
-            # FIXME: we do not trigger a UserWarning, but msmtools.exceptions.SpectralWarning, intended?
-            #assert issubclass(w[-1].category, UserWarning)
         np.testing.assert_equal(its.lags, expected_lags)
 
     def test_2(self):

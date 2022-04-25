@@ -179,15 +179,16 @@ class MSM(_Model, SerializableMixIn):
     @P.setter
     def P(self, value):
         self._P = value
-        import msmtools.analysis as msmana
         # check input
         if self._P is not None:
-            if not msmana.is_transition_matrix(self._P, tol=1e-8):
+            from deeptime.markov.tools.analysis import is_transition_matrix
+            if not is_transition_matrix(self._P, tol=1e-8):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
             if self.reversible is None:
-                self.reversible = msmana.is_reversible(self._P)
+                from deeptime.markov.tools.analysis import is_reversible
+                self.reversible = is_reversible(self._P)
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
@@ -282,8 +283,8 @@ class MSM(_Model, SerializableMixIn):
     @pi.setter
     def pi(self, value):
         if value is None and self.P is not None:
-            from msmtools.analysis import stationary_distribution as _statdist
-            value = _statdist(self.P)
+            from deeptime.markov.tools.analysis import stationary_distribution
+            value = stationary_distribution(self.P)
         elif value is not None:
             # check sum is one
             _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
@@ -291,13 +292,12 @@ class MSM(_Model, SerializableMixIn):
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
-        from msmtools.analysis import eigenvalues as anaeig
-
+        from deeptime.markov.tools.analysis import eigenvalues
         if self.reversible:
-            self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv,
-                                       reversible=True, mu=self.stationary_distribution)
+            self._eigenvalues = eigenvalues(self.transition_matrix, k=neig, ncv=self.ncv,
+                                            reversible=True, mu=self.stationary_distribution)
         else:
-            self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv, reversible=False)
+            self._eigenvalues = eigenvalues(self.transition_matrix, k=neig, ncv=self.ncv, reversible=False)
 
         if _np.all(self._eigenvalues.imag == 0):
             self._eigenvalues = self._eigenvalues.real
@@ -318,9 +318,9 @@ class MSM(_Model, SerializableMixIn):
 
     def _compute_eigendecomposition(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
-        from msmtools.analysis import rdl_decomposition
         self._p_id = _hash_numpy_array(self.transition_matrix)
 
+        from deeptime.markov.tools.analysis import rdl_decomposition
         if self.reversible:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, norm='reversible',
                                                           k=neig, ncv=self.ncv)
@@ -439,9 +439,9 @@ class MSM(_Model, SerializableMixIn):
             self._ensure_eigenvalues()
         else:
             self._ensure_eigenvalues(neig=k+1)
-        from msmtools.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
-        ts = _timescales(self._eigenvalues, tau=self._timeunit_model.dt)
+        from deeptime.markov.tools.analysis import timescales_from_eigenvalues
+        ts = timescales_from_eigenvalues(self._eigenvalues, tau=self._timeunit_model.dt)
         if k is None:
             return ts[1:]
         else:
@@ -514,7 +514,7 @@ class MSM(_Model, SerializableMixIn):
     def _mfpt(self, P, A, B, mu=None):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from msmtools.analysis import mfpt as __mfpt
+        from deeptime.markov.tools.analysis import mfpt as __mfpt
         # scale mfpt by lag time
         return self._timeunit_model.dt * __mfpt(P, B, origin=A, mu=mu)
 
@@ -533,7 +533,7 @@ class MSM(_Model, SerializableMixIn):
     def _committor_forward(self, P, A, B):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from msmtools.analysis import committor as __committor
+        from deeptime.markov.tools.analysis import committor as __committor
         return __committor(P, A, B, forward=True)
 
     def committor_forward(self, A, B):
@@ -551,7 +551,7 @@ class MSM(_Model, SerializableMixIn):
     def _committor_backward(self, P, A, B, mu=None):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from msmtools.analysis import committor as __committor
+        from deeptime.markov.tools.analysis import committor as __committor
         return __committor(P, A, B, forward=False, mu=mu)
 
     def committor_backward(self, A, B):
@@ -707,7 +707,7 @@ class MSM(_Model, SerializableMixIn):
             maxtime = 5 * self.timescales()[0]
         steps = _np.arange(int(ceil(float(maxtime) / self._timeunit_model.dt)))
         # compute correlation
-        from msmtools.analysis import correlation as _correlation
+        from deeptime.markov.tools.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         res = _correlation(self.transition_matrix, a, obs2=b, times=steps, k=k, ncv=ncv)
@@ -757,7 +757,7 @@ class MSM(_Model, SerializableMixIn):
         # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        from msmtools.analysis import fingerprint_correlation as _fc
+        from deeptime.markov.tools.analysis import fingerprint_correlation as _fc
         return _fc(self.transition_matrix, a, obs2=b, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
@@ -834,10 +834,10 @@ class MSM(_Model, SerializableMixIn):
         kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
         steps = _np.array(list(range(kmax)), dtype=int)
         # compute relaxation function
-        from msmtools.analysis import relaxation as _relaxation
+        from deeptime.markov.tools.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _relaxation(self.transition_matrix, p0, a, times=steps, k=k, ncv=ncv)
+        res = _relaxation(self.transition_matrix, p0, a, times=steps, k=k)
         # return times scaled by tau
         times = self._timeunit_model.dt * steps
         return times, res
@@ -880,7 +880,7 @@ class MSM(_Model, SerializableMixIn):
         # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        from msmtools.analysis import fingerprint_relaxation as _fr
+        from deeptime.markov.tools.analysis import fingerprint_relaxation as _fr
         return _fr(self.transition_matrix, p0, a, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     ################################################################################
@@ -1128,5 +1128,5 @@ class MSM(_Model, SerializableMixIn):
         htraj: (N/dt, ) ndarray
             The state trajectory with length N/dt
         """
-        import msmtools.generation as msmgen
-        return msmgen.generate_traj(self.transition_matrix,  N, start=start, stop=stop, dt=dt)
+        from deeptime.markov.msm import MarkovStateModel
+        return MarkovStateModel(self.transition_matrix).simulate(N, start=start, stop=stop, dt=dt)
