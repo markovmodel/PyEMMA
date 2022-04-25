@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
+from deeptime.markov.tools.estimation import largest_connected_set
 
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
@@ -24,8 +25,6 @@ from pyemma.thermo.estimators._base import ThermoBase
 from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
-
-from msmtools.estimation import largest_connected_set as _largest_connected_set
 
 from pyemma.thermo.extensions import (
     dtram as _dtram,
@@ -268,7 +267,7 @@ class DTRAM(_Estimator, _MEMM, ThermoBase):
             self.count_matrices, _np.zeros(
                 shape=self.conf_energies.shape, dtype=_np.float64), K) for K in range(self.nthermo)]
 
-        active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
+        active_sets = [largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
 

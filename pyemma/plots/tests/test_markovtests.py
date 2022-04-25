@@ -24,11 +24,11 @@ Created on 23.03.2016
 
 import unittest
 import numpy as np
+from deeptime.markov.msm import MarkovStateModel
+
 import pyemma
 
 from pyemma.plots import plot_cktest
-from msmtools.generation import generate_traj, generate_trajs
-
 
 class TestItsPlot(unittest.TestCase):
 
@@ -39,7 +39,7 @@ class TestItsPlot(unittest.TestCase):
                   [.25, .25, .5, 0],
                   [.25, .25, .25, .25],
                   ])
-        dtrajs = generate_trajs(P, 5, 1000)
+        dtrajs = [MarkovStateModel(P).simulate(1000) for _ in range(5)]
         msm_obj = pyemma.msm.MaximumLikelihoodMSM()
         msm_obj.estimate(dtrajs)
         cls.ck = msm_obj.cktest(3)

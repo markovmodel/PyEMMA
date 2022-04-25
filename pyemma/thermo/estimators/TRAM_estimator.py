@@ -18,6 +18,8 @@
 import numpy as _np
 import warnings as _warnings
 
+from deeptime.markov.tools.estimation import largest_connected_set
+
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
@@ -38,8 +40,6 @@ from pyemma.thermo.extensions import (
     util as _util,
     cset as _cset,
 )
-
-from msmtools.estimation import largest_connected_set as _largest_connected_set
 
 
 class EmptyState(RuntimeWarning):
@@ -431,7 +431,7 @@ class TRAM(_Estimator, _MEMM, ThermoBase):
                 self.log_lagrangian_mult, self.biased_conf_energies, self.count_matrices, None,
                 K)[self.active_set, :])[:, self.active_set]) for K in range(self.nthermo)]
 
-        active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
+        active_sets = [largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
 

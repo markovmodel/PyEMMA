@@ -22,9 +22,9 @@ Python interface to utility functions.
 cimport cython
 import numpy as _np
 cimport numpy as _np
+from deeptime.markov.tools.estimation import count_matrix
 from libc.math cimport exp as _libc_exp
 from scipy.sparse import csr_matrix as _csr
-from msmtools.estimation import count_matrix as _cm
 
 __all__ = [
     'kahan_summation',
@@ -267,11 +267,11 @@ def count_matrices(
             _np.require(ttraj, dtype=_np.intc ,requirements=['C', 'A']))
         for b in range(1, bp.shape[0]):
             if bp[b] - bp[b - 1] > lag:
-                C_K[ttraj[bp[b - 1]]] = C_K[ttraj[bp[b - 1]]] + _cm(
+                C_K[ttraj[bp[b - 1]]] = C_K[ttraj[bp[b - 1]]] + count_matrix(
                     _np.require(dtraj[bp[b - 1]:bp[b]], dtype=_np.intc ,requirements=['C', 'A']),
                     lag, sliding=sliding, sparse_return=True, nstates=nstates)
         if dtraj.shape[0] - bp[-1] > lag:
-            C_K[ttraj[bp[-1]]] = C_K[ttraj[bp[-1]]] + _cm(
+            C_K[ttraj[bp[-1]]] = C_K[ttraj[bp[-1]]] + count_matrix(
                 _np.require(dtraj[bp[-1]:], dtype=_np.intc ,requirements=['C', 'A']),
                 lag, sliding=sliding, sparse_return=True, nstates=nstates)
     if sparse_return:

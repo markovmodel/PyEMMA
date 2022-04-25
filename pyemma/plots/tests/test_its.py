@@ -24,10 +24,10 @@ Created on 10.03.2016
 
 import unittest
 import numpy as np
+from deeptime.markov.msm import MarkovStateModel
 
 from pyemma.msm import MaximumLikelihoodMSM, ImpliedTimescales
 from pyemma.plots import plot_implied_timescales
-from msmtools.generation import generate_traj
 
 
 class TestItsPlot(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestItsPlot(unittest.TestCase):
                       ])
         # bogus its object
         lags = [1, 2, 3, 5, 10]
-        cls.dtraj = generate_traj(P, 1000)
+        cls.dtraj = MarkovStateModel(P).simulate(1000)
         cls.estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
         cls.its = ImpliedTimescales(estimator=cls.estimator)
         cls.its.estimate(cls.dtraj, lags=lags)
