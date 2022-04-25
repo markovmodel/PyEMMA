@@ -263,7 +263,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporterMixin):
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler. This is just an initialization.
-        nstates_full = msmest.number_of_states(dtrajs)
+        nstates_full = number_of_states(dtrajs)
         if self.nstates_obs < nstates_full:
             eps = 0.01 / nstates_full  # default output probability, in order to avoid zero columns
             # full state space output matrix. make sure there are no zero columns

@@ -716,7 +716,7 @@ class TestMSMFiveState(unittest.TestCase):
     def _correlation(self, msm):
         a = [1, 2, 3, 4, 5]
         b = [1, -1, 0, -2, 4]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # test equality:
         _, cor = msm.correlation(a, b, maxtime=50)
@@ -778,7 +778,7 @@ class TestMSMFiveState(unittest.TestCase):
         p0 = [0.5, 0.2, 0.2, 0.1, 0.0]
         if msm.is_reversible:
             # raise assertion error because size is wrong:
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=5)
             # equilibrium relaxation should be constant
             fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=5)
@@ -1479,7 +1479,7 @@ class TestMSM_Incomplete(unittest.TestCase):
     def _correlation(self, msm):
         a = [1, 2, 3, 4]
         b = [1, -1, 0, -2]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # test equality:
         _, cor = msm.correlation(a, b, maxtime=50)
@@ -1538,7 +1538,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         p0 = [0.5, 0.2, 0.2, 0.1]
         if msm.is_reversible:
             # raise assertion error because size is wrong:
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=4)
             # equilibrium relaxation should be constant
             fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=4)

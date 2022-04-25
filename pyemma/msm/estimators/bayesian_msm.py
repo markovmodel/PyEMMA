@@ -211,7 +211,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
             call_back = None
 
         with self._progress_context(stage='all'):
-            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, call_back=call_back)
+            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, callback=call_back)
         # construct sampled MSMs
         samples = []
         for P, pi in zip(sample_Ps, sample_mus):

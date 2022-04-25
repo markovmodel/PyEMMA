@@ -258,7 +258,7 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
         if lcc is not None:
             C2t_n = C2t[:, lcc[n]]
             C2t_n = _reshape_sparse(C2t_n, (N1, N1))
-            C2t_n = me.largest_connected_submatrix(C2t_n, lcc=lcc)
+            C2t_n = largest_connected_submatrix(C2t_n, lcc=lcc)
         else:
             C2t_n = C2t[:, n]
             C2t_n = _reshape_sparse(C2t_n, (N, N))

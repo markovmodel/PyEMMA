@@ -783,7 +783,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # raise assertion error because size is wrong:
         maxtime = 100000
         a = [1, 2, 3]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # should decrease
         a = list(range(msm.nstates))
@@ -841,7 +841,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_correlation(a, 1, k=k)
             # should decrease
             a = list(range(self.msm.nstates))
@@ -886,7 +886,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # equilibrium relaxation should be constant
             a = list(range(msm.nstates))
