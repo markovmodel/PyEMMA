@@ -19,8 +19,8 @@
 
 
 import numpy as np
-from deeptime.markov import number_of_states, count_states
-from deeptime.markov.tools.estimation import effective_count_matrix, connected_sets, count_matrix
+from deeptime.markov import number_of_states, count_states, TransitionCountEstimator, TransitionCountModel
+from deeptime.markov.tools.estimation import connected_sets, count_matrix
 
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
@@ -140,60 +140,23 @@ class DiscreteTrajectoryStats(object):
 
             else:
                 raise NotImplementedError('Milestoning method {} not implemented.'.format(milestoning_method))
-
-
-        elif count_mode == 'sliding':
-            self._C = count_matrix(self._dtrajs, lag, sliding=True)
-        elif count_mode == 'sample':
-            self._C = count_matrix(self._dtrajs, lag, sliding=False)
-        elif count_mode == 'effective':
-            if core_set is not None:
-                raise RuntimeError('Cannot estimate core set MSM with effective counting.')
-            from pyemma.util.reflection import getargspec_no_self
-            argspec = getargspec_no_self(effective_count_matrix)
-            kw = {}
-            from pyemma.util.contexts import nullcontext
-            ctx = nullcontext()
-            if 'callback' in argspec.args:  # msmtools effective cmatrix ready for multiprocessing?
-                from pyemma._base.progress import ProgressReporter
-                from pyemma._base.parallel import get_n_jobs
-
-                kw['n_jobs'] = get_n_jobs() if n_jobs is None else n_jobs
-
-                if show_progress:
-                    pg = ProgressReporter()
-                    # this is a fast operation
-                    C_temp = count_matrix(self._dtrajs, lag, sliding=True)
-                    pg.register(C_temp.nnz, '{}: compute stat. inefficiencies'.format(name), stage=0)
-                    del C_temp
-                    kw['callback'] = pg.update
-                    ctx = pg.context(stage=0)
-            with ctx:
-                self._C = effective_count_matrix(self._dtrajs, lag, **kw)
         else:
-            raise ValueError('Count mode ' + count_mode + ' is unknown.')
+            cm = TransitionCountEstimator(lag, count_mode=count_mode, sparse=True).fit(self._dtrajs).fetch_model()
+            self._C = cm.count_matrix
+
+
 
         # store mincount_connectivity
         if mincount_connectivity == '1/n':
             mincount_connectivity = 1.0 / np.shape(self._C)[0]
         self._mincount_connectivity = mincount_connectivity
 
-        # Compute reversibly connected sets
-        if self._mincount_connectivity > 0:
-            self._connected_sets = \
-                self._compute_connected_sets(self._C, mincount_connectivity=self._mincount_connectivity)
-        else:
-            self._connected_sets = connected_sets(self._C)
+        self._count_model_full = TransitionCountModel(self._C)
+        self._connected_sets = self._count_model_full.connected_sets(connectivity_threshold=self._mincount_connectivity)
+        self._count_model = self._count_model_full.submodel_largest(connectivity_threshold=self._mincount_connectivity)
 
         # set sizes and count matrices on reversibly connected sets
-        self._connected_set_sizes = np.zeros((len(self._connected_sets)))
-        self._C_sub = np.empty((len(self._connected_sets)), dtype=np.object)
-        for i in range(len(self._connected_sets)):
-            # set size
-            self._connected_set_sizes[i] = len(self._connected_sets[i])
-            # submatrix
-            # self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
-
+        self._connected_set_sizes = np.array((len(cs) for cs in self._connected_sets))
         # largest connected set
         self._lcs = self._connected_sets[0]
 

@@ -1,4 +1,5 @@
 import numpy as _np
+from deeptime.markov.tools.estimation import count_matrix
 
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm import MSM as _MSM
@@ -327,7 +328,7 @@ class _MSMEstimator(_Estimator, _MSM):
         Ctt_train = _np.diag(C0t_train.sum(axis=0))  # empirical cov
 
         # test data
-        C0t_test_raw = msmest.count_matrix(dtrajs, self.lag, sparse_return=False)
+        C0t_test_raw = count_matrix(dtrajs, self.lag, sparse_return=False)
         # map to present active set
         map_from = self.active_set[_np.where(self.active_set < C0t_test_raw.shape[0])[0]]
         map_to = _np.arange(len(map_from))
@@ -671,7 +672,8 @@ class _MSMEstimator(_Estimator, _MSM):
         # TODO: frames. Anyway, this is a nontrivial issue.
         self._check_is_estimated()
         # generate synthetic states
-        syntraj = _generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=stride)
+        from deeptime.markov.msm import MarkovStateModel
+        syntraj = MarkovStateModel(self.transition_matrix).simulate(N, start=start, stop=stop, dt=stride)
         # result
         from pyemma.util.discrete_trajectories import sample_indexes_by_sequence
 
