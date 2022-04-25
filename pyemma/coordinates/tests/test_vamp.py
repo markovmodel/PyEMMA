@@ -22,11 +22,11 @@
 
 import unittest
 import numpy as np
+from deeptime.decomposition import cvsplit_trajs
+
 from pyemma.coordinates import vamp as pyemma_api_vamp
 from pyemma.msm import estimate_markov_model
 from logging import getLogger
-
-from pyemma.msm.estimators._dtraj_stats import cvsplit_dtrajs
 
 logger = getLogger('pyemma.'+'TestVAMP')
 
@@ -302,9 +302,9 @@ class TestVAMPModel(unittest.TestCase):
     def test_score_vs_MSM(self):
         from pyemma.util.contexts import numpy_random_seed
         with numpy_random_seed(32):
-            trajs_test, trajs_train = cvsplit_dtrajs(self.trajs)
+            trajs_test, trajs_train = cvsplit_trajs(self.trajs)
         with numpy_random_seed(32):
-            dtrajs_test, dtrajs_train = cvsplit_dtrajs(self.dtrajs)
+            dtrajs_test, dtrajs_train = cvsplit_trajs(self.dtrajs)
 
         methods = ('VAMP1', 'VAMP2', 'VAMPE')
 

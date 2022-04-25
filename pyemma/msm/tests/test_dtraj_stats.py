@@ -1,9 +1,10 @@
 import unittest
 
 import numpy as np
+from deeptime.decomposition import blocksplit_trajs, cvsplit_trajs
 from deeptime.markov.tools.estimation import count_matrix
 
-from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats, blocksplit_dtrajs, cvsplit_dtrajs
+from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats
 from pyemma.util.types import ensure_dtraj_list
 
 
@@ -12,7 +13,7 @@ class TestDtrajStats(unittest.TestCase):
     def test_blocksplit_dtrajs_sliding(self):
         dtrajs = [np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), np.array([0, 1, 9, 10])]
         for lag in range(1, 10):
-            dtrajs_new = blocksplit_dtrajs(dtrajs, lag=lag, sliding=True)
+            dtrajs_new = blocksplit_trajs(dtrajs, blocksize=lag, sliding=True)
             C1 = count_matrix(dtrajs, lag, sliding=True, nstates=11).toarray()
             C2 = count_matrix(dtrajs_new, lag, sliding=True, nstates=11).toarray()
             assert np.all(C1 == C2)
@@ -20,7 +21,7 @@ class TestDtrajStats(unittest.TestCase):
     def test_blocksplit_dtrajs_sampling(self):
         dtrajs = [np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), np.array([0, 1, 9, 10])]
         for lag in range(1, 10):
-            dtrajs_new = blocksplit_dtrajs(dtrajs, lag=lag, sliding=False, shift=0)
+            dtrajs_new = blocksplit_trajs(dtrajs, blocksize=lag, sliding=False, shift=0)
             C1 = count_matrix(dtrajs, lag, sliding=False, nstates=11).toarray()
             C2 = count_matrix(dtrajs_new, lag, sliding=False, nstates=11).toarray()
             assert np.all(C1 == C2)
@@ -28,8 +29,8 @@ class TestDtrajStats(unittest.TestCase):
     def test_blocksplit_dtrajs_cvsplit(self):
         dtrajs = [np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), np.array([0, 1, 9, 10])]
         for lag in range(1, 5):
-            dtrajs_new = blocksplit_dtrajs(dtrajs, lag=lag, sliding=False, shift=0)
-            dtrajs_train, dtrajs_test = cvsplit_dtrajs(dtrajs_new)
+            dtrajs_new = blocksplit_trajs(dtrajs, blocksize=lag, sliding=False, shift=0)
+            dtrajs_train, dtrajs_test = cvsplit_trajs(dtrajs_new)
             dtrajs_train = ensure_dtraj_list(dtrajs_train)
             dtrajs_test = ensure_dtraj_list(dtrajs_test)
             assert len(dtrajs_train) > 0
