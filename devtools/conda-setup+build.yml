@@ -14,6 +14,7 @@ steps:
     displayName: 'Install dependencies'
     continueOnError: false
   - bash: |
+      export PYTHONUNBUFFERED=1
       conda mambabuild devtools/conda-recipe
     displayName: 'Build and test'
     continueOnError: false
