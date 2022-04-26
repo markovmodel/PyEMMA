@@ -19,7 +19,7 @@
 import warnings
 
 import numpy as _np
-from msmtools import estimation as msmest
+from deeptime.markov.tools.estimation import effective_count_matrix, connected_sets
 
 from pyemma.msm.estimators._OOM_MSM import bootstrapping_count_matrix, bootstrapping_dtrajs, twostep_count_matrix, \
     rank_decision, oom_components, equilibrium_transition_matrix
@@ -203,7 +203,7 @@ class OOMReweightedMSM(_MSMEstimator):
         if self.connectivity == 'largest':
             # Re-sampling:
             if self.rank_Ct == 'bootstrap_counts':
-                Ceff_full = msmest.effective_count_matrix(dtrajs_lag, self.lag)
+                Ceff_full = effective_count_matrix(dtrajs_lag, self.lag)
                 from pyemma.util.linalg import submatrix
                 Ceff = submatrix(Ceff_full, self.active_set)
                 smean, sdev = bootstrapping_count_matrix(Ceff, nbs=self.nbs)
@@ -242,7 +242,7 @@ class OOMReweightedMSM(_MSMEstimator):
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.
         self._dtrajs_full = dtrajs
-        self._connected_sets = msmest.connected_sets(self._C_full)
+        self._connected_sets = connected_sets(self._C_full)
         self._Xi = Xi
         self._omega = omega
         self._sigma = sigma

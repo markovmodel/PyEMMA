@@ -27,7 +27,7 @@ and provides them for later access.
 
 
 import numpy as _np
-
+from deeptime.markov.msm import MarkovStateModel
 
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util import types as _types
@@ -462,11 +462,10 @@ class HMSM(_MSM):
         """
 
         from scipy import stats
-        import msmtools.generation as msmgen
         # generate output distributions
         output_distributions = [stats.rv_discrete(values=(_np.arange(self.pobs.shape[1]), pobs_i)) for pobs_i in self.pobs]
         # sample hidden trajectory
-        htraj = msmgen.generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=dt)
+        htraj = MarkovStateModel(self.transition_matrix).simulate(N, start=start, stop=stop, dt=dt)
         otraj = _np.zeros(htraj.size, dtype=int)
         # for each time step, sample microstate
         for t, h in enumerate(htraj):

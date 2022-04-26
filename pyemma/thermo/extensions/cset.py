@@ -27,7 +27,8 @@ __all__ = [
 import numpy as _np
 import scipy as _sp
 import scipy.sparse as _sps
-import msmtools as _msmtools
+from deeptime.markov.tools.estimation import largest_connected_set, connected_sets
+
 from . import bar as _bar, util as _util
 
 
@@ -255,7 +256,7 @@ def _compute_csets(
         if equilibrium_state_counts is not None:
             eq_states = _np.where(equilibrium_state_counts.sum(axis=0) > 0)[0]
             C_sum[eq_states, eq_states[:, _np.newaxis]] = 1
-        cset_projected = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
+        cset_projected = largest_connected_set(C_sum, directed=True)
         csets = []
         for k in range(n_therm_states):
             cset = _np.intersect1d(_np.where(all_state_counts[k, :] > 0), cset_projected)
@@ -264,12 +265,12 @@ def _compute_csets(
     elif connectivity == 'reversible_pathways' or connectivity == 'largest':
         C_proxy = _np.zeros((n_conf_states, n_conf_states), dtype=int)
         for C in count_matrices:
-            for comp in _msmtools.estimation.connected_sets(C, directed=True):
+            for comp in connected_sets(C, directed=True):
                 C_proxy[comp[0:-1], comp[1:]] = 1 # add chain of states
         if equilibrium_state_counts is not None:
             eq_states = _np.where(equilibrium_state_counts.sum(axis=0) > 0)[0]
             C_proxy[eq_states, eq_states[:, _np.newaxis]] = 1
-        cset_projected = _msmtools.estimation.largest_connected_set(C_proxy, directed=False)
+        cset_projected = largest_connected_set(C_proxy, directed=False)
         csets = []
         for k in range(n_therm_states):
             cset = _np.intersect1d(_np.where(all_state_counts[k, :] > 0), cset_projected)
@@ -329,7 +330,7 @@ def _compute_csets(
         # connectivity between conformational states:
         # just copy it from the count matrices
         for k in range(n_therm_states):
-            for comp in _msmtools.estimation.connected_sets(count_matrices[k, :, :], directed=True):
+            for comp in connected_sets(count_matrices[k, :, :], directed=True):
                 # add chain that links all states in the component
                 i_s += list(comp[0:-1] + k * n_conf_states)
                 j_s += list(comp[1:]   + k * n_conf_states)
@@ -346,7 +347,7 @@ def _compute_csets(
 
         data = _np.ones(len(i_s), dtype=int)
         A = _sp.sparse.coo_matrix((data, (i_s, j_s)), shape=(dim, dim))
-        cset = _msmtools.estimation.largest_connected_set(A, directed=False)
+        cset = largest_connected_set(A, directed=False)
         # group by thermodynamic state
         cset = _np.unravel_index(cset, (n_therm_states, n_conf_states), order='C')
         csets = [[] for k in range(n_therm_states)]

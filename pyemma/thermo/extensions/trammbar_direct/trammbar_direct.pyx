@@ -25,7 +25,7 @@ import sys
 from . import trammbar as _trammbar
 
 from warnings import warn as _warn
-from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+from deeptime.util.exceptions import NotConvergedWarning as _NotConvergedWarning
 from .trammbar import get_pointwise_unbiased_free_energies, estimate_transition_matrix, estimate_transition_matrices
 
 from .callback import CallbackInterrupt

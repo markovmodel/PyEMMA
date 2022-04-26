@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from deeptime.markov import TransitionCountModel
+from deeptime.markov import TransitionCountModel, number_of_states, count_states
 from deeptime.markov.msm import MarkovStateModel
+from deeptime.util.exceptions import ImaginaryEigenValueWarning
 
 from pyemma.util.annotators import alias, aliased, fix_docs
 
@@ -187,10 +188,9 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             if msm_nr.nstates > self.nstates:
                 # because we use non-reversible msm, we want to silence the ImaginaryEigenvalueWarning
                 import warnings
-                from msmtools.util.exceptions import ImaginaryEigenValueWarning
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', category=ImaginaryEigenValueWarning,
-                                            module='msmtools.analysis.dense.decomposition')
+                                            module='deeptime.markov.tools.analysis.dense.decomposition')
                     corrtime = max(1, msm_nr.timescales()[self.nstates - 1])
                 # use the smaller of these two pessimistic estimates
                 self.stride = int(min(self.lag, 2*corrtime))
@@ -258,11 +258,10 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # TODO: it can happen that we loose states due to striding. Should we lift the output probabilities afterwards?
         # parametrize self
-        import msmtools.estimation as msmest
         self._dtrajs_full = dtrajs
         self._dtrajs_lagged = dtrajs_lagged_strided
-        self._nstates_obs_full = msmest.number_of_states(dtrajs)
-        self._nstates_obs = msmest.number_of_states(dtrajs_lagged_strided)
+        self._nstates_obs_full = number_of_states(dtrajs)
+        self._nstates_obs = number_of_states(dtrajs_lagged_strided)
         self._observable_set = _np.arange(self._nstates_obs)
         self._dtrajs_obs = dtrajs
         self.set_model_params(P=transition_matrix, pobs=observation_probabilities,
@@ -459,8 +458,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
 
         # determine observed states
         if str(obs) == 'nonempty':
-            import msmtools.estimation as msmest
-            obs = _np.where(msmest.count_states(self.discrete_trajectories_lagged) > 0)[0]
+            obs = _np.where(count_states(self.discrete_trajectories_lagged) > 0)[0]
         if obs is not None:
             # set observable set
             submodel_estimator._observable_set = obs
@@ -585,8 +583,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         statdist = self.stationary_distribution_obs
         statdist = _np.append(statdist, [-1])  # add a zero weight at index -1, to deal with unobserved states
         # histogram observed states
-        import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_obs, ignore_negative=True)
+        hist = 1.0 * count_states(self.discrete_trajectories_obs, ignore_negative=True)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0

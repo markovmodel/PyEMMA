@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -20,7 +19,10 @@
 __author__ = 'noe'
 
 import numpy as np
+from deeptime.markov.msm import MarkovStateModel
+
 from pyemma.msm import markov_model
+
 
 class DoubleWell_Discrete_Data(object):
     """ MCMC process in a symmetric double well potential, spatially discretized to 100 bins
@@ -33,6 +35,7 @@ class DoubleWell_Discrete_Data(object):
         datafile = np.load(filename)
         self._dtraj_T100K_dt10 = datafile['dtraj']
         self._P = datafile['P']
+        self._msm_dt = MarkovStateModel(self._P)
         self._msm = markov_model(self._P)
 
     @property
@@ -63,8 +66,8 @@ class DoubleWell_Discrete_Data(object):
         """ 100K frames trajectory at timestep 10, arbitrary n-state discretization. """
         disc = np.zeros(100, dtype=int)
         divides = np.concatenate([divides, [100]])
-        for i in range(len(divides)-1):
-            disc[divides[i]:divides[i+1]] = i+1
+        for i in range(len(divides) - 1):
+            disc[divides[i]:divides[i + 1]] = i + 1
         return disc[self.dtraj_T100K_dt10]
 
     @property
@@ -79,10 +82,8 @@ class DoubleWell_Discrete_Data(object):
 
     def generate_traj(self, N, start=None, stop=None, dt=1):
         """ Generates a random trajectory of length N with time step dt """
-        from msmtools.generation import generate_traj
-        return generate_traj(self._P, N, start=start, stop=stop, dt=dt)
+        return self._msm_dt.simulate(N, start=start, stop=stop, dt=dt)
 
     def generate_trajs(self, M, N, start=None, stop=None, dt=1):
         """ Generates M random trajectories of length N each with time step dt """
-        from msmtools.generation import generate_trajs
-        return generate_trajs(self._P, M, N, start=start, stop=stop, dt=dt)
+        return [self.generate_traj(N, start=start, stop=stop, dt=dt) for _ in range(M)]

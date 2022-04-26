@@ -24,9 +24,9 @@ Test MLHMM.
 
 import unittest
 import numpy as np
-from pyemma import msm
-from msmtools import analysis as msmana
+from deeptime.markov.tools.analysis import is_transition_matrix, is_reversible
 
+from pyemma import msm
 
 
 class TestMLHMM(unittest.TestCase):
@@ -69,10 +69,9 @@ class TestMLHMM(unittest.TestCase):
         assert self.hmsm_lag10.nstates == 2
 
     def test_transition_matrix(self):
-        import msmtools.analysis as msmana
         for P in [self.hmsm_lag1.transition_matrix, self.hmsm_lag1.transition_matrix]:
-            assert msmana.is_transition_matrix(P)
-            assert msmana.is_reversible(P)
+            assert is_transition_matrix(P)
+            assert is_reversible(P)
 
     def test_eigenvalues(self):
         for ev in [self.hmsm_lag1.eigenvalues(), self.hmsm_lag10.eigenvalues()]:
@@ -165,8 +164,8 @@ class TestMLHMM(unittest.TestCase):
                   self.hmsm_lag1.transition_matrix_obs(k=2),
                   self.hmsm_lag10.transition_matrix_obs(),
                   self.hmsm_lag10.transition_matrix_obs(k=4)]:
-            assert msmana.is_transition_matrix(T)
-            assert msmana.is_reversible(T)
+            assert is_transition_matrix(T)
+            assert is_reversible(T)
 
     def test_stationary_distribution_obs(self):
         for hmsm in [self.hmsm_lag1, self.hmsm_lag10]:
@@ -433,7 +432,7 @@ class TestMLHMM(unittest.TestCase):
         dtraj = np.random.randint(0, 10, 100)
         oom = msm.estimate_markov_model(dtraj, 1)
         hmm = oom.coarse_grain(2)
-        hmm.cktest()
+        hmm.cktest(n_jobs=1)
 
     def test_submodel_simple(self):
         # sanity check for submodel;

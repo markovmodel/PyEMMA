@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from deeptime.markov.tools.estimation import tmatrix_sampler
 
 from pyemma._base.parallel import NJobsMixIn as _NJobsMixIn
 from pyemma._base.progress import ProgressReporterMixin as _ProgressReporterMixin
@@ -23,7 +23,6 @@ from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.annotators import fix_docs
-from pyemma.util.types import ensure_dtraj_list
 
 __author__ = 'noe'
 
@@ -191,7 +190,6 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
         _MLMSM._estimate(self, dtrajs)
 
         # transition matrix sampler
-        from msmtools.estimation import tmatrix_sampler
         from math import sqrt
         if self.nsteps is None:
             self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
@@ -213,7 +211,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, _ProgressReporterMixin, _NJobsMixIn):
             call_back = None
 
         with self._progress_context(stage='all'):
-            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, call_back=call_back)
+            sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True, callback=call_back)
         # construct sampled MSMs
         samples = []
         for P, pi in zip(sample_Ps, sample_mus):

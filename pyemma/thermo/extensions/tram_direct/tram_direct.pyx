@@ -24,7 +24,7 @@ cimport numpy as _np
 from . import tram as _tram
 
 from warnings import warn as _warn
-from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+from deeptime.util.exceptions import NotConvergedWarning as _NotConvergedWarning
 from .tram import get_pointwise_unbiased_free_energies, estimate_transition_matrix, estimate_transition_matrices
 
 from .callback import CallbackInterrupt

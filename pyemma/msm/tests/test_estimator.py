@@ -40,7 +40,7 @@ class TestCK_MSM(unittest.TestCase):
         with self.assertRaises(BaseException):
             with mock.patch('pyemma._base.estimator._estimate_param_scan_worker', worker_wrapper):
                 hmm = msm.estimate_hidden_markov_model([0, 0, 0, 1, 1, 1, 0, 0], 2, 1, )
-                hmm.cktest()
+                hmm.cktest(n_jobs=1)
 
     def test_failfast_false(self):
         """ test, that no exception is raised during estimation"""
@@ -55,7 +55,7 @@ class TestCK_MSM(unittest.TestCase):
 
         with mock.patch('pyemma._base.estimator._estimate_param_scan_worker', worker_wrapper):
             hmm = msm.estimate_hidden_markov_model([0, 0, 0, 1, 1, 1, 0, 0], 2, 1, )
-            hmm.cktest()
+            hmm.cktest(n_jobs=1)
 
     def test_keyboard_interrupt(self):
         """ ensure we can break the execution no matter of failfast=False"""
@@ -69,14 +69,15 @@ class TestCK_MSM(unittest.TestCase):
                 else:
                     raise KeyboardInterrupt()
         with self.assertRaises(KeyboardInterrupt):
-            estimate_param_scan(sleeping_estimator, X=None, param_sets=[{'raise_': (False, True)}], failfast=False)
+            estimate_param_scan(sleeping_estimator, X=None, param_sets=[{'raise_': (False, True)}], failfast=False,
+                                n_jobs=1)
 
     def test_evaluate_msm(self):
         from pyemma.msm.estimators import MaximumLikelihoodMSM
         dtraj = [0, 0, 1, 2, 1, 0, 1, 0, 1, 2, 2, 0, 0, 0, 1, 1, 2, 1, 0, 0, 1, 2, 1, 0, 0, 0, 1, 1, 0, 1,
                  2]  # mini-trajectory
         param_sets = param_grid({'lag': [1, 2, 3]})
-        res = estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate='timescales')
+        res = estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate='timescales', n_jobs=1)
         self.assertIsInstance(res, list)
 
     def test_evaluate_bmsm_single_arg(self):
@@ -86,7 +87,7 @@ class TestCK_MSM(unittest.TestCase):
         n_samples = 52
         param_sets = param_grid({'lag': [1, 2, 3], 'show_progress': (False, ), 'nsamples': (n_samples, )})
         res = estimate_param_scan(BayesianMSM, dtraj, param_sets,
-                                  evaluate='sample_f', evaluate_args='timescales')
+                                  evaluate='sample_f', evaluate_args='timescales', n_jobs=1)
         self.assertIsInstance(res, list)
         self.assertEqual(len(res), 3)  # three lag times
         self.assertEqual(len(res[0]), n_samples)
@@ -100,7 +101,7 @@ class TestCK_MSM(unittest.TestCase):
         #     def generate_traj(self, N, start=None, stop=None, stride=1):
 
         res = estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets,
-                                  evaluate='generate_traj', evaluate_args=((traj_len, 2, None, 2), ))
+                                  evaluate='generate_traj', evaluate_args=((traj_len, 2, None, 2), ), n_jobs=1)
         self.assertIsInstance(res, list)
         self.assertEqual(len(res), 3)  # three lag times
         self.assertTrue(all(len(x) == traj_len for x in res))

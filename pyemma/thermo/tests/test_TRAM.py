@@ -19,10 +19,11 @@ import unittest
 
 
 import numpy as np
+from deeptime.markov.tools.estimation import count_matrix, is_connected, transition_matrix
+
 import pyemma.thermo
 from pyemma.thermo import EmptyState
 import warnings
-import msmtools
 
 def tower_sample(distribution):
     cdf = np.cumsum(distribution)
@@ -181,18 +182,18 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         dtraj = np.zeros(traj_length, dtype=int)
         dtraj[::2] = np.random.randint(1, n_states, size=(traj_length-1)//2+1)
 
-        c = msmtools.estimation.count_matrix(dtraj, lag=1)
-        while not msmtools.estimation.is_connected(c, directed=True):
+        c = count_matrix(dtraj, lag=1)
+        while not is_connected(c, directed=True):
             dtraj = np.zeros(traj_length, dtype=int)
             dtraj[::2] = np.random.randint(1, n_states, size=(traj_length-1)//2+1)
-            c = msmtools.estimation.count_matrix(dtraj, lag=1)
+            c = count_matrix(dtraj, lag=1)
 
         #state_counts = np.bincount(dtraj)[:,np.newaxis]
         ttraj = np.zeros(traj_length, dtype=int)
         btraj = np.zeros((traj_length,1))
         cls.tram_trajs = ([ttraj], [dtraj], [btraj])
 
-        cls.T_ref = msmtools.estimation.tmatrix(c, reversible=True).toarray()
+        cls.T_ref = transition_matrix(c, reversible=True).toarray()
         
     def test_reversible_msm(self):
         self.reversible_msm(False)
@@ -274,7 +275,7 @@ class TRAMandTRAMMBARBaseClass(object):
         for k in therm_states_local:
             ttrajs.append( k*np.ones(traj_length, dtype=int) )
             dtrajs.append( generate_simple_trajectory(T[k, :, :], traj_length, 0) )
-            C[k,:,:] = msmtools.estimation.count_matrix(dtrajs[-1], lag=1).toarray()
+            C[k,:,:] = count_matrix(dtrajs[-1], lag=1).toarray()
             btraj = np.zeros((traj_length, n_therm_states_total))
             btrajs.append(btraj)
             for t,i in enumerate(dtrajs[-1]):

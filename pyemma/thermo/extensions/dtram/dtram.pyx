@@ -23,7 +23,8 @@ import numpy as _np
 cimport numpy as _np
 
 from warnings import warn as _warn
-from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+
+from deeptime.util.exceptions import NotConvergedWarning
 
 from . import util
 from .callback import CallbackInterrupt
@@ -442,7 +443,7 @@ def estimate(
             old_conf_energies[:] = conf_energies[:]
             old_therm_energies[:] = therm_energies[:]
     if err >= maxerr:
-        _warn("dTRAM did not converge: last increment = %.5e" % err, _NotConvergedWarning)
+        _warn("dTRAM did not converge: last increment = %.5e" % err, NotConvergedWarning)
     if save_convergence_info == 0:
         increments = None
         loglikelihoods = None
