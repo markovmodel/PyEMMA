@@ -432,7 +432,7 @@ class TestMLHMM(unittest.TestCase):
         dtraj = np.random.randint(0, 10, 100)
         oom = msm.estimate_markov_model(dtraj, 1)
         hmm = oom.coarse_grain(2)
-        hmm.cktest()
+        hmm.cktest(n_jobs=1)
 
     def test_submodel_simple(self):
         # sanity check for submodel;

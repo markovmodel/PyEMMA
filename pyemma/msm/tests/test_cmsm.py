@@ -817,7 +817,7 @@ class TestCoreMSM(unittest.TestCase):
 
         with self.assertRaises(NotImplementedError) as e:
             pyemma.msm.timescales_msm([0, 1, 0, 1, 0, 2, 2, 0], lags=[1, 2],
-                                             core_set=[0, 1], errors='bayes')
+                                             core_set=[0, 1], errors='bayes', n_jobs=1)
             self.assertIn('does not support Bayesian error estimates for core set MSMs',
                           e.exception.args[0])
 

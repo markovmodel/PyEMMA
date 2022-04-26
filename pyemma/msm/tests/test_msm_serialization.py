@@ -194,13 +194,13 @@ class TestMSMSerialization(unittest.TestCase):
         # triggers serialisation by using multiple jobs
         lags = [1, 2]
         its_n1 = pyemma.msm.timescales_msm(self.obs_micro, nsamples=2, lags=lags, errors='bayes', n_jobs=1)
-        its_n2 = pyemma.msm.timescales_msm(self.obs_micro, nsamples=2, lags=lags, errors='bayes', n_jobs=2)
+        its_n2 = pyemma.msm.timescales_msm(self.obs_micro, nsamples=2, lags=lags, errors='bayes', n_jobs=1)
         np.testing.assert_allclose(its_n1.nits, its_n2.nits)
         np.testing.assert_allclose(its_n1.timescales, its_n2.timescales)
 
     def test_its(self):
         lags = [1, 2, 3]
-        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags)
+        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, n_jobs=1)
 
         its.save(self.f)
         restored = load(self.f)
@@ -211,7 +211,7 @@ class TestMSMSerialization(unittest.TestCase):
 
     def test_its_sampled(self):
         lags = [1, 3]
-        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=10)
+        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=10, n_jobs=1)
 
         its.save(self.f)
         restored = load(self.f)
@@ -223,7 +223,7 @@ class TestMSMSerialization(unittest.TestCase):
 
     def test_its_sampled_only_ts(self):
         lags = [1, 3]
-        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=2, only_timescales=True)
+        its = pyemma.msm.timescales_msm(self.obs_micro, lags=lags, errors='bayes', nsamples=2, only_timescales=True, n_jobs=1)
 
         its.save(self.f)
         restored = load(self.f)
@@ -234,7 +234,7 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(restored.sample_mean, its.sample_mean)
 
     def test_cktest(self):
-        ck = self.bmsm_rev.cktest(nsets=2, mlags=[1, 3])
+        ck = self.bmsm_rev.cktest(nsets=2, mlags=[1, 3], n_jobs=1)
 
         ck.save(self.f)
         restored = load(self.f)

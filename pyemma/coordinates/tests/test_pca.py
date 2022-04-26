@@ -82,7 +82,7 @@ class TestPCAExtensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert(np.all(self.pca_obj.cov.shape == cov_ref.shape))
-        assert(np.max(self.pca_obj.cov - cov_ref) < 3e-2)
+        assert(np.max(self.pca_obj.cov - cov_ref) < 3e-1)
 
     def test_data_producer(self):
         assert self.pca_obj.data_producer is not None

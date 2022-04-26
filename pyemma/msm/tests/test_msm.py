@@ -1089,7 +1089,7 @@ IndexError: index 0 is out of bounds for axis 1 with size 0
 
     def test_timescales(self):
         from pyemma.msm import timescales_msm
-        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
+        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None, n_jobs=1)
         assert its.estimator.mincount_connectivity == 0
 
 

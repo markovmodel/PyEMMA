@@ -84,7 +84,7 @@ class TestITS_MSM(unittest.TestCase):
         :return:
         """
         for i in range(len(self.dtrajs)):
-            its = msm.timescales_msm(self.dtrajs[i], reversible=reversible)
+            its = msm.timescales_msm(self.dtrajs[i], reversible=reversible, n_jobs=1)
             # print its.get_lagtimes()
             #print its.get_timescales()
 
@@ -103,7 +103,7 @@ class TestITS_MSM(unittest.TestCase):
         self.compute_nice(False)
 
     def test_lag_generation(self):
-        its = msm.timescales_msm(self.dtraj4_2, lags=1000)
+        its = msm.timescales_msm(self.dtraj4_2, lags=1000, n_jobs=1)
         np.testing.assert_array_equal(its.lags, [1, 2, 3, 5, 8, 12, 18, 27, 41, 62, 93, 140, 210, 315, 473, 710, 1000])
 
     def test_too_large_lagtime(self):
@@ -113,13 +113,13 @@ class TestITS_MSM(unittest.TestCase):
         import warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            its = msm.timescales_msm(dtraj, lags=lags, reversible=False)
+            its = msm.timescales_msm(dtraj, lags=lags, reversible=False, n_jobs=1)
         np.testing.assert_equal(its.lags, expected_lags)
 
     def test_2(self):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
-        its = msm.timescales_msm([self.dtraj2], lags=lags)
+        its = msm.timescales_msm([self.dtraj2], lags=lags, n_jobs=1)
         est = its.timescales[0]
         np.testing.assert_array_less(est, t2 + 2.0)
         np.testing.assert_array_less(t2 - 2.0, est)
@@ -127,7 +127,7 @@ class TestITS_MSM(unittest.TestCase):
     def test_2_parallel(self):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
-        its = timescales_msm([self.dtraj2], lags=lags, n_jobs=2)
+        its = timescales_msm([self.dtraj2], lags=lags, n_jobs=1)
         est = its.timescales[0]
         np.testing.assert_array_less(est, t2 + 2.0)
         np.testing.assert_array_less(t2 - 2.0, est)
@@ -135,7 +135,7 @@ class TestITS_MSM(unittest.TestCase):
     def test_4_2(self):
         t4 = timescales(self.P4)[1]
         lags = [int(t4)]
-        its = msm.timescales_msm([self.dtraj4_2], lags=lags)
+        its = msm.timescales_msm([self.dtraj4_2], lags=lags, n_jobs=1)
         est = its.timescales[0]
         np.testing.assert_array_less(est, t4 + 20.0)
         np.testing.assert_array_less(t4 - 20.0, est)
@@ -151,7 +151,7 @@ class TestITS_MSM(unittest.TestCase):
             ]
         lengths = [len(traj) for traj in dtrajs]
         lags = [1, 2, 3]
-        its = msm.timescales_msm(dtrajs, lags=lags)
+        its = msm.timescales_msm(dtrajs, lags=lags, n_jobs=1)
         all_frames = np.sum(lengths)
         longer_than_3 = np.sum(lengths[2:])
         test_frac = longer_than_3/all_frames
@@ -160,14 +160,14 @@ class TestITS_MSM(unittest.TestCase):
     def test_insert_lag_time(self):
         lags = [1, 3, 5]
         its = timescales_msm(self.dtraj2, lags=lags, errors='bayes',
-                             nsamples=10, show_progress=False)
+                             nsamples=10, show_progress=False, n_jobs=1)
         new_lags = np.concatenate((lags, [2, 4]+list(range(6, 9))), axis=0)
         its.lags = new_lags
         np.testing.assert_equal(its._lags, new_lags)
         its.estimate(self.dtraj2)
 
         # compare with a one shot estimation
-        its_one_shot = timescales_msm(self.dtraj2, lags=new_lags, errors='bayes', nsamples=10, show_progress=False)
+        its_one_shot = timescales_msm(self.dtraj2, lags=new_lags, errors='bayes', nsamples=10, show_progress=False, n_jobs=1)
 
         np.testing.assert_equal(its.timescales, its_one_shot.timescales)
 
@@ -198,21 +198,21 @@ class TestITS_MSM(unittest.TestCase):
     def test_insert_remove_lag_time(self):
         # test insert and removal at the same time
         lags = [1, 3, 5]
-        its = timescales_msm(self.dtraj4_2, lags=lags, errors='bayes', nsamples=10, show_progress=False)
+        its = timescales_msm(self.dtraj4_2, lags=lags, errors='bayes', nsamples=10, show_progress=False, n_jobs=1)
         new_lags = lags + [6, 7, 8]
         new_lags = new_lags[2:]
         new_lags += [21, 22]
         # omit the first lag
         new_lags = new_lags[1:]
         its.estimate(self.dtraj4_2, lags=new_lags)
-        its_one_shot = timescales_msm(self.dtraj4_2, lags=new_lags)
+        its_one_shot = timescales_msm(self.dtraj4_2, lags=new_lags, n_jobs=1)
 
         np.testing.assert_allclose(its.timescales, its_one_shot.timescales)
 
     def test_errors(self):
         dtraj_disconnected = [-2] * 10
         with self.assertRaises(RuntimeError) as e:
-            timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5])
+            timescales_msm(dtraj_disconnected, lags=[1, 2, 3, 4, 5], n_jobs=1)
         self.assertIn('elements < -1', e.exception.args[0])
 
     def test_no_return_estimators_samples(self):
@@ -220,7 +220,7 @@ class TestITS_MSM(unittest.TestCase):
         nstates = 10
         nits = 3
         its = timescales_msm(dtrajs=np.random.randint(0, nstates, size=1000), lags=lags,
-                             only_timescales=True, nits=nits, nsamples=2, errors='bayes')
+                             only_timescales=True, nits=nits, nsamples=2, errors='bayes', n_jobs=1)
         with self.assertRaises(RuntimeError):
             its.estimators
         with self.assertRaises(RuntimeError):
@@ -234,7 +234,7 @@ class TestITS_MSM(unittest.TestCase):
         nstates = 10
         nits = 3
         its = timescales_msm(dtrajs=np.random.randint(0, nstates, size=1000), lags=lags,
-                             only_timescales=True, nits=nits)
+                             only_timescales=True, nits=nits, n_jobs=1)
         with self.assertRaises(RuntimeError):
             its.estimators
         with self.assertRaises(RuntimeError):
@@ -254,7 +254,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         cls.double_well_data = pyemma.datasets.load_2well_discrete()
 
     def test_its_msm(self):
-        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000], n_jobs=2)
+        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [1, 10, 100, 1000], n_jobs=1)
         ref = np.array([[ 174.22244263,    3.98335928,    1.61419816,    1.1214093 ,    0.87692952],
                         [ 285.56862305,    6.66532284,    3.05283223,    2.6525504 ,    1.9138432 ],
                         [ 325.35442195,   24.17388446,   20.52185604,   20.10058217,    17.35451648],
@@ -278,7 +278,7 @@ class TestITS_AllEstimators(unittest.TestCase):
         np.testing.assert_array_less(estimator.timescales[0], R[0])
 
     def test_its_hmsm(self):
-        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100], n_jobs=2)
+        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100], n_jobs=1)
         ref = np.array([[ 222.0187561 ],
                         [ 339.47351559],
                         [ 382.39905462]])
@@ -287,7 +287,7 @@ class TestITS_AllEstimators(unittest.TestCase):
 
     def test_its_bhmm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10],
-                                        errors='bayes', nsamples=100, n_jobs=2)
+                                        errors='bayes', nsamples=100, n_jobs=1)
         ref = np.array([[ 222.0187561 ],
                         [ 342.49015547]])
         # rough agreement with MLE
