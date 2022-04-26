@@ -42,7 +42,7 @@ class TestItsPlot(unittest.TestCase):
         dtrajs = [MarkovStateModel(P).simulate(1000) for _ in range(5)]
         msm_obj = pyemma.msm.MaximumLikelihoodMSM()
         msm_obj.estimate(dtrajs)
-        cls.ck = msm_obj.cktest(3)
+        cls.ck = msm_obj.cktest(3, n_jobs=1)
     def test_plot(self):
         plot_cktest(self.ck)
 
