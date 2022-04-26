@@ -70,28 +70,15 @@ If you are not an expert user, use the API functions above.
    ReactiveFlux
    PCCA
 
-
-MSM functions (low-level API)
-=============================
-Low-level functions for estimation and analysis of transition matrices and io have been moved to `MSMTools
-<https://msmtools.readthedocs.io/>`_.
-
-
 """
 
-######################################################
-from msmtools.analysis.dense.pcca import PCCA
-
-#####################################################
-# Estimators and models
 from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
 
-from .estimators import MaximumLikelihoodMSM, BayesianMSM
-from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import AugmentedMarkovModel, OOMReweightedMSM
-from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
-
+from .estimators import ImpliedTimescales
+from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import MaximumLikelihoodMSM, BayesianMSM
 
 # high-level api
 from .api import *

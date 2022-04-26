@@ -41,6 +41,7 @@ def timescales_msm(*args, **kw):
     else:
         # let the environment determine this.
         kw['n_jobs'] = None if sys.platform != 'win32' else 1
+    kw['n_jobs'] = 1
     return _ts_msm(*args, **kw)
 
 

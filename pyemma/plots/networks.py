@@ -415,16 +415,16 @@ def plot_markov_model(
     (<...Figure..., array...)
 
     """
-    from msmtools import analysis as msmana
+    from deeptime.markov.tools.analysis import stationary_distribution
     if isinstance(P, _np.ndarray):
         P = P.copy()
     else:
         # MSM object? then get transition matrix first
         P = P.transition_matrix.copy()
     if state_sizes is None:
-        state_sizes = msmana.stationary_distribution(P)
+        state_sizes = stationary_distribution(P)
     if minflux > 0:
-        F = _np.dot(_np.diag(msmana.stationary_distribution(P)), P)
+        F = _np.dot(_np.diag(stationary_distribution(P)), P)
         I, J = _np.where(F < minflux)
         P[I, J] = 0.0
     plot = NetworkPlot(P, pos=pos, ax=ax)

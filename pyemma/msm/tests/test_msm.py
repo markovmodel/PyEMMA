@@ -30,11 +30,12 @@ import numpy as np
 import scipy.sparse
 import warnings
 
-from msmtools.generation import generate_traj
-from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
-from msmtools.analysis import stationary_distribution, timescales
+from deeptime.data import BirthDeathChain
+from deeptime.markov.tools.estimation import count_matrix, largest_connected_set, \
+    largest_connected_submatrix, transition_matrix
+from deeptime.markov.tools.analysis import stationary_distribution, timescales, is_transition_matrix, is_connected, \
+    is_reversible
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model, MaximumLikelihoodMSM
 
 
@@ -59,8 +60,7 @@ class TestMSMSimple(unittest.TestCase):
         p[4] = 1.0 - 10 ** (-b)
 
         bdc = BirthDeathChain(q, p)
-        P = bdc.transition_matrix()
-        self.dtraj = generate_traj(P, 10000, start=0)
+        self.dtraj = bdc.msm.simulate(10000, start=0)
         self.tau = 1
 
         """Estimate MSM"""
@@ -401,13 +401,11 @@ class TestMSMDoubleWell(unittest.TestCase):
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
-        import msmtools.analysis as msmana
-
-        assert (msmana.is_transition_matrix(P))
-        assert (msmana.is_connected(P))
+        assert (is_transition_matrix(P))
+        assert (is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))
+            assert (is_reversible(P))
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)
@@ -785,7 +783,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # raise assertion error because size is wrong:
         maxtime = 100000
         a = [1, 2, 3]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # should decrease
         a = list(range(msm.nstates))
@@ -843,7 +841,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_correlation(a, 1, k=k)
             # should decrease
             a = list(range(self.msm.nstates))
@@ -888,7 +886,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # equilibrium relaxation should be constant
             a = list(range(msm.nstates))
@@ -1091,7 +1089,7 @@ IndexError: index 0 is out of bounds for axis 1 with size 0
 
     def test_timescales(self):
         from pyemma.msm import timescales_msm
-        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None)
+        its = timescales_msm(self.dtraj, lags=[1, 2], mincount_connectivity=0, errors=None, n_jobs=1)
         assert its.estimator.mincount_connectivity == 0
 
 

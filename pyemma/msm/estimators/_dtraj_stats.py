@@ -19,73 +19,14 @@
 
 
 import numpy as np
+from deeptime.markov import number_of_states, count_states, TransitionCountEstimator, TransitionCountModel
+from deeptime.markov.tools.estimation import connected_sets, count_matrix
 
-from msmtools import estimation as msmest
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
 
 __author__ = 'noe'
-
-
-# TODO: this could me moved to msmtools.dtraj
-def blocksplit_dtrajs(dtrajs, lag=1, sliding=True, shift=None):
-    """ Splits the discrete trajectories into approximately uncorrelated fragments
-
-    Will split trajectories into fragments of lengths lag or longer. These fragments
-    are overlapping in order to conserve the transition counts at given lag.
-    If sliding=True, the resulting trajectories will lead to exactly the same count
-    matrix as when counted from dtrajs. If sliding=False (sampling at lag), the
-    count matrices are only equal when also setting shift=0.
-
-    Parameters
-    ----------
-    dtrajs : list of ndarray(int)
-        Discrete trajectories
-    lag : int
-        Lag time at which counting will be done. If sh
-    sliding : bool
-        True for splitting trajectories for sliding count, False if lag-sampling will be applied
-    shift : None or int
-        Start of first full tau-window. If None, shift will be randomly generated
-
-    """
-    dtrajs_new = []
-    for dtraj in dtrajs:
-        if len(dtraj) <= lag:
-            continue
-        if shift is None:
-            s = np.random.randint(min(lag, dtraj.size-lag))
-        else:
-            s = shift
-        if sliding:
-            if s > 0:
-                dtrajs_new.append(dtraj[0:lag+s])
-            for t0 in range(s, dtraj.size-lag, lag):
-                dtrajs_new.append(dtraj[t0:t0+2*lag])
-        else:
-            for t0 in range(s, dtraj.size-lag, lag):
-                dtrajs_new.append(dtraj[t0:t0+lag+1])
-    return dtrajs_new
-
-
-# TODO: this could me moved to msmtools.dtraj
-def cvsplit_dtrajs(dtrajs):
-    """ Splits the trajectories into a training and test set with approximately equal number of trajectories
-
-    Parameters
-    ----------
-    dtrajs : list of ndarray(int)
-        Discrete trajectories
-
-    """
-    if len(dtrajs) == 1:
-        raise ValueError('Only have a single trajectory. Cannot be split into train and test set')
-    I0 = np.random.choice(len(dtrajs), int(len(dtrajs)/2), replace=False)
-    I1 = np.array(list(set(list(np.arange(len(dtrajs)))) - set(list(I0))))
-    dtrajs_train = [dtrajs[i] for i in I0]
-    dtrajs_test = [dtrajs[i] for i in I1]
-    return dtrajs_train, dtrajs_test
 
 
 @aliased
@@ -116,12 +57,11 @@ class DiscreteTrajectoryStats(object):
 
         ## basic count statistics
         # histogram
-        from msmtools.dtraj import count_states
         self._hist = count_states(self._dtrajs, ignore_negative=True)
         # total counts
         self._total_count = np.sum(self._hist)
         # number of states
-        self._nstates = msmest.number_of_states(dtrajs)
+        self._nstates = number_of_states(dtrajs)
 
         # not yet estimated
         self._counted_at_lag = False
@@ -139,7 +79,6 @@ class DiscreteTrajectoryStats(object):
         -------
         Cconn, S
         """
-        import msmtools.estimation as msmest
         import scipy.sparse as scs
         if scs.issparse(C):
             Cconn = C.tocsr(copy=True)
@@ -150,7 +89,7 @@ class DiscreteTrajectoryStats(object):
             Cconn[np.where(Cconn < mincount_connectivity)] = 0
 
         # treat each connected set separately
-        S = msmest.connected_sets(Cconn, directed=strong)
+        S = connected_sets(Cconn, directed=strong)
         return S
 
     def count_lagged(self, lag, count_mode='sliding', mincount_connectivity='1/n',
@@ -197,64 +136,27 @@ class DiscreteTrajectoryStats(object):
                     while -1 in d:
                         mask = (d == -1)
                         d[mask] = d[np.roll(mask, -1)]
-                self._C = msmest.count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
+                self._C = count_matrix(self._dtrajs, lag, sliding=count_mode == 'sliding')
 
             else:
                 raise NotImplementedError('Milestoning method {} not implemented.'.format(milestoning_method))
-
-
-        elif count_mode == 'sliding':
-            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
-        elif count_mode == 'sample':
-            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
-        elif count_mode == 'effective':
-            if core_set is not None:
-                raise RuntimeError('Cannot estimate core set MSM with effective counting.')
-            from pyemma.util.reflection import getargspec_no_self
-            argspec = getargspec_no_self(msmest.effective_count_matrix)
-            kw = {}
-            from pyemma.util.contexts import nullcontext
-            ctx = nullcontext()
-            if 'callback' in argspec.args:  # msmtools effective cmatrix ready for multiprocessing?
-                from pyemma._base.progress import ProgressReporter
-                from pyemma._base.parallel import get_n_jobs
-
-                kw['n_jobs'] = get_n_jobs() if n_jobs is None else n_jobs
-
-                if show_progress:
-                    pg = ProgressReporter()
-                    # this is a fast operation
-                    C_temp = msmest.count_matrix(self._dtrajs, lag, sliding=True)
-                    pg.register(C_temp.nnz, '{}: compute stat. inefficiencies'.format(name), stage=0)
-                    del C_temp
-                    kw['callback'] = pg.update
-                    ctx = pg.context(stage=0)
-            with ctx:
-                self._C = msmest.effective_count_matrix(self._dtrajs, lag, **kw)
         else:
-            raise ValueError('Count mode ' + count_mode + ' is unknown.')
+            cm = TransitionCountEstimator(lag, count_mode=count_mode, sparse=True).fit(self._dtrajs).fetch_model()
+            self._C = cm.count_matrix
+
+
 
         # store mincount_connectivity
         if mincount_connectivity == '1/n':
             mincount_connectivity = 1.0 / np.shape(self._C)[0]
         self._mincount_connectivity = mincount_connectivity
 
-        # Compute reversibly connected sets
-        if self._mincount_connectivity > 0:
-            self._connected_sets = \
-                self._compute_connected_sets(self._C, mincount_connectivity=self._mincount_connectivity)
-        else:
-            self._connected_sets = msmest.connected_sets(self._C)
+        self._count_model_full = TransitionCountModel(self._C)
+        self._connected_sets = self._count_model_full.connected_sets(connectivity_threshold=self._mincount_connectivity)
+        self._count_model = self._count_model_full.submodel_largest(connectivity_threshold=self._mincount_connectivity)
 
         # set sizes and count matrices on reversibly connected sets
-        self._connected_set_sizes = np.zeros((len(self._connected_sets)))
-        self._C_sub = np.empty((len(self._connected_sets)), dtype=np.object)
-        for i in range(len(self._connected_sets)):
-            # set size
-            self._connected_set_sizes[i] = len(self._connected_sets[i])
-            # submatrix
-            # self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
-
+        self._connected_set_sizes = np.array((len(cs) for cs in self._connected_sets))
         # largest connected set
         self._lcs = self._connected_sets[0]
 

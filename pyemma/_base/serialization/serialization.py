@@ -135,7 +135,7 @@ class SerializableMixIn(object):
     which are preserved during serialization.
 
     To aid the process of loading old models in a new version of the software, there
-    is the the static field '__serialize_interpolation_map', which is a mapping from
+    is the static field '__serialize_interpolation_map', which is a mapping from
     old version number to a set of operations to transform the old class state to the
     recent version of the class.
 
@@ -403,6 +403,10 @@ class SerializableMixIn(object):
             if isinstance(self, Model):
                 state.update(Model.__my_getstate__(self))
 
+            from deeptime.base import Model as DeeptimeModel
+            if isinstance(self, DeeptimeModel):
+                state.update(self.__dict__)
+
             from pyemma import version
             state['pyemma_version'] = version
 
@@ -443,6 +447,10 @@ class SerializableMixIn(object):
             from pyemma._base.model import Model
             if isinstance(self, Model):
                 Model.__my_setstate__(self, state)
+
+            from deeptime.base import Model as DeeptimeModel
+            if isinstance(self, DeeptimeModel):
+                self.__dict__.update(state)
 
             for klass in to_inspect:
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)

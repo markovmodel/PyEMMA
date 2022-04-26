@@ -24,10 +24,10 @@ Created on 10.03.2016
 
 import unittest
 import numpy as np
+from deeptime.markov.msm import MarkovStateModel
 
 from pyemma.msm import MaximumLikelihoodMSM, ImpliedTimescales
 from pyemma.plots import plot_implied_timescales
-from msmtools.generation import generate_traj
 
 
 class TestItsPlot(unittest.TestCase):
@@ -41,9 +41,9 @@ class TestItsPlot(unittest.TestCase):
                       ])
         # bogus its object
         lags = [1, 2, 3, 5, 10]
-        cls.dtraj = generate_traj(P, 1000)
+        cls.dtraj = MarkovStateModel(P).simulate(1000)
         cls.estimator = MaximumLikelihoodMSM(dt_traj='10 ps')
-        cls.its = ImpliedTimescales(estimator=cls.estimator)
+        cls.its = ImpliedTimescales(estimator=cls.estimator, n_jobs=1)
         cls.its.estimate(cls.dtraj, lags=lags)
 
         cls.refs = cls.its.timescales[-1]
@@ -61,13 +61,13 @@ class TestItsPlot(unittest.TestCase):
         plot_implied_timescales(self.its, refs=self.refs, process=[1, 2], dt=0.01, units='ns')
 
     def test_its_estimated_with_only_ts(self):
-        its = ImpliedTimescales(estimator=self.estimator, lags=[1, 2, 3], only_timescales=True)
+        its = ImpliedTimescales(estimator=self.estimator, lags=[1, 2, 3], only_timescales=True, n_jobs=1)
         its.estimate(self.dtraj)
         plot_implied_timescales(its)
 
     def test_its_estimated_with_only_ts_samples(self):
         from pyemma.msm import BayesianMSM
-        its = ImpliedTimescales(estimator=BayesianMSM(nsamples=2), lags=[1, 2, 3], only_timescales=True)
+        its = ImpliedTimescales(estimator=BayesianMSM(nsamples=2), lags=[1, 2, 3], only_timescales=True, n_jobs=1)
         its.estimate(self.dtraj)
         plot_implied_timescales(its)
 

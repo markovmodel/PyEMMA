@@ -28,14 +28,14 @@ import scipy.sparse
 import scipy.linalg as scl
 import warnings
 import pkg_resources
+from deeptime.markov.tools.analysis import rdl_decomposition, is_transition_matrix, is_reversible, is_connected
+from deeptime.markov.tools.estimation import largest_connected_set, largest_connected_submatrix
 
 from pyemma.msm import estimate_markov_model
 from pyemma.msm import markov_model
 from pyemma.msm.estimators import OOMReweightedMSM
 from pyemma.util.linalg import _sort_by_norm
 from pyemma.util.discrete_trajectories import count_states
-import msmtools.estimation as msmest
-import msmtools.analysis as ma
 
 
 def oom_transformations(Ct, C2t, rank):
@@ -151,7 +151,7 @@ class TestMSMFiveState(unittest.TestCase):
         p0 = np.array([0.5, 0.2, 0.2, 0.1, 0.0])
         pi = cls.rmsm.stationary_distribution
         pi_rev = cls.rmsmrev.stationary_distribution
-        _, _, L_rev = ma.rdl_decomposition(Tt_rev)
+        _, _, L_rev = rdl_decomposition(Tt_rev)
         cls.exp = np.dot(cls.rmsm.stationary_distribution, a)
         cls.exp_rev = np.dot(cls.rmsmrev.stationary_distribution, a)
         cls.corr_rev = np.zeros(10)
@@ -347,12 +347,11 @@ class TestMSMFiveState(unittest.TestCase):
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
-        import msmtools.analysis as msmana
-        assert (msmana.is_transition_matrix(P))
-        assert (msmana.is_connected(P))
+        assert (is_transition_matrix(P))
+        assert (is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))
+            assert (is_reversible(P))
         # Test equality with model:
         if isinstance(P, scipy.sparse.csr_matrix):
             P = P.toarray()
@@ -717,7 +716,7 @@ class TestMSMFiveState(unittest.TestCase):
     def _correlation(self, msm):
         a = [1, 2, 3, 4, 5]
         b = [1, -1, 0, -2, 4]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # test equality:
         _, cor = msm.correlation(a, b, maxtime=50)
@@ -779,7 +778,7 @@ class TestMSMFiveState(unittest.TestCase):
         p0 = [0.5, 0.2, 0.2, 0.1, 0.0]
         if msm.is_reversible:
             # raise assertion error because size is wrong:
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=5)
             # equilibrium relaxation should be constant
             fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=5)
@@ -927,8 +926,8 @@ class TestMSM_Incomplete(unittest.TestCase):
         cls.C2t = data['C2t_s']
         cls.Ct = np.sum(cls.C2t, axis=1)
         # Restrict to active set:
-        lcc = msmest.largest_connected_set(cls.Ct)
-        cls.Ct_active = msmest.largest_connected_submatrix(cls.Ct, lcc=lcc)
+        lcc = largest_connected_set(cls.Ct)
+        cls.Ct_active = largest_connected_submatrix(cls.Ct, lcc=lcc)
         cls.C2t_active = cls.C2t[:4, :4, :4]
         cls.active_fraction = np.sum(cls.Ct_active) / np.sum(cls.Ct)
 
@@ -968,7 +967,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         p0 = np.array([0.5, 0.2, 0.2, 0.1])
         pi = cls.rmsm.stationary_distribution
         pi_rev = cls.rmsmrev.stationary_distribution
-        _, _, L_rev = ma.rdl_decomposition(Tt_rev)
+        _, _, L_rev = rdl_decomposition(Tt_rev)
         cls.exp = np.dot(pi, a)
         cls.exp_rev = np.dot(pi_rev, a)
         cls.corr_rev = np.zeros(10)
@@ -1129,12 +1128,11 @@ class TestMSM_Incomplete(unittest.TestCase):
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
-        import msmtools.analysis as msmana
-        assert (msmana.is_transition_matrix(P))
-        assert (msmana.is_connected(P))
+        assert (is_transition_matrix(P))
+        assert (is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))
+            assert (is_reversible(P))
         # Test equality with model:
         if isinstance(P, scipy.sparse.csr_matrix):
             P = P.toarray()
@@ -1481,7 +1479,7 @@ class TestMSM_Incomplete(unittest.TestCase):
     def _correlation(self, msm):
         a = [1, 2, 3, 4]
         b = [1, -1, 0, -2]
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             msm.correlation(a, 1)
         # test equality:
         _, cor = msm.correlation(a, b, maxtime=50)
@@ -1540,7 +1538,7 @@ class TestMSM_Incomplete(unittest.TestCase):
         p0 = [0.5, 0.2, 0.2, 0.1]
         if msm.is_reversible:
             # raise assertion error because size is wrong:
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(ValueError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, [0, 1], k=4)
             # equilibrium relaxation should be constant
             fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=4)

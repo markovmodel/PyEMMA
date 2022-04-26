@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
-from msmtools import estimation as msmest
+from deeptime.markov.tools.estimation import log_likelihood, transition_matrix, connected_sets
 
 from pyemma.msm.estimators import MaximumLikelihoodMSM
 from pyemma.util.annotators import fix_docs, aliased
@@ -182,7 +182,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
     @staticmethod
     def _log_likelihood_biased(C, T, E, mhat, ws):
         """ Evaluate AMM likelihood. """
-        ll_unbiased = msmest.log_likelihood(C, T)
+        ll_unbiased = log_likelihood(C, T)
         ll_bias = -_np.sum(ws * (mhat - E) ** 2.)
         return ll_unbiased + ll_bias
 
@@ -387,7 +387,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
             "Total experimental constraints outside support %d of %d" % (len(self.count_outside), len(self.E_min)))
 
         # A number of initializations
-        self.P, self.pi = msmest.tmatrix(self._C_active, reversible=True, return_statdist=True)
+        self.P, self.pi = transition_matrix(self._C_active, reversible=True, return_statdist=True)
         self.lagrange = _np.zeros(self.m.shape)
         self._pihat = self.pi.copy()
         self._update_mhat()
@@ -472,9 +472,9 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
                                  "Consider increasing max_iter(now=%i)" % (i, self.max_iter))
             i += 1
 
-        _P = msmest.tmatrix(self._C_active, reversible=True, mu=self._pihat)
+        _P = transition_matrix(self._C_active, reversible=True, mu=self._pihat)
 
-        self._connected_sets = msmest.connected_sets(self._C_full)
+        self._connected_sets = connected_sets(self._C_full)
         self.set_model_params(P=_P, pi=self._pihat, reversible=True,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 

@@ -1,5 +1,6 @@
 import numpy as _np
-from msmtools import estimation as msmest
+from deeptime.markov import count_states
+from deeptime.markov.tools.estimation import count_matrix
 
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm import MSM as _MSM
@@ -328,7 +329,7 @@ class _MSMEstimator(_Estimator, _MSM):
         Ctt_train = _np.diag(C0t_train.sum(axis=0))  # empirical cov
 
         # test data
-        C0t_test_raw = msmest.count_matrix(dtrajs, self.lag, sparse_return=False)
+        C0t_test_raw = count_matrix(dtrajs, self.lag, sparse_return=False)
         # map to present active set
         map_from = self.active_set[_np.where(self.active_set < C0t_test_raw.shape[0])[0]]
         map_to = _np.arange(len(map_from))
@@ -343,8 +344,8 @@ class _MSMEstimator(_Estimator, _MSM):
                           k=self.score_k, score=self.score_method)
 
     def _blocksplit_dtrajs(self, dtrajs, sliding):
-        from pyemma.msm.estimators._dtraj_stats import blocksplit_dtrajs
-        return blocksplit_dtrajs(dtrajs, lag=self.lag, sliding=sliding)
+        from deeptime.decomposition._score import blocksplit_trajs
+        return blocksplit_trajs(dtrajs, blocksize=self.lag, sliding=sliding)
 
     def score_cv(self, dtrajs, n=10, score_method=None, score_k=None):
         """ Scores the MSM using the variational approach for Markov processes [1]_ [2]_ and crossvalidation [3]_ .
@@ -392,9 +393,9 @@ class _MSMEstimator(_Estimator, _MSM):
             dynamics simulation. J. Chem. Theory Comput. 11, 5002-5011 (2015).
 
         """
+        from deeptime.decomposition import cvsplit_trajs
         dtrajs = ensure_dtraj_list(dtrajs)  # ensure format
 
-        from pyemma.msm.estimators._dtraj_stats import cvsplit_dtrajs
         if self.count_mode not in ('sliding', 'sample'):
             raise ValueError('score_cv currently only supports count modes "sliding" and "sample"')
         sliding = self.count_mode == 'sliding'
@@ -403,7 +404,7 @@ class _MSMEstimator(_Estimator, _MSM):
         estimator = clone(self)
         for i in range(n):
             dtrajs_split = self._blocksplit_dtrajs(dtrajs, sliding)
-            dtrajs_train, dtrajs_test = cvsplit_dtrajs(dtrajs_split)
+            dtrajs_train, dtrajs_test = cvsplit_trajs(dtrajs_split)
             estimator.fit(dtrajs_train)
             s = estimator.score(dtrajs_test, score_method=score_method, score_k=score_k)
             scores.append(s)
@@ -672,9 +673,8 @@ class _MSMEstimator(_Estimator, _MSM):
         # TODO: frames. Anyway, this is a nontrivial issue.
         self._check_is_estimated()
         # generate synthetic states
-        from msmtools.generation import generate_traj as _generate_traj
-
-        syntraj = _generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=stride)
+        from deeptime.markov.msm import MarkovStateModel
+        syntraj = MarkovStateModel(self.transition_matrix).simulate(N, start=start, stop=stop, dt=stride)
         # result
         from pyemma.util.discrete_trajectories import sample_indexes_by_sequence
 
@@ -801,8 +801,7 @@ class _MSMEstimator(_Estimator, _MSM):
         statdist_full = _np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
         # histogram observed states
-        import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
+        hist = 1.0 * count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
@@ -862,7 +861,7 @@ class _MSMEstimator(_Estimator, _MSM):
         estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
-    def coarse_grain(self, ncoarse, method='hmm'):
+    def coarse_grain(self, ncoarse):
         r"""Returns a coarse-grained Markov model.
 
         Currently only the HMM method described in [1]_ is available for coarse-graining MSMs.

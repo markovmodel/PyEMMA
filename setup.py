@@ -298,15 +298,13 @@ metadata = dict(
         'h5py>=2.7.1',
         'matplotlib',
         'mdtraj>=1.9.2',
-        'msmtools>=1.2',
         'numpy>=1.8.0',
         'pathos',
         'psutil>=3.1.1',
         'pyyaml',
         'scipy>=0.11',
         'tqdm>=4.23',
-        'deeptime'
-        # 'deeptime @ git+https://git@github.com/deeptime-ml/deeptime.git@main#egg=deeptime'  # for re-integration purposes
+        'deeptime>=0.4.2'
     ],
     zip_safe=False,
     entry_points={
