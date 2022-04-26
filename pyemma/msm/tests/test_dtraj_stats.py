@@ -1,7 +1,8 @@
 import unittest
 
 import numpy as np
-from deeptime.decomposition import blocksplit_trajs, cvsplit_trajs
+from deeptime.decomposition import cvsplit_trajs
+from deeptime.decomposition._score import blocksplit_trajs
 from deeptime.markov.tools.estimation import count_matrix
 
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats
