@@ -118,7 +118,7 @@ def cktest_resource():
     np.random.mtrand.set_state(rnd_state)
 
 
-@pytest.mark.parametrize('n_jobs', [1, 2])
+@pytest.mark.parametrize('n_jobs', [1])
 def test_cktest(n_jobs, cktest_resource):
     # introduce a (fake) third set in order to model incomplete partition.
     memberships = np.array([[1, 0, 0],
@@ -156,7 +156,7 @@ class TestCK_AllEstimators(unittest.TestCase):
 
     def test_ck_msm(self):
         MLMSM = msm.estimate_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40)
-        self.ck = MLMSM.cktest(2, mlags=[0, 1, 10])
+        self.ck = MLMSM.cktest(2, mlags=[0, 1, 10], n_jobs=1)
         estref = np.array([[[1., 0.],
                             [0., 1.]],
                            [[0.89806859, 0.10193141],
@@ -181,7 +181,7 @@ class TestCK_AllEstimators(unittest.TestCase):
         BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40, reversible=True)
         # also ensure that reversible bit does not flip during cktest
         assert BMSM.reversible
-        self.ck = BMSM.cktest(2, mlags=[0, 1, 10], n_jobs=2)
+        self.ck = BMSM.cktest(2, mlags=[0, 1, 10], n_jobs=1)
         assert BMSM.reversible
         estref = np.array([[[1., 0.],
                             [0., 1.]],
@@ -217,7 +217,7 @@ class TestCK_AllEstimators(unittest.TestCase):
 
     def test_its_hmsm(self):
         MLHMM = msm.estimate_hidden_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 2, 10)
-        self.ck = MLHMM.cktest(mlags=[0, 1, 10])
+        self.ck = MLHMM.cktest(mlags=[0, 1, 10], n_jobs=1)
         estref = np.array([[[1., 0.],
                             [0., 1.]],
                            [[0.98515058, 0.01484942],
@@ -240,7 +240,7 @@ class TestCK_AllEstimators(unittest.TestCase):
 
     def test_its_bhmm(self):
         BHMM = msm.bayesian_hidden_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 2, 10)
-        self.ck = BHMM.cktest(mlags=[0, 1, 10])
+        self.ck = BHMM.cktest(mlags=[0, 1, 10], n_jobs=1)
         estref = np.array([[[1., 0.],
                             [0., 1.]],
                            [[0.98497185, 0.01502815],
