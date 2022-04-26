@@ -302,8 +302,8 @@ class TestITS_AllEstimators(unittest.TestCase):
         # core states, left and right well
         core_set = [0, 5]
         estimator = msm.estimators.MaximumLikelihoodMSM(core_set=core_set)
-        its = msm.ImpliedTimescales(estimator, lags=[1, 10, 100, 1000])
-        its.estimate([self.double_well_data.dtraj_T100K_dt10_n6good], n_jobs=1)
+        its = msm.ImpliedTimescales(estimator, lags=[1, 10, 100, 1000], n_jobs=1)
+        its.estimate([self.double_well_data.dtraj_T100K_dt10_n6good])
         assert its.models[0].n_cores == 2
         ref = np.array([[339.22244263],
                         [334.56862305],
