@@ -151,7 +151,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     -------
     >>> from pyemma import msm
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
-    >>> ts = msm.its(dtraj, [1,2,3,4,5], show_progress=False)
+    >>> ts = msm.its(dtraj, [1,2,3,4,5], show_progress=False, n_jobs=1)
     >>> print(ts.timescales)  # doctest: +ELLIPSIS
     [[ 1.5...  0.2...]
      [ 3.1...  1.0...]
@@ -961,7 +961,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
     >>> import numpy as np
     >>> np.set_printoptions(precision=3)
     >>> dtraj = [0,1,1,0,0,0,1,1,0,0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,1,1,0,1,0]   # mini-trajectory
-    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4], show_progress=False)
+    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4], show_progress=False, n_jobs=1)
     >>> print(ts.timescales) # doctest: +ELLIPSIS
     [[ 5.786]
      [ 5.143]

@@ -230,7 +230,7 @@ class TestVAMPModel(unittest.TestCase):
         assert_allclose_ignore_phase(V, phi, atol=1E-5)
         references_sf = [U.T.dot(np.diag(self.p0)).dot(np.linalg.matrix_power(self.msm.P, k*self.lag)).dot(V).T for k in
                          range(10-1)]
-        cktest = self.vamp.cktest(n_observables=2, mlags=10)
+        cktest = self.vamp.cktest(n_observables=2, mlags=10, n_jobs=1)
         pred_sf = cktest.predictions
         esti_sf = cktest.estimates
         for e, p, r in zip(esti_sf[1:], pred_sf[1:], references_sf[1:]):
@@ -250,7 +250,7 @@ class TestVAMPModel(unittest.TestCase):
 
     def test_CK_expectation_against_MSM(self):
         obs = np.eye(3) # observe every state
-        cktest = self.vamp.cktest(observables=obs, statistics=None, mlags=4)
+        cktest = self.vamp.cktest(observables=obs, statistics=None, mlags=4, n_jobs=1)
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
 
@@ -263,7 +263,7 @@ class TestVAMPModel(unittest.TestCase):
             np.testing.assert_allclose(est_, pred_, atol=0.006)
 
     def test_CK_covariances_of_singular_functions(self):
-        cktest = self.vamp.cktest(n_observables=2, mlags=4)  # auto
+        cktest = self.vamp.cktest(n_observables=2, mlags=4, n_jobs=1)  # auto
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
         error = np.max(np.abs(np.array(pred) - np.array(est))) / max(np.max(pred), np.max(est))
@@ -272,7 +272,7 @@ class TestVAMPModel(unittest.TestCase):
     def test_CK_covariances_against_MSM(self):
         obs = np.eye(3)  # observe every state
         sta = np.eye(3)  # restrict p0 to every state
-        cktest = self.vamp.cktest(observables=obs, statistics=sta, mlags=4, show_progress=True)
+        cktest = self.vamp.cktest(observables=obs, statistics=sta, mlags=4, show_progress=True, n_jobs=1)
         pred = cktest.predictions[1:]
         est = cktest.estimates[1:]
 
