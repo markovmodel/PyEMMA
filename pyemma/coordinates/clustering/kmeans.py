@@ -46,8 +46,6 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
-    r"""k-means clustering"""
-
     __serialize_version = 0
     __serialize_fields = ('initial_centers_', '_converged', )
 
@@ -55,6 +53,11 @@ class KmeansClustering(AbstractClustering, ProgressReporterMixin):
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
                  oom_strategy='memmap', stride=1, n_jobs=None, skip=0, clustercenters=None, keep_data=False):
         r"""Kmeans clustering
+
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `KMeans <https://deeptime-ml.github.io/latest/api/generated/deeptime.clustering.KMeans.html>`__
+            implementation instead. Will be removed in PyEMMA 3.
 
         Parameters
         ----------

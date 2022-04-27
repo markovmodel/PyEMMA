@@ -60,6 +60,11 @@ class PCA(StreamingEstimationTransformer, SerializableMixIn):
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.
 
+        .. deprecated:: 2.5.11
+            Use the scikit-learn
+            `PCA <https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html>`__
+            implementation instead. Will be removed in PyEMMA 3.
+
         Given a sequence of multivariate data :math:`X_t`,
         computes the mean-free covariance matrix.
 

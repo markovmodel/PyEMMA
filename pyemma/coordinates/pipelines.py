@@ -38,6 +38,9 @@ class Pipeline(Loggable):
     def __init__(self, chain, chunksize=None, param_stride=1):
         r"""Data processing pipeline.
 
+        .. deprecated:: 2.5.11
+            Will be removed in PyEMMA 3.
+
         Parameters
         ----------
         chain : list of transformers like objects

@@ -38,6 +38,11 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
     __serialize_fields = []
 
     r"""Compute lagged covariances between time series.
+    
+    .. deprecated:: 2.5.11
+        Use the deeptime
+        `Covariance <https://deeptime-ml.github.io/latest/api/generated/deeptime.covariance.Covariance.html>`__
+        estimator instead. Will be removed in PyEMMA 3.
 
      Parameters
      ----------
@@ -51,9 +56,9 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
          compute instantaneous correlations over the time-shifted chunks of the data. Does not work with lag==0.
          Makes the Ctt_ attribute available.
      remove_constant_mean : ndarray(N,), optional, default=None
-         substract a constant vector of mean values from time series.
+         subtract a constant vector of mean values from time series.
      remove_data_mean : bool, optional, default=False
-         substract the sample mean from the time series (mean-free correlations).
+         subtract the sample mean from the time series (mean-free correlations).
      reversible : bool, optional, default=False
          symmetrize correlations.
      bessel : bool, optional, default=True
@@ -107,9 +112,10 @@ class LaggedCovariance(StreamingEstimator, SerializableMixIn):
             remove_constant_mean = ensure_float_vector(remove_constant_mean)
         if column_selection is not None and diag_only:
             raise ValueError('Computing only parts of the diagonal is not supported.')
-        if diag_only and sparse_mode is not 'dense':
-            if sparse_mode is 'sparse':
-                self.logger.warning('Computing diagonal entries only is not implemented for sparse mode. Switching to dense mode.')
+        if diag_only and sparse_mode != 'dense':
+            if sparse_mode == 'sparse':
+                self.logger.warning('Computing diagonal entries only is not implemented for sparse mode. '
+                                    'Switching to dense mode.')
             sparse_mode = 'dense'
         self.set_params(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,

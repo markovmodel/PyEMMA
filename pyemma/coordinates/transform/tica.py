@@ -43,6 +43,11 @@ class TICA(TICABase, SerializableMixIn):
                  stride=1, skip=0, reversible=True, weights=None, ncov_max=float('inf')):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `TICA <https://deeptime-ml.github.io/latest/api/generated/deeptime.decomposition.TICA.html>`__
+            estimator instead. Will be removed in PyEMMA 3.
+
         Parameters
         ----------
         lag : int

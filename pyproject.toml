@@ -7,7 +7,7 @@ requires = [
  "scipy",
  "mdtraj",
  "pybind11",
- "deeptime"
+ "deeptime",
  ]
 
 

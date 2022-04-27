@@ -47,6 +47,11 @@ class RegularSpaceClustering(AbstractClustering):
         The assignment of data objects to cluster centers is performed by
         Voronoi partioning.
 
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `RegularSpace <https://deeptime-ml.github.io/latest/api/generated/deeptime.clustering.RegularSpace.html>`__
+            implementation instead. Will be removed in PyEMMA 3.
+
         Regular space clustering [Prinz_2011]_ is very similar to Hartigan's leader
         algorithm [Hartigan_1975]_. It consists of two passes through
         the data. Initially, the first data point is added to the list of centers.

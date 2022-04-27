@@ -38,6 +38,9 @@ class UniformTimeClustering(AbstractClustering):
         """r
         Uniform time clustering
 
+        .. deprecated:: 2.5.11
+            Will be removed in PyEMMA 3.
+
         Parameters
         ----------
         n_clusters : int
