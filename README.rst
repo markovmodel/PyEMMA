@@ -85,5 +85,4 @@ Or start a discussion on our mailing list: pyemma-users@lists.fu-berlin.de
 External Libraries
 ------------------
 * mdtraj (LGPLv3): https://mdtraj.org
-* msmtools (LGLPv3): http://github.com/markovmodel/msmtools
 * thermotools (LGLPv3): http://github.com/markovmodel/thermotools
