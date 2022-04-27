@@ -36,6 +36,7 @@ requirements:
     - pybind11
     - pybind11-abi
     - deeptime >=0.3.0
+    - deprecated
 
   run:
     - decorator >=4.0.0
@@ -52,6 +53,7 @@ requirements:
     - setuptools
     - tqdm
     - deeptime
+    - deprecated
 
 test:
   source_files:
