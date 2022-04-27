@@ -23,7 +23,7 @@ import math
 import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, deprecated
 
 __author__ = 'noe'
 __all__ = ['UniformTimeClustering']
@@ -34,9 +34,13 @@ class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
     __serialize_version = 0
 
+    @deprecated()
     def __init__(self, n_clusters=2, metric='euclidean', stride=1, n_jobs=None, skip=0):
         """r
         Uniform time clustering
+
+        .. deprecated:: 2.5.11
+            Will be removed in PyEMMA 3.
 
         Parameters
         ----------

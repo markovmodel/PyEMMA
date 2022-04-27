@@ -26,43 +26,47 @@ Created on 18.02.2015
 import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, deprecated
 
 
 @fix_docs
 class AssignCenters(AbstractClustering):
-
-    """Assigns given (pre-calculated) cluster centers. If you already have
-    cluster centers from somewhere, you use this class to assign your data to it.
-
-    Parameters
-    ----------
-    clustercenters : path to file (csv) or npyfile or ndarray
-        cluster centers to use in assignment of data
-    metric : str
-        metric to use during clustering ('euclidean', 'minRMSD')
-    stride : int
-        stride
-    n_jobs : int or None, default None
-        Number of threads to use during assignment of the data.
-        If None, all available CPUs will be used.
-    skip : int, default=0
-        skip the first initial n frames per trajectory.
-    Examples
-    --------
-    Assuming you have stored your centers in a CSV file:
-
-    >>> from pyemma.coordinates.clustering import AssignCenters
-    >>> from pyemma.coordinates import pipeline
-    >>> reader = ... # doctest: +SKIP
-    >>> assign = AssignCenters('my_centers.dat') # doctest: +SKIP
-    >>> disc = pipeline(reader, cluster=assign) # doctest: +SKIP
-    >>> disc.parametrize() # doctest: +SKIP
-
-    """
     __serialize_version = 0
 
+    @deprecated("Use the deeptime.clustering.ClusterModel instead.")
     def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None, skip=0):
+        r"""Assigns given (pre-calculated) cluster centers. If you already have
+        cluster centers from somewhere, you use this class to assign your data to it.
+
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `ClusterModel <https://deeptime-ml.github.io/latest/api/generated/deeptime.clustering.ClusterModel.html>`__
+            and its `transform` method instead. Will be removed in PyEMMA 3.
+
+        Parameters
+        ----------
+        clustercenters : path to file (csv) or npyfile or ndarray
+            cluster centers to use in assignment of data
+        metric : str
+            metric to use during clustering ('euclidean', 'minRMSD')
+        stride : int
+            stride
+        n_jobs : int or None, default None
+            Number of threads to use during assignment of the data.
+            If None, all available CPUs will be used.
+        skip : int, default=0
+            skip the first initial n frames per trajectory.
+        Examples
+        --------
+        Assuming you have stored your centers in a CSV file:
+
+        >>> from pyemma.coordinates.clustering import AssignCenters
+        >>> from pyemma.coordinates import pipeline
+        >>> reader = ... # doctest: +SKIP
+        >>> assign = AssignCenters('my_centers.dat') # doctest: +SKIP
+        >>> disc = pipeline(reader, cluster=assign) # doctest: +SKIP
+        >>> disc.parametrize() # doctest: +SKIP
+        """
         super(AssignCenters, self).__init__(metric=metric, n_jobs=n_jobs)
 
         if isinstance(clustercenters, str):

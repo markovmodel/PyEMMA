@@ -27,7 +27,7 @@ Created on 26.01.2015
 import warnings
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.exceptions import NotConvergedWarning
 
 import numpy as np
@@ -41,11 +41,17 @@ class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
     __serialize_version = 0
 
+    @deprecated("Use deeptime.clustering.RegularSpace instead.")
     def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1, n_jobs=None, skip=0):
         """Clusters data objects in such a way, that cluster centers are at least in
         distance of dmin to each other according to the given metric.
         The assignment of data objects to cluster centers is performed by
         Voronoi partioning.
+
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `RegularSpace <https://deeptime-ml.github.io/latest/api/generated/deeptime.clustering.RegularSpace.html>`__
+            implementation instead. Will be removed in PyEMMA 3.
 
         Regular space clustering [Prinz_2011]_ is very similar to Hartigan's leader
         algorithm [Hartigan_1975]_. It consists of two passes through

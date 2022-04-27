@@ -31,7 +31,7 @@ import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporterMixin
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.units import bytes_to_string
 
 from pyemma.util.contexts import random_seed, nullcontext
@@ -46,15 +46,19 @@ __all__ = ['KmeansClustering', 'MiniBatchKmeansClustering']
 
 @fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporterMixin):
-    r"""k-means clustering"""
-
     __serialize_version = 0
     __serialize_fields = ('initial_centers_', '_converged', )
 
+    @deprecated("Use deeptime.clustering.KMeans instead.")
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
                  oom_strategy='memmap', stride=1, n_jobs=None, skip=0, clustercenters=None, keep_data=False):
         r"""Kmeans clustering
+
+        .. deprecated:: 2.5.11
+            Use the deeptime
+            `KMeans <https://deeptime-ml.github.io/latest/api/generated/deeptime.clustering.KMeans.html>`__
+            implementation instead. Will be removed in PyEMMA 3.
 
         Parameters
         ----------

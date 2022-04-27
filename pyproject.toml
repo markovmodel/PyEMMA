@@ -8,7 +8,6 @@ requires = [
  "mdtraj",
  "pybind11",
  "deeptime",
- "deprecated"
  ]
 
 

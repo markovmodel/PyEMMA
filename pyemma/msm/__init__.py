@@ -72,7 +72,7 @@ If you are not an expert user, use the API functions above.
 
 """
 
-from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
+from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux, PCCA
 
 from .estimators import AugmentedMarkovModel, OOMReweightedMSM
 from .estimators import ChapmanKolmogorovValidator
