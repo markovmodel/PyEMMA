@@ -26,14 +26,13 @@ Created on 18.02.2015
 import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import fix_docs, deprecated
+from pyemma.util.annotators import fix_docs
 
 
 @fix_docs
 class AssignCenters(AbstractClustering):
     __serialize_version = 0
 
-    @deprecated("Use the deeptime.clustering.ClusterModel instead.")
     def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None, skip=0):
         r"""Assigns given (pre-calculated) cluster centers. If you already have
         cluster centers from somewhere, you use this class to assign your data to it.
