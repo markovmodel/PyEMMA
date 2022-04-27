@@ -31,6 +31,7 @@ import os
 import versioneer
 import warnings
 from io import open
+import pybind11
 
 from setuptools import setup, Extension, find_packages
 
@@ -74,7 +75,7 @@ except ImportError as ie:
 def extensions():
     from Cython.Build import cythonize
     from numpy import get_include as np_get_include
-    pybind_inc = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ext', 'pybind11', 'include')
+    pybind_inc = pybind11.get_include()
     assert os.path.exists(pybind_inc), 'pybind11 headers not found at %s' % pybind_inc
 
     from mdtraj import capi as mdtraj_capi
@@ -323,15 +324,6 @@ metadata = dict(
 
 if __name__ == '__main__':
     if parse_setuppy_commands():
-        # only require numpy and extensions in case of building/installing
-        # first initialize submodules
-        if os.path.exists('.git'):
-            import subprocess
-            modules = [os.path.join('ext', 'pybind11')]
-            cmd = "git submodule update --init {mod}"
-
-            for m in modules:
-                subprocess.check_call(cmd.format(mod=m).split(' '))
         # now build extension list.
         metadata['ext_modules'] = extensions()
 
