@@ -263,8 +263,8 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
 
     def test_its_bmsm(self):
-        estimator = msm.its([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [10, 50, 200],
-                            errors='bayes', nsamples=1000, n_jobs=2)
+        estimator = msm.timescales_msm([self.double_well_data.dtraj_T100K_dt10_n6good], lags = [10, 50, 200],
+                                       errors='bayes', nsamples=1000, n_jobs=1)
         ref = np.array([[ 284.87479737,    6.68390402,    3.0375248,     2.65314172,    1.93066562],
                         [ 320.08583492,   11.14612743,   10.3450663,     9.42799075,    8.2109752 ],
                         [ 351.41541961,   42.87427869,   41.17841657,   37.35485197,   23.24254608]])
