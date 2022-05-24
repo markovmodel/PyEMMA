@@ -339,8 +339,8 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                       limit_threads)
                      for estimator, param_set in zip(estimators, param_sets))
 
-        from pathos.multiprocessing import Pool
-        pool = Pool(processes=n_jobs)
+        from multiprocess import get_context
+        pool = get_context("spawn").Pool(processes=n_jobs)
         args = list(task_iter)
 
         from contextlib import closing
