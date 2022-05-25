@@ -22,6 +22,9 @@ import inspect
 import sys
 import os
 
+from platform import system
+from multiprocess import get_context
+
 from threadpoolctl import threadpool_limits
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
@@ -339,8 +342,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                       limit_threads)
                      for estimator, param_set in zip(estimators, param_sets))
 
-        from multiprocess import get_context
-        pool = get_context("spawn").Pool(processes=n_jobs)
+        if system() == "Linux":
+            pool = get_context("spawn").Pool(processes=n_jobs)
+        else:
+            pool = get_context().Pool(processes=n_jobs)
         args = list(task_iter)
 
         from contextlib import closing
