@@ -19,7 +19,8 @@ Changelog
 - Use :code:`int` instead of :code:`numpy.int` to solve :code:`numpy` 1.20
   DeprecationWarning :pr:`1504`
 - Umbrella sampling: fix periodic width initialization :pr:`1522`
-- Solve 2 code:`SyntaxWarnings: "is" with a literal.` in utils/reader_utils.py :pr:`1530` 
+- Solve 2 code:`SyntaxWarnings: "is" with a literal.` in utils/reader_utils.py :pr:`1530`
+- Use spawn() for multiprocessing on linux instead of fork(), fixes worker processes sometimes going into idle for n_jobs>1 :pr:`1565`
 
 2.5.7 (9-24-2019)
 -----------------
