@@ -12,7 +12,7 @@ jobs:
       Python39:
         CONDA_PY: '3.9'
         CONDA_NPY: '1.19'
-      Python10:
+      Python310:
         CONDA_PY: '3.10'
         CONDA_NPY: '1.21'
  
