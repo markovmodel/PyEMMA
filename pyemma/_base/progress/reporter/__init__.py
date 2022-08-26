@@ -17,7 +17,7 @@ def _attached_to_ipy_notebook_with_widgets():
     try:
         # check for widgets
         import ipywidgets
-        if ipywidgets.version_info[0] < 4:
+        if int(ipywidgets.__version__.split('.')[0]) < 4:
             raise ImportError()
         # check for ipython kernel
         from IPython import get_ipython
