@@ -1,4 +1,5 @@
 from numbers import Integral
+from typing import Optional
 
 
 def _simple_memorize(f):
@@ -12,12 +13,23 @@ def _simple_memorize(f):
     return wrapper
 
 
+def _ipywidgets_major_version() -> Optional[int]:
+    r""" Determine ipywidgets major version if possible, otherwise return None. """
+    import ipywidgets
+    if hasattr(ipywidgets, '__version__'):
+        return int(ipywidgets.__version__.split('.')[0])
+    elif hasattr(ipywidgets, 'version_info'):
+        return ipywidgets.version_info[0]
+    else:
+        return None
+
+
 @_simple_memorize
 def _attached_to_ipy_notebook_with_widgets():
     try:
         # check for widgets
-        import ipywidgets
-        if ipywidgets.version_info[0] < 4:
+        version = _ipywidgets_major_version()
+        if version is None or version < 4:
             raise ImportError()
         # check for ipython kernel
         from IPython import get_ipython

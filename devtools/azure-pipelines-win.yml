@@ -5,15 +5,15 @@ jobs:
     vmImage: "windows-2019"
   strategy:
     matrix:
-      Python37:
-        CONDA_PY: '3.7'
-        CONDA_NPY: '1.18'
       Python38:
         CONDA_PY: '3.8'
         CONDA_NPY: '1.18'
       Python39:
         CONDA_PY: '3.9'
         CONDA_NPY: '1.19'
+      Python310:
+        CONDA_PY: '3.10'
+        CONDA_NPY: '1.21'
 
   steps:
   - template: checkout.yml
