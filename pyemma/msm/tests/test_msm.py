@@ -150,7 +150,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj
         nu = 1.*np.bincount(cls.dtraj)
         cls.statdist = nu/nu.sum()
 

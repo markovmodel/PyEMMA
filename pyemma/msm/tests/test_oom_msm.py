@@ -1291,11 +1291,11 @@ class TestMSM_Incomplete(unittest.TestCase):
             ts_ref = self.rmsmrev.timescales()
             assert (np.all(np.isreal(ts)))
             # HERE:
-            np.testing.assert_almost_equal(ts, self.tau*ts_ref, decimal=2)
+            np.testing.assert_almost_equal(ts, self.tau*ts_ref, decimal=1)
         else:
             ts_ref = self.rmsm.timescales()
             # HERE:
-            np.testing.assert_almost_equal(ts, self.tau*ts_ref, decimal=2)
+            np.testing.assert_almost_equal(ts, self.tau*ts_ref, decimal=1)
 
     def test_timescales(self):
         self._timescales(self.msmrev)

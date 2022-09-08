@@ -75,7 +75,7 @@ class TestNystroemTICA_DoubleWell(unittest.TestCase):
     def setUpClass(cls):
         from pyemma.datasets import load_2well_discrete
         dw = load_2well_discrete()
-        v = dw.dtraj_T100K_dt10[:10000]
+        v = dw.dtraj[:10000]
         cls.T = v.size
         nstates = 100
         b = np.linspace(-1, 1, nstates)
