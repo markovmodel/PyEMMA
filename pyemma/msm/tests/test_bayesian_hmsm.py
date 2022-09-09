@@ -19,6 +19,7 @@
 import unittest
 import numpy as np
 from deeptime.markov.tools.analysis import is_transition_matrix, is_reversible
+from numpy.testing import assert_allclose
 
 from pyemma.msm import bayesian_hidden_markov_model
 
@@ -29,7 +30,7 @@ class TestBHMM(unittest.TestCase):
     def setUpClass(cls):
         # load observations
         import pyemma.datasets
-        obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        obs = pyemma.datasets.load_2well_discrete().dtraj
 
         # hidden states
         cls.nstates = 2
@@ -331,9 +332,9 @@ class TestBHMMSpecialCases(unittest.TestCase):
                   np.array([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]),]
         hmm_bayes = bayesian_hidden_markov_model(dtrajs, 3, lag=1, separate=[0], nsamples=100, store_hidden=True)
         # we expect zeros in all samples at the following indexes:
-        pobs_zeros = [[0, 1, 2, 2, 2], [0, 0, 1, 2, 3]]
-        for s in hmm_bayes.samples:
-            assert np.allclose(s.observation_probabilities[pobs_zeros], 0)
+        pobs_zeros = ((0, 1, 2, 2, 2), (0, 0, 1, 2, 3))
+        for i, s in enumerate(hmm_bayes.samples):
+            assert_allclose(s.observation_probabilities[pobs_zeros], 0, err_msg=f"{i}")
         for strajs in hmm_bayes.sampled_trajs:
             assert strajs[0][0] == 2
             assert strajs[0][6] == 2
@@ -342,7 +343,7 @@ class TestBHMMSpecialCases(unittest.TestCase):
         import pyemma.datasets as d
         import pyemma.msm
 
-        obs = d.load_2well_discrete().dtraj_T100K_dt10
+        obs = d.load_2well_discrete().dtraj
 
         init_hmm = pyemma.msm.estimate_hidden_markov_model(obs, 2, 10)
         bay_hmm = pyemma.msm.estimators.BayesianHMSM(nstates=init_hmm.nstates, lag=init_hmm.lag,

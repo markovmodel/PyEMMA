@@ -94,7 +94,7 @@ class TestAMMDoubleWell(_tmsm):
     @classmethod
     def setUpClass(cls):
         import pyemma.datasets
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj
         cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)
         cls.m = np.array([1.9])
         cls.w = np.array([2.0])
@@ -381,7 +381,7 @@ class TestCoreAMMDoubleWell(_ctmsm):
     def setUpClass(cls):
         import pyemma.datasets
         cls.core_set = [34, 65]
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj
         cls.E_ = np.linspace(0.01, 2.*np.pi, 66).reshape(-1,1)**(0.5)
         cls.m = np.array([1.9])
         cls.w = np.array([2.0])

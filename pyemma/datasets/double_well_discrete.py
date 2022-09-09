@@ -20,21 +20,20 @@ __author__ = 'noe'
 
 import numpy as np
 from deeptime.markov.msm import MarkovStateModel
+from deeptime.data import DoubleWellDiscrete
 
 from pyemma.msm import markov_model
 
 
-class DoubleWell_Discrete_Data(object):
+class DoubleWell_Discrete_Data(DoubleWellDiscrete):
     """ MCMC process in a symmetric double well potential, spatially discretized to 100 bins
 
     """
 
     def __init__(self):
-        from pkg_resources import resource_filename
-        filename = resource_filename('pyemma.datasets', 'double_well_discrete.npz')
-        datafile = np.load(filename)
-        self._dtraj_T100K_dt10 = datafile['dtraj']
-        self._P = datafile['P']
+        super().__init__()
+        self._dtraj_T100K_dt10 = self.dtraj[:]
+        self._P = self.transition_matrix
         self._msm_dt = MarkovStateModel(self._P)
         self._msm = markov_model(self._P)
 
@@ -69,11 +68,6 @@ class DoubleWell_Discrete_Data(object):
         for i in range(len(divides) - 1):
             disc[divides[i]:divides[i + 1]] = i + 1
         return disc[self.dtraj_T100K_dt10]
-
-    @property
-    def transition_matrix(self):
-        """ Exact transition matrix used to generate the data """
-        return self._P
 
     @property
     def msm(self):

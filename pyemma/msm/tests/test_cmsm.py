@@ -66,7 +66,7 @@ class TestCMSMDoubleWell(unittest.TestCase):
         import pyemma.datasets
         cls.core_set = [34, 65]
 
-        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj
         nu = 1.*np.bincount(cls.dtraj)[cls.core_set]
         cls.statdist = nu/nu.sum()
 
@@ -698,7 +698,7 @@ class TestCoreMSM(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from pyemma import datasets
-        cls.dtraj = datasets.load_2well_discrete().dtraj_T100K_dt10
+        cls.dtraj = datasets.load_2well_discrete().dtraj
 
     def test_core(self):
         core_set = [15, 16, 17, 45, 46, 47]

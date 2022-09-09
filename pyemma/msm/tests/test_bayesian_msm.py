@@ -30,7 +30,7 @@ class TestBMSM(unittest.TestCase):
         # load observations
         import pyemma.datasets
         data = pyemma.datasets.load_2well_discrete()
-        obs_micro = data.dtraj_T100K_dt10
+        obs_micro = data.dtraj
 
         # stationary distribution
         pi_micro = data.msm.stationary_distribution

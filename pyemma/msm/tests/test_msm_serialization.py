@@ -30,7 +30,7 @@ class TestMSMSerialization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data = datasets.load_2well_discrete()
-        cls.obs_micro = data.dtraj_T100K_dt10
+        cls.obs_micro = data.dtraj
 
         # coarse-grain microstates to two metastable states
         cg = np.zeros(100, dtype=int)
