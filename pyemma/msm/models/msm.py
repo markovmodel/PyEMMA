@@ -51,7 +51,7 @@ class MSM(_Model, SerializableMixIn):
                           '_metastable_memberships', '_metastable_sets', '_pcca',
                           '_nstates', '_timeunit_model')
 
-    def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
+    def __init__(self, P, pi=None, tol=1e-8, reversible=None, dt_model='1 step', neig=None, ncv=None):
         r"""Markov model with a given transition matrix
 
         Parameters
@@ -62,6 +62,10 @@ class MSM(_Model, SerializableMixIn):
         pi : ndarray(n), optional, default=None
             stationary distribution. Can be optionally given in case if it was
             already computed, e.g. by the estimator.
+
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
 
         reversible : bool, optional, default=None
             whether P is reversible with respect to its stationary distribution.
@@ -93,11 +97,11 @@ class MSM(_Model, SerializableMixIn):
             be greater than k; it is recommended that ncv > 2*k.
 
         """
-        self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
+        self.set_model_params(P=P, pi=pi, tol=tol, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
-    def set_model_params(self, P, pi=None, reversible=None, dt_model='1 step', neig=None):
+    def set_model_params(self, P, pi=None, tol=1e-8, reversible=None, dt_model='1 step', neig=None):
         """ Call to set all basic model parameters.
 
         Sets or updates given model parameters. This argument list of this
@@ -113,6 +117,10 @@ class MSM(_Model, SerializableMixIn):
         pi : ndarray(n), optional, default=None
             stationary distribution. Can be optionally given in case if it was
             already computed, e.g. by the estimator.
+
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
 
         reversible : bool, optional, default=None
             whether P is reversible with respect to its stationary distribution.
@@ -145,6 +153,7 @@ class MSM(_Model, SerializableMixIn):
         """
         # we set reversible first, so it can be derived from P, if None was given.
         self.update_model_params(reversible=reversible)
+        self.update_model_params(tol=tol)
         self.update_model_params(P=P)
         # pi might be derived from P, if None was given.
         self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
@@ -182,13 +191,13 @@ class MSM(_Model, SerializableMixIn):
         # check input
         if self._P is not None:
             from deeptime.markov.tools.analysis import is_transition_matrix
-            if not is_transition_matrix(self._P, tol=1e-8):
+            if not is_transition_matrix(self._P, tol=self.tol):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
             if self.reversible is None:
                 from deeptime.markov.tools.analysis import is_reversible
-                self.reversible = is_reversible(self._P)
+                self.reversible = is_reversible(self._P, tol=self.tol)
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
@@ -284,7 +293,7 @@ class MSM(_Model, SerializableMixIn):
     def pi(self, value):
         if value is None and self.P is not None:
             from deeptime.markov.tools.analysis import stationary_distribution
-            value = stationary_distribution(self.P)
+            value = stationary_distribution(self.P, tol=self.tol)
         elif value is not None:
             # check sum is one
             _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)

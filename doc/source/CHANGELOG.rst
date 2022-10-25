@@ -7,7 +7,7 @@ Changelog
 **New features**:
 - coordinates: added contact counting for GroupMinDistanceFeature and ResidueMinDistanceFeature. :pr:`1441`
 - plots: added multi cktest support to plot_cktest function. :pr:`1450`
-
+- msm: added an optional argument in the class MSM to allow specification of the tolerance for checking if the input matrix is a transition matrix. :pr:`1579`
 
 **Fixes**:
 - coordinates: fixed a bug in description of sidechain torsion featurizer. :pr:`1451`
