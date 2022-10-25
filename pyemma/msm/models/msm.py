@@ -51,7 +51,7 @@ class MSM(_Model, SerializableMixIn):
                           '_metastable_memberships', '_metastable_sets', '_pcca',
                           '_nstates', '_timeunit_model')
 
-    def __init__(self, P, pi=None, tol=1e-8, reversible=None, dt_model='1 step', neig=None, ncv=None):
+    def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None, tol=1e-8):
         r"""Markov model with a given transition matrix
 
         Parameters
@@ -62,10 +62,6 @@ class MSM(_Model, SerializableMixIn):
         pi : ndarray(n), optional, default=None
             stationary distribution. Can be optionally given in case if it was
             already computed, e.g. by the estimator.
-
-        tol : float, optional, default=1e-8
-            the tolerance of the sum of each row/column of the input matrix to tell
-            if P is a transition matrix.
 
         reversible : bool, optional, default=None
             whether P is reversible with respect to its stationary distribution.
@@ -96,12 +92,16 @@ class MSM(_Model, SerializableMixIn):
             matrices. ncv is the number of Lanczos vectors generated, `ncv` must
             be greater than k; it is recommended that ncv > 2*k.
 
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
+
         """
-        self.set_model_params(P=P, pi=pi, tol=tol, reversible=reversible, dt_model=dt_model, neig=neig)
+        self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, tol=tol)
         self.ncv = ncv
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
-    def set_model_params(self, P, pi=None, tol=1e-8, reversible=None, dt_model='1 step', neig=None):
+    def set_model_params(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, tol=1e-8):
         """ Call to set all basic model parameters.
 
         Sets or updates given model parameters. This argument list of this
@@ -117,11 +117,7 @@ class MSM(_Model, SerializableMixIn):
         pi : ndarray(n), optional, default=None
             stationary distribution. Can be optionally given in case if it was
             already computed, e.g. by the estimator.
-
-        tol : float, optional, default=1e-8
-            the tolerance of the sum of each row/column of the input matrix to tell
-            if P is a transition matrix.
-
+        
         reversible : bool, optional, default=None
             whether P is reversible with respect to its stationary distribution.
             If None (default), will be determined from P
@@ -144,6 +140,10 @@ class MSM(_Model, SerializableMixIn):
             The number of eigenvalues / eigenvectors to be kept. If set to
             None, defaults will be used. For a dense MSM the default is all
             eigenvalues. For a sparse MSM the default is 10.
+
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
 
         Notes
         -----
