@@ -476,7 +476,7 @@ class AugmentedMarkovModel(MaximumLikelihoodMSM):
 
         self._connected_sets = connected_sets(self._C_full)
         self.set_model_params(P=_P, pi=self._pihat, reversible=True,
-                              dt_model=self.timestep_traj.get_scaled(self.lag))
+                              dt_model=self.timestep_traj.get_scaled(self.lag), tol=1e-8)
 
         return self
 

@@ -39,7 +39,7 @@ class HMSM(_MSM):
     r""" Hidden Markov model on discrete states. """
     __serialize_version = 0
 
-    def __init__(self, P, pobs, pi=None, dt_model='1 step'):
+    def __init__(self, P, pobs, pi=None, dt_model='1 step', tol=1e-8):
         """
 
         Parameters
@@ -55,10 +55,10 @@ class HMSM(_MSM):
 
         """
         # construct superclass and check input
-        _MSM.__init__(self, P, dt_model=dt_model)
-        self.set_model_params(P=P, pobs=pobs, pi=pi, dt_model=dt_model)
+        _MSM.__init__(self, P, dt_model=dt_model, tol=tol)
+        self.set_model_params(P=P, pobs=pobs, pi=pi, dt_model=dt_model, tol=tol)
 
-    def set_model_params(self, P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
+    def set_model_params(self, P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None, tol=1e-8):
         """
 
         Parameters
@@ -86,7 +86,7 @@ class HMSM(_MSM):
             None, all eigenvalues will be used.
 
         """
-        _MSM.set_model_params(self, P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
+        _MSM.set_model_params(self, P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, tol=tol)
         # set P and derived quantities if available
         if pobs is not None:
             # check and save copy of output probability

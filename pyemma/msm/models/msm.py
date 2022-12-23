@@ -93,7 +93,7 @@ class MSM(_Model, SerializableMixIn):
             be greater than k; it is recommended that ncv > 2*k.
 
         tol : float, optional, default=1e-8
-            the tolerance of the sum of each row/column of the input matrix to tell
+            the tolerance of the sum of each row of the input matrix to tell
             if P is a transition matrix.
 
         """
@@ -125,7 +125,7 @@ class MSM(_Model, SerializableMixIn):
         dt_model : str, optional, default='1 step'
             Description of the physical time corresponding to the model time
             step.  May be used by analysis algorithms such as plotting tools to
-            pretty-print the axes. By default '1 step', i.e. there is no
+            pretty-print the axes. By default, '1 step', i.e. there is no
             physical time unit. Specify by a number, whitespace and unit.
             Permitted units are (* is an arbitrary string):
 
@@ -207,6 +207,14 @@ class MSM(_Model, SerializableMixIn):
             self.sparse = False
 
         # TODO: if spectral decomp etc. already has been computed, reset its state.
+
+    @property
+    def tol(self):
+        return self._tol if hasattr(self, '_tol') else 1e-8
+
+    @tol.setter
+    def tol(self, value):
+        self._tol = value
 
     @property
     @alias('is_reversible')
