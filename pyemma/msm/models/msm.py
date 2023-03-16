@@ -51,7 +51,7 @@ class MSM(_Model, SerializableMixIn):
                           '_metastable_memberships', '_metastable_sets', '_pcca',
                           '_nstates', '_timeunit_model')
 
-    def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
+    def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None, tol=1e-8):
         r"""Markov model with a given transition matrix
 
         Parameters
@@ -92,12 +92,16 @@ class MSM(_Model, SerializableMixIn):
             matrices. ncv is the number of Lanczos vectors generated, `ncv` must
             be greater than k; it is recommended that ncv > 2*k.
 
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row of the input matrix to tell
+            if P is a transition matrix.
+
         """
-        self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
+        self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, tol=tol)
         self.ncv = ncv
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
-    def set_model_params(self, P, pi=None, reversible=None, dt_model='1 step', neig=None):
+    def set_model_params(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, tol=1e-8):
         """ Call to set all basic model parameters.
 
         Sets or updates given model parameters. This argument list of this
@@ -113,7 +117,7 @@ class MSM(_Model, SerializableMixIn):
         pi : ndarray(n), optional, default=None
             stationary distribution. Can be optionally given in case if it was
             already computed, e.g. by the estimator.
-
+        
         reversible : bool, optional, default=None
             whether P is reversible with respect to its stationary distribution.
             If None (default), will be determined from P
@@ -121,7 +125,7 @@ class MSM(_Model, SerializableMixIn):
         dt_model : str, optional, default='1 step'
             Description of the physical time corresponding to the model time
             step.  May be used by analysis algorithms such as plotting tools to
-            pretty-print the axes. By default '1 step', i.e. there is no
+            pretty-print the axes. By default, '1 step', i.e. there is no
             physical time unit. Specify by a number, whitespace and unit.
             Permitted units are (* is an arbitrary string):
 
@@ -137,6 +141,10 @@ class MSM(_Model, SerializableMixIn):
             None, defaults will be used. For a dense MSM the default is all
             eigenvalues. For a sparse MSM the default is 10.
 
+        tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
+
         Notes
         -----
         Explicitly define all independent model parameters in the argument
@@ -145,6 +153,7 @@ class MSM(_Model, SerializableMixIn):
         """
         # we set reversible first, so it can be derived from P, if None was given.
         self.update_model_params(reversible=reversible)
+        self.update_model_params(tol=tol)
         self.update_model_params(P=P)
         # pi might be derived from P, if None was given.
         self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
@@ -182,13 +191,13 @@ class MSM(_Model, SerializableMixIn):
         # check input
         if self._P is not None:
             from deeptime.markov.tools.analysis import is_transition_matrix
-            if not is_transition_matrix(self._P, tol=1e-8):
+            if not is_transition_matrix(self._P, tol=self.tol):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
             if self.reversible is None:
                 from deeptime.markov.tools.analysis import is_reversible
-                self.reversible = is_reversible(self._P)
+                self.reversible = is_reversible(self._P, tol=self.tol)
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
@@ -198,6 +207,14 @@ class MSM(_Model, SerializableMixIn):
             self.sparse = False
 
         # TODO: if spectral decomp etc. already has been computed, reset its state.
+
+    @property
+    def tol(self):
+        return self._tol if hasattr(self, '_tol') else 1e-8
+
+    @tol.setter
+    def tol(self, value):
+        self._tol = value
 
     @property
     @alias('is_reversible')
@@ -284,7 +301,7 @@ class MSM(_Model, SerializableMixIn):
     def pi(self, value):
         if value is None and self.P is not None:
             from deeptime.markov.tools.analysis import stationary_distribution
-            value = stationary_distribution(self.P)
+            value = stationary_distribution(self.P, tol=self.tol)
         elif value is not None:
             # check sum is one
             _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)

@@ -254,7 +254,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     return itsobj
 
 
-def markov_model(P, dt_model='1 step'):
+def markov_model(P, dt_model='1 step', tol=1e-8):
     r""" Markov model with a given transition matrix
 
     Returns a :class:`MSM <pyemma.msm.models.msm.MSM>` that contains the transition matrix
@@ -277,6 +277,10 @@ def markov_model(P, dt_model='1 step'):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
+    tol : float, optional, default=1e-8
+            the tolerance of the sum of each row/column of the input matrix to tell
+            if P is a transition matrix.
 
     Returns
     -------
@@ -334,7 +338,7 @@ def markov_model(P, dt_model='1 step'):
 
 
     """
-    return MSM(P, dt_model=dt_model)
+    return MSM(P, dt_model=dt_model, tol=tol)
 
 
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
