@@ -35,10 +35,10 @@ class TestMoments(unittest.TestCase):
         cls.Y_100_sparseconst[:, :10] = cls.Y_100[:, :10]
         # boolean data
         cls.Xb_2 = np.random.randint(0, 2, size=(10000, 2))
-        cls.Xb_2 = cls.Xb_2.astype(np.bool)
+        cls.Xb_2 = cls.Xb_2.astype(np.bool_)
         cls.Xb_10 = np.random.randint(0, 2, size=(10000, 10))
-        cls.Xb_10 = cls.Xb_10.astype(np.bool)
-        cls.Xb_10_sparsezero = np.zeros((10000, 10), dtype=np.bool)
+        cls.Xb_10 = cls.Xb_10.astype(np.bool_)
+        cls.Xb_10_sparsezero = np.zeros((10000, 10), dtype=np.bool_)
         cls.Xb_10_sparsezero[:, 0] = cls.Xb_10[:, 0]
         # generate weights:
         cls.weights = np.random.rand(10000)
