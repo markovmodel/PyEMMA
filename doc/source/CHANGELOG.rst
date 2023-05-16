@@ -22,6 +22,7 @@ Changelog
 - Solve 2 code:`SyntaxWarnings: "is" with a literal.` in utils/reader_utils.py :pr:`1530`
 - Use spawn() for multiprocessing on linux instead of fork(), fixes worker processes sometimes going into idle for n_jobs>1 :pr:`1565`
 - Replace usage of :code:`numpy.bool` with :code:`numpy.bool_` to remain compatible with numpy>=1.20
+- Replace usage of :code:`np.float` with :code:`float`
 
 2.5.7 (9-24-2019)
 -----------------
