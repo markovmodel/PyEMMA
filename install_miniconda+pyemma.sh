@@ -83,7 +83,7 @@ function install_miniconda {
 	echo "installing miniconda to $target"
 	f=`mktemp`
 	# curl should be available on Linux and OSX.
-	curl https://repo.continuum.io/miniconda/Miniconda3-latest-$platform-$arch.sh -o ${f}
+	curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-$platform-$arch.sh -o ${f}
 	bash ${f} -b -f -p ${target}
 	export PATH=${target}/bin:$PATH
 	hash -r
