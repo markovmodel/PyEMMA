@@ -484,7 +484,7 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
             pksub_samples = model.sample_f('propagate', p0sub, mlag)
             for j in range(self.nsets):
                 pk_on_set_samples = np.fromiter((np.dot(pksub, self.memberships[subset, j])
-                                                 for pksub in pksub_samples), dtype=np.float, count=len(pksub_samples))
+                                                 for pksub in pksub_samples), dtype=float, count=len(pksub_samples))
                 l[i, j], r[i, j] = confidence_interval(pk_on_set_samples, conf=self.conf)
         return l, r
 
