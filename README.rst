@@ -2,6 +2,8 @@
 This project is no longer actively maintained
 =============================================
 
+An alternative package reflecting most of PyEMMA's functionality is `deeptime <https://github.com/deeptime-ml/deeptime>`__.
+
 =====================================
 EMMA (Emma's Markov Model Algorithms)
 =====================================
